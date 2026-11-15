@@ -1,0 +1,20 @@
+{
+  "status": "running",
+  "phase": "dev",
+  "origin": "http://127.0.0.1:30158",
+  "BUILD_ID": "isolated-dev",
+  "checks": [
+    {
+      "name": "fresh_and_stale_global_urls",
+      "status": "failed",
+      "error": "TimeoutError: page.goto: Timeout 12000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:30158/?\", waiting until \"load\"\u001b[22m\n"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "mock_mutations": [],
+  "production_business_writes": 0,
+  "paid_calls": 0,
+  "production_exports": 0,
+  "completed_at_utc": "2026-11-15T08:18:08.297Z"
+}

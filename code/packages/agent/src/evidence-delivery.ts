@@ -13,6 +13,7 @@ import { PRIMARY_ASSESSMENT_POLICY_VERSION } from './primary-evidence-assessment
 import { buildStrictSourceGroups, STRICT_SOURCE_GROUPING_POLICY_VERSION, type StrictSourceGroup } from './strict-source-groups.js';
 import { sourceGlyphCheckStatus } from './source-evidence-units.js';
 import { auditLegacySourceGlyphs } from './parser.js';
+import { agentAssessesSourceGlyphs } from './source-glyph-policy.js';
 
 const clone = <T>(x: T): T => structuredClone(x);
 export const evidenceDigest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -161,7 +162,7 @@ export interface EvidenceDelivery {
   source_grouping_policy_version?: typeof STRICT_SOURCE_GROUPING_POLICY_VERSION;
   strict_source_groups?: StrictSourceGroup[];
   unique_source_group_count?: number;
-  source_glyph_check?: { status: ReturnType<typeof sourceGlyphCheckStatus>; detects_all_font_encoding_errors: false; source_page_review_still_required: true };
+  source_glyph_check?: { status: ReturnType<typeof sourceGlyphCheckStatus>; detects_all_font_encoding_errors: false; source_page_review_still_required: boolean };
 }
 /** Include retained background suggestions in audits and sampling; never improve a denominator by hiding them. */
 export function allDeliveredRecords(delivery: EvidenceDelivery): DeliveredEvidence[] {
@@ -199,6 +200,7 @@ export function buildEvidenceDelivery(document: ExtractionDocument, versions: re
   const scopes = new Map<string, EvidenceRecord['extraction_trace']['scope']>();
   const records = [...current.values()].map(version => {
     const record = version.record;
+    const allowUnverifiedGlyphs = agentAssessesSourceGlyphs(record.extraction_trace.source_glyph_policy_version);
     assertSchema(EvidenceRecordSchema, record);
     if (!sameBinding(document, { document_id: record.document_id, file_sha256: record.source_version.file_sha256, text_version: record.text_version })) {
       throw new ContractError('delivery_record_source_binding_mismatch');
@@ -210,18 +212,19 @@ export function buildEvidenceDelivery(document: ExtractionDocument, versions: re
       record.original_quote !== record.quote_span.segments.map(s => s.exact_quote).join(record.quote_span.display_joiner)) throw new ContractError('delivery_quote_rewritten');
     let previousOrder = -1, previousEnd = -1;
     for (const segment of record.quote_span.segments) {
-      assertLocated(document, segment);
+      assertLocated(document, segment, allowUnverifiedGlyphs);
       const order = document.blocks.find(b => b.block_id === segment.block_id)!.reading_order;
       if (order < previousOrder || order === previousOrder && segment.start < previousEnd) throw new ContractError('delivery_source_order_changed');
       previousOrder = order; previousEnd = segment.end;
     }
-    for (const segment of record.context.fragments) assertLocated(document, segment);
+    for (const segment of record.context.fragments) assertLocated(document, segment, allowUnverifiedGlyphs);
     if (record.extraction_trace.evidence_policy_version === VISUAL_STATEMENT_POLICY_VERSION) {
       const fieldEvidence = [record.disease_or_lesion, record.modality, record.sequence_or_phase, record.assertion,
         record.applicability, record.context.source_attribution, ...record.numeric_expressions].flatMap(f => f?.evidence ?? []);
       const support = record.context.supporting_table_evidence ?? [];
-      for (const segment of [...fieldEvidence, ...support.flatMap(t => [...t.reference_evidence, ...t.fragments])]) assertLocated(document, segment);
-      const issues = visualStatementIssues(document, record, record.quote_span.segments, record.context.fragments, fieldEvidence, support);
+      if (record.extraction_trace.table_support_policy_version === 'paragraph-linked-table-support-2' && support.some(t => !t.value_contexts?.length || !t.description_evidence?.length)) throw new ContractError('delivery_table_per_value_context_missing');
+      for (const segment of [...fieldEvidence, ...support.flatMap(t => [...t.reference_evidence, ...(t.description_evidence ?? []), ...t.fragments, ...(t.context_fragments ?? []), ...(t.value_contexts ?? []).flatMap(v => [...v.fragments, ...v.context_fragments])])]) assertLocated(document, segment, allowUnverifiedGlyphs);
+      const issues = visualStatementIssues(document, record, record.quote_span.segments, record.context.fragments, fieldEvidence, support, record.extraction_trace.source_glyph_policy_version, record.extraction_trace.table_support_policy_version, record.extraction_trace.input_organization_version);
       if (issues.some(i => i.severity === 'reject')) throw new ContractError('delivery_visual_statement_policy_failed');
     } else if (verbatimOmissionIssues(document, record.quote_span.segments).length) throw new ContractError('delivery_source_qualifier_omitted');
     scopes.set(evidenceDigest(record.extraction_trace.scope), record.extraction_trace.scope);
@@ -257,7 +260,8 @@ export function buildEvidenceDelivery(document: ExtractionDocument, versions: re
     figures: clone(catalog?.figures ?? []),
     full_recall_claimed: false, medical_quality_approved: false,
     ...(sourceGlyphCheckStatus(document) !== 'legacy_not_checked' ? {
-      source_glyph_check: { status: sourceGlyphCheckStatus(document), detects_all_font_encoding_errors: false as const, source_page_review_still_required: true as const } } : {}) };
+      source_glyph_check: { status: sourceGlyphCheckStatus(document), detects_all_font_encoding_errors: false as const,
+        source_page_review_still_required: ![...current.values()].length || ![...current.values()].every(v => agentAssessesSourceGlyphs(v.record.extraction_trace.source_glyph_policy_version)) } } : {}) };
   refreshStrictSourceGroups(delivery, [...current.values()]);
   return delivery;
 }
@@ -308,18 +312,30 @@ export function auditOutputSample(delivery: EvidenceDelivery, reviews?: OutputSa
 
 /** Source assets and approvals are verified before creating an exclusive output folder. No old artifact is rewritten. */
 export async function exportEvidenceDelivery(document: ExtractionDocument, versions: readonly EvidenceVersion[], options: {
-  codeRoot: string; directory: string; catalog?: FigureAssetCatalog; mode: 'candidates' | 'approved'; reviews?: readonly DeliveryReview[];
+  codeRoot: string; directory: string; catalog?: FigureAssetCatalog; mode: 'candidates' | 'approved' | 'retained'; reviews?: readonly DeliveryReview[];
+  retentionSelections?: readonly { record_id: string; record_version: number; status: 'kept'; revision: number; origin: 'default' | 'user' | 'legacy_review'; decision_record_version: number }[];
   coverage: unknown; sampleReview?: OutputSampleReview;
   humanRoles?: readonly { record_id: string; record_version: number; role: 'primary_candidate' | 'background_suggestion'; actor: string }[];
 }) {
   let sourceGlyphAudit: Awaited<ReturnType<typeof auditLegacySourceGlyphs>>['audit'] | undefined;
-  if (options.mode === 'approved' && sourceGlyphCheckStatus(document) === 'legacy_not_checked') {
+  if (options.mode !== 'candidates' && sourceGlyphCheckStatus(document) === 'legacy_not_checked') {
     try {
       const audited = await auditLegacySourceGlyphs(document); document = audited.document; sourceGlyphAudit = audited.audit;
     } catch { throw new ContractError('source_glyph_check_missing_reparse_required'); }
   }
   const delivery = buildEvidenceDelivery(document, versions, options.catalog), checked = new Map<string, DeliveryReview>();
   const allRecords = allDeliveredRecords(delivery);
+  const retentionSelections = new Map<string, NonNullable<typeof options.retentionSelections>[number]>();
+  if (options.mode === 'retained') {
+    if (!options.retentionSelections || options.retentionSelections.length !== allRecords.length || options.reviews?.length) throw new ContractError('retained_export_requires_selection_snapshot');
+    for (const selection of options.retentionSelections) {
+      const record = allRecords.find(record => record.record_id === selection.record_id);
+      if (!record || selection.record_version !== record.record_version || selection.status !== 'kept' || !Number.isSafeInteger(selection.revision) || selection.revision < 0 ||
+        !['default', 'user', 'legacy_review'].includes(selection.origin) || !Number.isSafeInteger(selection.decision_record_version) || selection.decision_record_version < 1 ||
+        selection.decision_record_version > selection.record_version || retentionSelections.has(selection.record_id)) throw new ContractError('retained_selection_version_conflict');
+      retentionSelections.set(selection.record_id, clone(selection));
+    }
+  }
   for (const review of options.reviews ?? []) {
     assertSchema(DeliveryReviewSchema, review);
     if (!Number.isFinite(Date.parse(review.reviewed_at)) || checked.has(review.record_id)) throw new ContractError('delivery_review_invalid');
@@ -402,20 +418,34 @@ export async function exportEvidenceDelivery(document: ExtractionDocument, versi
   for (const folder of new Set(assets.map(a => dirname(a.package_path)))) await mkdir(resolve(directory, folder));
   for (const asset of assets) await writeFile(resolve(directory, asset.package_path), asset.bytes, { flag: 'wx' });
   const exportedRecord = (r: DeliveredEvidence) => ({ ...r,
-    export_review_status: options.mode === 'approved' ? checked.get(r.record_id)?.review_scope === 'text_and_figures' ? 'approved_text_and_figures' : 'approved_text_only' : 'candidate',
+    export_review_status: options.mode === 'approved' ? checked.get(r.record_id)?.review_scope === 'text_and_figures' ? 'approved_text_and_figures' : 'approved_text_only' : options.mode === 'retained' ? 'retained_unconfirmed' : 'candidate',
+    ...(options.mode === 'retained' ? { retention_selection: retentionSelections.get(r.record_id)!, medical_quality_approved: false as const } : {}),
     human_confirmation: checked.get(r.record_id) ?? null, legacy_text_review_events: legacyTextApprovals.get(r.record_id) ?? [] });
   const exportRecords = delivery.records.map(exportedRecord), backgroundRecords = (delivery.background_records ?? []).map(exportedRecord);
   await writeFile(resolve(directory, 'records.jsonl'), exportRecords.map(r => JSON.stringify(r)).join('\n') + (delivery.records.length ? '\n' : ''), { flag: 'wx' });
   const csv = (value: string) => '"' + value.replace(/"/g, '""') + '"';
+  const csvTableSupport = allRecords.some(r => r.supporting_table_evidence?.some(s => s.selected_cell_ids?.length));
   // One row per original fragment. No flattened, reconstructed prose description is created.
   const csvRows = (records: DeliveredEvidence[]) => records.flatMap(r => r.original_fragments.map((f, index) => [r.record_id, String(r.record_version), String(index), f.exact_quote,
-    String(f.physical_page), f.block_id, String(f.start), String(f.end), r.figure_association.status].map(csv).join(',')));
+    String(f.physical_page), f.block_id, String(f.start), String(f.end), r.figure_association.status,
+    ...(csvTableSupport ? [JSON.stringify(r.supporting_table_evidence ?? [])] : []),
+    ...(options.mode === 'retained' ? ['kept', 'false'] : [])].map(csv).join(',')));
+  const csvHeader = '\ufeffrecord_id,record_version,fragment_index,original_fragment,physical_page,block_id,start,end,figure_status' +
+    (csvTableSupport ? ',supporting_table_evidence_json' : '') +
+    (options.mode === 'retained' ? ',retention_status,medical_quality_approved' : '') + '\n';
   const rows = csvRows(delivery.records);
-  await writeFile(resolve(directory, 'records.csv'), '\ufeffrecord_id,record_version,fragment_index,original_fragment,physical_page,block_id,start,end,figure_status\n'+rows.join('\n')+(rows.length?'\n':''), { flag: 'wx' });
+  await writeFile(resolve(directory, 'records.csv'), csvHeader+rows.join('\n')+(rows.length?'\n':''), { flag: 'wx' });
+  const tableSupport = allRecords.flatMap(r => (r.supporting_table_evidence ?? []).map(s => ({ record_id: r.record_id, record_version: r.record_version,
+    run_id: r.run_id, role: 'supplement_to_original_description' as const, ...s })));
+  if (tableSupport.length) {
+    await writeFile(resolve(directory, 'table-support.jsonl'), tableSupport.map(s => JSON.stringify(s)).join('\n') + '\n', { flag: 'wx' });
+    await writeFile(resolve(directory, 'table-support.csv'), '\ufeffrecord_id,record_version,table_id,role,reference_evidence_json,values_json,context_json,value_contexts_json\n' +
+      tableSupport.map(s => [s.record_id, String(s.record_version), s.table_id, s.role, JSON.stringify(s.reference_evidence), JSON.stringify(s.fragments), JSON.stringify(s.context_fragments ?? []), JSON.stringify(s.value_contexts ?? [])].map(csv).join(',')).join('\n') + '\n', { flag: 'wx' });
+  }
   if (delivery.background_records) {
     const backgroundRows = csvRows(delivery.background_records);
     await writeFile(resolve(directory, 'background-records.jsonl'), backgroundRecords.map(r => JSON.stringify(r)).join('\n') + (backgroundRecords.length ? '\n' : ''), { flag: 'wx' });
-    await writeFile(resolve(directory, 'background-records.csv'), '\ufeffrecord_id,record_version,fragment_index,original_fragment,physical_page,block_id,start,end,figure_status\n'+backgroundRows.join('\n')+(backgroundRows.length?'\n':''), { flag: 'wx' });
+    await writeFile(resolve(directory, 'background-records.csv'), csvHeader+backgroundRows.join('\n')+(backgroundRows.length?'\n':''), { flag: 'wx' });
   }
   await writeFile(resolve(directory, 'delivery.json'), JSON.stringify({ ...delivery, records: exportRecords,
     ...(delivery.background_records ? { background_records: backgroundRecords } : {}) }, null, 2)+'\n', { flag: 'wx' });
@@ -431,7 +461,11 @@ export async function exportEvidenceDelivery(document: ExtractionDocument, versi
     ...(delivery.primary_assessment_policy_version ? { primary_assessment_policy_version: delivery.primary_assessment_policy_version,
       background_suggestions: 'background-records.jsonl / background-records.csv; only background suggested, not human confirmed' } : {}),
     fixture: document.fixture, record_level_human_confirmation: options.mode === 'approved',
+    ...(options.mode === 'retained' ? { selection_semantics: 'kept_by_default_unless_excluded', retained_records_are_medically_unconfirmed: true,
+      retention_selection_schema: 'workbench-retention-snapshot-1' } : {}),
     approved_by_model: false, full_recall_claimed: false, medical_quality_approved: false,
+    ...(tableSupport.length ? { table_support: { files: ['table-support.jsonl', 'table-support.csv'], count: tableSupport.length,
+      role: 'supplements_linked_by_record_id_not_independent_descriptions' } } : {}),
     assets: assets.map(({ bytes: _bytes, ...a }) => a), authoritative_description: 'records.jsonl original_fragments; records.csv has one row per fragment',
     source_ir_fidelity_is_not_medical_approval: true, legacy_records_modified: false,
     source_glyph_check: delivery.source_glyph_check ?? { status: 'legacy_not_checked', detects_all_font_encoding_errors: false, source_page_review_still_required: true },

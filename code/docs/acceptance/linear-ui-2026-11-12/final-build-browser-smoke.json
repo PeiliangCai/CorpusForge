@@ -1,0 +1,42 @@
+{
+  "schema_version": "t1-linear-ui-final-build-browser-1",
+  "at": "2026-11-11T16:40:12.314Z",
+  "BUILD_ID": "CZGDzqRNcIxnpa5kJ1sVe",
+  "checks": [
+    {
+      "name": "final_build_source_and_action_layout",
+      "status": "passed",
+      "geometry": {
+        "quoteTop": 296,
+        "footerBottom": 900,
+        "height": 900,
+        "overflow": false
+      }
+    },
+    {
+      "name": "plain_notes_and_native_dialog_focus",
+      "status": "passed"
+    },
+    {
+      "name": "final_dark_and_mobile_render",
+      "status": "passed"
+    },
+    {
+      "name": "plain_figure_caption_with_raw_provenance_preserved",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "write_requests": 0,
+  "export_requests": 0,
+  "paid_model_calls": 0,
+  "screenshots": [
+    "01-continuous-reading-light.png",
+    "02-consolidated-notes.png",
+    "05-continuous-reading-dark.png",
+    "07-mobile-light.png",
+    "08-explicit-figure.png"
+  ],
+  "status": "passed"
+}

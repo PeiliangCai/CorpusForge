@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { resolve, relative } from 'node:path';
+import { mkdtemp, readFile, rm, writeFile, mkdir } from 'node:fs/promises';
+import { resolve, relative, dirname } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { gunzipSync } from 'node:zlib';
 import { ExtractionStore, RunStore, evidenceScopeIssues } from '@t1/agent';
@@ -187,6 +187,8 @@ test('real retained S4 data and controlled overlapping tasks preserve versions, 
     report.all_workflow_assertions_passed = true;
   } finally {
     for (const release of releases.values()) release(); await app.close(); store.close(); legacy.close(); await rm(directory, { recursive: true, force: true });
-    await writeFile(resolve('docs/acceptance/s5-workflow-2026-11-09/backend-workflow-report.json'), JSON.stringify(report, null, 2) + '\n');
+    // Routine regressions must never rewrite the frozen S5 acceptance evidence.
+    const reportPath = resolve(process.env.T1_WORKFLOW_TEST_REPORT_PATH ?? 'runtime-data/test-results/workflow-report.json');
+    await mkdir(dirname(reportPath), { recursive: true }); await writeFile(reportPath, JSON.stringify(report, null, 2) + '\n');
   }
 });

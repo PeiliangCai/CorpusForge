@@ -1,0 +1,548 @@
+{
+  "observed_at_utc": "2026-11-15T11:14:25.745650+00:00",
+  "run": {
+    "run_id": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6",
+    "document_id": "paper-9b9afd8c-736e-49f6-9f2d-68f7f1b9549b",
+    "task_title": "例子.pdf",
+    "original_filename": "例子.pdf",
+    "created_at": "2026-11-15T11:02:59.596Z",
+    "state": "extracting",
+    "result_ready": false,
+    "candidate_count": 9,
+    "progress": {
+      "schema_version": "t1-workbench-progress-1",
+      "stage": "extracting",
+      "updated_at": "2026-11-15T11:14:03.246Z",
+      "stage_started_at": "2026-11-15T11:03:46.768Z",
+      "elapsed_ms": 686145,
+      "execution_elapsed_ms": 686118,
+      "queue_wait_ms": 27,
+      "completed": 102,
+      "unit": "content_units",
+      "total": 547,
+      "unit_counts": {
+        "source_fragment": 94,
+        "text_item": 3,
+        "heading": 49,
+        "list_item": 3,
+        "paragraph": 394,
+        "caption": 4
+      },
+      "completed_unit_counts": {
+        "source_fragment": 30,
+        "text_item": 0,
+        "heading": 20,
+        "list_item": 0,
+        "paragraph": 52,
+        "caption": 0
+      },
+      "completed_batches": 7,
+      "total_batches": 24,
+      "candidate_records": 9,
+      "source_gap_blocks": 0,
+      "summary_completed": false,
+      "activity": "source_extraction",
+      "telemetry": "events"
+    }
+  },
+  "persisted_s4_version_rows": 9,
+  "requests": [
+    {
+      "id": "331557cd-e58e-424f-aa8e-2b3f099a4fad",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0001",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:03:47.418Z",
+      "finished_at": "2026-11-15T11:04:02.693Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 67,
+      "first_stream_event_at": "2026-11-15T11:04:00.760Z",
+      "last_stream_event_at": "2026-11-15T11:04:02.405Z",
+      "payload_bytes": 85949,
+      "application_context_estimate": 22971,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "b8487e23-5991-4ed4-82cb-739ed75488f7",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0001",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:04:02.712Z",
+      "finished_at": "2026-11-15T11:06:02.713Z",
+      "status": null,
+      "error_code": "request_time_limit",
+      "stream_event_count": null,
+      "first_stream_event_at": null,
+      "last_stream_event_at": null,
+      "payload_bytes": 135246,
+      "application_context_estimate": 32602,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "74f89050-fb08-4d28-a26b-f75ba4792aac",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0001",
+      "attempt": 1,
+      "started_at": "2026-11-15T11:06:03.575Z",
+      "finished_at": "2026-11-15T11:08:03.576Z",
+      "status": null,
+      "error_code": "request_time_limit",
+      "stream_event_count": null,
+      "first_stream_event_at": null,
+      "last_stream_event_at": null,
+      "payload_bytes": 85949,
+      "application_context_estimate": 22971,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "9b4752aa-e62d-4a6a-8396-48651e0bb173",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0001",
+      "attempt": 2,
+      "started_at": "2026-11-15T11:08:04.614Z",
+      "finished_at": "2026-11-15T11:10:04.614Z",
+      "status": null,
+      "error_code": "request_time_limit",
+      "stream_event_count": null,
+      "first_stream_event_at": null,
+      "last_stream_event_at": null,
+      "payload_bytes": 85949,
+      "application_context_estimate": 22971,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "a1ffbce1-6594-4ba0-8be9-c3f4138d5ad1",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0002",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:10:05.106Z",
+      "finished_at": "2026-11-15T11:10:15.585Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 66,
+      "first_stream_event_at": "2026-11-15T11:10:14.813Z",
+      "last_stream_event_at": "2026-11-15T11:10:15.242Z",
+      "payload_bytes": 77761,
+      "application_context_estimate": 20852,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "1c36f5db-16e3-4c74-9b0d-4e904f0cc470",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0002",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:10:15.602Z",
+      "finished_at": "2026-11-15T11:10:28.856Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 341,
+      "first_stream_event_at": "2026-11-15T11:10:23.011Z",
+      "last_stream_event_at": "2026-11-15T11:10:28.515Z",
+      "payload_bytes": 120379,
+      "application_context_estimate": 28342,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "dc6c4dfc-aa19-48a3-8eea-13cc106f091c",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0003",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:10:29.607Z",
+      "finished_at": "2026-11-15T11:10:39.115Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 88,
+      "first_stream_event_at": "2026-11-15T11:10:37.781Z",
+      "last_stream_event_at": "2026-11-15T11:10:38.806Z",
+      "payload_bytes": 76933,
+      "application_context_estimate": 20648,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "0de574aa-4b23-4a50-8549-9bc5a8f0ac24",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0003",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:10:39.124Z",
+      "finished_at": "2026-11-15T11:10:49.107Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 64,
+      "first_stream_event_at": "2026-11-15T11:10:47.252Z",
+      "last_stream_event_at": "2026-11-15T11:10:48.817Z",
+      "payload_bytes": 85712,
+      "application_context_estimate": 19690,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "ee174e6b-72b7-48d2-a133-49f62d5fe339",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0003",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:10:49.124Z",
+      "finished_at": "2026-11-15T11:10:55.939Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 17,
+      "first_stream_event_at": "2026-11-15T11:10:55.017Z",
+      "last_stream_event_at": "2026-11-15T11:10:55.632Z",
+      "payload_bytes": 122722,
+      "application_context_estimate": 29844,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "9aeed282-b042-4064-91b3-dee8aa1b551f",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0004",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:10:56.437Z",
+      "finished_at": "2026-11-15T11:11:11.775Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 151,
+      "first_stream_event_at": "2026-11-15T11:11:09.662Z",
+      "last_stream_event_at": "2026-11-15T11:11:11.460Z",
+      "payload_bytes": 77851,
+      "application_context_estimate": 20878,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "60079e24-80e5-4183-a719-7c266717a7fe",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0004",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:11:11.793Z",
+      "finished_at": "2026-11-15T11:11:20.891Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 17,
+      "first_stream_event_at": "2026-11-15T11:11:19.806Z",
+      "last_stream_event_at": "2026-11-15T11:11:20.592Z",
+      "payload_bytes": 125504,
+      "application_context_estimate": 28583,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "e69a45fb-8043-43b7-b25f-006549422523",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0005",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:11:21.363Z",
+      "finished_at": "2026-11-15T11:11:33.025Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 66,
+      "first_stream_event_at": "2026-11-15T11:11:31.380Z",
+      "last_stream_event_at": "2026-11-15T11:11:32.685Z",
+      "payload_bytes": 81043,
+      "application_context_estimate": 21717,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "a5f69c23-616e-4018-ab91-5edc91774bc2",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0005",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:11:33.045Z",
+      "finished_at": "2026-11-15T11:11:42.349Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 17,
+      "first_stream_event_at": "2026-11-15T11:11:41.578Z",
+      "last_stream_event_at": "2026-11-15T11:11:41.996Z",
+      "payload_bytes": 126155,
+      "application_context_estimate": 29562,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "fd748d49-d019-4cf9-b9dc-73250cbd4f42",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0006",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:11:42.825Z",
+      "finished_at": "2026-11-15T11:11:52.507Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 157,
+      "first_stream_event_at": "2026-11-15T11:11:50.774Z",
+      "last_stream_event_at": "2026-11-15T11:11:52.187Z",
+      "payload_bytes": 74929,
+      "application_context_estimate": 20126,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "bdf7f9a6-9309-4336-aab3-baf7418369c6",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0006",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:11:52.527Z",
+      "finished_at": "2026-11-15T11:12:07.269Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 17,
+      "first_stream_event_at": "2026-11-15T11:12:05.515Z",
+      "last_stream_event_at": "2026-11-15T11:12:06.962Z",
+      "payload_bytes": 113599,
+      "application_context_estimate": 26930,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "c4281a85-5710-420e-beb5-e747fc05b88e",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0007",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:12:07.754Z",
+      "finished_at": "2026-11-15T11:12:17.311Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 87,
+      "first_stream_event_at": "2026-11-15T11:12:16.397Z",
+      "last_stream_event_at": "2026-11-15T11:12:16.955Z",
+      "payload_bytes": 76258,
+      "application_context_estimate": 20465,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "c43242ec-d982-4636-86a0-59e3e7d17f06",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0007",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:12:17.321Z",
+      "finished_at": "2026-11-15T11:12:30.963Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 65,
+      "first_stream_event_at": "2026-11-15T11:12:28.299Z",
+      "last_stream_event_at": "2026-11-15T11:12:30.646Z",
+      "payload_bytes": 84930,
+      "application_context_estimate": 19761,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "f864766f-dd6c-46d3-98cd-a9953566feea",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0007",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:12:30.983Z",
+      "finished_at": "2026-11-15T11:12:46.390Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 453,
+      "first_stream_event_at": "2026-11-15T11:12:38.167Z",
+      "last_stream_event_at": "2026-11-15T11:12:46.110Z",
+      "payload_bytes": 122437,
+      "application_context_estimate": 29642,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "c3591c32-6dc8-491d-8894-08ad81b6405c",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0007",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:12:46.994Z",
+      "finished_at": "2026-11-15T11:12:56.693Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 58,
+      "first_stream_event_at": "2026-11-15T11:12:55.969Z",
+      "last_stream_event_at": "2026-11-15T11:12:56.413Z",
+      "payload_bytes": 148092,
+      "application_context_estimate": 31659,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "e311aaa7-e630-4d4f-86ac-a0afdb7eda11",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0008",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:12:57.617Z",
+      "finished_at": "2026-11-15T11:13:16.212Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 88,
+      "first_stream_event_at": "2026-11-15T11:13:14.581Z",
+      "last_stream_event_at": "2026-11-15T11:13:15.028Z",
+      "payload_bytes": 75753,
+      "application_context_estimate": 20347,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "cfadfb7a-f701-4c43-a8fa-05802716338b",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0008",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:13:16.228Z",
+      "finished_at": "2026-11-15T11:13:29.290Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 317,
+      "first_stream_event_at": "2026-11-15T11:13:23.645Z",
+      "last_stream_event_at": "2026-11-15T11:13:29.013Z",
+      "payload_bytes": 83811,
+      "application_context_estimate": 19309,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "6079d3ac-a2ba-43f8-9d93-4dd347fb6c1d",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0008",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:13:29.312Z",
+      "finished_at": "2026-11-15T11:13:48.119Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 275,
+      "first_stream_event_at": "2026-11-15T11:13:38.186Z",
+      "last_stream_event_at": "2026-11-15T11:13:47.839Z",
+      "payload_bytes": 138852,
+      "application_context_estimate": 30879,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "c4877154-327f-44b0-89de-717e9995efd0",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0008",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:13:48.735Z",
+      "finished_at": "2026-11-15T11:14:03.028Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 121,
+      "first_stream_event_at": "2026-11-15T11:14:00.972Z",
+      "last_stream_event_at": "2026-11-15T11:14:02.744Z",
+      "payload_bytes": 158655,
+      "application_context_estimate": 31723,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "ba01a537-5d51-49e3-946e-e357ebc6f127",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0009",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:14:03.764Z",
+      "finished_at": "2026-11-15T11:14:15.574Z",
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 9,
+      "first_stream_event_at": "2026-11-15T11:14:13.197Z",
+      "last_stream_event_at": "2026-11-15T11:14:15.573Z",
+      "payload_bytes": 80957,
+      "application_context_estimate": 21717,
+      "configured_deadline_ms": 120000
+    },
+    {
+      "id": "cf0c1fb3-486a-4684-9947-798bdcb2f34c",
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0009",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:14:15.590Z",
+      "finished_at": null,
+      "status": 200,
+      "error_code": null,
+      "stream_event_count": 79,
+      "first_stream_event_at": "2026-11-15T11:14:23.994Z",
+      "last_stream_event_at": "2026-11-15T11:14:25.285Z",
+      "payload_bytes": 89636,
+      "application_context_estimate": 21105,
+      "configured_deadline_ms": 120000
+    }
+  ],
+  "latest_events": [
+    {
+      "seq": 92,
+      "type": "tool",
+      "timestamp": "2026-11-15T11:14:15.584Z",
+      "detail": {
+        "batch_id": "batch-0009",
+        "status": "ok"
+      }
+    },
+    {
+      "seq": 91,
+      "type": "model_tool_argument_shape",
+      "timestamp": "2026-11-15T11:14:15.575Z",
+      "detail": {
+        "batch_id": "batch-0009"
+      }
+    },
+    {
+      "seq": 90,
+      "type": "host_source_prefill",
+      "timestamp": "2026-11-15T11:14:13.198Z",
+      "detail": {
+        "batch_id": "batch-0009"
+      }
+    },
+    {
+      "seq": 89,
+      "type": "batch",
+      "timestamp": "2026-11-15T11:14:03.246Z",
+      "detail": {
+        "batch_id": "batch-0008",
+        "attempt": 0,
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_count_so_far": 9
+      }
+    },
+    {
+      "seq": 88,
+      "type": "tool",
+      "timestamp": "2026-11-15T11:14:03.236Z",
+      "detail": {
+        "batch_id": "batch-0008",
+        "status": "ok"
+      }
+    },
+    {
+      "seq": 87,
+      "type": "reconciliation",
+      "timestamp": "2026-11-15T11:14:03.235Z",
+      "detail": {}
+    },
+    {
+      "seq": 86,
+      "type": "candidate",
+      "timestamp": "2026-11-15T11:14:03.235Z",
+      "detail": {
+        "reason": "insert"
+      }
+    },
+    {
+      "seq": 85,
+      "type": "model_tool_argument_shape",
+      "timestamp": "2026-11-15T11:14:03.030Z",
+      "detail": {
+        "batch_id": "batch-0008"
+      }
+    },
+    {
+      "seq": 84,
+      "type": "tool",
+      "timestamp": "2026-11-15T11:13:48.729Z",
+      "detail": {
+        "batch_id": "batch-0008",
+        "status": "ok"
+      }
+    },
+    {
+      "seq": 83,
+      "type": "candidate_validation_rejected",
+      "timestamp": "2026-11-15T11:13:48.728Z",
+      "detail": {
+        "batch_id": "batch-0008"
+      }
+    },
+    {
+      "seq": 82,
+      "type": "reconciliation",
+      "timestamp": "2026-11-15T11:13:48.536Z",
+      "detail": {}
+    },
+    {
+      "seq": 81,
+      "type": "candidate",
+      "timestamp": "2026-11-15T11:13:48.536Z",
+      "detail": {
+        "reason": "insert"
+      }
+    }
+  ],
+  "SSE": {
+    "HTTP": 200,
+    "content_type": "text/event-stream",
+    "received_seq": 92,
+    "received_type": "tool"
+  },
+  "initial_readonly_checkpoint": {
+    "observed_at_utc": "2026-11-15T11:09:52.903735+00:00",
+    "run_state": "extracting",
+    "completed": 0,
+    "total": 547,
+    "completed_batches": 0,
+    "total_batches": 24,
+    "candidate_count": 0,
+    "health_ms": 17,
+    "runs_api_ms": 7
+  },
+  "diagnosis": "First batch read tool succeeded then three provider requests each timed out after120 seconds with zero observed stream events/body bytes; later batches and persisted candidates advanced. No evidence of backend API/SSE deadlock. Existing UI lacks trustworthy in-flight request/retry/tool details and uses successful-batch count as if current batch index.",
+  "limits_unchanged": true,
+  "new_paid_calls_by_agent": 0,
+  "production_business_writes": 0
+}

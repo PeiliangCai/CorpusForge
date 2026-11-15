@@ -1,0 +1,16 @@
+{
+  "status": "cutover_error",
+  "started_at_utc": "2026-11-15T07:19:26.444419+00:00",
+  "paid_calls": 0,
+  "production_business_writes": 0,
+  "steps": [],
+  "BUILD_ID": "TTsFAMBKuqGe6oPPX7LuB",
+  "dist": "apps/pi-web/build/paragraph-glyph-table-values-validated-20261115",
+  "old_processes": {
+    "backend_pid": 71706,
+    "frontend_pid": 71742,
+    "frontend_wrapper_pid": 71735
+  },
+  "error_type": "PermissionError",
+  "error": "[Errno 13] Permission denied: '/proc/1/cwd'"
+}

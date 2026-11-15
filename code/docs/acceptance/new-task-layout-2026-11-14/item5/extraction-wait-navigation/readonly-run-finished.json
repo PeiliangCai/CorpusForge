@@ -1,0 +1,182 @@
+{
+  "observed_at_utc": "2026-11-15T11:24:09.512457+00:00",
+  "run_id": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6",
+  "ledger_halted": "experiment_input_token_limit",
+  "request_count": 62,
+  "total_actual_input": 1459582,
+  "conservative_accounted_input": 1768262,
+  "requests_with_missing_usage": 3,
+  "result_keys": [
+    "schema_version",
+    "run_id",
+    "document_id",
+    "model_id",
+    "reasoning_effort",
+    "strategy",
+    "source_selection_condition",
+    "batch_source_delivery",
+    "source_selection_digest",
+    "state",
+    "task_processing_complete",
+    "evidence_policy_version",
+    "source_evidence_unit_version",
+    "primary_assessment_policy_version",
+    "diagnostic_visual_scope_rule_version",
+    "normal_anatomic_scope_rule_version",
+    "primary_assessment_validation",
+    "medical_extraction_implemented",
+    "medical_quality_approved",
+    "human_gold_complete",
+    "full_gold_is_prerequisite",
+    "acceptance_method",
+    "approved_export_requires_each_record_confirmation",
+    "figure_discovery",
+    "summary_is_diagnostic_not_delivered_description",
+    "formal_model_selected",
+    "actual_Pi_SDK",
+    "original_pdf_uploads",
+    "delivery_validation",
+    "operation_limits",
+    "candidate_count",
+    "source_grouping_policy_version",
+    "unique_source_group_count",
+    "source_grouping_is_not_medical_deduplication",
+    "candidate_versions",
+    "summary_attempts",
+    "first_candidate_seconds",
+    "total_seconds",
+    "timing_scope",
+    "coverage",
+    "summary",
+    "error",
+    "ledger_totals",
+    "actual_cost",
+    "cost_status",
+    "resources",
+    "records",
+    "versions",
+    "events"
+  ],
+  "result_error": {
+    "type": "ContractError",
+    "code": "experiment_input_token_limit"
+  },
+  "task_processing_complete": false,
+  "coverage": {
+    "explicitly_completed_content_units": 304,
+    "explicitly_completed_input_unit_counts": {
+      "source_fragment": 66,
+      "text_item": 0,
+      "heading": 45,
+      "list_item": 0,
+      "paragraph": 190,
+      "caption": 3
+    },
+    "explicitly_completed_processing_units": 304,
+    "unselected_blocks_remain_not_explicitly_completed": true,
+    "explicitly_completed_source_blocks": 2342,
+    "whole_document_summary_complete": false,
+    "full_document_extraction_completed": false
+  },
+  "coverage_lists": {
+    "task_processing_blockers": {
+      "count": 3,
+      "sample": [
+        "selected_input_processing_incomplete",
+        "summary_incomplete",
+        "experiment_input_token_limit"
+      ]
+    },
+    "task_scope_unprocessed_source_block_ids": {
+      "count": 375,
+      "sample": [
+        "5c8a80474c756be4422e-p0026-l000053",
+        "5c8a80474c756be4422e-p0026-l000054",
+        "5c8a80474c756be4422e-p0026-l000055"
+      ]
+    },
+    "task_scope_failed_source_block_ids": {
+      "count": 253,
+      "sample": [
+        "5c8a80474c756be4422e-p0001-l000000",
+        "5c8a80474c756be4422e-p0001-l000001",
+        "5c8a80474c756be4422e-p0001-l000002"
+      ]
+    },
+    "failed_source_block_ids": {
+      "count": 253,
+      "sample": [
+        "5c8a80474c756be4422e-p0001-l000000",
+        "5c8a80474c756be4422e-p0001-l000001",
+        "5c8a80474c756be4422e-p0001-l000002"
+      ]
+    },
+    "unprocessed_source_block_ids": {
+      "count": 375,
+      "sample": [
+        "5c8a80474c756be4422e-p0026-l000053",
+        "5c8a80474c756be4422e-p0026-l000054",
+        "5c8a80474c756be4422e-p0026-l000055"
+      ]
+    },
+    "original_article_unprocessed_source_block_ids": {
+      "count": 375,
+      "sample": [
+        "5c8a80474c756be4422e-p0026-l000053",
+        "5c8a80474c756be4422e-p0026-l000054",
+        "5c8a80474c756be4422e-p0026-l000055"
+      ]
+    },
+    "parser_failed_pages": {
+      "count": 0,
+      "sample": []
+    }
+  },
+  "last_requests": [
+    {
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0019",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:21:36.976Z",
+      "finished_at": "2026-11-15T11:21:44.938Z",
+      "status": 200,
+      "error_code": null,
+      "usage_status": "provider_reported"
+    },
+    {
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0020",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:21:45.450Z",
+      "finished_at": "2026-11-15T11:21:59.178Z",
+      "status": 200,
+      "error_code": null,
+      "usage_status": "provider_reported"
+    },
+    {
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0020",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:21:59.218Z",
+      "finished_at": "2026-11-15T11:22:07.225Z",
+      "status": 200,
+      "error_code": null,
+      "usage_status": "provider_reported"
+    },
+    {
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0021",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:22:07.748Z",
+      "finished_at": "2026-11-15T11:22:15.400Z",
+      "status": 200,
+      "error_code": null,
+      "usage_status": "provider_reported"
+    },
+    {
+      "purpose": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6:batch-0021",
+      "attempt": 0,
+      "started_at": "2026-11-15T11:22:15.418Z",
+      "finished_at": "2026-11-15T11:22:26.499Z",
+      "status": 200,
+      "error_code": null,
+      "usage_status": "provider_reported"
+    }
+  ]
+}

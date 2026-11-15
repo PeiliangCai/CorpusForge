@@ -1,0 +1,1075 @@
+{
+  "schema_version": "new-task-run-isolation-documentation-sync-1",
+  "updated_at_utc": "2026-11-14T16:20:30.607035+00:00",
+  "status": "items1to3_user_approved_item4_scoped_engineering_verified_deployed_pending_user_review_item5_not_started",
+  "contract": "方案/子任务T1/开发计划.json#/current_run_isolation_and_model_consistency",
+  "engineering_report": "code/docs/acceptance/new-task-layout-2026-11-14/report.json",
+  "formal_reviews": {
+    "record": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/formal_review",
+    "shared_used": 3,
+    "limit": 3,
+    "local_counter": false,
+    "new_formal_reviews_for_document_sync": 0,
+    "latest_root_review": "判断：继续。风险：1.迟到响应覆盖当前任务；2.历史来源缺失时误借最新资料；3.参数固定误当完全同答保证。"
+  },
+  "scope": {
+    "files": [
+      "方案/子任务T1/开发计划.json",
+      "方案/子任务T1/当前版本.json",
+      "方案/子任务T1/质量与性能验收契约.json",
+      "方案/子任务T1/开发任务清单.csv",
+      "方案/子任务T1/开发阶段与验收.csv",
+      "方案/子任务T1/待讨论实现决策.csv",
+      "方案/子任务T1/验收清单.csv",
+      "方案/子任务T1/T1智能体开发计划.docx",
+      "方案/子任务T1/T1开发执行说明.docx"
+    ],
+    "current_task_id": "T1-R31",
+    "existing_acceptance_id": "F09",
+    "new_current_acceptance_gate": false,
+    "previous_item3_task_id": "T1-R30",
+    "future_storage_task_id": "T1-F02"
+  },
+  "confirmed_basis": [
+    "用户最新“审核通过，继续下一项”；第1至3项均已用户审核通过，当前仅处理第4项。",
+    "沿用F09独立run边界，R31仅当前限定修复跟踪；原五项报错节点正式审查3/3继续，不再新增或重置。",
+    "用户已选择保留Luna medium，稳定工程输入及兼容参数；保持Responses/现行额度，不发送temperature/top_p/seed，不复用旧结果冒充新run，不承诺完全同答。"
+  ],
+  "item_review_state": "按原五项逐项复核：第1项布局、第2项独立任务标题/完整PDF内容去重及第3项移除显式复用/再次抽取入口均已获用户审核通过；第4项前端精确run定位、来源/历史绑定和迟到SSE隔离已完成限定工程核验并同构建上线，待用户审核第4项；既有后端run隔离及冻结模型参数/工程输入构造已核验，未复现数据库records合并，未证明真实模型多次完全同答或医学效果提高。用户选择保留Luna medium/Responses与现行额度，不发送temperature/top_p/seed。第5项summary完成条件尚未开展；T1-F02仍后续未实现。",
+  "implementation_and_deployment_verification": {
+    "item3": "user_approved_scoped_engineering_deployed",
+    "item4": "scoped_engineering_verified_deployed_pending_user_item4_review",
+    "model_runtime_configuration_changed": false
+  },
+  "validation": {
+    "status": "passed_document_structure_and_preservation_only",
+    "checks": [
+      {
+        "file": "方案/子任务T1/开发计划.json",
+        "json_parse": "passed",
+        "changed_existing_top_level_fields": [
+          "tasks",
+          "decisions",
+          "current_document_fingerprints",
+          "current_workbench_experience",
+          "current_task_title_pdf_identity",
+          "current_reuse_entry_removal"
+        ],
+        "added_current_top_level_field": "current_run_isolation_and_model_consistency",
+        "unchanged_existing_top_level_fields": 75,
+        "historical_budget_formal_review_model_runtime_future_storage_and_item3_engineering_objects": "preserved"
+      },
+      {
+        "file": "方案/子任务T1/当前版本.json",
+        "json_parse": "passed",
+        "changed_existing_top_level_fields": [
+          "current_document_fingerprints",
+          "current_workbench_experience",
+          "current_task_title_pdf_identity",
+          "current_reuse_entry_removal"
+        ],
+        "added_current_top_level_field": "current_run_isolation_and_model_consistency",
+        "unchanged_existing_top_level_fields": 93,
+        "historical_budget_formal_review_model_runtime_future_storage_and_item3_engineering_objects": "preserved"
+      },
+      {
+        "file": "方案/子任务T1/质量与性能验收契约.json",
+        "json_parse": "passed",
+        "changed_existing_top_level_fields": [
+          "functional_invariants",
+          "current_document_fingerprints",
+          "current_workbench_experience",
+          "current_task_title_pdf_identity",
+          "current_reuse_entry_removal"
+        ],
+        "added_current_top_level_field": "current_run_isolation_and_model_consistency",
+        "unchanged_existing_top_level_fields": 69,
+        "historical_budget_formal_review_model_runtime_future_storage_and_item3_engineering_objects": "preserved"
+      },
+      {
+        "file": "方案/子任务T1/开发任务清单.csv",
+        "csv_parse_shape_unique_ids": "passed",
+        "changed_rows": [
+          "T1-R13",
+          "T1-R29",
+          "T1-R30"
+        ],
+        "new_rows": [
+          "T1-R31"
+        ],
+        "other_rows_preserved_exactly": 28
+      },
+      {
+        "file": "方案/子任务T1/开发阶段与验收.csv",
+        "csv_parse_shape_unique_ids": "passed",
+        "changed_rows": [
+          "S5"
+        ],
+        "new_rows": [],
+        "other_rows_preserved_exactly": 7
+      },
+      {
+        "file": "方案/子任务T1/待讨论实现决策.csv",
+        "csv_parse_shape_unique_ids": "passed",
+        "changed_rows": [
+          "D02",
+          "D20"
+        ],
+        "new_rows": [],
+        "other_rows_preserved_exactly": 23
+      },
+      {
+        "file": "方案/子任务T1/验收清单.csv",
+        "csv_parse_shape_unique_ids": "passed",
+        "changed_rows": [
+          "F09",
+          "F15"
+        ],
+        "new_rows": [],
+        "other_rows_preserved_exactly": 33
+      },
+      {
+        "file": "方案/子任务T1/T1智能体开发计划.docx",
+        "zip_crc_all_xml": "passed",
+        "other_zip_parts_preserved_exactly": 14,
+        "original_document_xml_exactly_reconstructable": true,
+        "precise_body_phrase_changes": 4,
+        "appended_item4_paragraphs": 4,
+        "visual_pagination_reviewed": false,
+        "original_document_xml_sha256": "b03966524254c186951b14b25b14f9ba0fad8f91588776c519261ca6c9183277",
+        "current_document_xml_sha256": "4d27508b493eb0f91c5aa23105834dc8245ed474accd0f46a64aa16f5968a466"
+      },
+      {
+        "file": "方案/子任务T1/T1开发执行说明.docx",
+        "zip_crc_all_xml": "passed",
+        "other_zip_parts_preserved_exactly": 14,
+        "original_document_xml_exactly_reconstructable": true,
+        "precise_body_phrase_changes": 4,
+        "appended_item4_paragraphs": 4,
+        "visual_pagination_reviewed": false,
+        "original_document_xml_sha256": "890c3429bedb5fc1a7f999ae2691b86894453afab3551dd5fea4c50d12de8604",
+        "current_document_xml_sha256": "3630135c2532baede8aa5fc30a31fe61791fe8b30e8ac35b4f0c98d3599323fd"
+      }
+    ],
+    "errors": [],
+    "cross_document_checks": {
+      "item3_user_approved": true,
+      "F09_reused_no_new_gate": true,
+      "strict_same_answer_guaranteed": false,
+      "item5_started": false,
+      "future_storage_implemented_or_current_gate": false,
+      "model_parameter_choice_confirmed_keep_medium_no_sampling_change": true,
+      "R31_and_F09_current_increment_engineering_deployed_user_review_pending": true,
+      "no_new_model_runtime_change": true,
+      "same_input_cross_date_real_sdk_wire_verified_not_full_model_same_answer": true,
+      "three_current_JSON_contracts_equal": true,
+      "R31_F09_JSON_and_CSV_statuses_match": true,
+      "R31_engineering_complete_user_acceptance_pending": true,
+      "unrelated_task_decision_invariant_entries_preserved": true,
+      "original_medical_stage_and_future_storage_scopes_preserved": true,
+      "current_contract_has_no_stale_pending_parameter_or_deployment_state": true,
+      "old_reviews_2of3_in_DOCX_explicitly_labeled_historical": true
+    }
+  },
+  "preservation": "第2/3项完整同步记录、JSON历史/预算/正式审查/实际模型配置及第3项工程对象保持；CSV未列修改行逐字节保持；DOCX原XML可精确逆向还原，其余ZIP部件逐字节保持。",
+  "limits": [
+    "第1至3项已用户审核通过，第4项限定工程已验并同构建上线、待用户审核；第5项未开始。",
+    "已复现并修复的是UI任务定位/来源回退/SSE边界，未复现数据库records合并；既有后端隔离仅作相关核验，不声称排除用户观察的所有成因。",
+    "10项导航及真实已安装SDK传输回归通过，包含以2026-11-01和2040-06-01模拟Date的对照：相同模型可见输入时请求体一致，未注入时钟字段，cwd固定。这是对既有冻结参数和输入构造的工程核验，产品模型runtime未改；完整summary保留必要run/source_binding等隔离ID，跨run输入可能不同，不宣称全流程/多轮输入输出完全一致、真实模型准确性或一致性提高，也未做新增付费AGICTO兼容性或医学验证。",
+    "用户已选择“保留 Luna medium，先稳定工程输入与兼容参数（推荐）”：保持已确认AGICTO gpt-6-luna medium/Responses、不可变模型快照及现行额度，不发送temperature/top_p/seed，不跨run缓存旧结果冒充新抽取，不能保证多次回答完全相同。工程输入固定只针对可控制且语义相同的内容；summary必要run/source_binding等隔离ID保留，不为追求逐字一致抹掉归属信息。",
+    "生产业务写入/导出请求/新增付费调用均0；T1-F02仍未来未实现，医学及完整S2/S6/S7、旧预算和历史证据保持。",
+    "首轮exact locator将同alert的重试按钮计入而失败；修正检查器后同产品/同BUILD复验4组通过，历史诊断保留于主报告，不是当前产品失败。",
+    "DOCX ZIP/XML与原内容保全已验，无Word渲染器，未目视分页。"
+  ],
+  "baseline_sha256": {
+    "方案/子任务T1/开发计划.json": "264c192ceeda5b5c948be4b339cae1d757170c686b7b61409c20fd5d27c7d23f",
+    "方案/子任务T1/当前版本.json": "38dff6d927281ed7e5ebb712df8a1e614c58366ba76b24f95805202c9777ddfd",
+    "方案/子任务T1/质量与性能验收契约.json": "20437d35ea1966536805122c8312a536f790dd04ed2a651b86da7167247da205",
+    "方案/子任务T1/开发任务清单.csv": "51c5a26fa42ff6418d4b1b35284ec93c8fd3f8e5893b83395d490c2209801cb1",
+    "方案/子任务T1/开发阶段与验收.csv": "87e135689dd0b4179829965ec4c95092008ed1d29bf0875a3f02e9ae20124e35",
+    "方案/子任务T1/待讨论实现决策.csv": "92a0ebfa394056c88c3a78e8ebaedb46d3ee0a4c6e5b4c7b47768c404063e2b0",
+    "方案/子任务T1/验收清单.csv": "dae4f6f7bd635140469c305bc8143661f039ede280696b172697096e289c960d",
+    "方案/子任务T1/T1智能体开发计划.docx": "1665b62e46c51c88d2f435bcb4474797cc641a900e52814941ab1760147425d4",
+    "方案/子任务T1/T1开发执行说明.docx": "d1251352fa8eae2dc33efe3d475f997f5da90c2ab99aa85649206da865b9a11d"
+  },
+  "current_file_sha256": {
+    "方案/子任务T1/开发计划.json": "9be38495f5ac4ec5a45a1fc3f72fb6ad002d5bcc5febb338085a114de93ad6f0",
+    "方案/子任务T1/当前版本.json": "6144331fa9d188ae7a0b12bf74bd7defd994deda2998b8fd82080a697285bf92",
+    "方案/子任务T1/质量与性能验收契约.json": "833e39f5471ad92a173a5778d951b2ecb4ca76ad569b235d4328ade989533c7f",
+    "方案/子任务T1/开发任务清单.csv": "6eab1c3cd7b26fd85780263d4ca52a34e148fe5ece607a24af48356ca97e7d3d",
+    "方案/子任务T1/开发阶段与验收.csv": "45716f80aca754ade1f5069158a0e3a46585afc19d6bf823829b653b15fb8fdf",
+    "方案/子任务T1/待讨论实现决策.csv": "7f3a8cd90e1e9f50198830a73b054c402405966d2b41312914861d83560fdc73",
+    "方案/子任务T1/验收清单.csv": "86adbc46244a7b000d3a935946d770c3070811a3ef81e06a6e9d77d79cbfe6c2",
+    "方案/子任务T1/T1智能体开发计划.docx": "756da3694a35ed6286159450328d61bd53cd27169eb7e87f95cd4ed09d72ebd4",
+    "方案/子任务T1/T1开发执行说明.docx": "a44d8b615c75aad646c747c47c700a86cf70e89952a241eef06af2028a99e74d"
+  },
+  "cleanup": {
+    "own_temporary_directory": "code/runtime-data/agent-notes/run-isolation-docs-20261114",
+    "pending_final_evidence_and_handoff": false,
+    "own_temporary_baseline_and_scripts_removed": true,
+    "other_files_or_permanent_rules_removed": false,
+    "completed_at_utc": "2026-11-14T16:20:30.607024+00:00"
+  },
+  "engineering_evidence": {
+    "item4": {
+      "record": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/item4",
+      "checks": {
+        "navigation_and_sdk_transport": {
+          "passed": 10,
+          "failed": 0,
+          "log": "docs/acceptance/new-task-layout-2026-11-14/item4-unit-transport.log"
+        },
+        "backend_same_pdf_run_isolation": {
+          "passed": 1,
+          "failed": 0,
+          "log": "docs/acceptance/new-task-layout-2026-11-14/item4-backend-reproduction.log"
+        },
+        "root_typecheck": "passed_exit_0",
+        "web_typecheck": "passed_exit_0",
+        "touched_lint": "passed_exit_0_zero_warnings",
+        "isolated_build": "passed_exit_0",
+        "browser_same_build": {
+          "passed": 8,
+          "failed": 0,
+          "log": "docs/acceptance/new-task-layout-2026-11-14/item4-browser-after.log"
+        }
+      },
+      "BUILD_ID": "zSHx4g4SHXphtO9icZvXV",
+      "dist": "apps/pi-web/build/run-isolation-validated-20261114",
+      "live_readonly_record": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/item4/live_readonly",
+      "live_readonly": {
+        "status": "passed",
+        "BUILD_ID": "zSHx4g4SHXphtO9icZvXV",
+        "checks": [
+          {
+            "name": "same_validated_build_and_existing_exact_run_count",
+            "status": "passed"
+          },
+          {
+            "name": "historical_link_maps_to_its_real_run_and_task_owned_figure_urls",
+            "status": "passed"
+          },
+          {
+            "name": "unavailable_exact_run_remains_selected_without_other_task_results",
+            "status": "passed"
+          },
+          {
+            "name": "desktop_and_390px_preserve_the_same_task_and_result_count",
+            "status": "passed"
+          }
+        ],
+        "errors": [],
+        "blocked": [],
+        "production_business_writes": 0,
+        "paid_calls": 0,
+        "exports_requested": 0
+      },
+      "deployment_record": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/item4/deployment",
+      "deployment": {
+        "status": "frontend_only_same_validated_build_deployed_and_GET_HEAD_verified",
+        "started_at_utc": "2026-11-14T16:10:51.428539+00:00",
+        "completed_at_utc": "2026-11-14T16:17:18.288896+00:00",
+        "frontend_pid": 164399,
+        "frontend_wrapper_pid": 164392,
+        "backend_pid": 148878,
+        "backend_restart": false,
+        "backend_start_ticks_unchanged": true,
+        "business_run_count_before": 8,
+        "business_run_count_after": 8,
+        "paper_count_before": 8,
+        "paper_count_after": 8,
+        "logical_table_count": 17,
+        "comparisons": {
+          "backend_process": true,
+          "api_sha256": true,
+          "tables": true,
+          "config_sha256": true,
+          "backend_source_sha256": true,
+          "artifacts": true
+        },
+        "integrity": "ok",
+        "foreign_key_errors": 0,
+        "artifacts_before": {
+          "files": 43,
+          "sha256": "50a6024ef698ceb17ad992f12e04ef89cabc353d5075f980bec43600576d03e8"
+        },
+        "artifacts_after": {
+          "files": 43,
+          "sha256": "50a6024ef698ceb17ad992f12e04ef89cabc353d5075f980bec43600576d03e8"
+        },
+        "production_business_writes": 0,
+        "exports_requested": 0,
+        "paid_model_calls": 0,
+        "historical_rows_merged_or_deleted": false
+      },
+      "scope": "修复UI任务定位、来源/历史与SSE隔离；后端和模型runtime未改，仅核验既有run隔离、冻结参数与工程输入构造；不认证模型完全同答或医学效果。"
+    },
+    "item3_preserved": "#/historical_item3_documentation_sync/record/engineering_evidence",
+    "item2_preserved": "#/historical_item2_documentation_sync/record/engineering_evidence",
+    "model_transport": {
+      "navigation_and_sdk_transport_cases_passed": 10,
+      "scope": "10项导航及真实已安装SDK传输回归通过，包含以2026-11-01和2040-06-01模拟Date的对照：相同模型可见输入时请求体一致，未注入时钟字段，cwd固定。这是对既有冻结参数和输入构造的工程核验，产品模型runtime未改；完整summary保留必要run/source_binding等隔离ID，跨run输入可能不同，不宣称全流程/多轮输入输出完全一致、真实模型准确性或一致性提高，也未做新增付费AGICTO兼容性或医学验证。",
+      "simulated_dates": [
+        "2026-11-01",
+        "2040-06-01"
+      ],
+      "identical_real_sdk_request_bodies_for_same_model_visible_input": true,
+      "dynamic_clock_in_model_prompt": false,
+      "runtime_configuration_changed": false,
+      "source": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/item4/model_parameters"
+    },
+    "item4_pre_fix_reproduction": {
+      "status": "historical_pre_fix_reproduction_preserved",
+      "summary": "修复前已实际复现前端问题：显式无效/已删除run深链被替换为其它run；精确run详情加载或失败时借用paper.latest_source；已知history也借用论文最新来源。同PDF的3个隔离无模型run分别1/2/0条，故意重叠record_id，其API、版本、图片URL、事件、保留与导出隔离检查通过；线上8run只读核对亦未复现records合并。这些仅确定已复现的UI路径，不证明用户观察的所有成因均已排除。",
+      "navigation_failure_log": "code/docs/acceptance/new-task-layout-2026-11-14/item4-navigation-before.log",
+      "no_model_backend_isolation_log": "code/docs/acceptance/new-task-layout-2026-11-14/item4-backend-reproduction.log",
+      "frontend_loading_source_reproduction": "reproduced",
+      "database_records_merge_reproduced": false,
+      "browser_failure_log": "code/docs/acceptance/new-task-layout-2026-11-14/item4-browser-before.log",
+      "scope": "修复前实证原样说明已复现UI路径；API隔离实证不证明用户观察的所有成因均已排除。"
+    }
+  },
+  "source_evidence": {
+    "report": "code/docs/acceptance/new-task-layout-2026-11-14/report.json",
+    "item3_user_review": "user_approved",
+    "item4_status": "scoped_engineering_verified_deployed_pending_user_item4_review",
+    "source_of_diagnosis": "主会话及/root/run_isolation_step4提交的隔离无模型回归日志；文档执行者不重复产品测试。",
+    "formal_reviews": "original five items shared3/3; error-reproduction review continues; no new document-local review",
+    "user_model_choice": "保留 Luna medium，先稳定工程输入与兼容参数（推荐）",
+    "item4_user_review": "pending_not_user_accepted",
+    "item4_BUILD_ID": "zSHx4g4SHXphtO9icZvXV",
+    "item4_live_readonly_status": "passed",
+    "model_runtime_changed": false,
+    "live_harness_diagnostic": "首轮exact locator将同alert的重试按钮计入而失败；修正检查器后同产品/同BUILD复验4组通过，历史诊断保留于主报告，不是当前产品失败。"
+  },
+  "historical_item2_documentation_sync": {
+    "scope": "第2项原时点文档/工程核验快照；其中current_file_sha256是该历史快照指纹，不代表第3项变更后的当前文件。",
+    "snapshot_sha256": "a4f50c2c726711023660e3da8d7fb6241a2da15865eb3a4894f1e8083e088a94",
+    "record": {
+      "schema_version": "new-task-identity-documentation-sync-1",
+      "updated_at_utc": "2026-11-14T14:51:47.654168+00:00",
+      "status": "final_documentation_verified_scoped_engineering_deployed_pending_user_item2_review",
+      "contract": "方案/子任务T1/开发计划.json#/current_task_title_pdf_identity",
+      "engineering_report": "code/docs/acceptance/new-task-layout-2026-11-14/report.json",
+      "formal_reviews": {
+        "record": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/formal_review",
+        "local_counter": false
+      },
+      "scope": {
+        "files": [
+          "方案/子任务T1/开发计划.json",
+          "方案/子任务T1/当前版本.json",
+          "方案/子任务T1/质量与性能验收契约.json",
+          "方案/子任务T1/开发任务清单.csv",
+          "方案/子任务T1/开发阶段与验收.csv",
+          "方案/子任务T1/待讨论实现决策.csv",
+          "方案/子任务T1/验收清单.csv",
+          "方案/子任务T1/T1智能体开发计划.docx",
+          "方案/子任务T1/T1开发执行说明.docx"
+        ],
+        "new_task_id": "T1-R29",
+        "new_engineering_acceptance_ids": [
+          "F19",
+          "F20",
+          "F21"
+        ]
+      },
+      "confirmed_basis": [
+        "用户明确确认按完整PDF内容去重，同内容复用PDF/论文身份，仍可独立新建抽取任务；同次相同内容只留一份，不同内容版本保留。",
+        "用户明确确认一次提交一个任务标题；单篇属于run，批量属于batch_id整批，首次开始与范围/模型冻结，标题不修改论文来源身份。"
+      ],
+      "item_review_state": "2026-11-14按五项逐项复核：第1项布局用户已通过；第2项独立任务标题及完整PDF内容去重已完成限定工程核验、同构建上线和最终GET/HEAD只读核验，待用户审核，尚不记为用户已通过；原第3项删除“复用已上传论文”功能仍待用户审核决定，原第4项结果隔离疑问/模型稳定性与第5项summary完成条件尚未开展。当前保留复用入口，本轮不实施存储管理、自动清理或批次整体删除。",
+      "implementation_and_deployment_verification": "scoped_engineering_verified_deployed_pending_user_item2_review",
+      "validation": {
+        "status": "passed",
+        "checks": [
+          {
+            "file": "方案/子任务T1/开发计划.json",
+            "json_parse": "passed",
+            "untouched_original_top_level_fields": 72,
+            "allowed_changed_fields": [
+              "current_document_fingerprints",
+              "current_requirement_formal_reviews",
+              "decisions",
+              "tasks"
+            ],
+            "all_original_history_budget_review_objects": "preserved",
+            "prior_current_rules_and_metadata": "archived_verbatim_and_unchanged_during_finalization"
+          },
+          {
+            "file": "方案/子任务T1/当前版本.json",
+            "json_parse": "passed",
+            "untouched_original_top_level_fields": 87,
+            "allowed_changed_fields": [
+              "current_batch_submission",
+              "current_document_fingerprints",
+              "current_folder_task_types",
+              "current_requirement_formal_reviews",
+              "current_retention_workflow"
+            ],
+            "all_original_history_budget_review_objects": "preserved",
+            "prior_current_rules_and_metadata": "archived_verbatim_and_unchanged_during_finalization"
+          },
+          {
+            "file": "方案/子任务T1/质量与性能验收契约.json",
+            "json_parse": "passed",
+            "untouched_original_top_level_fields": 64,
+            "allowed_changed_fields": [
+              "current_document_fingerprints",
+              "current_requirement_formal_reviews",
+              "fixed_evidence_invariants",
+              "functional_invariants"
+            ],
+            "all_original_history_budget_review_objects": "preserved",
+            "prior_current_rules_and_metadata": "archived_verbatim_and_unchanged_during_finalization"
+          },
+          {
+            "file": "方案/子任务T1/开发任务清单.csv",
+            "csv_parse_shape_and_unique_ids": "passed",
+            "untouched_original_rows_and_bytes": 27,
+            "allowed_original_rows_changed": [
+              "T1-R13"
+            ],
+            "new_rows": [
+              "T1-R29"
+            ]
+          },
+          {
+            "file": "方案/子任务T1/开发阶段与验收.csv",
+            "csv_parse_shape_and_unique_ids": "passed",
+            "untouched_original_rows_and_bytes": 7,
+            "allowed_original_rows_changed": [
+              "S5"
+            ],
+            "new_rows": []
+          },
+          {
+            "file": "方案/子任务T1/待讨论实现决策.csv",
+            "csv_parse_shape_and_unique_ids": "passed",
+            "untouched_original_rows_and_bytes": 24,
+            "allowed_original_rows_changed": [
+              "D20"
+            ],
+            "new_rows": []
+          },
+          {
+            "file": "方案/子任务T1/验收清单.csv",
+            "csv_parse_shape_and_unique_ids": "passed",
+            "untouched_original_rows_and_bytes": 29,
+            "allowed_original_rows_changed": [
+              "F02",
+              "F09"
+            ],
+            "new_rows": [
+              "F19",
+              "F20",
+              "F21"
+            ]
+          },
+          {
+            "file": "方案/子任务T1/T1智能体开发计划.docx",
+            "zip_crc_and_all_xml": "passed",
+            "xml_parts_opened_and_parsed": 15,
+            "other_zip_parts_preserved_exactly": 14,
+            "original_document_xml_exactly_reconstructable": true,
+            "precise_body_phrase_changes": 5,
+            "appended_current_rule_and_final_evidence_paragraphs": 6,
+            "before_document_xml_sha256": "5ecff350d27c6cf7a5fff8192feef75be7dc45abe87e3f878be9d0c12e8f71a6",
+            "after_document_xml_sha256": "0111f9363f82e029024a42de3ce50350ba282b7ef7d7ff49dce9a199fb1d4720",
+            "visual_pagination_reviewed": false
+          },
+          {
+            "file": "方案/子任务T1/T1开发执行说明.docx",
+            "zip_crc_and_all_xml": "passed",
+            "xml_parts_opened_and_parsed": 15,
+            "other_zip_parts_preserved_exactly": 14,
+            "original_document_xml_exactly_reconstructable": true,
+            "precise_body_phrase_changes": 7,
+            "appended_current_rule_and_final_evidence_paragraphs": 6,
+            "before_document_xml_sha256": "358d5453c054b145ee68528c24c49aa801b06ccb5cde4062921bd7199ff60e1f",
+            "after_document_xml_sha256": "6b77ca9c025b5b5c57705407dccc6dc12786a3054d4635a860fc8450e640cfb1",
+            "visual_pagination_reviewed": false
+          }
+        ],
+        "errors": [],
+        "cross_document_checks": {
+          "F19_F20_F21_JSON_CSV_rule_and_status_match": "passed",
+          "task_title_original_filename_not_added_to_EvidenceRecord_fields": "passed",
+          "obsolete_active_relative_path_title_and_reupload_semantics": "none_except_explicit_superseded_history",
+          "F19_F20_F21_JSON_CSV_measurement_match": "passed",
+          "user_item2_review_not_promoted_to_acceptance": "passed"
+        }
+      },
+      "preservation": "JSON历史/预算/审查子树未改；被替换的现行规则、指纹和审查引用原对象归档；CSV除明确列出的现行行外保留原字节；DOCX逆向还原与所有其它ZIP部件逐字节核对通过。",
+      "limits": [
+        "当前结论为限定工程已验并上线、待用户审核第2项；原3–5未开展，原复用入口保留，不实施存储管理/自动清理/批次整体删除。",
+        "新上传/Start/重新解析只在隔离fixture验证；生产最后核验仅GET/HEAD，未做真实新增模型调用或完整抽取套件，不提升医学准确率、S6或S7结论。",
+        "无Word/LibreOffice渲染环境，DOCX逐部件打开/CRC/XML与原内容保全通过，未目视分页。",
+        "文档执行者未触达外部服务、密钥或付费API，未修改应用、工程README、主report或他人运行数据。"
+      ],
+      "baseline_sha256": {
+        "方案/子任务T1/开发计划.json": "0593626c857fb46e31df975a32b8b4d35c7134fe1dc3c16a0d98122e38fc1a44",
+        "方案/子任务T1/当前版本.json": "aade788474462ceb3710ff6e2cf148ab0d20cda80afa2d6228320dee60feb0ce",
+        "方案/子任务T1/质量与性能验收契约.json": "2d167efe03458bf016fbaa7745186ff1cbf9552ad5a475bfb266c93e661266ec",
+        "方案/子任务T1/开发任务清单.csv": "6c9bb8f40ae1f154368b2bd0b72e5e3339fc53605a05bc9f074b711d9118309b",
+        "方案/子任务T1/开发阶段与验收.csv": "e4da5bef94326954d660dd61ca7969f0d3261f7dbf518bb733eae9c7804fb9a3",
+        "方案/子任务T1/待讨论实现决策.csv": "4f72e29d4ae51f8852d98eef2e84dcdf6b986c18fb563cec92c6ac709f51ee40",
+        "方案/子任务T1/验收清单.csv": "93344a7adaee39d27b34b198c45390ac3ded83779b2db68d405176f3b8351bcb",
+        "方案/子任务T1/T1智能体开发计划.docx": "6c5c53ddf86ef4a9eeaa737f563698400745fda4b087cbab4bdd339cdbdb4ef9",
+        "方案/子任务T1/T1开发执行说明.docx": "af4b24729571e57ea8c17ff1ead14439fac6df7899b63b3e347c6bb50604a762"
+      },
+      "current_file_sha256": {
+        "方案/子任务T1/开发计划.json": "e123b189d8d6bf7d7984da1aff1dcb5071dddd94f2003637a268c28eff10e9e9",
+        "方案/子任务T1/当前版本.json": "b950ccb3db555206d6229cfeea343f04e287c4d5c9923ebc12804db6e5e56f8f",
+        "方案/子任务T1/质量与性能验收契约.json": "d1596baddee147e896bb0abe048fed075d721deff06ca3a6f4be2ada66fc7a2d",
+        "方案/子任务T1/开发任务清单.csv": "dd2fcd3570441ad22cde5de56d67afafc7df459db8dc8fa38a3a5a41b7091886",
+        "方案/子任务T1/开发阶段与验收.csv": "7a6f608b24901a55ff3f74c0ff801039b55c85142bf20b7b86bc37134bebf6e0",
+        "方案/子任务T1/待讨论实现决策.csv": "eec717ce2a0e5e09b273b3299a32bfd799c637de2aaaabad7acfb8e782e64797",
+        "方案/子任务T1/验收清单.csv": "01075f968d08cb652490da9e0819327ba29da7216716f35544be94eebef6642c",
+        "方案/子任务T1/T1智能体开发计划.docx": "7c0a2464b89a5c40d7576e5d7e4679f743dd1e134353b32b3f015129d2b7a751",
+        "方案/子任务T1/T1开发执行说明.docx": "22dab9c9d66e5a6e816cc583a74626cdd2f665b2ff5d0c667b4911fab4897fc3"
+      },
+      "cleanup": {
+        "own_temporary_directory": "code/runtime-data/agent-notes/task-identity-docs-20261114",
+        "pending_final_evidence_and_handoff": false,
+        "own_temporary_baseline_and_scripts_removed": true,
+        "other_files_or_permanent_rules_removed": false,
+        "completed_at_utc": "2026-11-14T14:51:47.656083+00:00"
+      },
+      "engineering_evidence": {
+        "record": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/item2/correction",
+        "backend_checks": 20,
+        "frontend_helper_checks": 8,
+        "same_build_isolated_browser_groups": 5,
+        "typecheck": "root_and_web_passed",
+        "touched_lint": "passed_zero_warnings",
+        "production_build": "passed",
+        "BUILD_ID": "cYfgrEAWO7KngOnOkePsg",
+        "dist": "apps/pi-web/build/task-identity-dedup-validated-20261114",
+        "live_get_head_checks": 3,
+        "live_status": "passed",
+        "live_source": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/item2/correction/live_readonly",
+        "deployment": "deployed_30141_3210_after_double_idle_guard",
+        "preservation": "17表逻辑hash、两份env/配置、43个workbench产物及业务GET列表保持，8个原run未中断，integrity ok/外键0；只指受控切换与只读核验窗口。",
+        "paid_model_calls": 0,
+        "production_business_writes": 0,
+        "production_exports_requested": 0,
+        "limitations": "新增上传/Start/重新解析仅隔离fixture验证；未做真实新模型或完整抽取套件，单后台实例并发保证，不迁并历史paper/run、不清理存储、不推进原3–5或医学/S6/S7。"
+      },
+      "source_evidence": {
+        "report": "code/docs/acceptance/new-task-layout-2026-11-14/report.json",
+        "main_correction_status_at_check": "authorized_safe_cutover_in_progress",
+        "live_get_head_status": "passed",
+        "live_errors": [],
+        "live_blocked": [],
+        "current_BUILD_ID": "cYfgrEAWO7KngOnOkePsg",
+        "formal_review_record": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/formal_review",
+        "formal_review_count_from_report": "2/3 shared across the original five items; no document-local review",
+        "rollout_confirmation": "主会话与主实施者已共同确认双空闲守卫部署及17表/env/配置/43产物/8run保全；本记录只引用统一report，不另写部署报告。"
+      },
+      "finalization_changed_files": [
+        "方案/子任务T1/开发计划.json",
+        "方案/子任务T1/当前版本.json",
+        "方案/子任务T1/质量与性能验收契约.json",
+        "方案/子任务T1/开发任务清单.csv",
+        "方案/子任务T1/开发阶段与验收.csv",
+        "方案/子任务T1/验收清单.csv",
+        "方案/子任务T1/T1智能体开发计划.docx",
+        "方案/子任务T1/T1开发执行说明.docx"
+      ]
+    }
+  },
+  "historical_item3_documentation_sync": {
+    "scope": "第3项上线时点完整同步记录；当时用户审核待完成/原4至5未开展属历史状态，原对象不改。",
+    "snapshot_sha256": "64354d7a175523fe6e617d6bec82c0f01f1f28694f03285967c4568cb40f01b1",
+    "record": {
+      "schema_version": "new-task-identity-documentation-sync-1",
+      "updated_at_utc": "2026-11-14T15:18:23.124547+00:00",
+      "status": "final_item3_engineering_deployed_user_review_pending_item2_approved_future_storage_unimplemented",
+      "contract": "方案/子任务T1/开发计划.json#/current_reuse_entry_removal",
+      "engineering_report": "code/docs/acceptance/new-task-layout-2026-11-14/report.json",
+      "formal_reviews": {
+        "record": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/formal_review",
+        "local_counter": false
+      },
+      "scope": {
+        "files": [
+          "方案/子任务T1/开发计划.json",
+          "方案/子任务T1/当前版本.json",
+          "方案/子任务T1/质量与性能验收契约.json",
+          "方案/子任务T1/开发任务清单.csv",
+          "方案/子任务T1/开发阶段与验收.csv",
+          "方案/子任务T1/待讨论实现决策.csv",
+          "方案/子任务T1/验收清单.csv",
+          "方案/子任务T1/T1智能体开发计划.docx",
+          "方案/子任务T1/T1开发执行说明.docx"
+        ],
+        "current_task_id": "T1-R30",
+        "future_task_id": "T1-F02",
+        "revised_current_acceptance_id": "F15",
+        "new_current_acceptance_gate": false
+      },
+      "confirmed_basis": [
+        "用户已审核通过第2项并要求继续第3项，移除冗余显式复用前端入口；后台自动PDF内容复用保留。",
+        "用户明确要求将服务器PDF/解析产物持续累积占空间的处理功能记录为后续实现；本次不实施或删除文件。"
+      ],
+      "item_review_state": "2026-11-14按五项逐项复核：第1项布局及第2项独立任务标题/完整PDF内容去重均已获用户审核通过；第3项显式复用及同功能前端入口已移除，统一选择/上传PDF创建任务，后台同内容自动复用保留，限定工程已验并同构建上线，待用户审核第3项；原第4项结果隔离疑问/模型稳定性与第5项summary完成条件尚未开展。T1-F02存储管理与安全清理仅登记后续，当前未实现，不在本次删除文件。",
+      "implementation_and_deployment_verification": "scoped_engineering_verified_deployed_pending_user_item3_review",
+      "validation": {
+        "status": "passed",
+        "checks": [
+          {
+            "file": "方案/子任务T1/开发计划.json",
+            "json_parse": "passed",
+            "unchanged_original_top_level_fields": 72,
+            "allowed_current_fields_changed": [
+              "current_document_fingerprints",
+              "current_task_title_pdf_identity",
+              "current_workbench_experience",
+              "decisions",
+              "future_extensions",
+              "tasks"
+            ],
+            "historical_budget_review_and_item2_engineering_facts": "preserved",
+            "future_storage_unimplemented_and_nonblocking": true
+          },
+          {
+            "file": "方案/子任务T1/当前版本.json",
+            "json_parse": "passed",
+            "unchanged_original_top_level_fields": 89,
+            "allowed_current_fields_changed": [
+              "current_batch_submission",
+              "current_document_fingerprints",
+              "current_folder_task_types",
+              "current_task_title_pdf_identity",
+              "current_workbench_experience"
+            ],
+            "historical_budget_review_and_item2_engineering_facts": "preserved",
+            "future_storage_unimplemented_and_nonblocking": true
+          },
+          {
+            "file": "方案/子任务T1/质量与性能验收契约.json",
+            "json_parse": "passed",
+            "unchanged_original_top_level_fields": 66,
+            "allowed_current_fields_changed": [
+              "current_document_fingerprints",
+              "current_task_title_pdf_identity",
+              "current_workbench_experience",
+              "functional_invariants"
+            ],
+            "historical_budget_review_and_item2_engineering_facts": "preserved",
+            "future_storage_unimplemented_and_nonblocking": true
+          },
+          {
+            "file": "方案/子任务T1/开发任务清单.csv",
+            "csv_parse_shape_unique_ids": "passed",
+            "untouched_original_rows_and_bytes": 27,
+            "allowed_changed_rows": [
+              "T1-R13",
+              "T1-R29"
+            ],
+            "new_rows": [
+              "T1-R30",
+              "T1-F02"
+            ]
+          },
+          {
+            "file": "方案/子任务T1/开发阶段与验收.csv",
+            "csv_parse_shape_unique_ids": "passed",
+            "untouched_original_rows_and_bytes": 7,
+            "allowed_changed_rows": [
+              "S5"
+            ],
+            "new_rows": []
+          },
+          {
+            "file": "方案/子任务T1/待讨论实现决策.csv",
+            "csv_parse_shape_unique_ids": "passed",
+            "untouched_original_rows_and_bytes": 23,
+            "allowed_changed_rows": [
+              "D18",
+              "D20"
+            ],
+            "new_rows": []
+          },
+          {
+            "file": "方案/子任务T1/验收清单.csv",
+            "csv_parse_shape_unique_ids": "passed",
+            "untouched_original_rows_and_bytes": 29,
+            "allowed_changed_rows": [
+              "F09",
+              "F15",
+              "F19",
+              "F20",
+              "F21"
+            ],
+            "new_rows": [
+              "T1-F02"
+            ]
+          },
+          {
+            "file": "方案/子任务T1/T1智能体开发计划.docx",
+            "zip_crc_all_xml": "passed",
+            "other_zip_parts_preserved_exactly": 14,
+            "original_document_xml_exactly_reconstructable": true,
+            "precise_body_phrase_changes": 6,
+            "appended_current_rule_storage_and_final_evidence_paragraphs": 4,
+            "original_document_xml_sha256": "0111f9363f82e029024a42de3ce50350ba282b7ef7d7ff49dce9a199fb1d4720",
+            "current_document_xml_sha256": "b03966524254c186951b14b25b14f9ba0fad8f91588776c519261ca6c9183277",
+            "visual_pagination_reviewed": false
+          },
+          {
+            "file": "方案/子任务T1/T1开发执行说明.docx",
+            "zip_crc_all_xml": "passed",
+            "other_zip_parts_preserved_exactly": 14,
+            "original_document_xml_exactly_reconstructable": true,
+            "precise_body_phrase_changes": 5,
+            "appended_current_rule_storage_and_final_evidence_paragraphs": 4,
+            "original_document_xml_sha256": "6b77ca9c025b5b5c57705407dccc6dc12786a3054d4635a860fc8450e640cfb1",
+            "current_document_xml_sha256": "890c3429bedb5fc1a7f999ae2691b86894453afab3551dd5fea4c50d12de8604",
+            "visual_pagination_reviewed": false
+          }
+        ],
+        "errors": [],
+        "cross_document_checks": {
+          "F15_and_item2_F19_F20_F21_rules_statuses_match": "passed",
+          "single_future_storage_id": "T1-F02",
+          "future_storage_implemented_or_current_gate": false,
+          "item3_user_review_pending_future_storage_unimplemented": "passed"
+        }
+      },
+      "preservation": "JSON历史/预算/审查子树未改；被替换的现行规则、指纹和审查引用原对象归档；CSV除明确列出的现行行外保留原字节；DOCX逆向还原与所有其它ZIP部件逐字节核对通过。",
+      "limits": [
+        "第1/2项用户已通过；第3项限定工程已验上线，仍待用户审核；原4/5未开展。",
+        "T1-F02只登记后续未实现，不冻结期限/自动或手动/删除范围，非当前门槛，本次未删除业务文件。",
+        "6旧脚本只适配/语法检查，不宣称6套全过；无后端抽取/模型套件或真实生产业务写入/付费调用。",
+        "DOCX ZIP/XML与原内容保全已验，无Word渲染器、未目视分页。",
+        "第2项完整历史文档快照及其旧指纹保留，旧SHA不冒充第3项当前指纹。"
+      ],
+      "baseline_sha256": {
+        "方案/子任务T1/开发计划.json": "e123b189d8d6bf7d7984da1aff1dcb5071dddd94f2003637a268c28eff10e9e9",
+        "方案/子任务T1/当前版本.json": "b950ccb3db555206d6229cfeea343f04e287c4d5c9923ebc12804db6e5e56f8f",
+        "方案/子任务T1/质量与性能验收契约.json": "d1596baddee147e896bb0abe048fed075d721deff06ca3a6f4be2ada66fc7a2d",
+        "方案/子任务T1/开发任务清单.csv": "dd2fcd3570441ad22cde5de56d67afafc7df459db8dc8fa38a3a5a41b7091886",
+        "方案/子任务T1/开发阶段与验收.csv": "7a6f608b24901a55ff3f74c0ff801039b55c85142bf20b7b86bc37134bebf6e0",
+        "方案/子任务T1/待讨论实现决策.csv": "eec717ce2a0e5e09b273b3299a32bfd799c637de2aaaabad7acfb8e782e64797",
+        "方案/子任务T1/验收清单.csv": "01075f968d08cb652490da9e0819327ba29da7216716f35544be94eebef6642c",
+        "方案/子任务T1/T1智能体开发计划.docx": "7c0a2464b89a5c40d7576e5d7e4679f743dd1e134353b32b3f015129d2b7a751",
+        "方案/子任务T1/T1开发执行说明.docx": "22dab9c9d66e5a6e816cc583a74626cdd2f665b2ff5d0c667b4911fab4897fc3"
+      },
+      "current_file_sha256": {
+        "方案/子任务T1/开发计划.json": "264c192ceeda5b5c948be4b339cae1d757170c686b7b61409c20fd5d27c7d23f",
+        "方案/子任务T1/当前版本.json": "38dff6d927281ed7e5ebb712df8a1e614c58366ba76b24f95805202c9777ddfd",
+        "方案/子任务T1/质量与性能验收契约.json": "20437d35ea1966536805122c8312a536f790dd04ed2a651b86da7167247da205",
+        "方案/子任务T1/开发任务清单.csv": "51c5a26fa42ff6418d4b1b35284ec93c8fd3f8e5893b83395d490c2209801cb1",
+        "方案/子任务T1/开发阶段与验收.csv": "87e135689dd0b4179829965ec4c95092008ed1d29bf0875a3f02e9ae20124e35",
+        "方案/子任务T1/待讨论实现决策.csv": "92a0ebfa394056c88c3a78e8ebaedb46d3ee0a4c6e5b4c7b47768c404063e2b0",
+        "方案/子任务T1/验收清单.csv": "dae4f6f7bd635140469c305bc8143661f039ede280696b172697096e289c960d",
+        "方案/子任务T1/T1智能体开发计划.docx": "1665b62e46c51c88d2f435bcb4474797cc641a900e52814941ab1760147425d4",
+        "方案/子任务T1/T1开发执行说明.docx": "d1251352fa8eae2dc33efe3d475f997f5da90c2ab99aa85649206da865b9a11d"
+      },
+      "cleanup": {
+        "own_temporary_directory": "code/runtime-data/agent-notes/reuse-entry-storage-docs-20261114",
+        "pending_final_evidence_and_handoff": false,
+        "own_temporary_baseline_and_scripts_removed": true,
+        "other_files_or_permanent_rules_removed": false,
+        "completed_at_utc": "2026-11-14T15:18:23.126632+00:00"
+      },
+      "engineering_evidence": {
+        "item3": {
+          "record": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/item3",
+          "web_typecheck": "passed",
+          "touched_lint": "3_files_zero_warnings",
+          "production_build": "passed",
+          "same_build_isolated_browser_groups": 4,
+          "BUILD_ID": "7k-AKSqL1i6sLB7gjmNJi",
+          "dist": "apps/pi-web/build/remove-explicit-reuse-validated-20261114",
+          "live_get_head_status": "passed",
+          "live_get_head_checks": 3,
+          "live_evidence": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/item3/live_readonly",
+          "deployment": "frontend_only_30141_backend_148878_unchanged_not_restarted",
+          "runtime": {
+            "next_pid": 155411,
+            "wrapper_pid": 155404,
+            "backend_pid": 148878,
+            "backend_start_time_unchanged": true
+          },
+          "controlled_cutover_preservation": "17表逻辑hash、8run、43个workbench产物、两份env/配置及业务GET papers/runs/models/capabilities前后相同；只指受控切换/只读核验窗口。",
+          "paid_model_calls": 0,
+          "production_business_writes": 0,
+          "production_exports_requested": 0,
+          "old_script_scope": "6既有脚本仅入口适配和语法检查；未执行其完整6套，也未执行后端抽取/模型套件。",
+          "boundary": "第1/2项用户已通过，第3项待用户审核；后台PDF完整内容自动复用/已存数据保持，原4/5未开展，存储T1-F02仍后续未实现，不升级医学或其它阶段。"
+        },
+        "item2_preserved": "#/historical_item2_documentation_sync/record/engineering_evidence"
+      },
+      "source_evidence": {
+        "report": "code/docs/acceptance/new-task-layout-2026-11-14/report.json",
+        "item2_user_review": "user_approved",
+        "item3_user_review": "pending_not_user_accepted",
+        "item3_live_status": "passed",
+        "item3_BUILD_ID": "7k-AKSqL1i6sLB7gjmNJi",
+        "formal_review_record": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/formal_review",
+        "formal_reviews": "original five items shared2/3; no new document-local review"
+      },
+      "finalization_changed_files": [
+        "方案/子任务T1/开发计划.json",
+        "方案/子任务T1/当前版本.json",
+        "方案/子任务T1/质量与性能验收契约.json",
+        "方案/子任务T1/开发任务清单.csv",
+        "方案/子任务T1/开发阶段与验收.csv",
+        "方案/子任务T1/验收清单.csv",
+        "方案/子任务T1/T1智能体开发计划.docx",
+        "方案/子任务T1/T1开发执行说明.docx"
+      ],
+      "historical_item2_documentation_sync": {
+        "scope": "第2项原时点文档/工程核验快照；其中current_file_sha256是该历史快照指纹，不代表第3项变更后的当前文件。",
+        "snapshot_sha256": "a4f50c2c726711023660e3da8d7fb6241a2da15865eb3a4894f1e8083e088a94",
+        "record": {
+          "schema_version": "new-task-identity-documentation-sync-1",
+          "updated_at_utc": "2026-11-14T14:51:47.654168+00:00",
+          "status": "final_documentation_verified_scoped_engineering_deployed_pending_user_item2_review",
+          "contract": "方案/子任务T1/开发计划.json#/current_task_title_pdf_identity",
+          "engineering_report": "code/docs/acceptance/new-task-layout-2026-11-14/report.json",
+          "formal_reviews": {
+            "record": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/formal_review",
+            "local_counter": false
+          },
+          "scope": {
+            "files": [
+              "方案/子任务T1/开发计划.json",
+              "方案/子任务T1/当前版本.json",
+              "方案/子任务T1/质量与性能验收契约.json",
+              "方案/子任务T1/开发任务清单.csv",
+              "方案/子任务T1/开发阶段与验收.csv",
+              "方案/子任务T1/待讨论实现决策.csv",
+              "方案/子任务T1/验收清单.csv",
+              "方案/子任务T1/T1智能体开发计划.docx",
+              "方案/子任务T1/T1开发执行说明.docx"
+            ],
+            "new_task_id": "T1-R29",
+            "new_engineering_acceptance_ids": [
+              "F19",
+              "F20",
+              "F21"
+            ]
+          },
+          "confirmed_basis": [
+            "用户明确确认按完整PDF内容去重，同内容复用PDF/论文身份，仍可独立新建抽取任务；同次相同内容只留一份，不同内容版本保留。",
+            "用户明确确认一次提交一个任务标题；单篇属于run，批量属于batch_id整批，首次开始与范围/模型冻结，标题不修改论文来源身份。"
+          ],
+          "item_review_state": "2026-11-14按五项逐项复核：第1项布局用户已通过；第2项独立任务标题及完整PDF内容去重已完成限定工程核验、同构建上线和最终GET/HEAD只读核验，待用户审核，尚不记为用户已通过；原第3项删除“复用已上传论文”功能仍待用户审核决定，原第4项结果隔离疑问/模型稳定性与第5项summary完成条件尚未开展。当前保留复用入口，本轮不实施存储管理、自动清理或批次整体删除。",
+          "implementation_and_deployment_verification": "scoped_engineering_verified_deployed_pending_user_item2_review",
+          "validation": {
+            "status": "passed",
+            "checks": [
+              {
+                "file": "方案/子任务T1/开发计划.json",
+                "json_parse": "passed",
+                "untouched_original_top_level_fields": 72,
+                "allowed_changed_fields": [
+                  "current_document_fingerprints",
+                  "current_requirement_formal_reviews",
+                  "decisions",
+                  "tasks"
+                ],
+                "all_original_history_budget_review_objects": "preserved",
+                "prior_current_rules_and_metadata": "archived_verbatim_and_unchanged_during_finalization"
+              },
+              {
+                "file": "方案/子任务T1/当前版本.json",
+                "json_parse": "passed",
+                "untouched_original_top_level_fields": 87,
+                "allowed_changed_fields": [
+                  "current_batch_submission",
+                  "current_document_fingerprints",
+                  "current_folder_task_types",
+                  "current_requirement_formal_reviews",
+                  "current_retention_workflow"
+                ],
+                "all_original_history_budget_review_objects": "preserved",
+                "prior_current_rules_and_metadata": "archived_verbatim_and_unchanged_during_finalization"
+              },
+              {
+                "file": "方案/子任务T1/质量与性能验收契约.json",
+                "json_parse": "passed",
+                "untouched_original_top_level_fields": 64,
+                "allowed_changed_fields": [
+                  "current_document_fingerprints",
+                  "current_requirement_formal_reviews",
+                  "fixed_evidence_invariants",
+                  "functional_invariants"
+                ],
+                "all_original_history_budget_review_objects": "preserved",
+                "prior_current_rules_and_metadata": "archived_verbatim_and_unchanged_during_finalization"
+              },
+              {
+                "file": "方案/子任务T1/开发任务清单.csv",
+                "csv_parse_shape_and_unique_ids": "passed",
+                "untouched_original_rows_and_bytes": 27,
+                "allowed_original_rows_changed": [
+                  "T1-R13"
+                ],
+                "new_rows": [
+                  "T1-R29"
+                ]
+              },
+              {
+                "file": "方案/子任务T1/开发阶段与验收.csv",
+                "csv_parse_shape_and_unique_ids": "passed",
+                "untouched_original_rows_and_bytes": 7,
+                "allowed_original_rows_changed": [
+                  "S5"
+                ],
+                "new_rows": []
+              },
+              {
+                "file": "方案/子任务T1/待讨论实现决策.csv",
+                "csv_parse_shape_and_unique_ids": "passed",
+                "untouched_original_rows_and_bytes": 24,
+                "allowed_original_rows_changed": [
+                  "D20"
+                ],
+                "new_rows": []
+              },
+              {
+                "file": "方案/子任务T1/验收清单.csv",
+                "csv_parse_shape_and_unique_ids": "passed",
+                "untouched_original_rows_and_bytes": 29,
+                "allowed_original_rows_changed": [
+                  "F02",
+                  "F09"
+                ],
+                "new_rows": [
+                  "F19",
+                  "F20",
+                  "F21"
+                ]
+              },
+              {
+                "file": "方案/子任务T1/T1智能体开发计划.docx",
+                "zip_crc_and_all_xml": "passed",
+                "xml_parts_opened_and_parsed": 15,
+                "other_zip_parts_preserved_exactly": 14,
+                "original_document_xml_exactly_reconstructable": true,
+                "precise_body_phrase_changes": 5,
+                "appended_current_rule_and_final_evidence_paragraphs": 6,
+                "before_document_xml_sha256": "5ecff350d27c6cf7a5fff8192feef75be7dc45abe87e3f878be9d0c12e8f71a6",
+                "after_document_xml_sha256": "0111f9363f82e029024a42de3ce50350ba282b7ef7d7ff49dce9a199fb1d4720",
+                "visual_pagination_reviewed": false
+              },
+              {
+                "file": "方案/子任务T1/T1开发执行说明.docx",
+                "zip_crc_and_all_xml": "passed",
+                "xml_parts_opened_and_parsed": 15,
+                "other_zip_parts_preserved_exactly": 14,
+                "original_document_xml_exactly_reconstructable": true,
+                "precise_body_phrase_changes": 7,
+                "appended_current_rule_and_final_evidence_paragraphs": 6,
+                "before_document_xml_sha256": "358d5453c054b145ee68528c24c49aa801b06ccb5cde4062921bd7199ff60e1f",
+                "after_document_xml_sha256": "6b77ca9c025b5b5c57705407dccc6dc12786a3054d4635a860fc8450e640cfb1",
+                "visual_pagination_reviewed": false
+              }
+            ],
+            "errors": [],
+            "cross_document_checks": {
+              "F19_F20_F21_JSON_CSV_rule_and_status_match": "passed",
+              "task_title_original_filename_not_added_to_EvidenceRecord_fields": "passed",
+              "obsolete_active_relative_path_title_and_reupload_semantics": "none_except_explicit_superseded_history",
+              "F19_F20_F21_JSON_CSV_measurement_match": "passed",
+              "user_item2_review_not_promoted_to_acceptance": "passed"
+            }
+          },
+          "preservation": "JSON历史/预算/审查子树未改；被替换的现行规则、指纹和审查引用原对象归档；CSV除明确列出的现行行外保留原字节；DOCX逆向还原与所有其它ZIP部件逐字节核对通过。",
+          "limits": [
+            "当前结论为限定工程已验并上线、待用户审核第2项；原3–5未开展，原复用入口保留，不实施存储管理/自动清理/批次整体删除。",
+            "新上传/Start/重新解析只在隔离fixture验证；生产最后核验仅GET/HEAD，未做真实新增模型调用或完整抽取套件，不提升医学准确率、S6或S7结论。",
+            "无Word/LibreOffice渲染环境，DOCX逐部件打开/CRC/XML与原内容保全通过，未目视分页。",
+            "文档执行者未触达外部服务、密钥或付费API，未修改应用、工程README、主report或他人运行数据。"
+          ],
+          "baseline_sha256": {
+            "方案/子任务T1/开发计划.json": "0593626c857fb46e31df975a32b8b4d35c7134fe1dc3c16a0d98122e38fc1a44",
+            "方案/子任务T1/当前版本.json": "aade788474462ceb3710ff6e2cf148ab0d20cda80afa2d6228320dee60feb0ce",
+            "方案/子任务T1/质量与性能验收契约.json": "2d167efe03458bf016fbaa7745186ff1cbf9552ad5a475bfb266c93e661266ec",
+            "方案/子任务T1/开发任务清单.csv": "6c9bb8f40ae1f154368b2bd0b72e5e3339fc53605a05bc9f074b711d9118309b",
+            "方案/子任务T1/开发阶段与验收.csv": "e4da5bef94326954d660dd61ca7969f0d3261f7dbf518bb733eae9c7804fb9a3",
+            "方案/子任务T1/待讨论实现决策.csv": "4f72e29d4ae51f8852d98eef2e84dcdf6b986c18fb563cec92c6ac709f51ee40",
+            "方案/子任务T1/验收清单.csv": "93344a7adaee39d27b34b198c45390ac3ded83779b2db68d405176f3b8351bcb",
+            "方案/子任务T1/T1智能体开发计划.docx": "6c5c53ddf86ef4a9eeaa737f563698400745fda4b087cbab4bdd339cdbdb4ef9",
+            "方案/子任务T1/T1开发执行说明.docx": "af4b24729571e57ea8c17ff1ead14439fac6df7899b63b3e347c6bb50604a762"
+          },
+          "current_file_sha256": {
+            "方案/子任务T1/开发计划.json": "e123b189d8d6bf7d7984da1aff1dcb5071dddd94f2003637a268c28eff10e9e9",
+            "方案/子任务T1/当前版本.json": "b950ccb3db555206d6229cfeea343f04e287c4d5c9923ebc12804db6e5e56f8f",
+            "方案/子任务T1/质量与性能验收契约.json": "d1596baddee147e896bb0abe048fed075d721deff06ca3a6f4be2ada66fc7a2d",
+            "方案/子任务T1/开发任务清单.csv": "dd2fcd3570441ad22cde5de56d67afafc7df459db8dc8fa38a3a5a41b7091886",
+            "方案/子任务T1/开发阶段与验收.csv": "7a6f608b24901a55ff3f74c0ff801039b55c85142bf20b7b86bc37134bebf6e0",
+            "方案/子任务T1/待讨论实现决策.csv": "eec717ce2a0e5e09b273b3299a32bfd799c637de2aaaabad7acfb8e782e64797",
+            "方案/子任务T1/验收清单.csv": "01075f968d08cb652490da9e0819327ba29da7216716f35544be94eebef6642c",
+            "方案/子任务T1/T1智能体开发计划.docx": "7c0a2464b89a5c40d7576e5d7e4679f743dd1e134353b32b3f015129d2b7a751",
+            "方案/子任务T1/T1开发执行说明.docx": "22dab9c9d66e5a6e816cc583a74626cdd2f665b2ff5d0c667b4911fab4897fc3"
+          },
+          "cleanup": {
+            "own_temporary_directory": "code/runtime-data/agent-notes/task-identity-docs-20261114",
+            "pending_final_evidence_and_handoff": false,
+            "own_temporary_baseline_and_scripts_removed": true,
+            "other_files_or_permanent_rules_removed": false,
+            "completed_at_utc": "2026-11-14T14:51:47.656083+00:00"
+          },
+          "engineering_evidence": {
+            "record": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/item2/correction",
+            "backend_checks": 20,
+            "frontend_helper_checks": 8,
+            "same_build_isolated_browser_groups": 5,
+            "typecheck": "root_and_web_passed",
+            "touched_lint": "passed_zero_warnings",
+            "production_build": "passed",
+            "BUILD_ID": "cYfgrEAWO7KngOnOkePsg",
+            "dist": "apps/pi-web/build/task-identity-dedup-validated-20261114",
+            "live_get_head_checks": 3,
+            "live_status": "passed",
+            "live_source": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/item2/correction/live_readonly",
+            "deployment": "deployed_30141_3210_after_double_idle_guard",
+            "preservation": "17表逻辑hash、两份env/配置、43个workbench产物及业务GET列表保持，8个原run未中断，integrity ok/外键0；只指受控切换与只读核验窗口。",
+            "paid_model_calls": 0,
+            "production_business_writes": 0,
+            "production_exports_requested": 0,
+            "limitations": "新增上传/Start/重新解析仅隔离fixture验证；未做真实新模型或完整抽取套件，单后台实例并发保证，不迁并历史paper/run、不清理存储、不推进原3–5或医学/S6/S7。"
+          },
+          "source_evidence": {
+            "report": "code/docs/acceptance/new-task-layout-2026-11-14/report.json",
+            "main_correction_status_at_check": "authorized_safe_cutover_in_progress",
+            "live_get_head_status": "passed",
+            "live_errors": [],
+            "live_blocked": [],
+            "current_BUILD_ID": "cYfgrEAWO7KngOnOkePsg",
+            "formal_review_record": "code/docs/acceptance/new-task-layout-2026-11-14/report.json#/formal_review",
+            "formal_review_count_from_report": "2/3 shared across the original five items; no document-local review",
+            "rollout_confirmation": "主会话与主实施者已共同确认双空闲守卫部署及17表/env/配置/43产物/8run保全；本记录只引用统一report，不另写部署报告。"
+          },
+          "finalization_changed_files": [
+            "方案/子任务T1/开发计划.json",
+            "方案/子任务T1/当前版本.json",
+            "方案/子任务T1/质量与性能验收契约.json",
+            "方案/子任务T1/开发任务清单.csv",
+            "方案/子任务T1/开发阶段与验收.csv",
+            "方案/子任务T1/验收清单.csv",
+            "方案/子任务T1/T1智能体开发计划.docx",
+            "方案/子任务T1/T1开发执行说明.docx"
+          ]
+        }
+      }
+    }
+  },
+  "finalization_changed_files": [
+    "方案/子任务T1/开发计划.json",
+    "方案/子任务T1/当前版本.json",
+    "方案/子任务T1/质量与性能验收契约.json",
+    "方案/子任务T1/开发任务清单.csv",
+    "方案/子任务T1/开发阶段与验收.csv",
+    "方案/子任务T1/待讨论实现决策.csv",
+    "方案/子任务T1/验收清单.csv",
+    "方案/子任务T1/T1智能体开发计划.docx",
+    "方案/子任务T1/T1开发执行说明.docx"
+  ]
+}

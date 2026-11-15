@@ -1,0 +1,1346 @@
+--- a/code/apps/pi-web/t1/T1Workbench.tsx
++++ b/code/apps/pi-web/t1/T1Workbench.tsx
+@@ -24,6 +24,7 @@
+ import { SameSourceMembers } from "./SameSourceMembers";
+ import { ResultIndex } from "./ResultIndex";
+ import { ModelRuntimeNotice } from "./ModelRuntimeNotice";
++import { WorkbenchNotes } from "./WorkbenchNotes";
+ import { runPresentation } from "./run-presentation";
+ import { initialWorkbenchSelection, resultRunForPaper } from "./result-navigation";
+ import type { Scope } from "../../../packages/contracts/src/index";
+@@ -46,18 +47,17 @@
+   const [recordRole, setRecordRole] = useState("all"), [retentionView, setRetentionView] = useState("kept");
+   const [loading, setLoading] = useState(true), [error, setError] = useState(""), [detailError, setDetailError] = useState("");
+   const [activeTab, setActiveTab] = useState("newTask"), [tabIds, setTabIds] = useState(["newTask", "records", "figures", "tasks"]);
+-  const [showSource, setShowSource] = useState(false), [showSidebar, setShowSidebar] = useState(true);
++  const [showSource, setShowSource] = useState(false), [showSidebar, setShowSidebar] = useState(true), [showNotes, setShowNotes] = useState(false);
+   const [menu, setMenu] = useState<SidebarMenuAnchor | null>(null), [toast, setToast] = useState<SidebarToastData | null>(null);
+   const [file, setFile] = useState<File | null>(null), [title, setTitle] = useState(""), [uploading, setUploading] = useState(false), [starting, setStarting] = useState(false), [actionError, setActionError] = useState("");
+   const [restoreFile, setRestoreFile] = useState<File | null>(null), [restoreBusy, setRestoreBusy] = useState(false), [deletePaperConfirm, setDeletePaperConfirm] = useState(false);
+-  const [editor, setEditor] = useState<{ run: string; record: string | null } | null>(null), [download, setDownload] = useState("");
++  const [editor, setEditor] = useState<{ run: string; record: string | null } | null>(null), [download, setDownload] = useState(""), [exportError, setExportError] = useState("");
+   const refreshRunRef = useRef<(() => Promise<void>) | null>(null);
+-  const taskDetailsRef = useRef<HTMLDetailsElement>(null);
+   const locatedRecordRef = useRef("");
+-  const initialized = useRef(false), fileInput = useRef<HTMLInputElement>(null), sidebarWidth = useRef(260), sourceWidth = useRef(520);
++  const initialized = useRef(false), fileInput = useRef<HTMLInputElement>(null), sidebarWidth = useRef(224), sourceWidth = useRef(520);
+   const sidebarMax = useCallback(() => getSidebarMaxWidth({ viewportWidth: window.innerWidth, rightPanelOpen: showSource, rightPanelWidth: sourceWidth.current }), [showSource]);
+   const sourceMax = useCallback(() => getRightPanelMaxWidth({ viewportWidth: window.innerWidth, sidebarOpen: showSidebar, sidebarWidth: sidebarWidth.current }), [showSidebar]);
+-  const sidebar = useResizablePanel({ ariaLabel: t("t1.resizeNav"), cssVariable: "--t1-sidebar-width", defaultWidth: 260, getMaxWidth: sidebarMax, growthDirection: "right", minWidth: 180, maxWidth: 480, storageKey: "t1:pi-web:sidebar-width", widthRef: sidebarWidth });
++  const sidebar = useResizablePanel({ ariaLabel: t("t1.resizeNav"), cssVariable: "--t1-sidebar-width", defaultWidth: 224, getMaxWidth: sidebarMax, growthDirection: "right", minWidth: 180, maxWidth: 480, storageKey: "t1:pi-web:sidebar-width", widthRef: sidebarWidth });
+   const source = useResizablePanel({ ariaLabel: t("t1.resizeSource"), cssVariable: "--t1-source-width", defaultWidth: 520, getMaxWidth: sourceMax, growthDirection: "left", minWidth: 300, maxWidth: 1000, storageKey: "t1:pi-web:source-width", widthRef: sourceWidth });
+   const { events, connection } = useRunEvents(runId, true);
+   const tabs: Tab[] = tabIds.map(id => ({ id, label: t(`t1.${id}`), filePath: t(`t1.${id}`) }));
+@@ -65,15 +65,12 @@
+   const currentRun = runDetail?.run.run_id === runId ? runDetail : null;
+   const currentPaper = detail?.paper.id === paperId ? detail : null;
+   const output = runId ? currentRun?.output : currentPaper?.outputs.find(item => item.id === historyId);
+-  const glyphCoverage = output?.coverage && typeof output.coverage === "object" ? output.coverage as Record<string, unknown> : null;
+-  const legacyGlyphCheck = Boolean(output && output.fixture !== true && output.origin !== "controlled_fixture" && !glyphCoverage?.source_glyph_check_status);
+   const records = output?.records.filter(record => !record.deleted) ?? [];
+   const query = recordQuery.trim().toLocaleLowerCase();
+   const retainedStatus = (item: typeof records[number]) => item.retention?.status ?? (item.review_status === "rejected" ? "excluded" : "kept");
+   const visibleRecords = records.filter(item => retainedStatus(item) === retentionView && (recordRole === "all" || (item.evidence_role ?? "primary_candidate") === recordRole) && (!query || [...item.fragments, ...item.context].some(fragment => fragment.exact_quote.toLocaleLowerCase().includes(query))));
+   const keptCount = records.filter(item => retainedStatus(item) === "kept").length;
+   const excludedCount = records.length - keptCount;
+-  const backgroundCount = records.filter(item => item.evidence_role === "background_suggestion").length;
+   const record = visibleRecords.find(item => item.id === recordId) ?? visibleRecords[0];
+   const selectedRecordId = record?.id;
+   const recordPosition = record ? visibleRecords.indexOf(record) : -1;
+@@ -90,6 +87,7 @@
+ 
+   useEffect(() => { if (mobile) setShowSidebar(false); }, [mobile]);
+   useEffect(() => { setRecordQuery(""); setRecordRole("all"); setRetentionView("kept"); }, [paperId, runId, historyId]);
++  useEffect(() => { setShowNotes(false); setEditor(null); setExportError(""); }, [paperId, runId, historyId]);
+   // Follow a newly selected record once; polling and version updates must not
+   // steal a page the reviewer selected manually.
+   useEffect(() => {
+@@ -214,13 +212,13 @@
+   }
+   async function downloadExport(kind: WorkbenchExportKind) {
+     if (!runId) return;
+-    setDownload(kind); setActionError("");
++    setDownload(kind); setExportError("");
+     try {
+       const response = await request(`workbench/runs/${encodeURIComponent(runId)}/exports/${kind}`), blob = await response.blob();
+       const url = URL.createObjectURL(blob), anchor = document.createElement("a"); anchor.href = url;
+       anchor.download = `${paperId}-${runId}-${kind}.${kind.endsWith("package") ? "tar.gz" : kind.endsWith("csv") ? "csv" : "jsonl"}`;
+       anchor.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+-    } catch (cause) { setActionError(errorText(cause)); } finally { setDownload(""); }
++    } catch (cause) { setExportError(errorText(cause)); } finally { setDownload(""); }
+   }
+   async function restoreOriginal() {
+     if (!restoreFile || restoreFile.size > 50 * 1024 * 1024) return;
+@@ -251,11 +249,11 @@
+       {showSidebar && <><aside className="t1-sidebar" aria-label={t("t1.paperNav")}><div className="t1-sidebar-heading"><strong>{t("t1.papers")}</strong><span>{papers.length}</span><button className="t1-sidebar-close" aria-label={t("t1.close")} onClick={() => setShowSidebar(false)}><CloseIcon size={18} /></button></div>
+         <button className="t1-new-task" onClick={() => { openTab("newTask"); if (mobile) setShowSidebar(false); }}><PlusIcon size={16} />{t("t1.newTask")}</button>
+         <div className="t1-paper-list">{papers.map(item => <button key={item.id} className={paperId === item.id ? "selected" : ""} aria-current={paperId === item.id ? "page" : undefined} title={item.title} onClick={() => selectPaper(item.id)}><span className="t1-paper-label"><GenericFileIcon size={14} /><b>{item.uploaded || item.id.startsWith("paper-") ? t("t1.uploadedPaper") : item.id}</b><small>{item.pages || "—"} {t("t1.pagesShort")}</small></span><strong>{item.title}</strong><em>{item.uploaded ? "PDF" : t("t1.historical")}</em></button>)}</div>
+-        <div className="t1-sidebar-bottom"><button onClick={() => openTab("tasks")}><MessageIcon size={15} />{t("t1.tasks")}</button><p>{t("t1.separateTasks")}</p><details><summary>{t("t1.aboutWorkbench")}</summary><span>Pi Web 0.15.0 · T1 Pi SDK 1.4.0</span></details></div>
++        <div className="t1-sidebar-bottom"><button onClick={() => openTab("tasks")}><MessageIcon size={15} />{t("t1.tasks")}</button><details><summary>{t("t1.aboutWorkbench")}</summary><span>Pi Web 0.15.0 · T1 Pi SDK 1.4.0</span></details></div>
+         <SidebarToast toast={toast} onDismiss={() => setToast(null)} dismissLabel={t("t1.close")} /></aside><div className="t1-resize" {...sidebar.separatorProps} /></>}
+       <main className="t1-main"><div className="t1-workspace-bar"><button onClick={() => setShowSidebar(value => !value)} aria-label={t("t1.toggleNav")} title={t("t1.toggleNav")} aria-expanded={showSidebar}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></svg></button><span title={paper?.title}>{paper?.title ?? t("t1.newTask")}</span><button className="t1-source-toggle" aria-pressed={showSource} onClick={() => setShowSource(value => !value)}><EyeIcon size={15} />{t(showSource ? "t1.hideOriginal" : "t1.showOriginal")}</button>{pdfUrl && <a className="t1-mobile-source" href={`${pdfUrl}#page=${page}`} target="_blank" rel="noreferrer"><OpenInNewTabIcon size={14} />{t("t1.openOriginal")}</a>}</div>
+         <TabBar tabs={tabs} activeTabId={activeTab} onSelectTab={setActiveTab} onCloseTab={id => { const next = tabIds.filter(tab => tab !== id); setTabIds(next); if (activeTab === id) setActiveTab(next[0] ?? ""); }} onReorderTab={(from, to, after) => setTabIds(current => movePanelTab(current, from, to, after))} />
+-        <div className="t1-content">
++        <div className="t1-content" data-view={activeTab} data-source-blocked={sourceBlocked}>
+           {loading && <p className="t1-status" role="status">{t("t1.loading")}</p>}
+           {error && <div className="t1-alert" role="alert">{error}<button onClick={refresh}>{t("t1.retry")}</button></div>}
+           {actionError && <div className="t1-alert" role="alert">{actionError}</div>}
+@@ -272,38 +270,38 @@
+             <button className="t1-primary t1-start" disabled={starting || !paperId || !scope || !catalog || !capabilities?.extraction_start || sourceBlocked || scopeProblems(scope, catalog).length > 0} onClick={() => void startRun()}>{t(starting ? "t1.starting" : "t1.start")}</button>
+             <ModelRuntimeNotice runtime={capabilities?.model_runtime} maxConcurrent={capabilities?.max_concurrent_runs} />
+           </>}
+-          {activeTab === "records" && <><div className="t1-heading t1-results-heading"><div><h1>{t("t1.extractionResults")}</h1><p className="t1-review-intro">{t("t1.resultsLead")}</p></div><div className="t1-result-flags">{output && <span className="t1-badge">{t(output.origin === "historical_compatibility_replay" ? "t1.historical" : output.fixture ? "t1.fixture" : "t1.savedCandidates")}</span>}{presentation.sourceLimited && <button className="t1-source-limits-chip" onClick={() => { const element = taskDetailsRef.current; if (element) { element.open = true; element.scrollIntoView({ block: "start", behavior: "smooth" }); } }}>{t("t1.sourceLimitsBadge")}</button>}</div></div>
++          {activeTab === "records" && <>
++            <div className="t1-heading t1-results-heading"><h1>{t("t1.extractionResults")}</h1>
++              <div className="t1-output-toolbar"><details className="t1-task-picker"><summary>{t("t1.task")}{selectedRun?.created_at && <time dateTime={selectedRun.created_at}>{new Date(selectedRun.created_at).toLocaleDateString(locale)}</time>}</summary><label>{t("t1.task")}<select aria-label={t("t1.task")} value={runId ? `run:${runId}` : `history:${historyId}`} onChange={e => { const value = e.target.value; setRecordId(""); if (value.startsWith("run:")) { setRunId(value.slice(4)); setHistoryId(""); } else { setRunId(null); setHistoryId(value.slice(8)); } }}>
++                {!paperRuns.length && !currentPaper?.outputs.length && <option value="history:">{t("t1.noTasks")}</option>}{paperRuns.map(run => <option key={run.run_id} value={`run:${run.run_id}`}>{run.created_at ? new Date(run.created_at).toLocaleString(locale) : t("t1.task")} · {t("t1.recordCount", { count: run.candidate_count })}{run.fixture ? ` · ${t("t1.controlledTask")}` : ""}</option>)}{currentPaper?.outputs.filter(item => item.origin === "historical_compatibility_replay" && !paperRuns.some(run => run.run_id === item.id)).map(item => <option key={item.id} value={`history:${item.id}`}>{t("t1.historical")} · {item.strategy} · {item.records.length}</option>)}</select></label></details>
++                {state && <div className="t1-task-progress" role="status" data-state={state} data-status={presentation.statusKey}><button className="t1-status-button" onClick={() => setShowNotes(true)}><span className="t1-status-dot" />{t(`t1.${presentation.statusKey}`)}</button>{runId && !terminal.has(state) && <button className="t1-button" onClick={() => void cancelRun(runId)}>{t("t1.cancel")}</button>}</div>}
++                {presentation.sourceLimited && <button className="t1-source-limits-chip" onClick={() => setShowNotes(true)}>{t("t1.sourceLimitsBadge")}</button>}
++              </div>
++              <div className="t1-results-actions"><button className="t1-button t1-notes-toggle" aria-haspopup="dialog" aria-expanded={showNotes} onClick={() => setShowNotes(true)}><MessageIcon size={14} />{t("t1.notes")}</button>
++                {runId && currentRun && <details className="t1-exports"><summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5" /></svg>{t("t1.exportTitle")}<ChevronIcon size={12} /></summary><div className="t1-export-options" aria-label={t("t1.exportFormat")}>{exportKinds.map(kind => <button key={kind} disabled={Boolean(download) || sourceBlocked || !capabilities?.retained_export || keptCount === 0} onClick={() => void downloadExport(kind)}>{t(`t1.${kind}`)}</button>)}</div></details>}
++              </div>
++            </div>
++            {exportError && <div className="t1-alert t1-export-error" role="alert">{exportError}<button className="t1-button" onClick={() => { setExportError(""); setShowNotes(true); }}>{t("t1.viewDetails")}</button></div>}
++            {download && <span className="t1-sr-only" role="status">{t("t1.downloading")}</span>}
+             <section className="t1-results-panel" aria-label={t("t1.extractionResults")}>
+-            <div className="t1-results-summary">
+-            {output && <div className="t1-results-overview"><dl aria-label={t("t1.recordCountsHelp")}>
+-              <div data-count-kind="candidates"><dt>{t("t1.savedCandidates")}</dt><dd>{records.length}</dd></div>
+-              <div data-count-kind="kept"><dt>{t("t1.kept")}</dt><dd>{keptCount}</dd></div>
+-              <div data-count-kind="excluded"><dt>{t("t1.excluded")}</dt><dd>{excludedCount}</dd></div>
+-            </dl><p>{t("t1.recordCountsHelp")}</p></div>}
+-            <div className="t1-output-toolbar"><details className="t1-task-picker"><summary><span>{t("t1.task")}</span>{selectedRun?.created_at && <time dateTime={selectedRun.created_at}>{new Date(selectedRun.created_at).toLocaleString(locale)}</time>}</summary><label>{t("t1.task")}<select aria-label={t("t1.task")} value={runId ? `run:${runId}` : `history:${historyId}`} onChange={e => { const value = e.target.value; setRecordId(""); if (value.startsWith("run:")) { setRunId(value.slice(4)); setHistoryId(""); } else { setRunId(null); setHistoryId(value.slice(8)); } }}>
+-              {!paperRuns.length && !currentPaper?.outputs.length && <option value="history:">{t("t1.noTasks")}</option>}{paperRuns.map(run => <option key={run.run_id} value={`run:${run.run_id}`}>{run.created_at ? new Date(run.created_at).toLocaleString(locale) : t("t1.task")} · {t("t1.recordCount", { count: run.candidate_count })}{run.fixture ? ` · ${t("t1.controlledTask")}` : ""}</option>)}{currentPaper?.outputs.filter(item => item.origin === "historical_compatibility_replay" && !paperRuns.some(run => run.run_id === item.id)).map(item => <option key={item.id} value={`history:${item.id}`}>{t("t1.historical")} · {item.strategy} · {item.records.length}</option>)}</select></label></details>
+-              {state && <div className="t1-task-progress" role="status" data-state={state} data-status={presentation.statusKey}><strong><span className="t1-status-dot" />{t(`t1.${presentation.statusKey}`)}</strong>{runId && !terminal.has(state) && <button onClick={() => void cancelRun(runId)}>{t("t1.cancel")}</button>}</div>}
+-            </div></div>
+-            {!records.length ? <div className="t1-empty"><p>{t(output ? "t1.noRecords" : "t1.noRun")}</p><button onClick={() => openTab("newTask")}>{t("t1.newTask")}</button></div> : <>
+-              <div className="t1-retention-views" aria-label={t("t1.retentionViews")}>{["kept", "excluded"].map(view => <button key={view} aria-pressed={retentionView === view} onClick={() => { setRetentionView(view); setRecordId(""); }}>{t(view === "kept" ? "t1.keptResults" : "t1.excluded")}<span>{view === "kept" ? keptCount : excludedCount}</span></button>)}</div>
+-              <div className="t1-record-nav"><label className="t1-record-search"><SearchIcon size={15} /><input type="search" aria-label={t("t1.findRecord")} placeholder={t("t1.findRecord")} value={recordQuery} onChange={e => setRecordQuery(e.target.value)} /></label><label className="t1-role-filter"><span className="t1-sr-only">{t("t1.candidateRole")}</span><select aria-label={t("t1.candidateRole")} value={recordRole} onChange={e => { setRecordRole(e.target.value); setRecordId(""); }}><option value="all">{t("t1.allCandidates")} · {records.length}</option><option value="primary_candidate">{t("t1.primaryDescriptions")} · {records.length - backgroundCount}</option><option value="background_suggestion">{t("t1.backgroundSuggestions")} · {backgroundCount}</option></select></label><div className="t1-record-step"><label className="t1-record-selector"><span className="t1-sr-only">{t("t1.record")}</span><select aria-label={t("t1.record")} value={record?.id ?? ""} onChange={e => setRecordId(e.target.value)}>{!visibleRecords.length && <option value="">{t("t1.noMatchingRecords")}</option>}{visibleRecords.map(item => <option key={item.id} value={item.id}>{records.indexOf(item) + 1} · {item.fragments[0]?.exact_quote.slice(0, 82)}</option>)}</select></label><span className="t1-record-position">{recordPosition + 1} / {visibleRecords.length}</span><button aria-label={t("t1.previousRecord")} title={t("t1.previousRecord")} disabled={recordPosition <= 0} onClick={() => setRecordId(visibleRecords[recordPosition - 1].id)}><ChevronIcon size={15} className="t1-chevron-back" /></button><button aria-label={t("t1.nextRecord")} title={t("t1.nextRecord")} disabled={recordPosition < 0 || recordPosition >= visibleRecords.length - 1} onClick={() => setRecordId(visibleRecords[recordPosition + 1].id)}><ChevronIcon size={15} /></button></div></div>
+-              {!visibleRecords.length && <p className="t1-empty t1-search-empty" role="status">{t("t1.noMatchingRecords")}</p>}
+-              <div className="t1-results-layout"><ResultIndex records={records} visibleRecords={visibleRecords} selectedId={record?.id} onSelect={setRecordId} />
+-              {record && <article className="t1-evidence-card" data-record-id={record.id} data-record-version={record.version}><div className="t1-record-meta"><span className="t1-record-number">{String(records.indexOf(record) + 1).padStart(2, "0")}</span><strong title={t("t1.evidenceRoleHelp")}>{t(record.evidence_role === "background_suggestion" ? "t1.backgroundSuggestions" : "t1.primaryDescriptions")}</strong><div className="t1-record-status"><span className="t1-badge" data-status={retainedStatus(record)}>{t(retainedStatus(record) === "excluded" ? "t1.excluded" : "t1.kept")}</span></div></div>
+-                <div className="t1-quote-frame"><div className="t1-section-title t1-evidence-title"><h2>{t(record.evidence_role === "background_suggestion" ? "t1.backgroundSource" : "t1.descriptionSource")}</h2>{firstSourcePage && <button className="t1-locate" onClick={() => sourcePage(firstSourcePage)}><EyeIcon size={14} />{t("t1.locateSource")}</button>}</div><p className="t1-field-hint">{t("t1.fragmentsSeparate")}</p><Fragments fragments={record.fragments} passages={record.passages} onPage={sourcePage} /></div>
+-                {!!record.context.length && <details className="t1-context"><summary>{t("t1.context", { count: record.context.length })}</summary><Fragments fragments={record.context} passages={record.context_passages} onPage={sourcePage} /></details>}
+-                <SameSourceMembers index={output?.same_source_review_index} record={record} records={records} onSelect={id => { setRecordQuery(""); setRecordRole("all"); setRetentionView(records.find(item => item.id === id)?.retention?.status ?? "kept"); setRecordId(id); }} />
+-                {record.labels?.comment && <aside className="t1-reviewer-comment"><strong>{t("t1.comment")}</strong><p>{record.labels.comment}</p></aside>}
+-                <details className="t1-association" data-pairing={record.association} key={`${record.id}:figures`}><summary><strong>{t(record.association === "paired" ? "t1.pairedFigureCount" : record.association === "pending" ? "t1.pendingPair" : record.association === "not_checked" ? "t1.notChecked" : "t1.noPair", { count: record.figure_ids.length })}</strong></summary>{record.reasons.map((reason, i) => <p key={i}>{reason}</p>)}{record.association === "paired" && record.figure_ids.map(id => { const figure = figures.find(item => item.id === id); return figure ? <FigureView key={id} figure={figure} onPage={sourcePage} paired /> : null; })}</details>
+-                <details className="t1-context"><summary>{t("t1.sourceVersion")}</summary><p>{t("t1.version", { version: record.version })}</p><code>{record.id} · {record.run_id} · {record.text_fingerprint}</code>{record.model_primary_assessment && <pre>{JSON.stringify(record.model_primary_assessment, null, 2)}</pre>}{(record.review_reason || record.text_approved || record.review_status === "rejected") && <details className="t1-legacy-review"><summary>{t("t1.legacyReviewInfo")}</summary><p>{record.review_status}</p>{record.review_reason && <p>{record.review_reason}</p>}</details>}{record.labels && <pre>{JSON.stringify(record.labels, null, 2)}</pre>}</details>
+-                {editable && capabilities?.persisted_retention && <RecordRetention key={`${runId}:${record.id}:${record.version}:${record.retention?.revision ?? 0}`} runId={runId!} record={record} onSaved={async changed => { if (changed) setRecordId(visibleRecords[recordPosition + 1]?.id ?? visibleRecords[recordPosition - 1]?.id ?? ""); await reloadCurrent(); }} />}{editable && !sourceBlocked && <details className="t1-source-edit"><summary>{t("t1.sourceCorrection")}</summary><button onClick={() => setEditor({ run: runId!, record: record.id })}>{t("t1.edit")}</button></details>}
+-              </article>}</div>
+-            </>}
+-            {(runId || output?.scope) && <details className="t1-task-details" ref={taskDetailsRef}><summary>{t("t1.resultDetails")}{presentation.sourceLimited && <span className="t1-source-limits-inline">{t("t1.sourceLimitsTitle")}</span>}</summary><p className="t1-footnote">{t("t1.disclaimer")}</p>{presentation.sourceLimited && <p className="t1-notice t1-source-limits">{t("t1.sourceLimitsHint")}</p>}{runId && <><p className="t1-footnote">{t(`t1.${presentation.hintKey}`)}</p><p className="t1-stream-status">{t(`t1.${connection}`)}</p></>}{output?.scope && <><h2>{t("t1.runScope")}</h2><ScopeSummary scope={output.scope} data={catalog} /></>}</details>}
++              <div className="t1-record-nav"><div className="t1-retention-views" aria-label={t("t1.retentionViews")}>{["kept", "excluded"].map(view => <button key={view} data-retention-view={view} aria-pressed={retentionView === view} onClick={() => { setRetentionView(view); setRecordId(""); }}>{t(view === "kept" ? "t1.keptResults" : "t1.excluded")}<span data-retention-count={view}>{view === "kept" ? keptCount : excludedCount}</span></button>)}</div>
++                <label className="t1-record-search"><SearchIcon size={14} /><input type="search" aria-label={t("t1.findRecord")} placeholder={t("t1.findRecord")} value={recordQuery} onChange={e => setRecordQuery(e.target.value)} /></label>
++                <label className="t1-role-filter"><span className="t1-sr-only">{t("t1.candidateRole")}</span><select aria-label={t("t1.candidateRole")} value={recordRole} onChange={e => { setRecordRole(e.target.value); setRecordId(""); }}><option value="all">{t("t1.allCandidates")}</option><option value="primary_candidate">{t("t1.primaryDescriptions")}</option><option value="background_suggestion">{t("t1.backgroundSuggestions")}</option></select></label>
++              </div>
++              {!records.length ? <div className="t1-empty"><p>{t(output ? "t1.noRecords" : "t1.noRun")}</p><button onClick={() => openTab("newTask")}>{t("t1.newTask")}</button></div> : <>
++                <div className="t1-record-step"><label className="t1-record-selector"><span className="t1-sr-only">{t("t1.record")}</span><select aria-label={t("t1.record")} value={record?.id ?? ""} onChange={e => setRecordId(e.target.value)}>{!visibleRecords.length && <option value="">{t("t1.noMatchingRecords")}</option>}{visibleRecords.map(item => <option key={item.id} value={item.id}>{records.indexOf(item) + 1} · {item.fragments[0]?.exact_quote.slice(0, 82)}</option>)}</select></label><span className="t1-record-position">{recordPosition + 1} / {visibleRecords.length}</span><button aria-label={t("t1.previousRecord")} title={t("t1.previousRecord")} disabled={recordPosition <= 0} onClick={() => setRecordId(visibleRecords[recordPosition - 1].id)}><ChevronIcon size={15} className="t1-chevron-back" /></button><button aria-label={t("t1.nextRecord")} title={t("t1.nextRecord")} disabled={recordPosition < 0 || recordPosition >= visibleRecords.length - 1} onClick={() => setRecordId(visibleRecords[recordPosition + 1].id)}><ChevronIcon size={15} /></button></div>
++                {!visibleRecords.length ? <p className="t1-empty t1-search-empty" role="status">{t("t1.noMatchingRecords")}</p> : <div className="t1-results-layout"><ResultIndex records={records} visibleRecords={visibleRecords} selectedId={record?.id} onSelect={setRecordId} />
++                  {record && <article className="t1-evidence-card" data-record-id={record.id} data-record-version={record.version}>
++                    <div className="t1-reader-scroll" key={record.id}><div className="t1-record-meta"><span className="t1-record-number">{String(records.indexOf(record) + 1).padStart(2, "0")}</span><h2>{t(record.evidence_role === "background_suggestion" ? "t1.backgroundSource" : "t1.descriptionSource")}</h2>{firstSourcePage && <button className="t1-button t1-locate" onClick={() => sourcePage(firstSourcePage)}><EyeIcon size={14} />{t("t1.locateSource")}</button>}</div>
++                      <div className="t1-quote-frame"><Fragments fragments={record.fragments} passages={record.passages} onPage={sourcePage} /></div>
++                      {!!record.context.length && <details className="t1-context" key={`${record.id}:context`}><summary>{t("t1.context", { count: record.context.length })}</summary><Fragments fragments={record.context} passages={record.context_passages} onPage={sourcePage} /></details>}
++                      {record.association === "paired" && <details open className="t1-association" data-pairing="paired" key={`${record.id}:figures`}><summary><strong>{t("t1.pairedFigureCount", { count: record.figure_ids.length })}</strong></summary>{record.figure_ids.map(id => { const figure = figures.find(item => item.id === id); return figure ? <FigureView key={id} figure={figure} onPage={sourcePage} paired /> : null; })}</details>}
++                    </div>
++                    {editable && capabilities?.persisted_retention && <RecordRetention key={`${runId}:${record.id}:${record.version}:${record.retention?.revision ?? 0}`} runId={runId!} record={record} onNext={recordPosition < visibleRecords.length - 1 ? () => setRecordId(visibleRecords[recordPosition + 1].id) : undefined} onSaved={async changed => { if (changed) setRecordId(visibleRecords[recordPosition + 1]?.id ?? visibleRecords[recordPosition - 1]?.id ?? ""); await reloadCurrent(); }} />}
++                  </article>}
++                </div>}
++              </>}
+             </section>
+-            {editable && !sourceBlocked && <button onClick={() => setEditor({ run: runId!, record: null })}>{t("t1.add")}</button>}
+-            {editor && editor.run === runId && (editor.record === null || selectedEditorRecord && editor.record === record?.id) && !sourceBlocked && <SourceEditor key={`${editor.run}:${editor.record ?? "new"}`} runId={editor.run} record={selectedEditorRecord} units={units} onPage={sourcePage} onSaved={reloadCurrent} onClose={() => setEditor(null)} />}
+-            {runId && currentRun && <section className="t1-exports"><h2>{t("t1.exportTitle")}</h2><p className="t1-footnote">{t("t1.exportHelp")}</p>{legacyGlyphCheck && <p className="t1-footnote" role="note">{t("t1.sourceGlyphExportHint")}</p>}<div className="t1-actions">{exportKinds.map(kind => <button key={kind} disabled={Boolean(download) || sourceBlocked || !capabilities?.retained_export || keptCount === 0} onClick={() => void downloadExport(kind)}>{t(`t1.${kind}`)}</button>)}</div>{download && <p role="status">{t("t1.downloading")}</p>}</section>}
+           </>}
+           {activeTab === "figures" && <><div className="t1-heading"><h1>{t("t1.figures")}</h1></div><p className="t1-lead">{t("t1.independentFigure")}</p>{figures.length ? figures.map(figure => <FigureView key={figure.id} figure={figure} onPage={sourcePage} />) : <p className="t1-empty">{t("t1.noFigures")}</p>}</>}
+           {activeTab === "tasks" && <><div className="t1-heading"><h1>{t("t1.tasks")}</h1></div><p className="t1-lead">{t("t1.separateTasks")}</p><div className="t1-run-list">{runs.length ? runs.map(run => <div className="t1-task-row" key={run.run_id}><button onClick={() => selectRun(run)}><strong>{papers.find(item => item.id === run.document_id)?.title ?? run.document_id}</strong><span>{runLabel(run)} · {run.candidate_count}{run.fixture && " · fixture"}</span><small>{run.created_at ? new Date(run.created_at).toLocaleString(locale) : ""}</small></button>{!terminal.has(run.state) && <button onClick={() => void cancelRun(run.run_id)}>{t("t1.cancel")}</button>}<details><summary>{t("t1.sourceVersion")}</summary><code>{run.run_id}</code></details></div>) : <p>{t("t1.noTasks")}</p>}</div>
+@@ -314,6 +312,20 @@
+       </main>
+       {showSource && paper && pdfUrl && <><div className="t1-resize" {...source.separatorProps} /><aside className="t1-source" aria-label={t("t1.originalPdf")}><div className="t1-source-heading"><strong><GenericFileIcon size={15} />{t("t1.originalPdf")}</strong><a href={`${pdfUrl}#page=${page}`} target="_blank" rel="noreferrer">{t("t1.openOriginal")}<OpenInNewTabIcon size={13} /></a></div>{sourceBlocked ? <p className="t1-alert">{t("t1.sourceProblem")}</p> : <PdfSource key={`${paper.id}:${paper.sha256}`} url={pdfUrl} sha256={paper.sha256} page={page} pages={paper.pages} onPage={sourcePage} />}<div className="t1-source-footer"><small>{t("t1.sourceUnchanged")}</small><details><summary>{t("t1.sourceVersion")}</summary><code>SHA256 {paper.sha256}</code></details></div></aside></>}
+     </div>
++    <WorkbenchNotes open={showNotes} title={t(editor ? "t1.editTitle" : "t1.notes")} onClose={() => { setShowNotes(false); setEditor(null); }}>
++      {editor && editor.run === runId && !sourceBlocked ? <SourceEditor key={`${editor.run}:${editor.record ?? "new"}`} runId={editor.run} record={selectedEditorRecord} units={units} onPage={value => { sourcePage(value); setShowNotes(false); setEditor(null); }} onSaved={reloadCurrent} onClose={() => setEditor(null)} /> : <>
++        <section className="t1-notes-section"><h3>{t("t1.systemNotes")}</h3><p>{t("t1.disclaimer")}</p>{presentation.sourceLimited && <p className="t1-notes-warning">{t("t1.sourceLimitsHint")}</p>}{runId && (!presentation.ended || !presentation.taskComplete) && <p className="t1-notes-warning">{t(`t1.${presentation.hintKey}`)}</p>}{sourceBlocked && <p className="t1-notes-warning">{t("t1.sourceProblem")}</p>}
++          {record && <><h4>{t("t1.figureRelationship")}</h4><p>{t(record.association === "paired" ? "t1.pairedFigureCount" : record.association === "pending" ? "t1.pendingPair" : record.association === "not_checked" ? "t1.notChecked" : "t1.noPair", { count: record.figure_ids.length })}</p></>}
++          {record?.labels?.comment && <aside className="t1-reviewer-comment"><strong>{t("t1.comment")}</strong><p>{record.labels.comment}</p></aside>}
++        </section>
++        <section className="t1-notes-section"><h3>{t("t1.sourceInformation")}</h3><p>{t("t1.fragmentsSeparate")}</p>{output?.scope && <details className="t1-note-disclosure"><summary>{t("t1.runScope")}</summary><ScopeSummary scope={output.scope} data={catalog} /></details>}
++          {record && <SameSourceMembers index={output?.same_source_review_index} record={record} records={records} onSelect={id => { const member = records.find(item => item.id === id); setRecordQuery(""); setRecordRole("all"); setRetentionView(member ? retainedStatus(member) : "kept"); setRecordId(id); setShowNotes(false); }} />}
++        </section>
++        {editable && !sourceBlocked && <section className="t1-notes-section"><h3>{t("t1.moreActions")}</h3>{record && <button className="t1-button" onClick={() => setEditor({ run: runId!, record: record.id })}>{t("t1.sourceCorrection")}</button>}<button className="t1-button" onClick={() => setEditor({ run: runId!, record: null })}>{t("t1.add")}</button></section>}
++        <details className="t1-technical-details"><summary>{t("t1.sourceLocationVersion")}</summary>{record && <><p>{t("t1.version", { version: record.version })}</p><code>{record.id} · {record.run_id} · {record.text_fingerprint}</code><h4>{t("t1.sourceDetails")}</h4>{[...record.fragments, ...record.context].map((fragment, i) => <code key={i}>{t("t1.physicalPage", { page: fragment.physical_page })} · {fragment.block_id} · {fragment.start}–{fragment.end} · {fragment.text_version}</code>)}
++          <details><summary>{t("t1.originalFields")}</summary><pre>{JSON.stringify({ figure_association: record.association, proposed_figure_ids: record.proposed_figure_ids, figures: figures.filter(figure => record.figure_ids.includes(figure.id)).map(({ id, number, verification, human_approved }) => ({ id, number, verification, human_approved })) }, null, 2)}</pre>{record.reasons.map((reason, i) => <p key={i}>{reason}</p>)}{record.model_primary_assessment && <pre>{JSON.stringify(record.model_primary_assessment, null, 2)}</pre>}{record.labels && <pre>{JSON.stringify(record.labels, null, 2)}</pre>}</details>{(record.review_reason || record.text_approved || record.review_status === "rejected") && <details className="t1-legacy-review"><summary>{t("t1.legacyReviewInfo")}</summary><p>{record.review_status}</p>{record.review_reason && <p>{record.review_reason}</p>}</details>}</>}{runId && <p className="t1-stream-status">{t(`t1.${connection}`)}</p>}{paper && <code>PDF SHA256 {paper.sha256}</code>}</details>
++      </>}
++    </WorkbenchNotes>
+     <SidebarMenu open={menu !== null} anchor={menu} sheet={mobile} ariaLabel={t("t1.theme")} title={t("t1.theme")} cancelLabel={t("t1.close")} onClose={() => setMenu(null)} items={([['auto', 'system'], ['light', 'light'], ['dark', 'dark']] as const).map(([id, key]) => ({ type: "item", id, label: t(`t1.${key}`), checked: preference === id, onSelect: () => setThemePreference(id) }))} />
+   </div>;
+ }
+--- a/code/apps/pi-web/t1/RecordRetention.tsx
++++ b/code/apps/pi-web/t1/RecordRetention.tsx
+@@ -1,11 +1,12 @@
+ "use client";
+ import { useState } from "react";
+ import { useI18n } from "@/hooks/useI18n";
++import { ArchiveIcon, CheckIcon, ChevronIcon, RestoreIcon } from "@/components/SidebarIcons";
+ import type { WorkbenchRecord, WorkbenchRetentionInput } from "../../../packages/contracts/src/workbench";
+ import { api, jsonBody, WorkbenchError } from "./api";
+ 
+ /** Everyday curation is independent of the legacy medical/source approval record. */
+-export function RecordRetention({ runId, record, onSaved }: { runId: string; record: WorkbenchRecord; onSaved: (changed?: boolean) => Promise<void> }) {
++export function RecordRetention({ runId, record, onSaved, onNext }: { runId: string; record: WorkbenchRecord; onSaved: (changed?: boolean) => Promise<void>; onNext?: () => void }) {
+   const { t } = useI18n(), excluded = record.retention?.status === "excluded";
+   const [busy, setBusy] = useState(false), [error, setError] = useState(""), [conflict, setConflict] = useState(false);
+   async function save() {
+@@ -20,8 +21,9 @@
+     } finally { setBusy(false); }
+   }
+   return <section className="t1-retention" aria-label={t("t1.retentionTitle")}>
+-    <div><strong>{t(excluded ? "t1.excluded" : record.retention?.origin === "default" ? "t1.defaultKept" : "t1.kept")}</strong><p>{t("t1.retentionHelp")}</p></div>
+-    <button disabled={busy || conflict} onClick={() => void save()}>{t(excluded ? "t1.restoreKept" : "t1.excludeRecord")}</button>
++    <span className="t1-retention-state">{excluded ? <ArchiveIcon size={14} /> : <CheckIcon size={14} />}{t(excluded ? "t1.excluded" : record.retention?.origin === "default" ? "t1.defaultKept" : "t1.kept")}</span>
++    <div className="t1-retention-actions"><button className={`t1-button ${excluded ? "t1-primary" : "t1-exclude"}`} data-retention-action disabled={busy || conflict} onClick={() => void save()}>{excluded ? <RestoreIcon size={15} /> : <ArchiveIcon size={15} />}{t(busy ? "t1.saving" : excluded ? "t1.restoreKept" : "t1.excludeRecord")}</button>
++      <button className="t1-button t1-next" disabled={busy || !onNext} onClick={onNext}>{t("t1.nextShort")}<ChevronIcon size={14} /></button></div>
+     {error && <div className="t1-alert" role="alert">{error}{conflict && <button onClick={() => void onSaved()}>{t("t1.loadCurrent")}</button>}</div>}
+   </section>;
+ }
+--- a/code/apps/pi-web/t1/EvidenceSource.tsx
++++ b/code/apps/pi-web/t1/EvidenceSource.tsx
+@@ -10,7 +10,7 @@
+     passage.fragment_indices.length > 0 && passage.joins.length === passage.fragment_indices.length - 1 && passage.joins.every((join, i) => join.before_fragment === passage.fragment_indices[i + 1]));
+   const groups = valid ? passages! : fragments.map((_, index) => ({ fragment_indices: [index], joins: [] } as WorkbenchReadingPassage));
+   return <div className="t1-fragments">{groups.map((passage, i) => <div className="t1-source-passage" data-passage-index={i} key={i}>
+-    <div className="t1-fragment-location"><div>{[...new Set(passage.fragment_indices.map(index => fragments[index].physical_page))].map(page => <button key={page} onClick={() => onPage(page)}>{t("t1.physicalPage", { page })}</button>)}</div><details><summary>{t("t1.sourceDetails")}</summary>{passage.fragment_indices.map(index => { const fragment = fragments[index]; return <code key={index}>{index + 1} · {fragment.block_id} · {fragment.start}–{fragment.end} · {fragment.text_version}</code>; })}</details></div>
++    <div className="t1-fragment-location"><div>{[...new Set(passage.fragment_indices.map(index => fragments[index].physical_page))].map(page => <button key={page} onClick={() => onPage(page)}>{t("t1.physicalPage", { page })}</button>)}</div></div>
+     <p className="t1-verbatim" lang="">{passage.fragment_indices.map((index, item) => {
+       const fragment = fragments[index], join = passage.joins[item - 1], previous = fragments[index - 1];
+       const closeWrap = join && /(?:[-\u00ad]|\p{Script=Han})$/u.test(previous.exact_quote) && (/[-\u00ad]$/u.test(previous.exact_quote) || /^\p{Script=Han}/u.test(fragment.exact_quote));
+@@ -24,7 +24,7 @@
+ export function FigureView({ figure, onPage, paired = false, review }: { figure: WorkbenchFigure; onPage: (page: number) => void; paired?: boolean; review?: ReactNode }) {
+   const { t } = useI18n();
+   return <section className="t1-figure" aria-label={`Figure ${figure.number ?? "?"}`}>
+-    <p className="t1-footnote">{t(paired ? "t1.paired" : "t1.independentFigure")}</p>
++    {!paired && <p className="t1-footnote">{t("t1.independentFigure")}</p>}
+     <div className="t1-section-title"><strong>Figure {figure.number ?? "?"}</strong><span>{t(figure.verification === "needs_review" ? "t1.figureNeedsReview" : "t1.figureSourceChecked")}</span></div>
+     {figure.assets.map(asset => <div key={asset.id}>
+       {/* Original whole-Figure assets must retain their bytes and aspect ratio. */}
+--- a/code/apps/pi-web/t1/ResultIndex.tsx
++++ b/code/apps/pi-web/t1/ResultIndex.tsx
+@@ -11,7 +11,7 @@
+ }) {
+   const { t } = useI18n();
+   return <nav className="t1-candidate-index" aria-label={t("t1.candidateIndex")}>
+-    <div className="t1-index-heading"><strong>{t("t1.candidateIndex")}</strong><span>{visibleRecords.length}</span></div>
++    <div className="t1-index-heading"><strong>{t("t1.candidateIndex")}</strong></div>
+     <div className="t1-index-list">{visibleRecords.map(record => <button
+       key={record.id}
+       data-index-record-id={record.id}
+@@ -20,7 +20,7 @@
+     >
+       <span className="t1-index-item-top"><b>{String(records.indexOf(record) + 1).padStart(2, "0")}</b><span>{t(record.evidence_role === "background_suggestion" ? "t1.backgroundSuggestions" : "t1.primaryDescriptions")}</span></span>
+       <span className="t1-index-preview">{record.fragments.slice(0, 3).map((fragment, i) => <span key={i}>{i > 0 && <span className="t1-preview-gap" aria-hidden="true"> ⋯ </span>}<span aria-label={t("t1.fragmentNumber", { number: i + 1 })}>{fragment.exact_quote}</span></span>)}</span>
+-      <span className="t1-index-item-bottom"><span>{record.fragments[0] && t("t1.physicalPage", { page: record.fragments[0].physical_page })}</span><span className="t1-index-status" data-status={record.retention?.status ?? "kept"}>{t(record.retention?.status === "excluded" ? "t1.excluded" : "t1.kept")}</span></span>
++      <span className="t1-index-item-bottom"><span>{record.fragments[0] && t("t1.physicalPage", { page: record.fragments[0].physical_page })}</span>{record.association === "paired" && <span>{t("t1.linkedFigures", { count: record.figure_ids.length })}</span>}</span>
+     </button>)}</div>
+   </nav>;
+ }
+--- a/code/apps/pi-web/t1/messages.mjs
++++ b/code/apps/pi-web/t1/messages.mjs
+@@ -15,7 +15,19 @@
+   retentionTitle: ["Keep or exclude this record", "保留／排除此条", "保留／排除此條"],
+   retentionHelp: ["Exclude unwanted content; restore it from Excluded at any time.", "不需要的内容可排除，并在“已排除”中恢复。", "不需要的內容可排除，並在「已排除」中恢復。"],
+   excludeRecord: ["Exclude this record", "排除此条", "排除此條"],
+-  restoreKept: ["Restore to kept results", "撤销排除", "撤銷排除"],
++  restoreKept: ["Restore to kept results", "恢复保留", "恢復保留"],
++  nextShort: ["Next", "下一条", "下一條"],
++  saving: ["Saving…", "保存中…", "儲存中…"],
++  notes: ["Notes", "说明", "說明"],
++  closeNotes: ["Close notes", "关闭说明", "關閉說明"],
++  systemNotes: ["System notes", "系统提醒", "系統提醒"],
++  sourceInformation: ["Source details", "出处详情", "出處詳情"],
++  moreActions: ["More actions", "更多操作", "更多操作"],
++  figureRelationship: ["Figure relationship", "配图关系", "配圖關係"],
++  linkedFigures: ["{count} Figures", "{count} 幅配图", "{count} 幅配圖"],
++  sourceLocationVersion: ["Source locations and versions", "来源位置与版本", "來源位置與版本"],
++  originalFields: ["Raw fields", "原始字段", "原始欄位"],
++  exportFormat: ["Export format", "导出格式", "匯出格式"],
+   retentionConflict: ["The record or keep/exclude choice has changed. Reload before applying your choice.", "此条内容或保留／排除选择已变化，请读取最新内容后操作。", "此條內容或保留／排除選擇已變更，請讀取最新內容後操作。"],
+   sourceCorrection: ["Correct source selection or labels…", "修订来源或标签…", "修訂來源或標籤…"],
+   legacyReviewInfo: ["Historical confirmation (read only)", "历史确认记录（只读）", "歷史確認記錄（唯讀）"],
+@@ -78,7 +90,7 @@
+   "taskIncompleteHint": ["Task-scope processing is incomplete. Saved candidates and reviews remain available.", "本次任务范围尚有未完成处理；已保存候选与审核仍保留。", "本次任務範圍尚有未完成處理；已儲存候選與審核仍保留。"],
+   "taskUnknownHint": ["No explicit completion record is available for this task scope. Saved evidence remains available for review.", "尚未取得本次任务范围处理完成的明确记录；已保存成果仍可核对。", "尚未取得本次任務範圍處理完成的明確記錄；已儲存成果仍可核對。"],
+   "sourceLimitsTitle": ["Source parsing limitations", "解析来源仍有限制", "解析來源仍有限制"],
+-  "sourceLimitsHint": ["Source structure, image text or parsing coverage still has unverified areas. This source limitation is recorded separately from task-scope processing.", "来源结构、图内文字或解析覆盖仍有待核范围；来源限制与本次任务范围处理状态分别记录。", "來源結構、圖內文字或解析涵蓋仍有待核範圍；來源限制與本次任務範圍處理狀態分別記錄。"],
++  "sourceLimitsHint": ["Some paragraph structure or text inside images in this paper has not been checked. Compare the original pages.", "这篇论文仍有部分段落结构或图中文字未核对，可对照原页查看。", "這篇論文仍有部分段落結構或圖中文字未核對，可對照原頁查看。"],
+ 
+   memberDifferences: ["Attribution and field differences", "归因与字段差异", "歸因與欄位差異"],
+   selectRestorePdf: ["Choose the identical PDF to restore", "选择待恢复的同一原 PDF", "選擇待恢復的相同原 PDF"],
+@@ -149,7 +161,7 @@
+   deleted: ["Deleted", "已删除", "已刪除"],
+   fixture: ["LOCAL ENGINEERING FIXTURE · no medical approval", "本地工程 fixture · 不作医学批准", "本機工程 fixture · 不作醫學批准"],
+   historical: ["Retained historical candidates", "历史导入候选", "歷史匯入候選"],
+-  disclaimer: ["Keeping a record is a selection, not medical approval. Source limitations and model suggestions remain visible.", "保留仅表示筛选选择，不代表医学批准；来源限制与模型建议照常保留。", "保留僅表示篩選選擇，不代表醫學批准；來源限制與模型建議照常保留。"],
++  disclaimer: ["Kept results organize source text; they have not been medically verified.", "保留结果用于整理原文，不表示已经过医学核验。", "保留結果用於整理原文，不表示已經過醫學核驗。"],
+   uploadTitle: ["Upload one PDF", "逐篇上传 PDF", "逐篇上傳 PDF"],
+   uploadHelp: ["Text PDFs in Chinese or English, up to 50 MiB each. Choose and upload one paper at a time.", "支持中文或英文文本型 PDF，单篇不超过 50 MiB。每次选择并上传一篇。", "支援中文或英文文字型 PDF，單篇不超過 50 MiB。每次選擇並上傳一篇。"],
+   choosePdf: ["Choose PDF", "选择 PDF", "選擇 PDF"],
+@@ -200,16 +212,16 @@
+   primary: ["Primary candidate · awaiting review", "主候选 · 待核", "主候選 · 待核"],
+   background: ["Background suggestion · not a confirmed independent target", "背景建议 · 尚非已确认独立目标", "背景建議 · 尚非已確認獨立目標"],
+   verbatim: ["Verbatim paper evidence", "论文原文证据", "論文原文證據"],
+-  fragmentsSeparate: ["Verified source line continuations flow as a passage. Separate passages indicate a source gap, paragraph boundary or unverified continuity. Original spelling and hyphens are preserved.", "已核对的同段排版行连续阅读；不同段落、来源缺口或连续关系未确认处仍分隔。原字符和连字符照原文保留。", "已核對的同段排版行連續閱讀；不同段落、來源缺口或連續關係未確認處仍分隔。原字元和連字號依原文保留。"],
++  fragmentsSeparate: ["Continuous source text is shown together; gaps stay separate. Original wording is preserved.", "连续原文已合并显示，不连续处保持分段；原文字词保留。", "連續原文已合併顯示，不連續處保持分段；原文字詞保留。"],
+   physicalPage: ["Physical page {page} ↗", "第 {page} 物理页 ↗", "第 {page} 實體頁 ↗"],
+   context: ["Source context ({count} fragments)", "原文上下文（{count} 段）", "原文上下文（{count} 段）"],
+   paired: ["Explicitly associated full Figure · review separately", "明确关联的整幅 Figure · 另行核对", "明確關聯的整幅 Figure · 另行核對"],
+-  pendingPair: ["Figure association uncertain · text remains available", "配图关系待核 · 文字仍可保留", "配圖關係待核 · 文字仍可保留"],
++  pendingPair: ["A corresponding image has not been confirmed.", "暂未确认对应图片。", "暫未確認對應圖片。"],
+   noPair: ["No confirmed explicit Figure association", "尚未确认明确配图关系", "尚未確認明確配圖關係"],
+   notChecked: ["Figure association has not been checked", "配图尚未检查", "配圖尚未檢查"],
+   independentFigure: ["Independent source Figure · not automatically paired", "独立图源 · 不自动配对", "獨立圖源 · 不自動配對"],
+-  figureNeedsReview: ["Full Figure completeness requires review", "整幅完整性待核", "整幅完整性待核"],
+-  figureSourceChecked: ["Source geometry checked · medical pairing requires review", "来源几何已核验 · 医学配对待核", "來源幾何已核驗 · 醫學配對待核"],
++  figureNeedsReview: ["Image source needs review", "图片来源待核", "圖片來源待核"],
++  figureSourceChecked: ["Original Figure", "论文原图", "論文原圖"],
+   caption: ["Original caption and related Figure Note", "原图注与明确相关的 Figure Note", "原圖說與明確相關的 Figure Note"],
+   noFigures: ["No available Figure assets; check the original PDF.", "暂无可用 Figure 资产，请核对原 PDF。", "暫無可用 Figure 資產，請核對原 PDF。"],
+   reviewTitle: ["Review this record only", "仅审核此条当前内容", "僅審核此條目前內容"],
+--- a/code/apps/pi-web/t1/workbench.css
++++ b/code/apps/pi-web/t1/workbench.css
+@@ -6,450 +6,401 @@
+   font-display: swap;
+ }
+ 
+-/* Keep the original Pi Web interaction and theme system; T1 owns this page's palette. */
++/* T1 uses Pi Web's existing theme and panels with a quiet, neutral workspace. */
+ :root, [data-theme="light"] {
+-  --font-ui: T1CJK, Arial, sans-serif;
++  --font-ui: Arial, T1CJK, sans-serif;
+   --font-ui-weight: 400;
+-  --bg: #f5f7fa;
+-  --bg-panel: #f0f3f7;
+-  --bg-hover: #e9eef5;
+-  --bg-selected: #e7eef8;
+-  --border: #dbe3ed;
+-  --text: #1b2a3d;
+-  --text-muted: #586b82;
+-  --text-dim: #718198;
+-  --accent: #315f9b;
+-  --accent-hover: #254e85;
++  --bg: #ffffff;
++  --bg-panel: #f7f7f8;
++  --bg-hover: #eeeef0;
++  --bg-selected: #ecebf5;
++  --border: #e5e5e8;
++  --text: #232329;
++  --text-muted: #686872;
++  --text-dim: #787882;
++  --accent: #665ac4;
++  --accent-hover: #5147a6;
+   --accent-contrast: #fff;
+-  --user-bg: #edf3fb;
++  --user-bg: #f1effb;
+   --assistant-bg: #fff;
+-  --tool-bg: #f8fafc;
++  --tool-bg: #f7f7f8;
+   --t1-surface: #fff;
+-  --t1-inset: #f8fafd;
+-  --t1-line: #e8edf4;
+-  --t1-success: #356d5b;
+-  --t1-success-bg: #edf6f1;
+-  --t1-warning: #94623b;
+-  --t1-shadow: 0 4px 24px #20345406, 0 1px 3px #20345403;
+-}
+-
++  --t1-inset: #f8f8fa;
++  --t1-line: #eeeef0;
++  --t1-success: #537b65;
++  --t1-warning: #976b32;
++  --t1-warning-bg: #fff9ef;
++  --t1-action-bg: #2c2c32;
++  --t1-action-hover: #414149;
++  --t1-action-text: #fff;
++  --t1-shadow: 0 8px 32px #16161d12, 0 2px 6px #16161d06;
++}
+ html.dark, [data-theme="dark"] {
+-  --bg: #111923;
+-  --bg-panel: #151f2b;
+-  --bg-hover: #223247;
+-  --bg-selected: #24374e;
+-  --border: #2d3e53;
+-  --text: #e6edf7;
+-  --text-muted: #a9b9ce;
+-  --text-dim: #8ea1ba;
+-  --accent: #a2c0e8;
+-  --accent-hover: #c0d5f2;
+-  --accent-contrast: #15263d;
+-  --user-bg: #22364f;
+-  --assistant-bg: #1a2635;
+-  --tool-bg: #182330;
+-  --t1-surface: #1a2635;
+-  --t1-inset: #1d2c3d;
+-  --t1-line: #2a3b50;
+-  --t1-success: #9dceb9;
+-  --t1-success-bg: #213d37;
+-  --t1-warning: #d8b590;
+-  --t1-shadow: 0 5px 28px #03091324;
+-}
+-
++  --bg: #19191d;
++  --bg-panel: #141417;
++  --bg-hover: #29292f;
++  --bg-selected: #302b45;
++  --border: #303036;
++  --text: #ececf1;
++  --text-muted: #aaaab4;
++  --text-dim: #92929e;
++  --accent: #b2a6f5;
++  --accent-hover: #cfc5ff;
++  --accent-contrast: #241c3d;
++  --user-bg: #2b263b;
++  --assistant-bg: #19191d;
++  --tool-bg: #202025;
++  --t1-surface: #19191d;
++  --t1-inset: #202025;
++  --t1-line: #2b2b31;
++  --t1-success: #9dc2ab;
++  --t1-warning: #d6b17b;
++  --t1-warning-bg: #30291f;
++  --t1-action-bg: #e4e4eb;
++  --t1-action-hover: #fff;
++  --t1-action-text: #24242b;
++  --t1-shadow: 0 8px 32px #0004, 0 2px 6px #0002;
++}
+ html, body { font-family: var(--font-ui); font-weight: 400; }
+-.t1-workbench {
+-  --t1-sidebar-width: 260px;
+-  --top-bar-height: 38px;
+-  height: var(--app-viewport-height, 100dvh);
+-  display: flex;
+-  flex-direction: column;
+-  overflow: hidden;
+-  color: var(--text);
+-  background: var(--bg);
+-  font-family: var(--font-ui);
+-  font-size: 14px;
+-  line-height: 1.65;
+-  -webkit-font-smoothing: antialiased;
+-  -moz-osx-font-smoothing: grayscale;
+-}
++.t1-workbench { --t1-sidebar-width: 224px; --top-bar-height: 34px; height: var(--app-viewport-height, 100dvh); display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--text); font: 13px/1.6 var(--font-ui); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+ .t1-workbench * { box-sizing: border-box; }
+ .t1-workbench :is(button, select, input, textarea) { font: inherit; }
+ .t1-workbench button { cursor: pointer; }
+-.t1-workbench button:disabled { opacity: .42; cursor: default; }
++.t1-workbench button:disabled { opacity: .4; cursor: default; }
+ .t1-workbench a { color: var(--accent); text-decoration: none; }
+ .t1-workbench :is(button, input, select, textarea, summary, a):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+-.t1-workbench h2 { font-size: 15px; font-weight: 600; margin: 18px 0 12px; }
+-.t1-workbench details > summary { cursor: pointer; }
+-.t1-workbench details code, .t1-workbench pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; }
+-.t1-workbench details code { display: block; padding-top: 7px; }
++.t1-workbench h2 { margin: 18px 0 10px; font-size: 14px; font-weight: 600; }
++.t1-workbench summary { cursor: pointer; }
++.t1-workbench code, .t1-workbench pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; }
++.t1-workbench details code { display: block; margin-top: 8px; }
+ .t1-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+-
+-/* The Pi Web shell: compact chrome, familiar tabs and resizable panels. */
+-.t1-topbar { height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 22px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--t1-surface); }
+-.t1-brand, .t1-top-actions { display: flex; align-items: center; gap: 12px; }
+-.t1-brand > span { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border)); border-radius: 9px; background: var(--user-bg); color: var(--accent); font-size: 15px; font-weight: 700; letter-spacing: -.7px; }
+-.t1-brand strong { font-weight: 600; font-size: 14px; letter-spacing: .15px; }
+-.t1-brand small { color: var(--text-dim); border-left: 1px solid var(--border); padding-left: 12px; font-size: 11px; }
+-.t1-top-actions { gap: 5px; }
+-.t1-top-actions select { max-width: 110px; font-size: 11px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); background: var(--t1-surface); }
+-.t1-top-actions button, .t1-workspace-bar button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--text-muted); }
+-.t1-top-actions button { width: 32px; height: 32px; }
++.t1-button, .t1-icon-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 32px; padding: 5px 11px; border: 1px solid var(--border); border-radius: 6px; background: var(--t1-surface); color: var(--text); font-size: 12px !important; line-height: 1.5; white-space: nowrap; }
++.t1-button:hover:enabled, .t1-icon-button:hover:enabled { background: var(--bg-hover); border-color: var(--text-dim); }
++.t1-icon-button { padding: 5px; width: 32px; }
++.t1-primary, .t1-exclude { border: 1px solid var(--t1-action-bg) !important; border-radius: 6px; padding: 7px 13px; background: var(--t1-action-bg) !important; color: var(--t1-action-text) !important; font-size: 12px !important; font-weight: 500; }
++.t1-primary:hover:enabled, .t1-exclude:hover:enabled { background: var(--t1-action-hover) !important; border-color: var(--t1-action-hover) !important; }
++
++/* Compact Pi Web chrome; navigation and content are divided by single rules. */
++.t1-topbar { height: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 18px; background: var(--bg-panel); border-bottom: 1px solid var(--border); }
++.t1-brand, .t1-top-actions { display: flex; align-items: center; gap: 10px; }
++.t1-brand > span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--t1-action-bg); color: var(--t1-action-text); font-size: 11px; font-weight: 700; letter-spacing: -.5px; }
++.t1-brand strong { font-size: 12px; font-weight: 600; }
++.t1-brand small { color: var(--text-dim); font-size: 10px; }
++.t1-top-actions { gap: 3px; }
++.t1-top-actions select { max-width: 106px; padding: 4px 6px; border: 0; border-radius: 5px; color: var(--text-muted); background: transparent; font-size: 11px; }
++.t1-top-actions button, .t1-workspace-bar button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 5px 7px; border: 0; border-radius: 5px; color: var(--text-muted); background: transparent; }
++.t1-top-actions button { width: 30px; height: 30px; }
+ .t1-top-actions button:hover, .t1-workspace-bar button:hover { background: var(--bg-hover); color: var(--text); }
+ .t1-body { --t1-source-width: 520px; display: flex; flex: 1; min-height: 0; overflow: hidden; }
+-.t1-sidebar { position: relative; width: var(--t1-sidebar-width); flex-shrink: 0; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+-.t1-sidebar-heading { display: flex; align-items: center; gap: 8px; padding: 22px 20px 12px; }
+-.t1-sidebar-heading strong { color: var(--text-muted); font-size: 12px; font-weight: 500; }
+-.t1-sidebar-heading > span { color: var(--text-dim); font-size: 11px; font-variant-numeric: tabular-nums; }
+-.t1-sidebar-close { display: none; margin-left: auto; background: transparent; color: var(--text); border: 0; padding: 2px; }
+-.t1-new-task { display: flex; align-items: center; gap: 8px; margin: 0 14px 16px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--t1-surface); color: var(--text); font-size: 12px !important; box-shadow: 0 1px 3px #20345404; }
+-.t1-new-task:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+-.t1-paper-list { overflow: auto; flex: 1; padding: 0 10px 14px; scrollbar-width: thin; }
+-.t1-paper-list > button { width: 100%; display: block; margin: 0 0 5px; padding: 12px 11px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: var(--text); text-align: left; }
++.t1-sidebar { position: relative; width: var(--t1-sidebar-width); flex-shrink: 0; display: flex; flex-direction: column; background: var(--bg-panel); overflow: hidden; }
++.t1-sidebar-heading { display: flex; align-items: center; gap: 7px; padding: 18px 16px 10px; color: var(--text-muted); font-size: 11px; }
++.t1-sidebar-heading strong { font-weight: 500; }
++.t1-sidebar-heading > span { color: var(--text-dim); font-size: 10px; font-variant-numeric: tabular-nums; }
++.t1-sidebar-close { display: none; margin-left: auto; padding: 2px; border: 0; background: transparent; color: var(--text); }
++.t1-new-task { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 0 12px 16px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--t1-surface); color: var(--text); font-size: 12px !important; box-shadow: 0 1px 2px #00000005; }
++.t1-new-task:hover { background: var(--bg-hover); border-color: var(--text-dim); }
++.t1-paper-list { flex: 1; overflow: auto; padding: 0 8px 12px; scrollbar-width: thin; }
++.t1-paper-list > button { width: 100%; display: block; margin-bottom: 3px; padding: 9px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text); text-align: left; }
+ .t1-paper-list > button:hover { background: var(--bg-hover); }
+-.t1-paper-list > button.selected { background: var(--t1-surface); border-color: var(--border); box-shadow: var(--t1-shadow); }
+-.t1-paper-label { display: flex; align-items: center; gap: 7px; color: var(--text-dim); margin-bottom: 6px; }
+-.t1-paper-label b { font-size: 10px; font-weight: 500; letter-spacing: .25px; }
++.t1-paper-list > button.selected { background: var(--bg-selected); }
++.t1-paper-label { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; color: var(--text-dim); }
++.t1-paper-label b { font-size: 10px; font-weight: 500; }
+ .t1-paper-label small { margin-left: auto; font-size: 10px; }
+-.t1-paper-list strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12px; font-weight: 500; line-height: 1.75; }
+-.t1-paper-list > button.selected strong { color: var(--accent); }
+-.t1-paper-list em { display: block; margin-top: 7px; color: var(--text-dim); font-size: 10px; font-style: normal; }
+-.t1-sidebar-bottom { padding: 17px 20px; border-top: 1px solid var(--border); }
+-.t1-sidebar-bottom button { display: flex; align-items: center; gap: 8px; border: 0; padding: 0; background: none; color: var(--text-muted); font-size: 12px; }
+-.t1-sidebar-bottom p { margin: 9px 0 12px; color: var(--text-dim); font-size: 10px; line-height: 1.8; }
+-.t1-sidebar-bottom details { font-size: 10px; color: var(--text-dim); }
++.t1-paper-list strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12px; font-weight: 400; line-height: 1.65; }
++.t1-paper-list > button.selected strong { color: var(--text); font-weight: 600; }
++.t1-paper-list em { display: none; }
++.t1-sidebar-bottom { padding: 14px 16px; border-top: 1px solid var(--border); }
++.t1-sidebar-bottom button { display: flex; align-items: center; gap: 7px; padding: 4px 0; border: 0; background: transparent; color: var(--text-muted); font-size: 12px; }
++.t1-sidebar-bottom details { margin-top: 10px; color: var(--text-dim); font-size: 10px; }
+ .t1-sidebar-bottom details span { display: block; padding-top: 6px; }
+-.t1-resize { width: 5px; flex-shrink: 0; cursor: col-resize; border-left: 1px solid var(--border); touch-action: none; outline-offset: -2px; }
++.t1-resize { width: 3px; flex-shrink: 0; cursor: col-resize; border-left: 1px solid var(--border); touch-action: none; outline-offset: -2px; }
+ .t1-resize:hover, .t1-resize:focus-visible { background: var(--bg-selected); }
+-.t1-main { min-width: 0; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+-/* TabBar's inline background transition otherwise briefly retains its light surface during a theme change. */
+-.t1-workbench .tabbar-scroll [role="tab"] { transition: none !important; }
+-.t1-workspace-bar { display: flex; align-items: center; gap: 8px; height: 41px; flex-shrink: 0; padding: 0 12px; border-bottom: 1px solid var(--border); background: var(--t1-surface); }
++.t1-main { display: flex; flex: 1; flex-direction: column; min-width: 0; overflow: hidden; }
++.t1-workspace-bar { display: flex; align-items: center; gap: 8px; height: 36px; flex-shrink: 0; padding: 0 14px; border-bottom: 1px solid var(--border); }
+ .t1-workspace-bar > span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 11px; }
+-.t1-workspace-bar button { min-height: 30px; font-size: 11px; white-space: nowrap; }
+-.t1-mobile-source { display: none; align-items: center; gap: 5px; padding: 5px; font-size: 11px; white-space: nowrap; }
+-.t1-content { padding: 28px clamp(22px, 2.7vw, 44px) 42px; overflow: auto; flex: 1; min-height: 0; scrollbar-gutter: stable; }
+-.t1-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
+-.t1-heading h1 { font-size: 26px; line-height: 1.4; font-weight: 600; letter-spacing: -.6px; margin: 0; }
+-.t1-review-intro, .t1-lead { color: var(--text-muted); font-size: 12px; line-height: 1.85; margin: 9px 0 0; }
+-.t1-lead { margin-bottom: 18px; }
+-.t1-results-heading { align-items: flex-start; }
+-.t1-results-heading > div:first-child { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 16px; }
+-.t1-results-heading .t1-review-intro { margin: 0; }
+-.t1-results-heading > .t1-badge { margin-top: 6px; }
+-.t1-result-flags { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+-.t1-source-limits-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 5px; background: var(--t1-surface); color: var(--t1-warning); padding: 3px 7px; font-size: 10px !important; white-space: nowrap; }
+-.t1-source-limits-chip::before { content: ""; display: block; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+-.t1-source-limits-chip:hover { background: var(--bg-hover); }
+-.t1-badge { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; font-size: 10px; font-weight: 400; color: var(--text-muted); line-height: 1.75; white-space: nowrap; }
+-.t1-badge[data-status="approved"] { color: var(--t1-success); border-color: color-mix(in srgb, var(--t1-success) 25%, var(--border)); background: var(--t1-success-bg); }
+-.t1-badge[data-status="rejected"] { color: var(--text-muted); background: var(--bg-panel); }
+-
+-/* The result collection keeps the actual source text in the first viewport. */
+-.t1-results-panel { container-type: inline-size; background: var(--t1-surface); border: 1px solid var(--border); border-radius: 13px; padding: 20px; box-shadow: var(--t1-shadow); }
+-.t1-results-summary { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--t1-line); }
+-.t1-results-overview { display: flex; align-items: center; min-width: 0; }
+-.t1-results-overview dl { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 0; }
+-.t1-results-overview dl > div { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+-.t1-results-overview dt { color: var(--text-muted); font-size: 11px; line-height: 1.5; }
+-.t1-results-overview dd { order: -1; margin: 0; font-size: 25px; line-height: 1.3; font-weight: 500; letter-spacing: -.7px; font-variant-numeric: tabular-nums; }
+-.t1-results-overview [data-count-kind="candidates"] dd { color: var(--accent); }
+-.t1-results-overview > p { display: none; }
+-.t1-output-toolbar { display: flex; align-items: flex-end; flex-direction: column; justify-content: space-between; gap: 4px; flex-shrink: 0; }
++.t1-workspace-bar button { min-height: 28px; font-size: 11px; white-space: nowrap; }
++.t1-mobile-source { display: none; align-items: center; gap: 5px; font-size: 10px; white-space: nowrap; }
++.t1-workbench .tabbar-scroll { padding: 0 10px; border-bottom: 1px solid var(--border); background: var(--t1-surface) !important; gap: 4px; }
++.t1-workbench .tabbar-scroll [role="tab"] { min-width: 76px !important; border-right: 0 !important; border-bottom: 2px solid transparent; padding-left: 8px !important; padding-right: 4px !important; background: transparent !important; font-size: 11px !important; transition: none !important; }
++.t1-workbench .tabbar-scroll [aria-selected="true"] { border-bottom-color: var(--accent); }
++.t1-content { flex: 1; min-height: 0; padding: 22px 28px 36px; overflow: auto; scrollbar-gutter: stable; }
++.t1-content[data-view="records"] { display: flex; flex-direction: column; overflow: hidden; padding: 18px 24px 0; scrollbar-gutter: auto; }
++.t1-content[data-view="records"][data-source-blocked="true"] { overflow: auto; }
++.t1-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
++.t1-heading h1 { margin: 0; font-size: 23px; line-height: 1.4; letter-spacing: -.5px; font-weight: 600; }
++.t1-lead { color: var(--text-muted); font-size: 12px; line-height: 1.8; margin: 8px 0 18px; }
++.t1-badge { display: inline-flex; padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; color: var(--text-muted); font-size: 10px; white-space: nowrap; }
++
++/* One collection toolbar, a source index and an unboxed reading pane. */
++.t1-results-heading { flex-wrap: wrap; flex-shrink: 0; min-height: 32px; gap: 8px 14px; margin-bottom: 10px; }
++.t1-results-heading h1 { font-size: 19px; letter-spacing: -.3px; }
++.t1-output-toolbar { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+ .t1-task-picker { position: relative; color: var(--text-muted); font-size: 11px; }
+-.t1-task-picker summary { white-space: nowrap; }
+-.t1-task-picker time { margin-left: 7px; color: var(--text-dim); font-size: 10px; }
+-.t1-task-picker > label { position: absolute; top: calc(100% + 7px); right: 0; z-index: 5; display: flex; align-items: center; gap: 8px; width: min(370px, 78vw); padding: 11px; border: 1px solid var(--border); border-radius: 7px; background: var(--t1-surface); box-shadow: var(--t1-shadow); white-space: nowrap; }
+-.t1-output-toolbar select { color: var(--text); background: var(--t1-surface); border: 1px solid var(--border); border-radius: 5px; padding: 6px; flex: 1; width: 100%; min-width: 0; font-size: 11px; }
+-.t1-task-progress { display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: 10px; line-height: 1.6; }
+-.t1-task-progress > strong { display: flex; align-items: center; gap: 6px; font-weight: 400; }
+-.t1-status-dot { display: inline-block; width: 5px; height: 5px; flex-shrink: 0; background: var(--text-dim); border-radius: 50%; }
+-.t1-task-progress[data-state="failed"] .t1-status-dot { background: #bc7777; }
++.t1-task-picker > summary { white-space: nowrap; }
++.t1-task-picker time { margin-left: 6px; color: var(--text-dim); }
++.t1-task-picker > label { position: absolute; top: calc(100% + 9px); left: 0; z-index: 10; display: flex; align-items: center; gap: 8px; width: min(370px, 82vw); padding: 12px; border: 1px solid var(--border); border-radius: 7px; background: var(--t1-surface); box-shadow: var(--t1-shadow); }
++.t1-task-picker select { min-width: 0; flex: 1; width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 5px; background: var(--t1-surface); color: var(--text); }
++.t1-task-progress { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 11px; }
++.t1-status-button { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: inherit; font-size: 11px !important; padding: 4px 0; }
++.t1-status-button:hover { text-decoration: underline; }
++.t1-status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: var(--text-dim); }
+ .t1-task-progress:is([data-state="failed"], [data-state="interrupted"], [data-status="taskEndedIncomplete"], [data-status="taskEndedUnknown"]) { color: var(--t1-warning); }
++.t1-task-progress:is([data-state="failed"], [data-state="interrupted"], [data-status="taskEndedIncomplete"]) .t1-status-dot { background: currentColor; }
+ .t1-task-progress:is([data-state="extracting"], [data-state="parsing"]) .t1-status-dot { background: var(--accent); }
+-.t1-record-nav { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin: 0 0 16px; }
+-.t1-record-search { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 150px; height: 35px; border: 1px solid var(--border); border-radius: 7px; padding: 0 10px; color: var(--text-dim); background: var(--t1-inset); }
+-.t1-record-search input { min-width: 0; width: 100%; border: 0; background: transparent; padding: 6px 0; color: var(--text); font-size: 11px; }
++.t1-source-limits-chip { border: 0; padding: 2px 0; background: transparent; color: var(--t1-warning); font-size: 11px !important; text-decoration: underline; text-underline-offset: 3px; }
++.t1-results-actions { display: flex; align-items: center; gap: 7px; }
++.t1-exports { position: relative; }
++.t1-exports > summary { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 32px; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 12px; background: var(--t1-surface); color: var(--text); list-style: none; }
++.t1-exports > summary::-webkit-details-marker { display: none; }
++.t1-exports > summary:hover { background: var(--bg-hover); border-color: var(--text-dim); }
++.t1-exports > summary > svg:last-child { transform: rotate(90deg); }
++.t1-export-options { position: absolute; right: 0; top: calc(100% + 6px); z-index: 12; width: max-content; min-width: 186px; display: grid; gap: 2px; padding: 5px; border: 1px solid var(--border); border-radius: 7px; background: var(--t1-surface); box-shadow: var(--t1-shadow); }
++.t1-export-options > button { border: 0; border-radius: 4px; padding: 9px 11px; text-align: left; background: transparent; color: var(--text); font-size: 12px; }
++.t1-export-options > button:hover:enabled { background: var(--bg-hover); }
++.t1-export-error { flex-shrink: 0; }
++.t1-results-panel { container-type: inline-size; position: relative; display: flex; flex-direction: column; min-height: 0; flex: 1; }
++[data-source-blocked="true"] .t1-results-panel { flex: none; min-height: 480px; height: 65vh; }
++.t1-record-nav { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex-shrink: 0; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
++.t1-retention-views { display: flex; gap: 3px; }
++.t1-retention-views button { display: inline-flex; align-items: center; gap: 7px; min-height: 31px; padding: 5px 9px; border: 0; border-radius: 5px; background: transparent; color: var(--text-muted); font-size: 12px; white-space: nowrap; }
++.t1-retention-views button:hover { background: var(--bg-hover); }
++.t1-retention-views button[aria-pressed="true"] { background: var(--bg-hover); color: var(--text); font-weight: 600; }
++.t1-retention-views button span { display: inline-flex; justify-content: center; min-width: 16px; color: var(--text-muted); font-size: 10px; font-variant-numeric: tabular-nums; font-weight: 400; }
++.t1-record-search { display: flex; align-items: center; gap: 7px; min-width: 130px; flex: 1; max-width: 350px; height: 31px; margin-left: auto; padding: 0 9px; border: 1px solid var(--border); border-radius: 5px; background: var(--t1-surface); color: var(--text-dim); }
++.t1-record-search input { min-width: 0; width: 100%; border: 0; padding: 4px 0; color: var(--text); background: transparent; font-size: 11px; }
+ .t1-record-search input:focus-visible { outline: 0; }
+ .t1-record-search:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+-.t1-record-nav select { border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; min-width: 0; height: 35px; max-width: 100%; color: var(--text-muted); background: var(--t1-surface); font-size: 11px; }
+-.t1-role-filter { display: flex; min-width: 0; }
+-.t1-record-step { display: flex; align-items: center; gap: 5px; min-width: 0; }
+-.t1-record-selector { display: none; min-width: 0; flex: 1; }
++.t1-role-filter { min-width: 0; }
++.t1-record-nav select, .t1-record-selector select { min-width: 0; max-width: 100%; height: 31px; padding: 4px 7px; border: 1px solid var(--border); border-radius: 5px; background: var(--t1-surface); color: var(--text-muted); font-size: 11px; }
++.t1-record-step { display: none; align-items: center; gap: 5px; padding: 10px 0; flex-shrink: 0; }
++.t1-record-selector { display: flex; min-width: 0; flex: 1; }
+ .t1-record-selector select { width: 100%; }
+-.t1-record-position { color: var(--text-dim); font-size: 11px; font-variant-numeric: tabular-nums; min-width: 45px; text-align: center; white-space: nowrap; }
+-.t1-record-step button { display: grid; place-items: center; width: 31px; height: 33px; flex-shrink: 0; border: 1px solid var(--border); border-radius: 6px; background: var(--t1-surface); color: var(--text-muted); }
+-.t1-record-step button:hover:enabled { background: var(--bg-hover); color: var(--text); }
++.t1-record-position { min-width: 38px; text-align: center; white-space: nowrap; color: var(--text-dim); font-size: 11px; font-variant-numeric: tabular-nums; }
++.t1-record-step button { display: grid; place-items: center; width: 29px; height: 29px; border: 1px solid var(--border); border-radius: 5px; background: var(--t1-surface); color: var(--text-muted); }
++.t1-record-step button:hover:enabled { background: var(--bg-hover); }
+ .t1-chevron-back { transform: rotate(180deg); }
+-.t1-results-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
+-.t1-candidate-index { min-width: 0; position: sticky; top: 0; }
+-.t1-index-heading { display: flex; align-items: center; justify-content: space-between; margin: 0 3px 10px; font-size: 11px; color: var(--text-dim); }
++.t1-results-layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); flex: 1; min-height: 0; }
++.t1-candidate-index { min-width: 0; min-height: 0; display: flex; flex-direction: column; border-right: 1px solid var(--border); padding: 18px 12px 0 0; }
++.t1-index-heading { color: var(--text-dim); font-size: 10px; margin: 0 8px 10px; }
+ .t1-index-heading strong { font-weight: 500; }
+-.t1-index-heading > span { font-variant-numeric: tabular-nums; }
+-.t1-index-list { display: grid; gap: 6px; max-height: 670px; overflow: auto; scrollbar-width: thin; padding-right: 5px; padding-bottom: 3px; }
+-.t1-index-list > button { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 12px; border: 1px solid transparent; border-radius: 8px; background: var(--t1-inset); color: var(--text); text-align: left; }
++.t1-index-list { min-height: 0; flex: 1; overflow: auto; scrollbar-width: thin; padding-bottom: 20px; }
++.t1-index-list > button { display: flex; flex-direction: column; gap: 7px; width: 100%; margin-bottom: 3px; padding: 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text); text-align: left; }
+ .t1-index-list > button:hover { background: var(--bg-hover); }
+-.t1-index-list > button[aria-current="true"] { border-color: color-mix(in srgb, var(--accent) 43%, var(--border)); background: var(--user-bg); box-shadow: inset 2px 0 var(--accent); }
+-.t1-index-item-top, .t1-index-item-bottom { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 10px; color: var(--text-dim); }
+-.t1-index-item-top > b { font-size: 11px; color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+-.t1-index-preview { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: var(--text-muted); font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
++.t1-index-list > button[aria-current="true"] { background: var(--bg-selected); }
++.t1-index-item-top, .t1-index-item-bottom { display: flex; align-items: center; justify-content: space-between; gap: 6px; color: var(--text-dim); font-size: 10px; }
++.t1-index-item-top b { color: var(--text-muted); font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; }
++.t1-index-list > button[aria-current="true"] .t1-index-item-top b { color: var(--accent); }
++.t1-index-preview { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; font-size: 12px; color: var(--text-muted); line-height: 1.65; }
+ .t1-index-list > button[aria-current="true"] .t1-index-preview { color: var(--text); }
+ .t1-index-item-bottom { font-size: 9px; }
+-.t1-index-status[data-status="approved"] { color: var(--t1-success); }
+-.t1-evidence-card { min-width: 0; border: 1px solid var(--border); border-radius: 9px; background: var(--t1-surface); padding: 17px 18px; }
+-.t1-record-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-bottom: 12px; color: var(--text-muted); }
+-.t1-record-number { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 7px; background: var(--user-bg); color: var(--accent); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+-.t1-record-meta > strong { font-size: 12px; font-weight: 500; }
+-.t1-record-status { display: flex; flex-wrap: wrap; gap: 5px; margin-left: auto; }
+-.t1-quote-frame { background: var(--t1-inset); border: 1px solid var(--t1-line); border-top: 2px solid color-mix(in srgb, var(--accent) 62%, var(--border)); border-radius: 7px; padding: 18px; }
+-.t1-section-title { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+-.t1-section-title h2 { font-size: 15px; margin: 0; }
+-.t1-section-title > span { color: var(--text-muted); font-size: 11px; }
+-.t1-section-title > strong { font-size: 14px; font-weight: 600; }
+-.t1-evidence-title { justify-content: space-between; margin-bottom: 4px; }
+-.t1-field-hint { margin: 0 0 5px; color: var(--text-dim); font-size: 10px; line-height: 1.85; }
+-.t1-source-passage + .t1-source-passage { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
++.t1-evidence-card { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
++.t1-reader-scroll { flex: 1; min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-gutter: stable; padding: 16px clamp(20px, 3vw, 46px) 30px; }
++.t1-record-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
++.t1-record-number { font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
++.t1-record-meta h2 { font-size: 13px; margin: 0; font-weight: 500; }
++.t1-locate { margin-left: auto; font-size: 11px !important; min-height: 28px; padding: 3px 7px; color: var(--text-muted); }
++.t1-quote-frame { padding: 0; background: transparent; }
++.t1-fragment-location { display: flex; align-items: center; gap: 9px; margin-bottom: 6px; color: var(--text-dim); font-size: 10px; }
++.t1-fragment-location > div { display: flex; gap: 8px; flex-wrap: wrap; }
++.t1-fragment-location button, .t1-link { padding: 1px 0; border: 0; background: transparent; color: var(--text-muted); font-size: 10px; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--border); }
++.t1-fragment-location button:hover, .t1-link:hover { color: var(--accent); text-decoration-color: currentColor; }
++.t1-verbatim { margin: 0; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--font-ui); font-size: 16px; font-weight: 400; line-height: 1.95; }
+ .t1-fragments > .t1-source-passage > .t1-verbatim { white-space: normal; }
+ .t1-source-fragment { white-space: pre-wrap; }
+-.t1-literal-gap { white-space: normal; }
+-.t1-layout-separator { white-space: normal; }
++.t1-literal-gap, .t1-layout-separator { white-space: normal; }
+ .t1-layout-close { font-size: 0; }
+-.t1-fragment-location > div { display: flex; gap: 10px; flex-wrap: wrap; }
+-.t1-retention-views { display: flex; gap: 6px; margin: 0 0 14px; }
+-.t1-retention-views button { display: flex; align-items: center; gap: 9px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); border-radius: 6px; padding: 8px 12px; font-size: 12px; }
+-.t1-retention-views button[aria-pressed="true"] { background: var(--t1-inset); color: var(--text); border-color: var(--accent); }
+-.t1-retention-views button span { font-size: 10px; font-variant-numeric: tabular-nums; color: var(--text-dim); }
+-.t1-retention { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+-.t1-retention strong { font-size: 12px; }
+-.t1-retention p { color: var(--text-muted); font-size: 11px; line-height: 1.8; margin: 5px 0 0; }
+-.t1-source-edit { font-size: 11px; margin-top: 14px; color: var(--text-muted); }
+-.t1-source-edit button { margin-top: 8px; }
+-.t1-fragment-location { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 7px 0 4px; color: var(--text-dim); font-size: 10px; }
+-.t1-fragment-location button, .t1-link { padding: 0; border: 0; background: transparent; color: var(--accent); font-size: 10px; }
+-.t1-fragment-location details { min-width: 0; max-width: 100%; font-size: 9px; }
+-.t1-fragment-location details code { font-size: 10px; }
+-.t1-fragment { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; padding: 8px 0; }
+-.t1-fragment + .t1-fragment { border-top: 1px dashed var(--t1-line); }
+-.t1-fragment-number { padding-top: 5px; color: var(--text-dim); font-size: 9px; font-variant-numeric: tabular-nums; user-select: none; }
+-.t1-verbatim { white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--font-ui); font-size: 16px; font-weight: 400; line-height: 1.9; margin: 0; color: var(--text); }
+-.t1-context { color: var(--text-muted); border-top: 1px solid var(--t1-line); margin-top: 14px; padding: 12px 0 0; font-size: 11px; }
+-.t1-context[open] > summary { margin-bottom: 10px; }
++.t1-source-passage + .t1-source-passage { border-top: 1px solid var(--border); margin-top: 22px; padding-top: 18px; }
++.t1-context { border-top: 1px solid var(--t1-line); margin-top: 24px; padding-top: 14px; color: var(--text-muted); font-size: 12px; }
++.t1-context[open] > summary { margin-bottom: 14px; }
+ .t1-context .t1-verbatim { font-size: 14px; }
+-.t1-association { border: 1px solid var(--border); border-radius: 6px; background: var(--t1-inset); margin-top: 14px; padding: 10px 12px; color: var(--text-muted); font-size: 11px; }
+-.t1-association summary strong { font-size: 11px; font-weight: 500; }
+-.t1-association > p { font-size: 11px; line-height: 1.85; margin: 10px 0; overflow-wrap: anywhere; }
+-.t1-association[data-pairing="paired"] summary { color: var(--accent); }
+-.t1-association .t1-figure { margin: 14px 0 0; }
+-.t1-task-details { border-top: 1px solid var(--t1-line); margin-top: 18px; padding-top: 12px; color: var(--text-muted); font-size: 11px; }
+-.t1-task-details h2 { font-size: 12px; margin: 12px 0; }
+-.t1-source-limits-inline { display: inline-block; padding-left: 12px; color: var(--text-dim); font-size: 10px; }
+-.t1-footnote { color: var(--text-muted); font-size: 11px; line-height: 1.85; margin: 10px 0; }
+-
+-/* Review and source editing keep independent text / Figure actions. */
+-.t1-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; margin: 14px 0; color: var(--text-muted); font-size: 12px; }
+-.t1-field :is(input, select, textarea), .t1-workbench textarea, .t1-scope-editor select { width: 100%; min-width: 0; padding: 9px 11px; color: var(--text); border: 1px solid var(--border); border-radius: 6px; background: var(--t1-surface); font: inherit; font-size: 13px; }
+-.t1-workbench textarea { resize: vertical; line-height: 1.75; }
+-.t1-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 15px 0 10px; }
+-.t1-actions button, .t1-evidence-card > button, .t1-content > button, .t1-task-progress button, .t1-section-title button, .t1-task-row > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--t1-surface); color: var(--text); padding: 7px 10px; font-size: 11px; line-height: 1.6; }
+-.t1-actions button:hover:enabled, .t1-evidence-card > button:hover, .t1-content > button:hover, .t1-section-title button:hover { background: var(--bg-hover); }
+-.t1-primary { padding: 9px 15px; border: 1px solid var(--accent) !important; border-radius: 6px; color: var(--accent-contrast) !important; background: var(--accent) !important; font-size: 12px !important; font-weight: 500; }
+-.t1-primary:hover:enabled { background: var(--accent-hover) !important; }
+-.t1-locate { padding: 5px 8px !important; font-size: 10px !important; color: var(--accent) !important; }
+-.t1-review { border-top: 1px solid var(--t1-line); margin-top: 18px; padding-top: 16px; }
+-.t1-review > .t1-section-title { justify-content: space-between; }
+-.t1-review-status { display: flex; gap: 5px; flex-wrap: wrap; }
+-.t1-review-checks { display: grid; gap: 3px; margin-top: 15px; }
+-.t1-check { display: flex; align-items: flex-start; gap: 8px; color: var(--text); font-size: 11px; line-height: 1.8; margin: 5px 0; }
+-.t1-check input { width: 14px; height: 14px; margin: 3px 0 0; flex-shrink: 0; accent-color: var(--accent); }
+-.t1-check:has(input:disabled) { color: var(--text-dim); }
+-.t1-editor { border: 1px solid var(--border); border-radius: 10px; padding: 18px; background: var(--t1-surface); margin: 20px 0; }
+-.t1-editor .t1-section-title { justify-content: space-between; }
+-.t1-editor-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0 15px; }
+-.t1-source-choices { max-height: 410px; overflow: auto; border: 1px solid var(--border); border-radius: 7px; margin: 15px 0; background: var(--bg); }
+-.t1-source-choice { padding: 13px; border-bottom: 1px solid var(--border); }
+-.t1-source-choice:last-child { border: 0; }
+-.t1-source-choice-controls { display: flex; flex-wrap: wrap; gap: 10px; color: var(--text-muted); font-size: 11px; line-height: 1.8; }
+-.t1-source-choice-controls label { display: flex; align-items: center; gap: 4px; }
+-.t1-source-choice .t1-verbatim { font-size: 13px; }
+-.t1-source-choice details { color: var(--text-muted); font-size: 11px; margin-top: 8px; }
+-.t1-reviewer-comment { border-left: 2px solid var(--accent); border-radius: 0 5px 5px 0; padding: 10px 13px; margin-top: 14px; background: var(--t1-inset); font-size: 11px; line-height: 1.8; }
+-.t1-reviewer-comment p { white-space: pre-wrap; }
+-.t1-same-source { margin-top: 14px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--t1-inset); font-size: 11px; }
+-.t1-member-list { display: grid; gap: 8px; }
+-.t1-member-list > div { border: 1px solid var(--border); border-radius: 5px; padding: 10px; background: var(--t1-surface); }
+-.t1-member-list > div.selected { border-left: 2px solid var(--accent); }
+-.t1-member-list button { border: 0; padding: 0; background: transparent; color: var(--accent); text-align: left; font-size: 11px; }
+-.t1-member-list dl { font-size: 11px; line-height: 1.7; }
++.t1-association { border-top: 1px solid var(--t1-line); padding-top: 18px; margin-top: 24px; font-size: 12px; }
++.t1-association > summary { color: var(--text-muted); }
++.t1-association > summary strong { font-weight: 500; }
++.t1-association .t1-figure { border: 0; padding: 0; margin: 18px 0 26px; }
++.t1-retention { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; flex-shrink: 0; border-top: 1px solid var(--border); padding: 12px clamp(18px, 3vw, 46px); background: var(--t1-surface); }
++.t1-retention-state { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 11px; }
++.t1-retention-actions { display: flex; align-items: center; gap: 7px; margin-left: auto; }
++.t1-retention .t1-alert { width: 100%; margin: 0; }
++.t1-next { min-width: 84px; }
++
++/* One accessible side sheet gathers explanations; raw fields stay collapsed. */
++.t1-notes { inset: 0; margin: 0 0 0 auto; width: min(420px, 100vw); max-width: none; height: var(--app-viewport-height, 100dvh); max-height: none; padding: 0; border: 0; border-left: 1px solid var(--border); background: var(--t1-surface); color: var(--text); box-shadow: var(--t1-shadow); }
++.t1-notes[open] { display: flex; flex-direction: column; }
++.t1-notes::backdrop { background: #15151d30; }
++.t1-notes-heading { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); }
++.t1-notes-heading h2 { margin: 0; font-size: 14px; }
++.t1-notes-heading button { border-color: transparent; }
++.t1-notes-content { overflow: auto; min-height: 0; flex: 1; padding: 0 22px 24px; font-size: 12px; line-height: 1.85; }
++.t1-notes-section { padding: 20px 0; border-bottom: 1px solid var(--border); }
++.t1-notes-section h3 { font-size: 12px; font-weight: 600; margin: 0 0 10px; }
++.t1-notes-section h4 { font-size: 11px; font-weight: 500; color: var(--text); margin: 16px 0 5px; }
++.t1-notes-section p { color: var(--text-muted); margin: 6px 0; overflow-wrap: anywhere; }
++.t1-notes-section .t1-note-detail { font-size: 11px; }
++.t1-notes-section .t1-notes-warning { color: var(--t1-warning); }
++.t1-notes-section > .t1-button { width: 100%; justify-content: flex-start; margin-top: 7px; }
++.t1-note-disclosure, .t1-same-source { margin-top: 13px; color: var(--text-muted); }
++.t1-same-source > summary { color: var(--text); }
++.t1-member-list { margin-top: 12px; }
++.t1-member-list > div { padding: 10px 0; border-top: 1px solid var(--t1-line); }
++.t1-member-list > div.selected { padding-left: 9px; border-left: 2px solid var(--accent); }
++.t1-member-list button { border: 1px solid var(--border); border-radius: 5px; padding: 6px 8px; background: var(--t1-inset); color: var(--text); font-size: 11px; text-align: left; }
++.t1-member-list button:hover { background: var(--bg-hover); }
++.t1-member-list details { margin-top: 7px; font-size: 11px; }
+ .t1-member-list dt { color: var(--text-muted); }
+ .t1-member-list dd { margin: 3px 0 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+-
+-/* Whole Figures and original captions retain their original aspect ratio and text. */
+-.t1-figure { padding: 17px; margin-bottom: 18px; border: 1px solid var(--border); border-radius: 9px; background: var(--t1-surface); }
++.t1-reviewer-comment { margin-top: 18px; padding-left: 12px; border-left: 2px solid var(--border); }
++.t1-reviewer-comment p { white-space: pre-wrap; }
++.t1-technical-details { margin-top: 20px; color: var(--text-muted); font-size: 11px; }
++.t1-technical-details > summary { color: var(--text-dim); }
++.t1-technical-details details { margin: 16px 0; }
++.t1-technical-details h4 { font-size: 11px; font-weight: 500; margin: 16px 0 8px; }
++.t1-notes .t1-editor { border: 0; margin: 0; padding: 18px 0; background: transparent; }
++.t1-notes .t1-editor > .t1-section-title h2 { display: none; }
++
++/* Whole Figure assets, original captions and the existing PDF reader. */
++.t1-section-title { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
++.t1-section-title h2 { margin: 0; font-size: 14px; }
++.t1-section-title > span { color: var(--text-muted); font-size: 11px; }
++.t1-section-title > strong { font-size: 13px; font-weight: 600; }
++.t1-figure { margin-bottom: 24px; padding: 18px; border: 1px solid var(--border); border-radius: 7px; background: var(--t1-surface); }
+ .t1-figure img { display: block; width: 100%; height: auto; object-fit: contain; background: #fff; }
+ .t1-figure .t1-link { margin-top: 8px; }
+-.t1-caption { border-top: 1px solid var(--border); margin-top: 15px; padding-top: 11px; }
++.t1-caption { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+ .t1-caption > span { color: var(--text-muted); font-size: 11px; }
+ .t1-caption .t1-verbatim { font-size: 13px; }
+-.t1-figure-verification { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 14px; font-size: 11px; line-height: 1.8; }
+-.t1-source { width: var(--t1-source-width); min-width: 0; flex-shrink: 0; background: var(--t1-surface); display: flex; flex-direction: column; }
+-.t1-source-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 41px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
++.t1-source { display: flex; flex-direction: column; width: var(--t1-source-width); min-width: 0; flex-shrink: 0; background: var(--t1-surface); }
++.t1-source-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 36px; padding: 8px 14px; border-bottom: 1px solid var(--border); }
+ .t1-source-heading strong { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 500; }
+-.t1-source-heading a { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; }
+-.t1-source-footer { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--border); padding: 10px 14px; color: var(--text-dim); font-size: 10px; }
++.t1-source-heading a { display: flex; align-items: center; gap: 6px; font-size: 10px; }
++.t1-source-footer { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 10px; }
+ .t1-source-footer small, .t1-source-footer code { font-size: 10px; }
+-.t1-source-footer code { word-break: break-all; }
+ .t1-pdf-reader { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+ .t1-pdf-controls { display: flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 8px; border-bottom: 1px solid var(--border); font-size: 11px; }
+-.t1-pdf-controls button { min-width: 26px; height: 27px; padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; color: var(--text); background: var(--t1-surface); }
++.t1-pdf-controls button { min-width: 26px; height: 27px; padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--t1-surface); color: var(--text); }
+ .t1-pdf-controls label { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+ .t1-pdf-controls select { padding: 2px 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--t1-surface); color: var(--text); }
+ .t1-pdf-fit { font-size: 11px !important; white-space: nowrap; }
+ .t1-pdf-status { border-bottom: 1px solid var(--border); padding: 7px 14px; color: var(--text-muted); font-size: 10px; }
+-.t1-pdf-viewport { overflow: auto; min-height: 0; flex: 1; padding: 12px; background: var(--bg-panel); }
+-.t1-pdf-sheet { position: relative; width: max-content; background: #fff; box-shadow: 0 2px 10px #0002; margin: 0 auto; }
++.t1-pdf-viewport { min-height: 0; flex: 1; overflow: auto; padding: 12px; background: var(--bg-panel); }
++.t1-pdf-sheet { position: relative; width: max-content; margin: 0 auto; background: #fff; box-shadow: 0 2px 10px #0002; }
+ .t1-pdf-sheet canvas { display: block; }
+ .t1-pdf-sheet .textLayer { position: absolute; inset: 0; text-align: initial; overflow: hidden; line-height: 1; opacity: 1; z-index: 2; transform-origin: 0 0; -webkit-text-size-adjust: none; text-size-adjust: none; }
+ 
+-/* Upload, scope, export and task pages use the same quiet surfaces. */
+-.t1-upload { padding: 8px 0 25px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+-.t1-upload .t1-lead { margin-bottom: 14px; }
+-.t1-upload input[type="file"] { padding: 18px; border-style: dashed; background: var(--t1-surface); }
+-.t1-upload input::file-selector-button { margin-right: 12px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 5px; color: var(--text); background: var(--bg); font: inherit; cursor: pointer; }
++/* Existing task, scope and source-revision tools retain their behavior. */
++.t1-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; margin: 14px 0; color: var(--text-muted); font-size: 12px; }
++.t1-field :is(input, select, textarea), .t1-workbench textarea, .t1-scope-editor select { width: 100%; min-width: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 5px; background: var(--t1-surface); color: var(--text); font: inherit; font-size: 13px; }
++.t1-workbench textarea { resize: vertical; line-height: 1.75; }
++.t1-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 15px 0 10px; }
++.t1-actions button, .t1-content > button, .t1-section-title button, .t1-task-row > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--border); border-radius: 5px; padding: 7px 10px; background: var(--t1-surface); color: var(--text); font-size: 12px; }
++.t1-actions button:hover:enabled, .t1-section-title button:hover { background: var(--bg-hover); }
++.t1-editor { margin: 20px 0; padding: 18px; border: 1px solid var(--border); border-radius: 7px; background: var(--t1-surface); }
++.t1-editor .t1-section-title { justify-content: space-between; }
++.t1-editor-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
++.t1-source-choices { max-height: 410px; overflow: auto; margin: 15px 0; border: 1px solid var(--border); border-radius: 5px; background: var(--bg-panel); }
++.t1-source-choice { padding: 12px; border-bottom: 1px solid var(--border); }
++.t1-source-choice:last-child { border: 0; }
++.t1-source-choice-controls { display: flex; flex-wrap: wrap; gap: 10px; color: var(--text-muted); font-size: 11px; }
++.t1-source-choice-controls label { display: flex; align-items: center; gap: 4px; }
++.t1-source-choice .t1-verbatim { font-size: 13px; }
++.t1-source-choice details { color: var(--text-muted); font-size: 11px; margin-top: 8px; }
++.t1-upload { padding: 8px 0 22px; margin-bottom: 22px; border-bottom: 1px solid var(--border); }
++.t1-upload input[type="file"] { padding: 18px; border-style: dashed; background: var(--t1-inset); }
++.t1-upload input::file-selector-button { margin-right: 12px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 5px; background: var(--t1-surface); color: var(--text); font: inherit; cursor: pointer; }
+ .t1-start { margin: 14px 0 20px; }
+-.t1-scope-editor { margin-top: 25px; }
++.t1-scope-editor { margin-top: 24px; }
+ .t1-scope-layers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+-.t1-scope-layers fieldset { min-width: 0; border: 1px solid var(--border); border-radius: 7px; padding: 12px; background: var(--t1-surface); }
++.t1-scope-layers fieldset { min-width: 0; border: 1px solid var(--border); border-radius: 6px; padding: 12px; background: var(--t1-surface); }
+ .t1-scope-layers legend { padding: 0 5px; font-size: 12px; }
+ .t1-scope-options { max-height: 240px; overflow: auto; margin-top: 8px; font-size: 12px; }
+-.t1-scope-options label { display: flex; align-items: flex-start; gap: 6px; flex-wrap: wrap; padding: 7px 0; line-height: 1.7; }
++.t1-scope-options label { display: flex; align-items: flex-start; gap: 6px; flex-wrap: wrap; padding: 7px 0; }
+ .t1-scope-options input { accent-color: var(--accent); margin-top: 3px; }
+-.t1-scope-options p, .t1-invalid-choice small { color: var(--text-muted); font-size: 11px; line-height: 1.8; }
++.t1-scope-options p, .t1-invalid-choice small { color: var(--text-muted); font-size: 11px; }
+ .t1-invalid-choice { border-left: 2px solid var(--accent); padding-left: 6px !important; }
+ .t1-invalid-choice small { display: block; width: 100%; }
+-.t1-scope-preview { padding: 14px; background: var(--t1-surface); border: 1px solid var(--border); border-radius: 7px; font-size: 12px; }
+-.t1-scope-summary { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0; font-size: 12px; line-height: 1.8; }
++.t1-scope-preview { padding: 14px; background: var(--t1-inset); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
++.t1-scope-summary { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; }
+ .t1-scope-summary > div { min-width: 100px; flex: 1; }
+ .t1-scope-summary dt { color: var(--text-muted); margin-bottom: 5px; }
+ .t1-scope-summary dd { margin: 0; overflow-wrap: anywhere; }
+-.t1-notice { padding: 11px 13px; border: 1px solid var(--border); border-radius: 6px; background: var(--t1-surface); color: var(--text-muted); font-size: 11px; line-height: 1.8; }
++.t1-footnote { color: var(--text-muted); font-size: 11px; line-height: 1.85; margin: 10px 0; }
++.t1-notice, .t1-fixture-banner, .t1-source-recovery { padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); font-size: 12px; background: var(--t1-inset); }
+ .t1-notice small { display: block; font-size: 10px; overflow-wrap: anywhere; }
+-.t1-fixture-banner { border: 1px solid var(--accent); border-radius: 6px; padding: 10px; font-size: 11px; line-height: 1.8; }
+-.t1-exports { margin-top: 25px; padding-top: 18px; border-top: 1px solid var(--border); }
+-.t1-export-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 15px; }
+-.t1-export-group { border: 1px solid var(--border); border-radius: 8px; padding: 14px; background: var(--t1-surface); }
+-.t1-export-group > strong { font-size: 11px; font-weight: 500; }
+-.t1-export-group .t1-actions { margin: 10px 0 0; }
+-.t1-export-group button { font-size: 10px; padding: 6px 8px; }
+-.t1-task-row { border-bottom: 1px solid var(--border); padding: 18px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+-.t1-task-row > button:first-child { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; border: 0; background: transparent; padding: 0; text-align: left; }
++.t1-fixture-banner { flex-shrink: 0; padding: 5px 10px; margin: 0 0 12px; font-size: 10px; }
++.t1-task-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); padding: 18px 0; }
++.t1-task-row > button:first-child { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; border: 0; padding: 0; background: transparent; text-align: left; }
+ .t1-task-row strong { font-size: 13px; font-weight: 500; }
+ .t1-task-row span, .t1-task-row small { color: var(--text-muted); font-size: 11px; }
+ .t1-task-row details { width: 100%; color: var(--text-dim); font-size: 10px; }
+-.t1-stream-status { color: var(--text-muted); font-size: 11px; line-height: 1.9; }
++.t1-stream-status { color: var(--text-muted); font-size: 11px; }
+ .t1-events { list-style: none; padding: 0; margin-top: 16px; }
+-.t1-events li { border-left: 2px solid var(--border); padding: 12px; margin-bottom: 6px; background: var(--t1-surface); }
++.t1-events li { border-left: 2px solid var(--border); padding: 12px; margin-bottom: 6px; background: var(--t1-inset); }
+ .t1-events li span, .t1-events time { color: var(--text-muted); font-size: 10px; }
+-.t1-events p { font-size: 12px; line-height: 1.85; overflow-wrap: anywhere; }
+-.t1-model-runtime { margin: 12px 0; color: var(--text-muted); font-size: 12px; line-height: 1.8; }
++.t1-events p { font-size: 12px; overflow-wrap: anywhere; }
++.t1-model-runtime { margin: 12px 0; color: var(--text-muted); font-size: 12px; }
+ .t1-model-runtime p { margin: 6px 0; overflow-wrap: anywhere; }
+ .t1-model-runtime details { font-size: 11px; margin-top: 8px; }
+ .t1-model-runtime dl { display: grid; grid-template-columns: max-content 1fr; gap: 5px 18px; max-width: 480px; }
+ .t1-model-runtime dd { margin: 0; font-variant-numeric: tabular-nums; }
+-.t1-source-recovery { padding: 13px; border: 1px solid var(--border); border-radius: 6px; margin: 10px 0; font-size: 12px; line-height: 1.8; }
+-.t1-alert { padding: 13px; border: 1px solid var(--border); border-radius: 7px; background: var(--t1-surface); color: var(--text); font-size: 12px; line-height: 1.85; margin-bottom: 16px; }
++.t1-alert { flex-shrink: 0; padding: 11px 13px; margin-bottom: 14px; border: 1px solid color-mix(in srgb, var(--t1-warning) 30%, var(--border)); border-radius: 6px; background: var(--t1-warning-bg); color: var(--text); font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+ .t1-alert p { margin: 6px 0; color: var(--text-muted); }
+-.t1-alert button, .t1-empty button { border: 1px solid var(--accent); border-radius: 6px; padding: 7px 11px; margin: 4px; background: var(--accent); color: var(--accent-contrast); font-size: 11px; }
++.t1-alert button, .t1-empty button { display: inline-flex; border: 1px solid var(--border); border-radius: 5px; padding: 6px 10px; margin: 4px; background: var(--t1-surface); color: var(--text); font-size: 11px; }
+ .t1-empty { padding: 42px 12px; color: var(--text-muted); text-align: center; }
+-.t1-empty p { margin: 0 0 16px; font-size: 12px; line-height: 1.9; }
+-.t1-search-empty { padding: 24px 10px; font-size: 12px; }
++.t1-empty p { margin: 0 0 16px; font-size: 12px; }
++.t1-search-empty { flex: 1; padding: 35px 10px; font-size: 12px; }
+ .t1-status { color: var(--text-muted); font-size: 12px; }
+ 
+-/* The same evidence frame adapts to a narrow panel, including an opened PDF. */
+-@container (max-width: 850px) {
++@container (max-width: 840px) {
+   .t1-results-layout { grid-template-columns: minmax(0, 1fr); }
+   .t1-candidate-index { display: none; }
+-  .t1-record-selector { display: flex; }
+-  .t1-record-step { flex: 1; }
+-  .t1-record-nav .t1-record-search { flex: 1; }
+-  .t1-record-nav .t1-record-step { flex-basis: 100%; }
+-  .t1-results-summary { flex-direction: column; align-items: stretch; gap: 9px; }
+-  .t1-output-toolbar { width: 100%; align-items: center; flex-direction: row; gap: 8px; }
+-  .t1-output-toolbar select { max-width: 100%; flex: 1; }
+-}
+-@container (max-width: 450px) {
+-  .t1-results-summary { margin-bottom: 11px; padding-bottom: 11px; }
+-  .t1-results-overview dl { width: 100%; justify-content: space-between; gap: 10px; }
+-  .t1-results-overview dl > div { gap: 5px; }
+-  .t1-results-overview dt { font-size: 10px; }
+-  .t1-results-overview dd { font-size: 24px; }
+-  .t1-task-picker time { display: none; }
+-  .t1-record-search { min-width: 120px; }
+-  .t1-record-search input, .t1-record-nav select { font-size: 10px; }
+-  .t1-record-meta { gap: 7px; }
+-  .t1-record-status { margin-left: auto; }
+-  .t1-record-status .t1-badge { font-size: 9px; padding: 2px 5px; }
+-  .t1-quote-frame { padding: 13px; }
+-  .t1-evidence-title h2 { font-size: 14px; }
+-  .t1-locate { padding: 4px 6px !important; font-size: 9px !important; }
+-  .t1-verbatim { font-size: 15px; line-height: 1.9; }
+-  .t1-fragment { grid-template-columns: 17px minmax(0, 1fr); gap: 5px; }
+-  .t1-fragment-number { font-size: 8px; }
+-}
+-@media (max-width: 1280px) {
+-  .t1-content { padding: 24px; }
+-  .t1-export-groups { grid-template-columns: 1fr; }
+-  .t1-scope-layers { grid-template-columns: 1fr; }
+-}
+-@media (max-width: 1150px) {
+-  .t1-source { width: 360px; }
+-  .t1-brand small { display: none; }
+-}
+-@media (max-width: 900px) {
+-  .t1-source, .t1-source-toggle, .t1-resize { display: none !important; }
+-  .t1-mobile-source { display: flex; }
+-  .t1-results-panel { padding: 17px; }
+-}
++  .t1-record-step { display: flex; }
++  .t1-reader-scroll { padding: 12px 18px 24px; }
++  .t1-retention { padding: 12px 18px; }
++}
++@container (max-width: 520px) {
++  .t1-record-nav { gap: 8px; padding-bottom: 10px; }
++  .t1-retention-views { flex-basis: 100%; }
++  .t1-record-search { margin-left: 0; max-width: none; }
++  .t1-role-filter { max-width: 44%; }
++  .t1-record-nav select { width: 100%; }
++  .t1-reader-scroll { padding: 10px 2px 22px; }
++  .t1-record-meta { gap: 7px; margin-bottom: 10px; }
++  .t1-record-meta h2 { font-size: 12px; }
++  .t1-verbatim { font-size: 15px; line-height: 1.95; }
++  .t1-retention { padding: 10px 0; }
++  .t1-retention-state { font-size: 10px; }
++  .t1-retention-actions { gap: 5px; }
++  .t1-retention .t1-button { min-height: 36px; padding: 6px 9px; font-size: 11px !important; }
++  .t1-next { min-width: 68px; }
++}
++@media (max-width: 1280px) { .t1-scope-layers { grid-template-columns: 1fr; } .t1-brand small { display: none; } }
++@media (max-width: 1150px) { .t1-source { width: 360px; } .t1-task-picker time { display: none; } }
++@media (max-width: 900px) { .t1-source, .t1-source-toggle, .t1-resize { display: none !important; } .t1-mobile-source { display: flex; } }
+ @media (max-width: 640px) {
+-  .t1-topbar { height: 52px; padding: 0 12px; gap: 8px; }
+-  .t1-brand { gap: 8px; }
+-  .t1-brand > span { width: 27px; height: 27px; font-size: 14px; border-radius: 8px; }
+-  .t1-brand strong { font-size: 12px; letter-spacing: 0; }
+-  .t1-brand small { display: none; }
+-  .t1-top-actions { gap: 2px; }
+-  .t1-top-actions select { max-width: 76px; font-size: 10px; padding: 4px; }
+-  .t1-top-actions button { width: 27px; height: 29px; }
+-  .t1-sidebar { position: absolute; width: min(300px, 86vw); top: 52px; height: calc(var(--app-viewport-height, 100dvh) - 52px); z-index: 20; border-right: 1px solid var(--border); box-shadow: 10px 0 35px #07162725; }
++  .t1-workbench { --top-bar-height: 33px; }
++  .t1-topbar { height: 44px; padding: 0 11px; gap: 8px; }
++  .t1-brand { gap: 7px; } .t1-brand strong { font-size: 11px; }
++  .t1-brand > span { width: 22px; height: 22px; font-size: 10px; }
++  .t1-top-actions select { max-width: 78px; padding: 4px; font-size: 10px; }
++  .t1-top-actions button { width: 27px; height: 28px; }
++  .t1-sidebar { position: absolute; top: 44px; height: calc(var(--app-viewport-height, 100dvh) - 44px); width: min(280px, 86vw); z-index: 20; border-right: 1px solid var(--border); box-shadow: 10px 0 35px #0002; }
+   .t1-sidebar-close { display: flex; }
+-  .t1-sidebar-heading > span { margin-right: auto; }
+-  .t1-workspace-bar { padding: 0 7px; gap: 4px; }
++  .t1-workspace-bar { height: 34px; padding: 0 7px; gap: 4px; }
+   .t1-workspace-bar > span { font-size: 10px; }
+-  .t1-mobile-source { font-size: 10px; }
+-  .t1-content { padding: 20px 12px 30px; scrollbar-gutter: auto; }
+-  .t1-heading { gap: 8px; margin-bottom: 16px; }
+-  .t1-heading h1 { font-size: 24px; }
+-  .t1-results-heading > div:first-child { display: block; }
+-  .t1-results-heading .t1-review-intro { margin-top: 7px; }
+-  .t1-result-flags { flex-direction: column; align-items: flex-end; gap: 6px; margin-top: 3px; }
+-  .t1-results-heading > .t1-badge { max-width: 104px; white-space: normal; font-size: 9px; }
+-  .t1-review-intro { font-size: 11px; margin-top: 7px; }
+-  .t1-results-panel { border-radius: 10px; padding: 12px; }
+-  .t1-record-nav { gap: 7px; margin-bottom: 12px; }
+-  .t1-record-search { height: 34px; padding: 0 8px; }
+-  .t1-record-nav select { height: 34px; padding: 5px 6px; }
+-  .t1-role-filter { max-width: 45%; }
+-  .t1-evidence-card { padding: 12px; }
+-  .t1-record-meta { margin-bottom: 12px; }
+-  .t1-record-meta > strong { font-size: 11px; }
+-  .t1-record-number { width: 24px; height: 24px; font-size: 11px; }
+-  .t1-field-hint { font-size: 9px; }
+-  .t1-task-progress { font-size: 9px; }
+-  .t1-review > .t1-section-title { align-items: flex-start; flex-direction: column; }
+-  .t1-review .t1-actions button { min-height: 38px; }
++  .t1-content { padding: 18px 14px 28px; scrollbar-gutter: auto; }
++  .t1-content[data-view="records"] { padding: 14px 14px 0; }
++  .t1-heading h1 { font-size: 21px; }
++  .t1-results-heading { gap: 8px; margin-bottom: 10px; }
++  .t1-results-heading h1 { font-size: 17px; margin-right: auto; }
++  .t1-results-heading .t1-output-toolbar { order: 3; flex-basis: 100%; gap: 10px; }
++  .t1-results-actions { gap: 5px; }
++  .t1-results-actions .t1-button, .t1-exports > summary { font-size: 11px !important; min-height: 30px; padding: 4px 7px; gap: 5px; }
++  .t1-exports > summary > svg:first-child { display: none; }
++  .t1-task-picker { font-size: 10px; }
++  .t1-task-progress, .t1-status-button, .t1-source-limits-chip { font-size: 10px !important; }
++  .t1-notes-heading { padding: 12px 16px; }
++  .t1-notes-content { padding: 0 18px 24px; }
++  .t1-editor-fields { grid-template-columns: 1fr; }
+   .t1-field :is(input, select), .t1-workbench textarea { font-size: 16px; }
+-  .t1-editor-fields { grid-template-columns: 1fr; }
+-  .t1-source-choices { max-height: 360px; }
+-  .t1-source-limits-inline { padding-left: 7px; font-size: 9px; }
+-}
+-@media (prefers-reduced-motion: no-preference) {
+-  .t1-index-list > button, .t1-paper-list > button, .t1-top-actions button { transition: background-color 140ms ease, border-color 140ms ease; }
+-}
++  .t1-source-choices { max-height: 330px; }
++}
++@media (prefers-reduced-motion: no-preference) { .t1-index-list > button, .t1-paper-list > button, .t1-button, .t1-top-actions button { transition: background-color 120ms ease, border-color 120ms ease; } }
+--- a/code/apps/pi-web/e2e/retention-workflow.mjs
++++ b/code/apps/pi-web/e2e/retention-workflow.mjs
+@@ -7,19 +7,19 @@
+ 
+ const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+ const origin = 'http://127.0.0.1:30151', backend = 'http://127.0.0.1:3211';
+-const evidence = join(code, 'docs/acceptance/retention-workflow-2026-11-11/browser'); await mkdir(evidence, { recursive: true });
++const evidence = join(code, 'docs/acceptance/linear-ui-2026-11-12/browser'); await mkdir(evidence, { recursive: true });
+ process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
+ process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
+ const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
+-const report = { schema_version: 't1-retention-browser-1', started_at: new Date().toISOString(), origin, backend,
++const report = { schema_version: 't1-linear-ui-browser-1', started_at: new Date().toISOString(), origin, backend,
+   data: 'Isolated DB importing existing pinned source outputs; no new medical extraction or real-user test writes',
+   model_runner_available: false, paid_model_calls: 0, production_write_requests: 0, source_wording_rewritten: false,
+   events_transport: 'Finite mocked SSE keepalive; persisted SSE replay is covered by the separate workflow regression',
+-  checks: [], screenshots: [], errors: [], failedResponses: [], blockedRequests: [] };
++  checks: [], screenshots: [], errors: [], failedResponses: [], expectedFailedResponses: [], blockedRequests: [] };
+ const browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
+-const context = await browser.newContext({ viewport: { width: 1512, height: 1050 }, locale: 'zh-CN', reducedMotion: 'reduce' });
++const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN', reducedMotion: 'reduce' });
+ await context.addInitScript(() => { try { localStorage.setItem('pi-theme', 'light'); localStorage.setItem('pi-locale', 'zh-CN'); } catch {} });
+-let stalePage, staleSnapshot;
++let stalePage, staleSnapshot, forcedDetail, exportFailure = false;
+ const json = async path => { const response = await fetch(backend + '/api/' + path); assert.equal(response.status, 200, path); return response.json(); };
+ await context.route(/^https?:\/\//, async route => {
+   const request = route.request(), url = new URL(request.url()), path = url.pathname;
+@@ -33,13 +33,15 @@
+   if (staleSnapshot && request.frame().page() === stalePage && path.endsWith('/runs/' + encodeURIComponent(staleSnapshot.run.run_id))) {
+     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(staleSnapshot) });
+   }
++  if (exportFailure && path.includes('/exports/')) return route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ error: 'source_glyph_fidelity_unverified' }) });
++  if (forcedDetail && path.endsWith('/runs/' + encodeURIComponent(forcedDetail.run.run_id))) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(forcedDetail) });
+   const response = await fetch(backend + path.replace(/^\/api\/t1/u, '/api') + url.search, { method: request.method(),
+     ...(request.postDataBuffer() ? { body: request.postDataBuffer() } : {}), headers: { 'content-type': await request.headerValue('content-type') ?? 'application/json' } });
+   const headers = Object.fromEntries(['content-type', 'content-disposition'].flatMap(name => response.headers.has(name) ? [[name, response.headers.get(name)]] : []));
+   return route.fulfill({ status: response.status, headers, body: Buffer.from(await response.arrayBuffer()) });
+ });
+ context.on('page', page => page.on('pageerror', error => report.errors.push(String(error))));
+-context.on('response', response => { if (response.status() >= 400 && response.status() !== 409) report.failedResponses.push({ status: response.status(), path: new URL(response.url()).pathname }); });
++context.on('response', response => { if (response.status() >= 400 && response.status() !== 409) (exportFailure ? report.expectedFailedResponses : report.failedResponses).push({ status: response.status(), path: new URL(response.url()).pathname }); });
+ const page = await context.newPage();
+ const persist = () => writeFile(join(evidence, 'report.json'), JSON.stringify(report, null, 2) + '\n');
+ async function check(name, work) { try { const detail = await work(); report.checks.push({ name, status: 'passed', detail }); console.log('passed:', name); } catch (error) { report.checks.push({ name, status: 'failed', error: error.stack ?? String(error) }); throw error; } finally { await persist(); } }
+@@ -47,13 +49,13 @@
+ async function choose(record) { await page.locator(`[data-index-record-id="${record.id}"]`).click(); await page.locator(`article[data-record-id="${record.id}"]`).waitFor(); }
+ async function exact(record, target = page) { assert.deepEqual(await target.locator('.t1-quote-frame [data-fragment-index]').allTextContents(), record.fragments.map(fragment => fragment.exact_quote)); assert.equal(await target.locator('.t1-evidence-card').getAttribute('data-record-version'), String(record.version)); }
+ async function mutate(target = page) {
+-  const response = target.waitForResponse(response => response.url().endsWith('/retention') && response.request().method() === 'POST'); await target.locator('.t1-retention > button').click();
++  const response = target.waitForResponse(response => response.url().endsWith('/retention') && response.request().method() === 'POST'); await target.locator('.t1-retention [data-retention-action]').click();
+   const saved = await response; assert.equal(saved.status(), 200); const value = await saved.json();
+   const current = await json('workbench/runs/' + encodeURIComponent(value.record.run_id)), count = current.output.records.filter(record => record.retention.status === 'excluded').length;
+-  await target.waitForFunction(expected => document.querySelector('[data-count-kind="excluded"] dd')?.textContent === String(expected), count); return value;
++  await target.waitForFunction(expected => document.querySelector('[data-retention-count="excluded"]')?.textContent === String(expected), count); return value;
+ }
+ async function view(which) { await page.locator('.t1-retention-views button').nth(which === 'kept' ? 0 : 1).click(); }
+-async function capture(name) { await page.locator('.t1-content').evaluate(element => { element.scrollTop = 0; }); await page.screenshot({ path: join(evidence, name) }); report.screenshots.push(name); }
++async function capture(name) { await page.locator('.t1-reader-scroll').evaluateAll(elements => elements.forEach(element => { element.scrollTop = 0; })); await page.screenshot({ path: join(evidence, name) }); report.screenshots.push(name); }
+ async function theme(name) { await page.getByRole('button', { name: '界面主题', exact: true }).click(); await page.getByRole('menuitemradio', { name: name === 'dark' ? '深色' : '浅色', exact: true }).click(); await page.waitForFunction(value => document.documentElement.dataset.theme === value, name); }
+ function archiveEntries(bytes) { const tar = gunzipSync(bytes), entries = new Map(); for (let offset = 0; offset + 512 <= tar.length;) { const raw = tar.subarray(offset, offset + 100).toString().replace(/\0.*$/s, ''); if (!raw) break; const size = parseInt(tar.subarray(offset + 124, offset + 136).toString().replace(/\0.*$/s, '').trim() || '0', 8); entries.set(raw.replace(/^\.\//u, ''), tar.subarray(offset + 512, offset + 512 + size)); offset += 512 + Math.ceil(size / 512) * 512; } return entries; }
+ try {
+@@ -67,7 +69,9 @@
+     await open(run, sourceRecord); await exact(sourceRecord);
+     assert.equal(await page.locator('.t1-quote-frame .t1-source-passage').count(), sourceRecord.passages.length);
+     assert.ok(sourceRecord.passages.length < sourceRecord.fragments.length);
+-    assert.equal(await page.locator('.t1-quote-frame .t1-fragment-location details').first().getAttribute('open'), null);
++    assert.equal(await page.locator('.t1-quote-frame details').count(), 0);
++    assert.equal(await page.locator('.t1-evidence-card .t1-association').count(), 0);
++    assert.equal(await page.locator('.t1-results-overview, .t1-review-intro, .t1-field-hint').count(), 0);
+     assert.equal(await page.locator('.t1-quote-frame .t1-verbatim').first().evaluate(element => getComputedStyle(element).whiteSpace), 'normal');
+     const gapLayout = await page.locator('.t1-quote-frame .t1-verbatim').first().evaluate(element => {
+       const probe = document.createElement('span'); probe.innerHTML = '<span>A</span><span class="t1-literal-gap">\n</span><span>B</span>'; element.append(probe);
+@@ -77,9 +81,44 @@
+     assert.deepEqual(gapLayout, { text: 'A\nB', whiteSpace: 'normal', sameLine: true });
+     assert.equal(await page.locator('.t1-review, .t1-figure-verification').count(), 0);
+     assert.equal(await page.locator('.t1-retention input, .t1-retention textarea').count(), 0);
+-    assert.equal(await page.locator('[data-count-kind="kept"] dd').innerText(), '26');
++    assert.equal(await page.locator('[data-retention-count="kept"]').innerText(), '26');
+     await capture('01-continuous-reading-light.png');
+-    return { fragment_count: sourceRecord.fragments.length, displayed_paragraphs: sourceRecord.passages.length, quote_spelling_and_hyphens_preserved: true };
++    const layout = await page.evaluate(() => ({ quoteTop: document.querySelector('.t1-quote-frame .t1-verbatim').getBoundingClientRect().top, footerBottom: document.querySelector('.t1-retention').getBoundingClientRect().bottom, viewportHeight: innerHeight, actionBackground: getComputedStyle(document.querySelector('[data-retention-action]')).backgroundColor }));
++    assert.ok(layout.quoteTop <= 300, JSON.stringify(layout)); assert.ok(layout.footerBottom <= layout.viewportHeight); assert.notEqual(layout.actionBackground, 'rgba(0, 0, 0, 0)');
++    return { layout, fragment_count: sourceRecord.fragments.length, displayed_paragraphs: sourceRecord.passages.length, quote_spelling_and_hyphens_preserved: true };
++  });
++  await check('notes_are_consolidated_keyboard_accessible_and_same_source_navigation_returns_to_reading', async () => {
++    const group = detail.output.same_source_review_index.groups.find(group => group.member_count > 1 && group.members.some(member => member.record_id === sourceRecord.id)); assert.ok(group);
++    const button = page.locator('.t1-notes-toggle'); await button.focus(); await page.keyboard.press('Enter'); await page.locator('dialog[open]').waitFor();
++    assert.equal(await page.locator('.t1-notes textarea, .t1-notes input').count(), 0);
++    assert.equal(await page.locator('.t1-technical-details').getAttribute('open'), null);
++    assert.ok((await page.locator('.t1-notes-content').innerText()).includes('不表示已经过医学核验'));
++    assert.ok((await page.locator('.t1-notes-content').innerText()).includes('尚未确认明确配图关系'));
++    await page.keyboard.press('Tab'); assert.equal(await page.evaluate(() => document.querySelector('dialog').contains(document.activeElement)), true);
++    await capture('02-consolidated-notes.png'); await page.keyboard.press('Escape'); await page.locator('dialog[open]').waitFor({ state: 'hidden' });
++    assert.equal(await button.evaluate(element => document.activeElement === element), true);
++    await button.click(); await page.locator('.t1-same-source > summary').click();
++    const target = group.members.find(member => member.record_id !== sourceRecord.id); await page.locator('.t1-member-list > div').filter({ has: page.locator('button[aria-pressed="false"]') }).first().locator('button').click();
++    await page.locator(`article[data-record-id="${target.record_id}"]`).waitFor(); assert.equal(await page.locator('dialog[open]').count(), 0);
++    const selected = records.find(record => record.id === target.record_id); await exact(selected); await choose(sourceRecord);
++    return { same_source_records_remain_independent: true, member_navigation_closes_notes: true, Escape_and_focus_return: true, raw_fields_collapsed: true, new_note_inputs: 0 };
++  });
++  await check('next_is_navigation_only_filters_refresh_and_existing_source_drafts_survive_pdf_location', async () => {
++    const before = await current(); await page.getByRole('button', { name: '下一条', exact: true }).focus(); await page.keyboard.press('Enter'); await page.locator(`article[data-record-id="${records[1].id}"]`).waitFor();
++    assert.deepEqual((await current()).output.records.map(record => record.retention), before.output.records.map(record => record.retention));
++    await page.getByRole('searchbox').fill('circumferential'); assert.ok(await page.locator('.t1-index-list > button').count() > 0);
++    await page.getByRole('searchbox').fill('nonexistent-query-linear-test'); await page.locator('.t1-search-empty').waitFor();
++    await page.reload(); await page.locator('.t1-evidence-card').waitFor(); assert.equal(await page.getByRole('searchbox').inputValue(), '');
++    await choose(sourceRecord); await page.locator('.t1-notes-toggle').click(); await page.getByRole('button', { name: '修订来源或标签…', exact: true }).click();
++    await page.getByRole('textbox', { name: '修订人', exact: true }).fill('isolated-unsaved-draft');
++    await page.locator('.t1-source-choice .t1-link').first().click(); await page.locator('dialog[open]').waitFor({ state: 'hidden' });
++    await page.locator('.t1-pdf-reader canvas').waitFor();
++    await page.locator('.t1-notes-toggle').click(); await page.getByRole('button', { name: '修订来源或标签…', exact: true }).click();
++    assert.equal(await page.getByRole('textbox', { name: '修订人', exact: true }).inputValue(), 'isolated-unsaved-draft');
++    await page.keyboard.press('Escape'); await page.locator('.t1-source-toggle').click();
++    await page.evaluate(() => { for (const key of Object.keys(sessionStorage)) if (key.startsWith('t1:source-draft:')) sessionStorage.removeItem(key); });
++    assert.deepEqual((await current()).output.records.map(record => record.version), before.output.records.map(record => record.version));
++    return { next_retention_writes: 0, empty_filter_recovery: true, refresh_resets_query: true, unsaved_source_draft_retained: true, source_editor_writes: 0 };
+   });
+   await check('exclude_and_restore_move_to_the_next_neighbour_and_persist_after_refresh_without_approval', async () => {
+     await choose(records[3]); const version = records[3].version, fingerprint = records[3].text_fingerprint;
+@@ -89,7 +128,7 @@
+     await page.reload(); await page.locator(`article[data-record-id="${records[4].id}"]`).waitFor();
+     for (const index of [5, 7]) { await choose(records[index]); await mutate(); }
+     await view('excluded'); await choose(records[5]); await mutate(); await page.locator(`article[data-record-id="${records[7].id}"]`).waitFor();
+-    assert.equal(await page.locator('[data-count-kind="excluded"] dd').innerText(), '2'); await capture('02-excluded-restore.png');
++    assert.equal(await page.locator('[data-retention-count="excluded"]').innerText(), '2');
+     await choose(records[3]); await mutate(); await page.locator(`article[data-record-id="${records[7].id}"]`).waitFor(); await mutate();
+     await view('kept'); await page.locator('.t1-evidence-card').waitFor(); assert.equal((await current()).output.records.filter(record => record.retention.status === 'excluded').length, 0);
+     return { same_evidence_version_and_fingerprint: true, middle_exclusion_next_neighbour: true, middle_restore_next_neighbour: true, refresh_persisted: true };
+@@ -98,7 +137,7 @@
+     await choose(records[9]); staleSnapshot = await current(); stalePage = await context.newPage(); await open(run, records[9], stalePage);
+     await mutate();
+     const conflictResponse = stalePage.waitForResponse(response => response.url().endsWith('/retention') && response.request().method() === 'POST');
+-    await stalePage.locator('.t1-retention > button').click(); assert.equal((await conflictResponse).status(), 409);
++    await stalePage.locator('.t1-retention [data-retention-action]').click(); assert.equal((await conflictResponse).status(), 409);
+     await stalePage.locator('.t1-retention [role="alert"]').waitFor(); staleSnapshot = null;
+     await stalePage.locator('.t1-retention [role="alert"] button').click(); await stalePage.waitForFunction(() => !document.querySelector('.t1-retention [role="alert"]'));
+     assert.equal((await current()).output.records.find(record => record.id === records[9].id).retention.status, 'excluded');
+@@ -107,7 +146,8 @@
+   });
+   await check('only_retained_three_formats_are_exposed_and_downloads_omit_exclusions_without_medical_confirmation', async () => {
+     const labels = ['保留结果 JSONL', '保留结果 CSV', '保留结果证据包'], downloaded = [];
+-    assert.equal(await page.locator('.t1-exports button').count(), 3);
++    await page.locator('.t1-exports > summary').click();
++    assert.equal(await page.locator('.t1-export-options button').count(), 3);
+     for (const [index, label] of labels.entries()) {
+       const pending = page.waitForEvent('download'); await page.getByRole('button', { name: label, exact: true }).click(); const download = await pending;
+       const path = join(evidence, `retained-${index}.${index === 0 ? 'jsonl' : index === 1 ? 'csv' : 'tar.gz'}`); await download.saveAs(path); assert.equal(await download.failure(), null); downloaded.push(await readFile(path));
+@@ -116,22 +156,51 @@
+     assert.ok(rows.every(record => record.export_review_status === 'retained_unconfirmed' && record.human_confirmation === null && record.medical_quality_approved === false));
+     assert.match(downloaded[1].toString(), /retention_status,medical_quality_approved/);
+     const entries = archiveEntries(downloaded[2]), manifest = JSON.parse(entries.get('manifest.json').toString()); assert.equal(manifest.mode, 'retained'); assert.equal(manifest.record_count, 25); assert.equal(manifest.excluded_record_count, 1); assert.ok(entries.has('retention.json'));
++    await page.locator('.t1-exports > summary').click();
+     return { formats: ['JSONL', 'CSV', 'evidence_package'], exported_records: 25, excluded: 1, no_medical_approval_created: true, no_whole_paper_gate: true };
++  });
++  await check('source_and_export_problems_appear_only_when_present_and_incomplete_tasks_stay_explicit', async () => {
++    assert.equal(await page.locator('.t1-export-error').count(), 0);
++    assert.equal((await page.locator('.t1-exports').innerText()).includes('字形'), false);
++    exportFailure = true; await page.locator('.t1-exports > summary').click(); await page.getByRole('button', { name: '保留结果 JSONL', exact: true }).click();
++    await page.locator('.t1-export-error').waitFor(); assert.ok((await page.locator('.t1-export-error').innerText()).includes('字形'));
++    exportFailure = false; await page.reload(); await page.locator('.t1-evidence-card').waitFor(); assert.equal(await page.locator('.t1-export-error').count(), 0);
++    forcedDetail = structuredClone(await current()); forcedDetail.source_status = 'missing'; forcedDetail.source_issues = ['pdf_source_missing']; forcedDetail.output.coverage = { ...forcedDetail.output.coverage, task_processing_complete: false }; forcedDetail.run.state = 'partial';
++    await page.reload(); await page.locator('.t1-source-recovery').waitFor(); assert.ok((await page.locator('.t1-content > .t1-alert').innerText()).includes('来源'));
++    assert.equal(await page.locator('.t1-task-progress').getAttribute('data-status'), 'taskEndedIncomplete');
++    await page.locator('.t1-exports > summary').click(); for (const button of await page.locator('.t1-export-options button').all()) assert.equal(await button.isDisabled(), true);
++    forcedDetail = null; await page.reload(); await page.locator('.t1-evidence-card').waitFor();
++    return { mocked_source_integrity_problem_visible: true, restore_action_available: true, incomplete_not_claimed_complete: true, export_error_revealed_after_action: true, automatic_backend_guards_covered_separately: true };
+   });
+   await check('three_languages_and_dark_narrow_layout_preserve_source_text', async () => {
+     await choose(sourceRecord);
+     for (const locale of ['en', 'zh-TW', 'zh-CN']) { await page.locator('.t1-top-actions select').selectOption(locale); await exact(sourceRecord); assert.ok(!(await page.locator('.t1-exports').innerText()).includes('t1.')); }
+-    await theme('dark'); await capture('03-continuous-reading-dark.png');
+-    for (const width of [768, 390, 320]) { await page.setViewportSize({ width, height: 844 }); await page.waitForTimeout(100); await exact(sourceRecord); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth || document.querySelector('.t1-content').scrollWidth > document.querySelector('.t1-content').clientWidth + 1), false, `overflow at ${width}`); if (width === 390) await capture('04-mobile-dark.png'); }
+-    await page.setViewportSize({ width: 390, height: 844 }); await theme('light'); await capture('05-mobile-light.png'); await page.setViewportSize({ width: 1512, height: 1050 });
+-    return { locales: ['en', 'zh-TW', 'zh-CN'], widths: [1512, 768, 390, 320], source_translation: false };
++    await theme('dark'); await capture('05-continuous-reading-dark.png');
++    for (const width of [768, 390, 320]) { await page.setViewportSize({ width, height: 844 }); await page.waitForTimeout(100); await exact(sourceRecord); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth || document.querySelector('.t1-content').scrollWidth > document.querySelector('.t1-content').clientWidth + 1), false, `overflow at ${width}`); }
++    await page.setViewportSize({ width: 390, height: 844 }); await theme('light'); await capture('07-mobile-light.png'); await page.setViewportSize({ width: 1440, height: 900 });
++    return { locales: ['en', 'zh-TW', 'zh-CN'], widths: [1440, 768, 390, 320], source_translation: false };
+   });
+   await check('original_pdf_anchor_and_full_figure_remain_available_without_approval_forms', async () => {
+     await page.locator('.t1-locate').click(); const physicalPage = sourceRecord.fragments[0].physical_page;
+-    await page.locator(`.t1-pdf-reader canvas[data-page="${physicalPage}"]`).waitFor(); await exact(sourceRecord); await capture('06-original-page-anchor.png'); await page.locator('.t1-source-toggle').click();
++    await page.locator(`.t1-pdf-reader canvas[data-page="${physicalPage}"]`).waitFor(); await exact(sourceRecord); await page.locator('.t1-source-toggle').click();
+     await page.getByRole('tab', { name: '原 Figure 目录', exact: true }).click(); await page.locator('.t1-figure').first().waitFor();
+-    assert.equal(await page.locator('.t1-figure input, .t1-figure textarea').count(), 0); await capture('07-full-figure-reference.png');
++    assert.equal(await page.locator('.t1-figure input, .t1-figure textarea').count(), 0);
+     return { exact_physical_page: physicalPage, PDF_SHA256: detail.paper.sha256, figure_approval_form_count: 0 };
++  });
++  await check('explicit_whole_figure_is_visible_in_the_reading_pane_and_source_context_remains_reachable', async () => {
++    const runs = (await json('workbench/runs')).runs, figureRun = runs.find(run => run.document_id === 'L05' && run.run_id.endsWith(':L05-B0')); assert.ok(figureRun);
++    const source = await json('workbench/runs/' + encodeURIComponent(figureRun.run_id)), paired = source.output.records.find(record => record.association === 'paired'); assert.ok(paired);
++    await open(figureRun, paired); await exact(paired); assert.equal(await page.locator('.t1-association').getAttribute('open'), '');
++    const image = page.locator('.t1-association .t1-figure img').first(); await image.waitFor(); await image.evaluate(element => element.decode());
++    const geometry = await image.evaluate(element => ({ naturalRatio: element.naturalWidth / element.naturalHeight, renderedRatio: element.width / element.height })); assert.ok(Math.abs(geometry.naturalRatio - geometry.renderedRatio) < .01);
++    assert.deepEqual(await page.locator('.t1-association .t1-caption [data-fragment-index]').allTextContents(), source.figures.find(figure => paired.figure_ids.includes(figure.id)).caption.map(fragment => fragment.exact_quote));
++    await capture('08-explicit-figure.png');
++    await image.click(); await page.locator('.image-preview-close').click();
++    const contextRecord = source.output.records.find(record => record.context.length); assert.ok(contextRecord); await choose(contextRecord); await page.locator('.t1-evidence-card .t1-context > summary').click();
++    assert.deepEqual(await page.locator('.t1-evidence-card .t1-context [data-fragment-index]').allTextContents(), contextRecord.context.map(fragment => fragment.exact_quote));
++    await page.locator('.t1-reader-scroll').evaluate(element => { element.scrollTop = element.scrollHeight; });
++    assert.ok(await page.locator('[data-retention-action]').isVisible()); assert.ok((await page.locator('.t1-retention').boundingBox()).y < 900);
++    return { original_full_figure_ratio: geometry, original_caption_unchanged: true, necessary_context_unchanged: true, action_footer_available_after_long_reading: true };
+   });
+   assert.deepEqual(report.errors, []); assert.deepEqual(report.failedResponses, []); assert.deepEqual(report.blockedRequests, []);
+   report.status = 'passed'; report.completed_at = new Date().toISOString();
+--- a/code/apps/pi-web/e2e/retention-readonly.mjs
++++ b/code/apps/pi-web/e2e/retention-readonly.mjs
+@@ -4,11 +4,11 @@
+ import { dirname, join, resolve } from 'node:path';
+ import { fileURLToPath, pathToFileURL } from 'node:url';
+ const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..'), origin = 'http://127.0.0.1:30141';
+-const evidence = join(code, 'docs/acceptance/retention-workflow-2026-11-11');
++const evidence = join(code, 'docs/acceptance/linear-ui-2026-11-12');
+ process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
+ process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
+ const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
+-const report = { schema_version: 't1-retention-ordinary-readonly-1', at: new Date().toISOString(), origin, paid_model_calls: 0,
++const report = { schema_version: 't1-linear-ui-ordinary-readonly-1', at: new Date().toISOString(), origin, paid_model_calls: 0,
+   write_requests: 0, exports_requested: 0, Start_clicked: false, checks: [], errors: [], blocked: [] };
+ const browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
+ const context = await browser.newContext({ viewport: { width: 1512, height: 1050 }, locale: 'zh-CN' });
+@@ -30,10 +30,13 @@
+   await page.goto(origin + '/?' + new URLSearchParams({ paper: run.document_id, run: run.run_id, record: record.id, view: 'records' })); await page.locator('.t1-retention').waitFor();
+   assert.deepEqual(await page.locator('.t1-quote-frame [data-fragment-index]').allTextContents(), record.fragments.map(fragment => fragment.exact_quote));
+   assert.equal(await page.locator('.t1-quote-frame .t1-source-passage').count(), 1); assert.equal(await page.locator('.t1-retention input, .t1-retention textarea, .t1-review').count(), 0);
+-  assert.equal(await page.locator('[data-count-kind="kept"] dd').innerText(), '26'); assert.equal(await page.locator('[data-count-kind="excluded"] dd').innerText(), '0');
++  assert.equal(await page.locator('[data-retention-count="kept"]').innerText(), '26'); assert.equal(await page.locator('[data-retention-count="excluded"]').innerText(), '0');
++  await page.locator('.t1-exports > summary').click();
+   assert.equal(await page.locator('.t1-exports button').count(), 3); assert.ok((await page.locator('.t1-exports').innerText()).includes('保留结果 JSONL'));
++  await page.locator('.t1-exports > summary').click();
++  await page.locator('.t1-notes-toggle').click(); await page.locator('dialog[open]').waitFor(); assert.equal(await page.locator('.t1-notes textarea, .t1-notes input').count(), 0); await page.keyboard.press('Escape');
+   report.checks.push({ name: 'new_continuous_reading_and_keep_exclude_UI_served_on_30141', status: 'passed', record_id: record.id, source_fragments: record.fragments.length, displayed_paragraphs: 1, default_kept: 26, excluded: 0 });
+-  const buildId = (await readFile(join(code, 'apps/pi-web/build/retention-final-next-20261111/BUILD_ID'), 'utf8')).trim();
++  const buildId = (await readFile(join(code, 'apps/pi-web/build/linear-ui-final-next-20261112/BUILD_ID'), 'utf8')).trim();
+   assert.equal((await context.request.get(origin + '/_next/static/' + buildId + '/_buildManifest.js')).status(), 200);
+   report.checks.push({ name: 'final_build_static_manifest_and_readonly_network_boundary', status: 'passed', BUILD_ID: buildId });
+   assert.deepEqual(report.errors, []); assert.deepEqual(report.blocked, []); report.status = 'passed';
+--- /dev/null
++++ b/code/apps/pi-web/t1/WorkbenchNotes.tsx
+@@ -0,0 +1,30 @@
++"use client";
++
++import { useEffect, useRef, type ReactNode } from "react";
++import { CloseIcon } from "@/components/SidebarIcons";
++import { useI18n } from "@/hooks/useI18n";
++
++/** The native dialog supplies Escape, focus containment and return-to-trigger focus. */
++export function WorkbenchNotes({ open, title, onClose, children }: {
++  open: boolean;
++  title: string;
++  onClose: () => void;
++  children: ReactNode;
++}) {
++  const { t } = useI18n();
++  const panel = useRef<HTMLDialogElement>(null);
++  useEffect(() => {
++    const dialog = panel.current;
++    if (open && !dialog?.open) dialog?.showModal();
++    else if (!open && dialog?.open) dialog.close();
++  }, [open]);
++
++  return <dialog ref={panel} className="t1-notes" aria-labelledby="t1-notes-title" onClose={onClose} onClick={event => {
++    if (event.target !== event.currentTarget) return;
++    const bounds = event.currentTarget.getBoundingClientRect();
++    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
++  }}>
++    <header className="t1-notes-heading"><h2 id="t1-notes-title">{title}</h2><button autoFocus className="t1-icon-button" aria-label={t("t1.closeNotes")} onClick={onClose}><CloseIcon size={18} /></button></header>
++    <div className="t1-notes-content">{children}</div>
++  </dialog>;
++}

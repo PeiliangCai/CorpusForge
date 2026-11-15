@@ -1,0 +1,20 @@
+{
+  "schema_version": "t1-source-baseline-freeze-1",
+  "frozen_at": "2026-11-11T09:41:47.505441+00:00",
+  "source_id": "IN06",
+  "root_decision": "IN06 becomes parser regression material due to using its observed caption defects to repair the parser; extraction model has not seen this PDF; no complete pipeline independent success may be claimed.",
+  "files": {
+    "parser-result.json": "facbf8c0bd43f1266b3f700d73c18d5a1be77677fdb51453c1353195e2b76cb6",
+    "figure-catalog.json": "98b1a2da9247ad3051d5bd477c087037bc8057e5b2471c9747120be02cfcab77",
+    "source-quality.json": "94e2279912d22b82227c255fc61007b5a7ef687032c8f7e6a9cd113893637f84",
+    "source-scope.json": "110b94aaf74b4d918ccc2930f280f97a21c69e7ddfb3b8648bacfe879fb8fa82",
+    "preselection.json": "8bb3cb40fba200b28aa9bc97bb692eff6522ca34670eb6c8beace3042af64e7b",
+    "PDF-identity.json": "50dc51930f9809e742cc1123d146d4ef2325c7560af055e098b021903ec456d6",
+    "exposure-audit.json": "f18e3ceda4691cfe3a700418e12ce9adf45a9466ee5ffd601a8a5e8455c730c9"
+  },
+  "existing_unmodified_native_artifacts": "../parser/; original report references preserved",
+  "original_pages": "../review-pages/; no changes",
+  "engine_source_snapshot": "code/docs/acceptance/resume-2026-11-11/source-snapshot.json",
+  "new_model_calls": 0,
+  "formal_reviews_used": 3
+}

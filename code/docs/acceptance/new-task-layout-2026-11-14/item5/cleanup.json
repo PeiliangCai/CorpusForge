@@ -1,0 +1,27 @@
+{
+  "completed_at_utc": "2026-11-15T05:38:05.507560+00:00",
+  "removed_only_owned_paths": [
+    "docs/acceptance/new-task-layout-2026-11-14/item5/initial-readonly.sqlite",
+    "runtime-data/agent-notes/item5-1115-baseline",
+    "runtime-data/agent-notes/item5-1115-deploy.py",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/browser-failed-mobile_gap_overlay.png"
+  ],
+  "isolated_frontend_pids_signalled": [
+    70019
+  ],
+  "production_business_data_removed": false,
+  "original_task_note_retained": true,
+  "initial_readonly_snapshot": {
+    "path": "docs/acceptance/new-task-layout-2026-11-14/item5/initial-readonly.sqlite",
+    "bytes": 58482688,
+    "sha256": "d1f522a73b66158c1a6f36f2098ecce6f2eeb02ad516b9409d56ce5af495c0bd",
+    "cleanup_after_evidence_audit": true
+  },
+  "retained": {
+    "current_build": "apps/pi-web/build/summary-completion-delivery-validated-20261115",
+    "rollback_build": "apps/pi-web/build/batch-followup-delivery-validated-20261115",
+    "consistent_backup": "runtime-data/backups/summary-completion-20261115-before/t1.sqlite",
+    "rollback_source": "runtime-data/rollbacks/summary-completion-20261115-before",
+    "logs_and_exact_diff_and_final_screenshots": true
+  }
+}

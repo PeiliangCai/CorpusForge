@@ -1,0 +1,115 @@
+{
+  "allowance.json": {
+    "plan_id": "repaired-in06-20261111",
+    "plan_sha256": "4d3a774bacdc0c9542956b25207798205d76d310f443b907109a780feea2e007",
+    "run_id": "run-e0b1c399-7efb-4fc9-8267-43fe9d51f028",
+    "started_at": "2026-11-11T10:38:49.845Z",
+    "deadline": "2026-11-11T10:53:49.845Z",
+    "hard_stop_utc": "2026-11-11T12:10:01Z",
+    "limits": {
+      "requests": 24,
+      "input_tokens": 600000,
+      "output_tokens": 32000,
+      "seconds": 900,
+      "request_seconds": 120,
+      "document_seconds": 900,
+      "transient_retries": 2,
+      "response_output_tokens": 8192,
+      "batch_responses": 16
+    },
+    "effective_limits": {
+      "requests": 24,
+      "input_tokens": 600000,
+      "output_tokens": 32000,
+      "seconds": 900,
+      "request_seconds": 120,
+      "document_seconds": 900,
+      "transient_retries": 2,
+      "response_output_tokens": 8192,
+      "batch_responses": 16
+    },
+    "closed": true,
+    "unused_allowance_closed": true,
+    "closed_at": "2026-11-11T10:39:08.575Z",
+    "reason": "single_container_run_finished_unused_allowance_closed"
+  },
+  "workbench/runs/run-e0b1c399-7efb-4fc9-8267-43fe9d51f028/request-ledger.json": {
+    "schema_version": "s4-call-ledger-1",
+    "experiment_started_at": "2026-11-11T10:38:49.845Z",
+    "requests": [
+      {
+        "id": "946ae19a-1ea1-4a42-98ce-9e68456d5cc5",
+        "model_id": "gpt-6-luna",
+        "purpose": "run-e0b1c399-7efb-4fc9-8267-43fe9d51f028:batch-0001",
+        "attempt": 0,
+        "started_at": "2026-11-11T10:39:01.595Z",
+        "payload_sha256": "808a65aeec20e2fbdf7b8e87693e8c723fd09d2371ce26dba36e0a07ba6e7ecb",
+        "payload_bytes": 26847,
+        "input_ceiling": 32768,
+        "output_ceiling": 8192,
+        "usage_status": "missing_usage_conservative_reservation",
+        "local_payload_estimate": 27359,
+        "reservation_policy": "trusted_profile_context_quota_not_provider_hard_limit",
+        "response_model_identity_status": "unknown",
+        "response_model_identity_evidence_scope": "provider_reported_name_only_not_weight_identity_or_HTTP_body_replay",
+        "actual_cost": null,
+        "cost_status": "unknown_gateway_billing",
+        "requested_max_output_tokens": 8192,
+        "requested_reasoning_effort": "medium",
+        "application_context_estimate": 7546,
+        "model_context_window_metadata": 1050000,
+        "configured_deadline_ms": 120000,
+        "status": 200,
+        "response_stream_sha256": "8d5fe1e5b01a7fa0e7e73e3104634158b43ee2e28382337b6b0470be01d08221",
+        "response_hash_scope": "received_decoded_body_prefix",
+        "finished_at": "2026-11-11T10:39:08.560Z"
+      }
+    ],
+    "limits": {
+      "requests": 24,
+      "input_tokens": 600000,
+      "output_tokens": 32000,
+      "seconds": 900,
+      "request_seconds": 120,
+      "document_seconds": 900,
+      "transient_retries": 2,
+      "response_output_tokens": 8192,
+      "batch_responses": 16
+    },
+    "authorization": {
+      "id": "4d3a774bacdc0c9542956b25207798205d76d310f443b907109a780feea2e007",
+      "source": "S7_new_one_container_verification_allowance",
+      "recorded_at": "2026-11-11T10:38:49.845Z"
+    },
+    "response_model_alias_policy": {
+      "policy_id": "luna-exact-deployment-choice-20261111",
+      "source": "code/config/workbench-response-model-policy.json",
+      "recorded_at": "2026-11-11T10:14:42.577818+00:00",
+      "exact_pairs": [
+        {
+          "requested_model": "gpt-6-luna",
+          "response_model": "igpt-6-luna"
+        },
+        {
+          "requested_model": "igpt-6-luna",
+          "response_model": "gpt-6-luna"
+        },
+        {
+          "requested_model": "gpt-6-luna",
+          "response_model": "data-zone-standard-gpt-6-luna"
+        }
+      ]
+    },
+    "halted": "single_container_run_finished_unused_allowance_closed",
+    "actual_cost": null,
+    "cost_status": "unknown_gateway_billing"
+  },
+  "reviews": 0,
+  "annotations": 0,
+  "runs": [
+    {
+      "id": "run-e0b1c399-7efb-4fc9-8267-43fe9d51f028",
+      "state": "failed"
+    }
+  ]
+}

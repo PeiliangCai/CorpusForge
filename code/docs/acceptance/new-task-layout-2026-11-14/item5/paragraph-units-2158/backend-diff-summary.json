@@ -1,0 +1,153 @@
+{
+  "basis": "this feedback pre-edit file snapshots, no full git diff; frontend separate owner diff",
+  "generated_at": "2026-11-15T08:51:31.641574+00:00",
+  "files": [
+    {
+      "path": "README.md",
+      "added": 6,
+      "removed": 4,
+      "new": false,
+      "before_sha256": "89b6afe0e29546871562eede57707593367df4dfeb5397191cbdfdd8799b9b06",
+      "after_sha256": "04f4468446fc4875fb3e078e82338a462701aa9ee78adca21204d8da02ff2bdb"
+    },
+    {
+      "path": "apps/server/src/workbench-progress.ts",
+      "added": 11,
+      "removed": 4,
+      "new": false,
+      "before_sha256": "6f39e823e1352bf3a251faa7bd6e8d34d0a2f8434c7b74ac32c9f1d4b9f272d5",
+      "after_sha256": "874f3b299f7859b193de8464d31943b8cd51135107b6b08aac9ec517ae6a0544"
+    },
+    {
+      "path": "apps/server/src/workflow-runner.ts",
+      "added": 3,
+      "removed": 1,
+      "new": false,
+      "before_sha256": "da1b32779df45eabd01b0848165d0ebe43fa35c97c265655557db65d0e508962",
+      "after_sha256": "594b924771058a3787a63545ed983794b167b4e186e071f18349b42ea0e817cc"
+    },
+    {
+      "path": "apps/server/src/workflow.ts",
+      "added": 12,
+      "removed": 6,
+      "new": false,
+      "before_sha256": "240757648d08a7de74afab1a8e2cebb61857f34b53aadb0102daf12f838734b0",
+      "after_sha256": "eab69f9ec9cedace7296c226565c94b5c67c901d9da700cb29dd362e05beed17"
+    },
+    {
+      "path": "apps/server/test/content-progress-api.test.ts",
+      "added": 37,
+      "removed": 0,
+      "new": true,
+      "before_sha256": null,
+      "after_sha256": "33d8ba39095399a7579d4f7dbd732cf935dfcc04860c672c8910168930f1bd97"
+    },
+    {
+      "path": "apps/server/test/workbench-progress.test.ts",
+      "added": 14,
+      "removed": 0,
+      "new": false,
+      "before_sha256": "133f836a79b3e43794ebfed953e5ca2c33b13d593fc9738cd7a240a614e77e79",
+      "after_sha256": "05d45c31b610652db3fb0006f511121ed37d27aa12ff0239f85cd202e9edfeee"
+    },
+    {
+      "path": "deploy/README.md",
+      "added": 5,
+      "removed": 3,
+      "new": false,
+      "before_sha256": "2019068ff55f66baca79dda6fc117bb776633dffc2e8126224f1d8b85c6a6a65",
+      "after_sha256": "c18a8404e7fe2ed751a9bd17312fe4a048ea001475c355f73595ad08efd541d4"
+    },
+    {
+      "path": "packages/agent/src/evidence-delivery.ts",
+      "added": 1,
+      "removed": 1,
+      "new": false,
+      "before_sha256": "a29a292bc1449b2930172e122683d85f16c9a63e0550fbbd4466a7892bd1c9b1",
+      "after_sha256": "4585dfeea1d5115a18746a7fd32562ef871a5f4b68c79217ed8148baa777b0e5"
+    },
+    {
+      "path": "packages/agent/src/evidence-validation.ts",
+      "added": 3,
+      "removed": 2,
+      "new": false,
+      "before_sha256": "f655f97d1b46e24803504d7190cb1787351519b785708d3a7b28cbfd8834e587",
+      "after_sha256": "87d46f0b8b8a290203a4d1d492261d85abafcf005bd79d85e3003de7ce246ca2"
+    },
+    {
+      "path": "packages/agent/src/extraction-run.ts",
+      "added": 23,
+      "removed": 8,
+      "new": false,
+      "before_sha256": "c796a3bb599755e734fba9051a7cac1a2a301f6118bc3eb7eb0f911d79a8440d",
+      "after_sha256": "c117a3a174487032426fceebfd895dcd3cafa8dca018e5aa1e5c1568c3b47c01"
+    },
+    {
+      "path": "packages/agent/src/extraction-tools.ts",
+      "added": 5,
+      "removed": 3,
+      "new": false,
+      "before_sha256": "3da6ec6da8a527843e4ad51545a975dfc07077d80d835bd9d251ba76af82bf55",
+      "after_sha256": "6bee9cf0c6583733e678bc0a230782ff8df949dacea408824a58cbc2feb4da10"
+    },
+    {
+      "path": "packages/agent/src/paragraph-units.ts",
+      "added": 106,
+      "removed": 10,
+      "new": false,
+      "before_sha256": "a64d5e64bbc9acf1032c3866f9ce153e2cb4fdab130b5ff813be7088c0b1ed3c",
+      "after_sha256": "4da6e57bbc81b44acbe165e40cc1b7db4eb3e15cd3dceefaea3456f47865914a"
+    },
+    {
+      "path": "packages/agent/src/table-support.ts",
+      "added": 6,
+      "removed": 5,
+      "new": false,
+      "before_sha256": "922c929d8f80985c77760310e4d5719379e59a7ae40dc8fac9cb7b9c09a887aa",
+      "after_sha256": "ac46a52cb9fce7cc64438454a69416e998dbd081fb679754592a4a1d4cbcd5d7"
+    },
+    {
+      "path": "packages/agent/src/visual-evidence-policy.ts",
+      "added": 3,
+      "removed": 3,
+      "new": false,
+      "before_sha256": "9997e7e00d980087e0fbaac86d4f8973f254acf4901258b69d55929afc26a4de",
+      "after_sha256": "8e4219a5669946668df3131ee305c02264d9ab73c79b3831b0ee73df34055a64"
+    },
+    {
+      "path": "packages/contracts/schema/EvidenceRecord.json",
+      "added": 4,
+      "removed": 0,
+      "new": false,
+      "before_sha256": "888471461f91ffa653379a185d38890011d2d1dd2bdebc9b8b6be4b2b1eaa286",
+      "after_sha256": "b586e5cb2c716a4c4bd66fb1bdf30b2b739fd518e4460bd6aee4ef0ff176c366"
+    },
+    {
+      "path": "packages/contracts/src/extraction-evidence.ts",
+      "added": 2,
+      "removed": 0,
+      "new": false,
+      "before_sha256": "ed026e2718fcb6ae6e441f6a35ef3af62cd40861802f637a8f5d0127b31a1d4a",
+      "after_sha256": "33cf9b008d2dfd19e90a1afd50aac2dfac07a8afc25d32ee2c7532cc4e69e497"
+    },
+    {
+      "path": "packages/contracts/src/workbench.ts",
+      "added": 3,
+      "removed": 1,
+      "new": false,
+      "before_sha256": "9f3f7b8139afe0b151ca7fcbb144141a7fd51d2d440c5e51f8e4d9a139748177",
+      "after_sha256": "bc23a71dfc1a00ffbda6967d7c5a7da8d13d857c967939b566d0b853e9904960"
+    },
+    {
+      "path": "tests/extraction/content-units.test.ts",
+      "added": 146,
+      "removed": 0,
+      "new": true,
+      "before_sha256": null,
+      "after_sha256": "05a50134b485ef432f557e0b5d7e90e1c21b03ce5c2705d9f535bec32fef6b94"
+    }
+  ],
+  "sha256": "bb2da6f2769852740edb66f8639b9f96096da84456271ea6245d47b3de09a1d8",
+  "frontend_diff": "item5/navigation-context/frontend.diff",
+  "frontend_diff_sha256": "8a08c58e242067a25e9184a84c2ae608042169ffb70d73d4149031ae8f2eb6dd"
+}

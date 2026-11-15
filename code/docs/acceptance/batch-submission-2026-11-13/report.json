@@ -1,0 +1,256 @@
+{
+  "schema_version": "t1-batch-submission-acceptance-1",
+  "status": "passed",
+  "date": "2026-11-13",
+  "changes": [
+    "移除左上品牌小字；手动刷新有忙态/防连点/准确成功或失败反馈；等待最新选定论文和结果，不改范围、记录或保留视图",
+    "单篇和多篇PDF按项上传/重试/移除；首轮开始固定整批范围，逐项进入既有两槽FIFO；各paper/run/结果/导出独立",
+    "x-t1-request-id可选兼容旧客户端；成功paper/run与映射原子保存，载荷冲突拒绝，重启重放返回原run不再调度，删除保留墓碑"
+  ],
+  "bounds": {
+    "max_pdfs_per_batch": 20,
+    "max_bytes_per_pdf": 52428800,
+    "upload_and_start_submission_concurrency": 1,
+    "execution_slots": 2,
+    "per_run_model_budget": "unchanged",
+    "batch_persistence": "工作台标签切换保留；整页重载清空本批选择，已提交任务仍持久化"
+  },
+  "formal_review": {
+    "used": 2,
+    "limit": 3,
+    "planning": "继续；重复提交/单篇失败掩盖/刷新提前成功风险",
+    "final": "继续；整页重载未提交列表不恢复、发布避开活动run、未测20篇真实长期负载"
+  },
+  "checks": [
+    {
+      "kind": "typecheck",
+      "command": "bash scripts/with-node.sh npm run check",
+      "status": "passed"
+    },
+    {
+      "kind": "backend_idempotency_queue",
+      "command": "bash scripts/with-node.sh node --import tsx --test apps/server/test/workflow-submission.test.ts apps/server/test/workflow-queue.test.ts",
+      "tests": 7,
+      "status": "passed"
+    },
+    {
+      "kind": "existing_workflow_regression",
+      "command": "bash scripts/with-node.sh node --import tsx --test apps/server/test/workflow.test.ts apps/server/test/workflow-finalization.test.ts",
+      "tests": 4,
+      "status": "passed"
+    },
+    {
+      "kind": "scope_and_gateway",
+      "command": "bash scripts/with-node.sh node --test apps/pi-web/lib/t1-workflow.test.mjs",
+      "tests": 5,
+      "status": "passed"
+    },
+    {
+      "kind": "gateway_request_header",
+      "command": "bash scripts/with-node.sh node_modules/.bin/tsx --tsconfig apps/pi-web/tsconfig.json --test apps/pi-web/t1/gateway-submission.test.ts",
+      "tests": 1,
+      "status": "passed"
+    },
+    {
+      "kind": "controlled_browser",
+      "command": "bash scripts/with-node.sh node apps/pi-web/e2e/batch-submission.mjs",
+      "checks": 8,
+      "status": "passed",
+      "evidence": "batch-browser.json",
+      "visuals": "desktop/mobile已人工查看；无横向溢出；批次/每篇状态与范围提示可读"
+    },
+    {
+      "kind": "priority_live_refresh",
+      "command": "T1_UI_ORIGIN=http://127.0.0.1:30141 bash scripts/with-node.sh node apps/pi-web/e2e/workspace-refresh.mjs",
+      "checks": 4,
+      "status": "passed",
+      "evidence": "priority-live-refresh.json"
+    },
+    {
+      "kind": "final_live_readonly",
+      "command": "T1_UI_ORIGIN=http://127.0.0.1:30141 T1_REFRESH_REPORT=ordinary-final-refresh T1_EXPECT_BATCH=true T1_EXPECT_BUILD_ID=t0cjrNmAjUgmxljnnYC-P bash scripts/with-node.sh node apps/pi-web/e2e/workspace-refresh.mjs",
+      "checks": 4,
+      "status": "passed",
+      "evidence": "ordinary-final-refresh.json"
+    },
+    {
+      "kind": "final_production_build",
+      "command": "T1_NEXT_DIST_DIR=build/batch-submission-20261113 bash scripts/with-node.sh npm run build:web",
+      "status": "passed",
+      "BUILD_ID": "t0cjrNmAjUgmxljnnYC-P"
+    }
+  ],
+  "coverage": [
+    "单/多文件成功及局部失败；响应已提交但丢失后的同key重放；成功成员不重复、失败单独重试；无效/空/超过50MiB文件及20篇上限；同名异内容文件均保留",
+    "首轮scope快照与失败重试；无效限制不自动放宽；跨paper两槽并发与后续FIFO；请求载荷冲突/删除/服务重启原run不自动恢复",
+    "刷新成功/失败/忙态/选项中途切换与旧请求不回写；当前原文段落和保留/排除/恢复保持；标签切换保留本批；desktop/mobile基本视觉"
+  ],
+  "priority_deployment": {
+    "status": "running",
+    "frontend": "http://127.0.0.1:30141",
+    "dist": "apps/pi-web/build/priority-refresh-20261113",
+    "BUILD_ID": "1lhIKppscQyefLRANYKT-",
+    "launcher_pid": 14678,
+    "backend_pid_unchanged": 5963,
+    "active_runs": 0,
+    "paid_model_calls": 0,
+    "write_requests": 0,
+    "rollback_dist": "apps/pi-web/build/linear-ui-final-next-20261112",
+    "transition_note": "Old Next closed listener on SIGTERM but retained an SSE socket. Exact old PID was terminated; the first browser attempt preceded readiness and was rerun after HTTP readiness.",
+    "existing_tables_unchanged": 14,
+    "env_bytes_unchanged": true,
+    "browser_checks": 4,
+    "browser_status": "passed"
+  },
+  "final_deployment": {
+    "at": "2026-11-13T02:25:09.290457+00:00",
+    "status": "running",
+    "frontend": "http://127.0.0.1:30141/",
+    "backend": "http://127.0.0.1:3210/health",
+    "frontend_dist": "apps/pi-web/build/batch-submission-20261113",
+    "BUILD_ID": "t0cjrNmAjUgmxljnnYC-P",
+    "backend_pid": 20779,
+    "frontend_launcher_pid": 20803,
+    "old_frontend_pid": 14685,
+    "old_backend_pid": 5963,
+    "active_runs_before": 0,
+    "active_runs_after_ingress_close": 0,
+    "active_runs_after": 0,
+    "existing_14_tables_unchanged": true,
+    "new_table": "workbench_requests",
+    "new_table_rows": 0,
+    "table_count": 15,
+    "database_integrity": "ok",
+    "env_bytes_unchanged": true,
+    "paid_model_calls": 0,
+    "production_test_mutations": 0,
+    "rollback_frontend_dist": "apps/pi-web/build/priority-refresh-20261113",
+    "browser": "passed",
+    "browser_checks": 4,
+    "existing_14_tables_unchanged_after_browser": true,
+    "request_rows_after_browser": 0,
+    "env_bytes_unchanged_after_browser": true
+  },
+  "model_calls": 0,
+  "production_test_mutations": 0,
+  "limitations": [
+    "未发送真实付费模型请求；新抽取使用受控工程gate，不代表医学质量/召回验收",
+    "正式医学目录/S6/S7等既有未通过项未改为通过；旧Docker镜像未重建",
+    "普通30141最终验收仅GET/HEAD，不上传/Start/导出/改取舍"
+  ],
+  "execution_notes": [
+    "独立Next dev因Turbopack CSS子进程路径失败，改用独立production候选验证；线上build始终隔离",
+    "首次优先切换浏览器早于新listener就绪而连接被拒；待HTTP ready后重跑4项通过，旧前端残留SSE仅精确终止旧PID；后端未受影响",
+    "浏览器脚本纠正Playwright内存文件限制、页签名称和opaque frame初始化；应用受控8项已完整重跑通过"
+  ],
+  "diff_scope": {
+    "modified": [
+      "apps/pi-web/t1/T1Workbench.tsx",
+      "apps/pi-web/t1/messages.mjs",
+      "apps/pi-web/t1/workbench.css",
+      "apps/pi-web/app/api/t1/[...path]/route.ts",
+      "apps/server/src/workflow.ts",
+      "apps/server/src/app.ts"
+    ],
+    "added": [
+      "apps/pi-web/t1/BatchSubmission.tsx",
+      "apps/pi-web/t1/gateway-submission.test.ts",
+      "apps/pi-web/e2e/batch-submission.mjs",
+      "apps/pi-web/e2e/workspace-refresh.mjs",
+      "apps/server/test/workflow-submission.test.ts",
+      "apps/server/test/batch-ui-fixture.ts"
+    ],
+    "review_diff": "review.diff（server/route对本轮基线；T1Workbench对已交付优先版）",
+    "other_dirty_files": "保留，不reset/stash/提交/推送"
+  },
+  "documentation_sync": {
+    "status": "passed",
+    "date": "2026-11-13T10:28:53.149094+08:00",
+    "maintenance_revision": "batch-submission-and-refresh-2026-11-13",
+    "versions_unchanged": {
+      "plan": "0.8",
+      "execution_guide": "0.6"
+    },
+    "changed_files": [
+      "方案/子任务T1/T1智能体开发计划.docx",
+      "方案/子任务T1/T1开发执行说明.docx",
+      "方案/子任务T1/开发计划.json",
+      "方案/子任务T1/当前版本.json",
+      "方案/子任务T1/材料检查结果.json",
+      "方案/子任务T1/质量与性能验收契约.json",
+      "方案/子任务T1/资料来源.json",
+      "方案/子任务T1/开发任务清单.csv",
+      "方案/子任务T1/验收清单.csv",
+      "方案/子任务T1/开发阶段与验收.csv",
+      "方案/子任务T1/待讨论实现决策.csv",
+      "code/README.md",
+      "code/deploy/README.md"
+    ],
+    "file_sha256": {
+      "方案/子任务T1/T1智能体开发计划.docx": "944640175b98b68e0ac61e6d225be8057ab47e22176f09ffe8149087d07c7cff",
+      "方案/子任务T1/T1开发执行说明.docx": "351c321f986ab4295cebfe00bc7ab2c84bccd1e67c4988bcbb1a436556451c1e",
+      "方案/子任务T1/开发计划.json": "1213aafe611fda8a737136d881e5e40459ece36486d5ef3e3129cd8f0c63f85c",
+      "方案/子任务T1/当前版本.json": "c1a5d5cf14ae62716f8438970243158a3f78e6d4ff761fcbf14253cc74eae3f4",
+      "方案/子任务T1/材料检查结果.json": "d82d9c28d7f03a70e1834d3eca03fedf9ded6e63a00824d5181aa45515539b11",
+      "方案/子任务T1/质量与性能验收契约.json": "03df0f21d12ed14ee9aefa7ec0e176b2492888e11daca746b43545d6aa094122",
+      "方案/子任务T1/资料来源.json": "eefec56d582f66824544e6006d27f040742f1be2dc9a42f6f697f7b1bea13c0b",
+      "方案/子任务T1/开发任务清单.csv": "2148fcf7332aa22211508874a556943e312d63c7c38a5bfcbea180801abf949e",
+      "方案/子任务T1/验收清单.csv": "7f01d0d1f69dbcaba02ff1221515294f6286bda9a263c438c79b13df0ddf2dd1",
+      "方案/子任务T1/开发阶段与验收.csv": "dccf911ccdad1ec0fac10c25f91e37accca0fecc6a6aa22aee251e624cf7af93",
+      "方案/子任务T1/待讨论实现决策.csv": "e060ed8a4790379b766fbf148c67b72961a0106cdb690f21e0280e93ea04f45d",
+      "code/README.md": "2057b7e13728f6a63f427a835f16d14c62489cdae814479bd46db55473790993",
+      "code/deploy/README.md": "0e00ffe901ccff1a57e9e91bd3750d37df8c5b35fcc10b18e6882a8fc4d157a2"
+    },
+    "checks": {
+      "two_docx_zip_and_xml_valid": true,
+      "docx_paragraph_and_table_structure_unchanged": true,
+      "docx_non_document_core_zip_parts_byte_identical_each": 13,
+      "historical_json_subtrees_unchanged": true,
+      "unrelated_csv_rows_unchanged": true,
+      "R13_F09_D20_JSON_CSV_equal": true,
+      "active_batch_future_conflicts": 0,
+      "current_DOCX_hash_pointers_match": true,
+      "verified_runtime_build_documented": true,
+      "whole_page_draft_reset_disclosed": true,
+      "twenty_paper_real_long_load_not_claimed": true,
+      "medical_S2_complete_S6_S7_not_promoted": true,
+      "Word_pagination_visually_reviewed": false
+    },
+    "scope": "Existing two DOCX/active metadata and operation/deploy README; no parallel plan, application code/test/config/service changes by documentation executor.",
+    "application_validation_owner": "GPT-6.1-Sol max implementation executor; documentation agent read final report only.",
+    "documentation_executor_application_tests_run": false,
+    "documentation_executor_paid_model_calls": 0,
+    "formal_reviews": {
+      "used": 2,
+      "limit": 3,
+      "decision": "继续",
+      "scope": "Shared batch task; no extra review for documentation sync; earlier task counts unchanged."
+    },
+    "evidence": {
+      "report": "code/docs/acceptance/batch-submission-2026-11-13/report.json",
+      "runtime": "code/docs/acceptance/batch-submission-2026-11-13/ordinary-runtime.json",
+      "final_readonly_browser": "code/docs/acceptance/batch-submission-2026-11-13/ordinary-final-refresh.json"
+    },
+    "runtime": {
+      "UI_dist": "apps/pi-web/build/batch-submission-20261113",
+      "BUILD_ID": "t0cjrNmAjUgmxljnnYC-P",
+      "existing_tables_preserved": 14,
+      "total_tables": 15,
+      "new_request_rows": 0,
+      "env_bytes_unchanged": true,
+      "new_paid_model_calls": 0,
+      "production_test_mutations": 0
+    }
+  },
+  "cleanup": {
+    "isolated_browser_services": "stopped 30152/3211",
+    "temporary_baselines_and_dev_build": "removed only task-owned files",
+    "retained_builds": [
+      "build/batch-submission-20261113 (live)",
+      "build/priority-refresh-20261113 (rollback)"
+    ],
+    "old_unrelated_materials": "preserved",
+    "check_log": "checks.log",
+    "task_continuity_log": "removed after final handoff completion"
+  }
+}

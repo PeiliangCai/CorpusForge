@@ -1,0 +1,14 @@
+--- review2/task-actions.ts
++++ final/task-actions.ts
+@@ -1,8 +1,8 @@
+ import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
+ 
+-// reconciling also represents a completed task finishing its persisted result;
+-// the public run shape cannot distinguish it from cancellable reconciliation.
+-const cancellable = new Set(["queued", "parsing", "extracting"]);
++// Native reconciliation is cancellable. The API also uses this state during
++// terminal finalization, so the cancel response decides the actual outcome.
++const cancellable = new Set(["queued", "parsing", "extracting", "reconciling"]);
+ const ended = new Set(["completed", "partial", "failed", "interrupted"]);
+ 
+ export function canCancelRun(run: Pick<WorkbenchRun, "state">) {

@@ -1,0 +1,850 @@
+--- /dev/null
++++ b/code/apps/pi-web/t1/StorageManagement.tsx
+@@ -0,0 +1,160 @@
++"use client";
++
++import { useCallback, useEffect, useRef, useState } from "react";
++import { createPortal } from "react-dom";
++import { CloseIcon, RefreshIcon } from "@/components/SidebarIcons";
++import { useI18n } from "@/hooks/useI18n";
++import { cleanupStorage, previewStorage, WorkbenchError } from "./api";
++import { GlobalToasts, type GlobalToastNotice } from "./GlobalToasts";
++import type { WorkbenchStorageCandidate, WorkbenchStorageCleanupResult, WorkbenchStoragePreview, WorkbenchStorageSummary } from "../../../packages/contracts/src/workbench";
++
++const errorKeys: Record<string, string> = {
++  storage_preview_stale: "storagePreviewStale", storage_preview_expired: "storagePreviewExpired",
++  storage_busy: "storageBusy", storage_selection_conflict: "storageSelectionConflict",
++  invalid_storage_selection: "storageInvalidSelection", invalid_storage_request: "storageInvalidSelection",
++  storage_scope_unavailable: "storageScopeUnavailable", storage_reference_unavailable: "storageReferenceUnavailable",
++  storage_file_changed: "storageFileChanged", storage_file_unavailable: "storageFileUnavailable",
++  storage_reference_changed: "storageReferenceChanged", storage_remove_failed: "storageRemoveFailed",
++};
++const kindKeys: Record<WorkbenchStorageCandidate["kind"], string> = {
++  unused_upload: "storageUnusedUpload", orphan_pdf: "storageOrphanPdf", orphan_parse: "storageOrphanParse",
++  orphan_figures: "storageOrphanFigures", orphan_export: "storageOrphanExport",
++};
++const protectionKeys: Record<string, string> = {
++  referenced: "storageReferenced", recent_upload: "storageRecentUpload", active_work: "storageActiveWork",
++  immutable_source: "storageImmutableSource", unsafe_link: "storageUnsafeLink", unknown: "storageUnknownOwnership",
++};
++const categoryKeys: Record<string, string> = { pdf: "storagePdf", parse: "storageParse", figures: "storageFigures", exports: "storageExports", other: "storageOther" };
++
++/** Logical sizes of managed files; these never promise recovered filesystem space. */
++export function storageBytes(bytes: number, locale: string): string {
++  if (bytes < 1024) return `${new Intl.NumberFormat(locale).format(bytes)} B`;
++  const exponent = Math.min(4, Math.floor(Math.log(bytes) / Math.log(1024)));
++  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(bytes / 1024 ** exponent)} ${["B", "KiB", "MiB", "GiB", "TiB"][exponent]}`;
++}
++
++export function StorageIcon({ size = 15 }: { size?: number }) {
++  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7" /></svg>;
++}
++
++type Failure = { id: string; name: string; reason: string };
++type Props = { open: boolean; onClose(): void; onCleaned(removedPaperIds: string[]): Promise<void> | void };
++
++/** A fresh server preview is the sole source of cleanup eligibility. */
++export function StorageManagement({ open, onClose, onCleaned }: Props) {
++  const { t, locale } = useI18n();
++  const panel = useRef<HTMLDialogElement>(null), opener = useRef<HTMLElement | null>(null);
++  const [preview, setPreview] = useState<WorkbenchStoragePreview | null>(null), [summary, setSummary] = useState<WorkbenchStorageSummary | null>(null);
++  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set()), [reviewing, setReviewing] = useState(false);
++  const [loading, setLoading] = useState(false), [cleaning, setCleaning] = useState(false), [problem, setProblem] = useState("");
++  const [failures, setFailures] = useState<Failure[]>([]), [notice, setNotice] = useState<GlobalToastNotice | null>(null);
++  const read = useRef<AbortController | null>(null), sequence = useRef(0), executing = useRef(false);
++  const paperRecheckNeeded = useRef(false);
++  const callbacks = useRef({ t, locale, onCleaned }); callbacks.current = { t, locale, onCleaned };
++  const errorText = useCallback((cause: unknown, fallback = "storageReadFailed") => {
++    const code = cause instanceof WorkbenchError ? cause.code : "";
++    return callbacks.current.t(`t1.${errorKeys[code] ?? fallback}`);
++  }, []);
++
++  const loadPreview = useCallback(async (clearProblem = true, recheckPapers = true) => {
++    const version = ++sequence.current;
++    read.current?.abort(); const controller = new AbortController(); read.current = controller;
++    setLoading(true); setPreview(null); setSelected(new Set()); setReviewing(false);
++    if (clearProblem) { setProblem(""); setFailures([]); }
++    try {
++      const value = await previewStorage(controller.signal);
++      if (controller.signal.aborted || version !== sequence.current) return;
++      setPreview(value); setSummary(value.summary);
++      if (recheckPapers && paperRecheckNeeded.current) {
++        try { await callbacks.current.onCleaned([]); paperRecheckNeeded.current = false; }
++        catch { if (!controller.signal.aborted && version === sequence.current) setProblem(current => [current, callbacks.current.t("t1.storageWorkspaceRefreshFailed")].filter(Boolean).join(" ")); }
++      }
++    } catch (cause) {
++      if (controller.signal.aborted || version !== sequence.current) return;
++      const message = errorText(cause);
++      setProblem(current => clearProblem || !current ? message : `${current} ${message}`);
++      setNotice({ text: message, failed: true });
++    } finally { if (version === sequence.current) setLoading(false); }
++  }, [errorText]);
++
++  const cancelRead = useCallback(() => { ++sequence.current; read.current?.abort(); }, []);
++
++  useEffect(() => {
++    const dialog = panel.current;
++    if (!open) { if (dialog?.open) dialog.close(); return; }
++    opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
++    dialog?.showModal();
++    setSummary(null); void loadPreview();
++    return cancelRead;
++  }, [open, loadPreview, cancelRead]);
++
++  const candidates = preview?.candidates ?? [];
++  const chosen = candidates.filter(item => selected.has(item.id));
++  const chosenBytes = chosen.reduce((sum, item) => sum + item.bytes, 0);
++  const busy = loading || cleaning;
++  const canReview = Boolean(preview?.summary.cleanup_available && chosen.length && !busy);
++  const bytes = (value: number) => storageBytes(value, locale);
++  const parts = (item: WorkbenchStorageCandidate) => item.parts.filter(part => part.files > 0).map(part => `${t(`t1.${categoryKeys[part.kind] ?? "storageOther"}`)} ${bytes(part.bytes)}`).join(" · ");
++
++  function close() { if (!executing.current) panel.current?.close(); }
++
++  async function execute() {
++    if (executing.current || !preview || !canReview || !reviewing) return;
++    executing.current = true; setCleaning(true); setProblem(""); setFailures([]);
++    const submitted = chosen;
++    try {
++      const result: WorkbenchStorageCleanupResult = await cleanupStorage({ preview_id: preview.preview_id, version: preview.version, candidate_ids: submitted.map(item => item.id) });
++      setSummary(result.summary); setSelected(new Set()); setReviewing(false);
++      const unfinished = result.results.filter(item => item.status === "failed" || item.status === "protected");
++      const partial = result.status === "partial";
++      const message = callbacks.current.t(`t1.${partial ? "storagePartial" : "storageCleaned"}`, { count: result.removed_files, size: storageBytes(result.removed_bytes, callbacks.current.locale) });
++      setNotice({ text: message, failed: partial });
++      setProblem(partial ? callbacks.current.t("t1.storagePartialHelp") : "");
++      setFailures(unfinished.map(item => ({ id: item.id, name: submitted.find(candidate => candidate.id === item.id)?.name ?? callbacks.current.t("t1.storageItem"), reason: callbacks.current.t(`t1.${errorKeys[item.error ?? ""] ?? (item.status === "protected" ? "storageReferenceChanged" : "storageRemoveFailed")}`) })));
++      paperRecheckNeeded.current = true;
++      try { await callbacks.current.onCleaned(result.removed_paper_ids); paperRecheckNeeded.current = false; }
++      catch { setProblem(current => [current, callbacks.current.t("t1.storageWorkspaceRefreshFailed")].filter(Boolean).join(" ")); }
++      await loadPreview(false, false);
++    } catch (cause) {
++      const message = errorText(cause, "storageCleanupUnconfirmed");
++      setProblem(message); setNotice({ text: message, failed: true });
++      // A failed response may follow a successful deletion. Never silently reuse
++      // the old selection, or widen it to a freshly generated candidate list.
++      paperRecheckNeeded.current = true;
++      try { await callbacks.current.onCleaned([]); paperRecheckNeeded.current = false; }
++      catch { setProblem(current => [current, callbacks.current.t("t1.storageWorkspaceRefreshFailed")].filter(Boolean).join(" ")); }
++      await loadPreview(false, false);
++    } finally { executing.current = false; setCleaning(false); }
++  }
++
++  const toastTarget = open ? panel.current : typeof document === "undefined" ? null : document.body;
++  return <>
++    <dialog ref={panel} className="t1-storage-dialog" aria-labelledby="t1-storage-title" aria-describedby="t1-storage-scope" onCancel={event => { event.preventDefault(); close(); }} onClose={() => { if (!executing.current) { onClose(); opener.current?.focus(); } }}>
++      <header className="t1-storage-header"><div><h2 id="t1-storage-title">{t(reviewing ? "t1.storageConfirmTitle" : "t1.storageManagement")}</h2><p id="t1-storage-scope">{t("t1.storageScope")}</p></div><button type="button" autoFocus className="t1-icon-button" disabled={cleaning} aria-label={t("t1.close")} onClick={close}><CloseIcon size={17} /></button></header>
++      <div className="t1-storage-scroll" aria-busy={busy}>
++        {problem && <div className="t1-storage-problem" role="alert"><p>{problem}</p>{failures.length > 0 && <ul>{failures.map(item => <li key={item.id}><strong>{item.name}</strong> · {item.reason}</li>)}</ul>}</div>}
++        {reviewing ? <>
++          <p className="t1-storage-warning" id="t1-storage-confirm-warning">{t("t1.storageIrreversible")}</p>
++          <p className="t1-storage-selected-summary">{t("t1.storageSelected", { count: chosen.length, size: bytes(chosenBytes) })}</p>
++          <ul className="t1-storage-candidates t1-storage-confirm-list">{chosen.map(item => <li key={item.id} data-storage-confirm-id={item.id}><div className="t1-storage-file"><strong>{item.name}</strong><span>{t(`t1.${kindKeys[item.kind]}`)}</span><small>{parts(item)}</small></div><span className="t1-storage-size">{bytes(item.bytes)}</span></li>)}</ul>
++        </> : <>
++          <dl className="t1-storage-stats">{[["storageTotal", summary?.total_bytes], ["storageProtected", summary?.protected_bytes], ["storageReclaimable", summary?.reclaimable_bytes]].map(([label, size]) => <div key={label}><dt>{t(`t1.${label}`)}</dt><dd data-storage-stat={label}>{typeof size === "number" ? bytes(size) : "—"}</dd></div>)}</dl>
++          {summary && <>
++            <dl className="t1-storage-categories">{summary.categories.filter(item => item.bytes > 0).map(item => <div key={item.kind}><dt>{t(`t1.${categoryKeys[item.kind] ?? "storageOther"}`)}</dt><dd>{bytes(item.bytes)}</dd></div>)}</dl>
++            <details className="t1-storage-protection"><summary>{t("t1.storageProtectionTitle")}</summary><p>{t("t1.storageProtectionHelp", { hours: summary.policy.recent_upload_protection_hours })}</p>{summary.protected_reasons.length > 0 && <ul>{summary.protected_reasons.map(item => <li key={item.code}><span>{t(`t1.${protectionKeys[item.code] ?? "storageUnknownOwnership"}`, { hours: summary.policy.recent_upload_protection_hours })}</span><span>{bytes(item.bytes)}</span></li>)}</ul>}</details>
++            {summary.unknown_bytes > 0 && <p className="t1-storage-help">{t("t1.storageUnknownHelp", { size: bytes(summary.unknown_bytes) })}</p>}
++            {!summary.cleanup_available && <p className="t1-storage-warning" role="status">{t(`t1.${errorKeys[summary.unavailable_reason ?? ""] ?? "storageScopeUnavailable"}`)}</p>}
++          </>}
++          <div className="t1-storage-list-heading"><h3>{t("t1.storageCandidates")}</h3><span>{candidates.length}</span><button type="button" className="t1-button" disabled={busy} aria-busy={loading} onClick={() => void loadPreview()}><RefreshIcon size={13} />{t(loading ? "t1.storagePreviewLoading" : "t1.storageRefreshPreview")}</button></div>
++          {loading ? <p className="t1-storage-empty" role="status">{t("t1.storagePreviewLoading")}</p> : !preview ? <p className="t1-storage-empty">{t("t1.storageNoPreview")}</p> : candidates.length === 0 ? <p className="t1-storage-empty" role="status">{t("t1.storageNothingToClean")}</p> : <>
++            <p className="t1-storage-help">{t("t1.storageSelectionHelp")}</p>
++            <ul className="t1-storage-candidates">{candidates.map(item => <li key={item.id} data-storage-candidate-id={item.id}><label><input type="checkbox" checked={selected.has(item.id)} disabled={busy || !summary?.cleanup_available} onChange={event => { const checked = event.currentTarget.checked; setSelected(current => { const next = new Set(current); if (checked) next.add(item.id); else next.delete(item.id); return next; }); }} /><div className="t1-storage-file"><strong>{item.name}</strong><span>{t(`t1.${kindKeys[item.kind]}`)}</span><small>{parts(item)}</small></div><span className="t1-storage-size">{bytes(item.bytes)}</span></label></li>)}</ul>
++          </>}
++        </>}
++      </div>
++      <footer className="t1-storage-footer"><span role="status">{t("t1.storageSelected", { count: chosen.length, size: bytes(chosenBytes) })}</span><div>{reviewing ? <><button type="button" className="t1-button" disabled={cleaning} onClick={() => setReviewing(false)}>{t("t1.storageBackToSelection")}</button><button type="button" className="t1-primary" aria-describedby="t1-storage-confirm-warning" disabled={!canReview} aria-busy={cleaning} onClick={() => void execute()}>{t(cleaning ? "t1.storageCleaning" : "t1.storageConfirmCleanup")}</button></> : <><button type="button" className="t1-button" disabled={cleaning} onClick={close}>{t("t1.close")}</button><button type="button" className="t1-primary" disabled={!canReview} onClick={() => setReviewing(true)}>{t("t1.storageReviewSelection")}</button></>}</div></footer>
++      {cleaning && <span className="t1-sr-only" role="status">{t("t1.storageCleaning")}</span>}
++    </dialog>
++    {notice && toastTarget && createPortal(<GlobalToasts dismissLabel={t("t1.close")} items={[{ id: "storage", notice, className: "t1-storage-toast", onDismiss: () => setNotice(null) }]} />, toastTarget)}
++  </>;
++}
+--- a/code/apps/pi-web/t1/BatchSubmission.tsx
++++ b/code/apps/pi-web/t1/BatchSubmission.tsx
+@@ -1,6 +1,6 @@
+ "use client";
+ 
+-import { useRef, useState, type ReactNode } from "react";
++import { useEffect, useRef, useState, type ReactNode } from "react";
+ import { useI18n } from "@/hooks/useI18n";
+ import { api, jsonBody, WorkbenchError } from "./api";
+ import { ScopeConfiguration, ScopeSummary } from "./ScopeEditor";
+@@ -10,11 +10,12 @@
+ import type { Scope } from "../../../packages/contracts/src/index";
+ import type { WorkbenchPaper, WorkbenchRun, WorkbenchSubmission, WorkbenchModelProfile, WorkbenchUpload } from "../../../packages/contracts/src/workbench";
+ 
+-type Status = "pending" | "invalid" | "uploading" | "uploadFailed" | "uploaded" | "starting" | "startFailed" | "submitted";
++type Status = "pending" | "invalid" | "uploading" | "uploadFailed" | "uploadRemoved" | "uploaded" | "starting" | "startFailed" | "submitted";
+ type Member = { id: string; file: File; displayName: string; sha256?: string; reused?: boolean; status: Status; error?: string; paper?: WorkbenchPaper; run?: WorkbenchRun; uploadKey: string; startKey: string };
++export type StoragePaperAvailability = { removedPaperIds: readonly string[]; presentPaperIds?: readonly string[] };
+ type Props = { scope: Scope | null; catalog: ScopeCatalog | null; canUpload: boolean; canStart: boolean; runs: WorkbenchRun[];
+   modelProfile: WorkbenchModelProfile | null; modelRequired: boolean;
+-  modelSelection?: ReactNode;
++  modelSelection?: ReactNode; storagePaperAvailability?: StoragePaperAvailability | null;
+   onScopeChange: (scope: Scope) => void;
+   onUploaded: (paper: WorkbenchPaper) => void; onStarted: (run: WorkbenchRun) => void; onSingleStarted: (run: WorkbenchRun) => void;
+   onBatchStarted?: (runs: WorkbenchRun[], batchId: string) => void;
+@@ -22,12 +23,13 @@
+ 
+ /** One small in-memory selection. Uploads and admissions are sequential; the
+  * existing server queue owns execution. Committed members never re-enter either loop. */
+-export function BatchSubmission({ scope, catalog, onScopeChange, canUpload, canStart, runs, modelProfile, modelRequired, modelSelection, onUploaded, onStarted, onSingleStarted, onBatchStarted, onView, errorText }: Props) {
++export function BatchSubmission({ scope, catalog, onScopeChange, canUpload, canStart, runs, modelProfile, modelRequired, modelSelection, storagePaperAvailability, onUploaded, onStarted, onSingleStarted, onBatchStarted, onView, errorText }: Props) {
+   const { t } = useI18n();
+   const [members, setMembers] = useState<Member[]>([]), [phase, setPhase] = useState<"choose" | "upload" | "start" | null>(null), [notice, setNotice] = useState(""), [taskTitle, setTaskTitle] = useState("");
+   const busy = phase !== null;
+   const [admission, setAdmission] = useState<{ scope: Scope; catalog: ScopeCatalog; submission: WorkbenchSubmission; model: WorkbenchModelProfile | null; taskTitle: string } | null>(null);
+   const busyRef = useRef(false), membersRef = useRef<Member[]>([]), inputRef = useRef<HTMLInputElement>(null), folderRef = useRef<HTMLInputElement>(null);
++  const lastStorageAvailability = useRef<StoragePaperAvailability | null>(null);
+   const savedScope = admission?.scope;
+   const replaceMembers = (next: Member[]) => { membersRef.current = next; setMembers(next); };
+   const patch = (id: string, change: Partial<Member>) => replaceMembers(membersRef.current.map(member => member.id === id ? { ...member, ...change } : member));
+@@ -40,6 +42,19 @@
+   const invalidTitle = taskTitle.length > 500 || /[\x00-\x1f]/.test(taskTitle);
+   const validMembers = members.filter(member => member.status !== "invalid");
+   const taskKind = admission?.submission.kind ?? (validMembers.length > 1 ? "batch" : "single");
++
++  useEffect(() => {
++    if (!storagePaperAvailability || lastStorageAvailability.current === storagePaperAvailability) return;
++    lastStorageAvailability.current = storagePaperAvailability;
++    const removed = new Set(storagePaperAvailability.removedPaperIds), present = storagePaperAvailability.presentPaperIds ? new Set(storagePaperAvailability.presentPaperIds) : null;
++    let changed = false;
++    const next = membersRef.current.map(member => {
++      if (!member.paper || member.run || !removed.has(member.paper.id) && (!present || present.has(member.paper.id))) return member;
++      changed = true;
++      return { ...member, paper: undefined, reused: false, status: "uploadRemoved" as const, error: t("t1.storageDraftRemoved"), uploadKey: crypto.randomUUID(), startKey: crypto.randomUUID() };
++    });
++    if (changed) { membersRef.current = next; setMembers(next); }
++  }, [storagePaperAvailability, t]);
+ 
+   async function choose(files: FileList | null, folder = false) {
+     if (!files || busyRef.current || savedScope || !canUpload) return;
+@@ -73,7 +88,7 @@
+   async function uploadMembers(selected: Member[]) {
+     for (const selectedMember of selected) {
+       const member = membersRef.current.find(member => member.id === selectedMember.id);
+-      if (!member || member.paper || member.run || !["pending", "uploadFailed"].includes(member.status)) continue;
++      if (!member || member.paper || member.run || !["pending", "uploadFailed", "uploadRemoved"].includes(member.status)) continue;
+       patch(member.id, { status: "uploading", error: undefined });
+       try {
+         const value = await api<WorkbenchUpload>("workbench/papers", { method: "POST", headers: { "content-type": "application/pdf", "x-t1-filename": encodeURIComponent(member.file.name), "x-t1-request-id": member.uploadKey }, body: member.file });
+@@ -141,7 +156,7 @@
+         return <li key={member.id} data-batch-member={member.id} data-upload-state={member.status}>
+           <div className="t1-batch-file"><strong title={member.displayName}>{member.displayName}</strong><small>{(member.file.size / 1024 / 1024).toFixed(1)} MiB</small></div>
+           <div className="t1-batch-member-actions"><span className="t1-batch-state" role="status">{t(`t1.batch_${member.status}`)}{run && ` · ${t(`t1.${runPresentation(run.state, run).statusKey}`)}`}</span>
+-            {member.status === "uploadFailed" && <button className="t1-button" disabled={busy} onClick={() => void upload([member])}>{t("t1.retryUpload")}</button>}
++            {(member.status === "uploadFailed" || member.status === "uploadRemoved") && <button className="t1-button" disabled={busy} onClick={() => void upload([member])}>{t(member.status === "uploadRemoved" ? "t1.storageReupload" : "t1.retryUpload")}</button>}
+             {member.status === "startFailed" && <button className="t1-button" disabled={busy || !canStart || invalidScope || invalidModel || invalidTitle} onClick={() => void start([member])}>{t("t1.retryStart")}</button>}
+             {run ? <button className="t1-button" onClick={() => onView(run)}>{t("t1.viewTask")}</button> : <button className="t1-button" disabled={busy} onClick={() => replaceMembers(membersRef.current.filter(item => item.id !== member.id))}>{t("t1.removeFile")}</button>}
+           </div>{member.error && <p className="t1-batch-error" role="alert">{member.error}{member.status !== "invalid" && ` ${t("t1.batchRetrySafe")}`}</p>}
+--- a/code/apps/pi-web/t1/T1Workbench.tsx
++++ b/code/apps/pi-web/t1/T1Workbench.tsx
+@@ -27,7 +27,7 @@
+ import { ModelSelection } from "./ModelSelection";
+ import { originalRunFilename, taskDisplayTitle } from "./task-titles";
+ import { WorkbenchNotes } from "./WorkbenchNotes";
+-import { BatchSubmission } from "./BatchSubmission";
++import { BatchSubmission, type StoragePaperAvailability } from "./BatchSubmission";
+ import { RunTaskMenu, type RunTaskMenuState } from "./RunTaskMenu";
+ import { RunProgress } from "./RunProgress";
+ import { BatchProgress } from "./BatchProgress";
+@@ -37,6 +37,7 @@
+ import { groupSubmittedRuns, resultRecordKey, submissionRun, submittedTaskId } from "./submission-groups";
+ import { useBatchResults } from "./useBatchResults";
+ import { GlobalToasts } from "./GlobalToasts";
++import { StorageIcon, StorageManagement } from "./StorageManagement";
+ import { canCancelRun, cancellationResult, runDeletionBlocked } from "./task-actions";
+ import { runPresentation } from "./run-presentation";
+ import { TaskCompletionNotes } from "./TaskCompletionNotes";
+@@ -73,6 +74,8 @@
+   const [activeTab, setActiveTab] = useState("newTask"), [tabIds, setTabIds] = useState(["newTask"]);
+   const [submissionRevision, setSubmissionRevision] = useState(0);
+   const [showSource, setShowSource] = useState(false), [showSidebar, setShowSidebar] = useState(true), [showNotes, setShowNotes] = useState(false);
++  const [showStorage, setShowStorage] = useState(false);
++  const [storagePaperAvailability, setStoragePaperAvailability] = useState<StoragePaperAvailability | null>(null);
+   const expandNavRef = useRef<HTMLButtonElement>(null), collapseNavRef = useRef<HTMLButtonElement>(null), navFocusTarget = useRef<boolean | null>(null);
+   const [menu, setMenu] = useState<SidebarMenuAnchor | null>(null), [toast, setToast] = useState<SidebarToastData | null>(null);
+   const [taskMenu, setTaskMenu] = useState<RunTaskMenuState | null>(null), [cancelling, setCancelling] = useState<ReadonlySet<string>>(new Set());
+@@ -439,6 +442,14 @@
+     }
+     finally { deletingRuns.current.delete(target.runId); setDeleteBusy(false); }
+   }
++  async function refreshStoragePapers(removedPaperIds: string[]) {
++    if (removedPaperIds.length) setStoragePaperAvailability({ removedPaperIds });
++    const listed = await api<{ papers: WorkbenchPaper[] }>("workbench/papers");
++    setPapers(listed.papers.map(cleanPaper));
++    // Only a successful read can establish that an unsubmitted draft's source
++    // is missing after an unconfirmed cleanup response.
++    setStoragePaperAvailability({ removedPaperIds, presentPaperIds: listed.papers.map(paper => paper.id) });
++  }
+   function sourceIssueText(issue: string) {
+     return t(issue.startsWith("pdf_") ? issue.includes("missing") ? "t1.pdfMissing" : "t1.pdfChanged" : issue.startsWith("ir_") ? "t1.irProblem" : "t1.bindingProblem");
+   }
+@@ -468,7 +479,7 @@
+       {showSidebar ? <aside className="t1-sidebar" aria-label={t("t1.submittedTasks")} onKeyDown={event => { if (mobile && event.key === "Escape") { event.preventDefault(); showTaskNavigation(false); } }}><div className="t1-sidebar-heading"><strong>{t("t1.submittedTasks")}</strong><span>{taskGroups.length}</span><button type="button" ref={collapseNavRef} className="t1-nav-toggle t1-sidebar-collapse" aria-label={t("t1.collapseTaskNav")} title={t("t1.collapseTaskNav")} aria-controls="t1-task-navigation" aria-expanded={true} onClick={() => showTaskNavigation(false)}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16m7-11-3 3 3 3" /></svg></button></div>
+         <button className="t1-new-task" onClick={newTask}><PlusIcon size={16} />{t("t1.newTask")}</button>
+         <div className="t1-paper-list-region" aria-busy={refreshing}><SubmissionRunList variant="sidebar" runs={runs} papers={papers} selectedId={taskView ? runId ?? historyId : null} menuRunId={taskMenu?.runId} onSelect={selectRun} onMenu={openRunMenu} statusLabel={runLabel} />{refreshing && <div className="t1-refresh-overlay" aria-hidden="true" />}</div>
+-        <div className="t1-sidebar-bottom"><button onClick={() => openTab("tasks")}><MessageIcon size={15} />{t("t1.tasks")}</button><DetailDisclosure title={t("t1.aboutWorkbench")}><p>Pi Web 0.15.0 · T1 Pi SDK 1.4.0</p></DetailDisclosure></div>
++        <div className="t1-sidebar-bottom"><button onClick={() => openTab("tasks")}><MessageIcon size={15} />{t("t1.tasks")}</button><button type="button" className="t1-storage-entry" aria-haspopup="dialog" aria-expanded={showStorage} onClick={() => setShowStorage(true)}><StorageIcon />{t("t1.storageManagement")}</button><DetailDisclosure title={t("t1.aboutWorkbench")}><p>Pi Web 0.15.0 · T1 Pi SDK 1.4.0</p></DetailDisclosure></div>
+         <SidebarToast toast={toast} onDismiss={() => setToast(null)} dismissLabel={t("t1.close")} /></aside> : <nav className="t1-nav-rail" aria-label={t("t1.submittedTasks")}><button type="button" ref={expandNavRef} className="t1-nav-toggle" aria-label={t("t1.expandTaskNav")} title={t("t1.expandTaskNav")} aria-controls="t1-task-navigation" aria-expanded={false} onClick={() => showTaskNavigation(true)}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16m4-11 3 3-3 3" /></svg><span aria-hidden="true">{t("t1.task")}</span></button></nav>}
+       </div>
+       {showSidebar && <div className="t1-resize" {...sidebar.separatorProps} />}
+@@ -486,7 +497,7 @@
+           {capabilities?.controlled_fixture && <p className="t1-fixture-banner">{t("t1.fixture")}</p>}
+           {!activeTab && <div className="t1-empty">{(hasTaskContext ? ["newTask", "records", "figures", "tasks"] : ["newTask", "tasks"]).map(id => <button key={id} onClick={() => openTab(id)}>{t(`t1.${id}`)}</button>)}</div>}
+           <section className="t1-new-task-panel" hidden={activeTab !== "newTask"}><div className="t1-heading"><h1>{t("t1.newTask")}</h1><span className="t1-badge">B0</span></div>
+-            <BatchSubmission key={submissionRevision} scope={scope} catalog={catalog} onScopeChange={setScope} canUpload={Boolean(capabilities?.paper_upload)} canStart={Boolean(capabilities?.extraction_start)} runs={runs} modelProfile={selectedModel} modelRequired={Boolean(capabilities?.model_selection)} errorText={errorText}
++            <BatchSubmission key={submissionRevision} scope={scope} catalog={catalog} onScopeChange={setScope} canUpload={Boolean(capabilities?.paper_upload)} canStart={Boolean(capabilities?.extraction_start)} runs={runs} modelProfile={selectedModel} modelRequired={Boolean(capabilities?.model_selection)} storagePaperAvailability={storagePaperAvailability} errorText={errorText}
+               modelSelection={(capabilities?.model_selection && models || modelRuntime) ? <section className="t1-task-card t1-model-configuration" aria-label={t("t1.modelConfiguration")}>
+                 <h2 className="t1-task-card-title">{t("t1.modelConfiguration")}</h2>
+                 {capabilities?.model_selection && models && <ModelSelection models={models} value={modelProfileId} onChange={chooseModel} onModelsChange={setModels} errorText={errorText} />}
+@@ -564,5 +575,6 @@
+     <SidebarMenu open={menu !== null} anchor={menu} sheet={mobile} ariaLabel={t("t1.theme")} title={t("t1.theme")} cancelLabel={t("t1.close")} onClose={() => setMenu(null)} items={([['auto', 'system'], ['light', 'light'], ['dark', 'dark']] as const).map(([id, key]) => ({ type: "item", id, label: t(`t1.${key}`), checked: preference === id, onSelect: () => setThemePreference(id) }))} />
+     <RunTaskMenu menu={taskMenu} run={runs.find(run => run.run_id === taskMenu?.runId)} paper={papers.find(paper => paper.id === taskMenu?.paperId)} members={taskGroups.find(group => group.runs.some(run => run.run_id === taskMenu?.runId))?.runs} cancelling={cancelling} mobile={mobile} onClose={() => setTaskMenu(null)} onCancel={run => void cancelRun(run.run_id)} onView={selectRun} onDelete={requestRunDeletion} />
+     <RunDeleteDialog target={deleteTarget} busy={deleteBusy} cleanupPending={Boolean(cleanupTarget && cleanupTarget.runId === deleteTarget?.runId)} blocked={Boolean(deleteTarget && runs.some(run => (run.run_id === deleteTarget.runId || deleteTarget.members?.some(member => member.runId === run.run_id)) && runDeletionBlocked(run)))} error={deleteError} onClose={() => setDeleteTarget(null)} onConfirm={target => void deleteRun(target)} />
++    <StorageManagement open={showStorage} onClose={() => setShowStorage(false)} onCleaned={refreshStoragePapers} />
+   </div>;
+ }
+--- a/code/apps/pi-web/t1/api.ts
++++ b/code/apps/pi-web/t1/api.ts
+@@ -1,3 +1,5 @@
++import type { WorkbenchStorageCleanupInput, WorkbenchStorageCleanupResult, WorkbenchStoragePreview } from "../../../packages/contracts/src/workbench";
++
+ export class WorkbenchError extends Error {
+   constructor(public status: number, public code: string, public currentVersion?: number) { super(code); }
+ }
+@@ -13,3 +15,5 @@
+   return (await request(path, init)).json();
+ }
+ export const jsonBody = (method: string, value: unknown): RequestInit => ({ method, headers: { "content-type": "application/json" }, body: JSON.stringify(value) });
++export const previewStorage = (signal?: AbortSignal) => api<WorkbenchStoragePreview>("workbench/storage/preview", { ...jsonBody("POST", {}), signal });
++export const cleanupStorage = (selection: WorkbenchStorageCleanupInput) => api<WorkbenchStorageCleanupResult>("workbench/storage/cleanup", jsonBody("POST", selection));
+--- a/code/apps/pi-web/t1/gateway-policy.ts
++++ b/code/apps/pi-web/t1/gateway-policy.ts
+@@ -1,6 +1,6 @@
+ /** Pure path allowlist, shared by the mandatory entry guard and T1-only gateway. */
+ const id = "[A-Za-z0-9_:.,-]{1,200}";
+-const pathPattern = new RegExp(`^/api/t1/(?:workbench/(?:capabilities|catalog|models|papers|runs|batches/${id}(?:/cancel|/exports/retained_package)?|papers/${id}(?:/pdf|/figures/${id}|/runs)?|runs/${id}(?:/events|/cancel|/figures/${id}(?:/verify)?|/records(?:/${id}(?:/review|/retention)?)?|/exports/(?:candidate_jsonl|candidate_csv|approved_jsonl|approved_csv|candidate_package|approved_package|retained_jsonl|retained_csv|retained_package))?)|runs/${id}(?:/records|/events)?)$`);
++const pathPattern = new RegExp(`^/api/t1/(?:workbench/(?:capabilities|catalog|models|storage(?:/preview|/cleanup)?|papers|runs|batches/${id}(?:/cancel|/exports/retained_package)?|papers/${id}(?:/pdf|/figures/${id}|/runs)?|runs/${id}(?:/events|/cancel|/figures/${id}(?:/verify)?|/records(?:/${id}(?:/review|/retention)?)?|/exports/(?:candidate_jsonl|candidate_csv|approved_jsonl|approved_csv|candidate_package|approved_package|retained_jsonl|retained_csv|retained_package))?)|runs/${id}(?:/records|/events)?)$`);
+ // encodeURIComponent encodes only these two characters from our allowed ID alphabet.
+ // Decode neither slashes, dots, percent signs nor fixed route names; remaining '%' fails the allowlist.
+ const normalizeIdEncoding = (path: string) => path.replace(/%3a/gi, ":").replace(/%2c/gi, ",");
+@@ -12,6 +12,8 @@
+ export function isT1ApiMethod(path: string, method: string): boolean {
+   path = normalizeIdEncoding(path);
+   if (!isT1ApiPath(path)) return false;
++  if (path === "/api/t1/workbench/storage") return method === "GET" || method === "HEAD";
++  if (path === "/api/t1/workbench/storage/preview" || path === "/api/t1/workbench/storage/cleanup") return method === "POST";
+   if (method === "GET" || method === "HEAD") return !/\/(?:cancel|review|verify|retention)$/.test(path);
+   if (method === "PUT") return new RegExp(`^/api/t1/workbench/papers/${id}/pdf$`).test(path);
+   if (method === "DELETE" && new RegExp(`^/api/t1/workbench/papers/${id}$`).test(path)) return true;
+--- a/code/apps/pi-web/t1/messages.mjs
++++ b/code/apps/pi-web/t1/messages.mjs
+@@ -1,6 +1,64 @@
+ /** T1 messages are part of each existing Pi Web locale package. Paper content is never translated. */
+ /** @type {Record<string, [string, string, string]>} */
+ const rows = {
++  storageManagement: ["Storage", "存储管理", "儲存管理"],
++  batch_uploadRemoved: ["Upload again", "需重新上传", "需重新上傳"],
++  storageDraftRemoved: ["This source file was cleaned up. Upload it again to continue; the selected file, title and scope are kept.", "这份来源文件已被清理，请重新上传后继续；已保留所选文件、任务标题与范围。", "這份來源檔案已被清理，請重新上傳後繼續；已保留所選檔案、任務標題與範圍。"],
++  storageReupload: ["Upload again", "重新上传", "重新上傳"],
++  storageScope: ["Managed workbench files only. Sizes are file bytes; actual disk space recovered may differ.", "仅统计工作台管理的资料文件；文件大小不等于实际释放的磁盘空间。", "僅統計工作台管理的資料檔案；檔案大小不等於實際釋放的磁碟空間。"],
++  storageTotal: ["Total managed files", "资料总占用", "資料總用量"],
++  storageProtected: ["In use or protected", "仍在使用或受保护", "仍在使用或受保護"],
++  storageReclaimable: ["Available to clean", "可清理", "可清理"],
++  storagePdf: ["PDF", "PDF", "PDF"],
++  storageParse: ["Parsed files", "解析产物", "解析產物"],
++  storageFigures: ["Images", "图片产物", "圖片產物"],
++  storageExports: ["Exports", "导出产物", "匯出產物"],
++  storageOther: ["Other managed files", "其他资料", "其他資料"],
++  storageProtectionTitle: ["What is kept", "哪些资料会保留", "哪些資料會保留"],
++  storageProtectionHelp: ["Files referenced by tasks are kept. Uploads from the last {hours} hours are also kept. Cleanup is always manual.", "任何任务仍引用的资料会保留，最近 {hours} 小时上传的资料也会保留；清理仅在手动确认后执行。", "任何任務仍引用的資料會保留，最近 {hours} 小時上傳的資料也會保留；清理僅在手動確認後執行。"],
++  storageReferenced: ["Referenced by tasks or saved results", "任务或已保存结果仍在引用", "任務或已儲存結果仍在引用"],
++  storageRecentUpload: ["Uploaded within {hours} hours", "最近 {hours} 小时上传", "最近 {hours} 小時上傳"],
++  storageActiveWork: ["An operation is using these files", "正在执行的操作仍需使用", "執行中的操作仍需使用"],
++  storageImmutableSource: ["Saved historical sources", "需保留的历史来源", "需保留的歷史來源"],
++  storageUnsafeLink: ["Shared or linked files are kept", "共享或链接文件暂予保留", "共用或連結檔案暫予保留"],
++  storageUnknownOwnership: ["Ownership could not be confirmed", "无法确认归属，暂予保留", "無法確認歸屬，暫予保留"],
++  storageUnknownHelp: ["{size} is excluded from cleanup because its ownership or safety could not be confirmed.", "另有 {size} 未纳入清理：暂时无法确认归属或安全性。", "另有 {size} 未納入清理：暫時無法確認歸屬或安全性。"],
++  storageCandidates: ["Unreferenced files", "无任务引用的资料", "無任務引用的資料"],
++  storageSelectionHelp: ["Nothing is selected by default. Review the names and scope before continuing.", "默认不选中任何资料，请核对名称与清理范围后勾选。", "預設不選取任何資料，請核對名稱與清理範圍後勾選。"],
++  storageUnusedUpload: ["Unused upload, its files and registration", "未被任务使用的上传资料、产物及登记", "未被任務使用的上傳資料、產物及登記"],
++  storageOrphanPdf: ["PDF with no task references", "无任务引用的 PDF", "無任務引用的 PDF"],
++  storageOrphanParse: ["Parsed files with no task references", "无任务引用的解析产物", "無任務引用的解析產物"],
++  storageOrphanFigures: ["Images with no task references", "无任务引用的图片产物", "無任務引用的圖片產物"],
++  storageOrphanExport: ["Exports with no task references", "无任务引用的导出产物", "無任務引用的匯出產物"],
++  storageRefreshPreview: ["Refresh preview", "刷新预览", "重新整理預覽"],
++  storagePreviewLoading: ["Reading storage…", "正在读取资料占用…", "正在讀取資料用量…"],
++  storageNoPreview: ["Preview unavailable. Refresh to try again.", "暂时无法获取预览，请刷新重试。", "暫時無法取得預覽，請重新整理重試。"],
++  storageNothingToClean: ["No files are currently available to clean.", "当前没有可清理的资料。", "目前沒有可清理的資料。"],
++  storageSelected: ["Selected {count} · {size}", "已选 {count} 项 · {size}", "已選 {count} 項 · {size}"],
++  storageReviewSelection: ["Review cleanup", "核对清理内容", "核對清理內容"],
++  storageConfirmTitle: ["Confirm file cleanup", "确认清理资料", "確認清理資料"],
++  storageIrreversible: ["The following unreferenced files will be permanently deleted. This cannot be undone; they will need to be uploaded again.", "将永久删除以下无任务引用的文件，之后需要重新上传。删除后无法撤回。", "將永久刪除以下無任務引用的檔案，之後需要重新上傳。刪除後無法復原。"],
++  storageBackToSelection: ["Back to selection", "返回选择", "返回選取"],
++  storageConfirmCleanup: ["Permanently delete", "确认永久清理", "確認永久清理"],
++  storageCleaning: ["Cleaning selected files…", "正在清理所选资料…", "正在清理所選資料…"],
++  storageCleaned: ["Cleaned {count} files · {size} of file bytes.", "已清理 {count} 个文件 · 文件大小 {size}。", "已清理 {count} 個檔案 · 檔案大小 {size}。"],
++  storagePartial: ["Partially cleaned: {count} files · {size}. Some files were kept.", "部分清理完成：{count} 个文件 · {size}，部分资料已保留。", "部分清理完成：{count} 個檔案 · {size}，部分資料已保留。"],
++  storagePartialHelp: ["Some selected files were kept. Review the refreshed preview and select again before retrying.", "部分所选资料未清理。请核对刷新后的预览，重新选择并确认。", "部分所選資料未清理。請核對重新整理後的預覽，重新選取並確認。"],
++  storageItem: ["Selected file", "所选资料", "所選資料"],
++  storageReadFailed: ["Could not read the storage preview. Try refreshing.", "资料占用读取失败，请刷新重试。", "資料用量讀取失敗，請重新整理重試。"],
++  storageCleanupUnconfirmed: ["Cleanup could not be confirmed. Review the refreshed preview before trying again.", "尚未确认清理结果，请核对刷新后的预览后再操作。", "尚未確認清理結果，請核對重新整理後的預覽再操作。"],
++  storagePreviewStale: ["Files or task references have changed. The selection was cleared; review the new preview.", "资料或任务引用已变化，已清空选择，请核对新预览。", "資料或任務引用已變更，已清空選取，請核對新預覽。"],
++  storagePreviewExpired: ["The preview expired. The selection was cleared; review the new preview.", "预览已过期，已清空选择，请核对新预览。", "預覽已過期，已清空選取，請核對新預覽。"],
++  storageBusy: ["A task or file operation is running. Cleanup is paused; refresh after it finishes.", "任务或文件操作正在执行，暂不能清理，请结束后刷新。", "任務或檔案操作正在執行，暫時無法清理，請結束後重新整理。"],
++  storageSelectionConflict: ["This preview was already used with another selection. Review and select from a new preview.", "此预览已用于另一组选择，请核对新预览并重新选择。", "此預覽已用於另一組選取，請核對新預覽並重新選取。"],
++  storageInvalidSelection: ["The cleanup selection is invalid. Review and select from a new preview.", "清理选择无效，请核对新预览并重新选择。", "清理選取無效，請核對新預覽並重新選取。"],
++  storageScopeUnavailable: ["Some file sizes or ownership could not be checked. Cleanup is paused; try refreshing.", "部分资料暂时无法完整核验，已暂停清理，请刷新重试。", "部分資料暫時無法完整核驗，已暫停清理，請重新整理重試。"],
++  storageReferenceUnavailable: ["Task references could not be fully checked. Cleanup is paused; try refreshing.", "暂时无法完整核验任务引用，已暂停清理，请刷新重试。", "暫時無法完整核驗任務引用，已暫停清理，請重新整理重試。"],
++  storageFileChanged: ["File changed and was kept", "文件已变化，已保留", "檔案已變更，已保留"],
++  storageFileUnavailable: ["File could not be checked and was kept", "文件暂无法核验，已保留", "檔案暫時無法核驗，已保留"],
++  storageReferenceChanged: ["A new reference was found; files were kept", "发现新的任务引用，已保留", "發現新的任務引用，已保留"],
++  storageRemoveFailed: ["Cleanup failed; review the new preview", "清理未完成，请核对新预览", "清理未完成，請核對新預覽"],
++  storageWorkspaceRefreshFailed: ["The source list could not be checked. Refresh this preview to check again.", "资料列表核对失败，请刷新预览重新核对。", "資料清單核對失敗，請重新整理預覽再次核對。"],
+   batchPaperCount: ["{count} submitted papers", "已提交 {count} 篇", "已提交 {count} 篇"],
+   batchTaskCreated: ["Batch task created: {count} papers submitted", "批量任务创建成功，已提交 {count} 篇", "批次任務建立成功，已提交 {count} 篇"],
+   batchMembers: ["Submitted papers", "已提交论文", "已提交論文"],
+--- a/code/apps/pi-web/t1/workbench.css
++++ b/code/apps/pi-web/t1/workbench.css
+@@ -280,6 +280,70 @@
+ .t1-sidebar-bottom button { display: flex; align-items: center; gap: 7px; padding: 4px 0; border: 0; background: transparent; color: var(--text-muted); font-size: 12px; }
+ .t1-sidebar-bottom details { margin-top: 10px; color: var(--text-dim); font-size: 10px; }
+ .t1-sidebar-bottom details span { display: block; padding-top: 6px; }
++.t1-sidebar-bottom .t1-storage-entry { margin-top: 4px; min-height: 32px; }
++.t1-storage-dialog { position: fixed; inset: 0; margin: auto; width: min(720px, calc(100vw - 32px)); max-width: none; height: min(760px, calc(var(--app-viewport-height, 100dvh) - 48px)); max-height: calc(var(--app-viewport-height, 100dvh) - 48px); padding: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--t1-surface); color: var(--text); box-shadow: var(--t1-shadow); font: 13px/1.6 var(--font-ui); }
++.t1-storage-dialog[open] { display: flex; flex-direction: column; }
++.t1-storage-dialog::backdrop { background: #15151d55; }
++.t1-storage-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-shrink: 0; padding: 22px 24px 18px; border-bottom: 1px solid var(--border); }
++.t1-storage-header > div { min-width: 0; }
++.t1-workbench .t1-storage-header h2 { margin: 0; font-size: 17px; }
++.t1-storage-header p { margin: 6px 0 0; color: var(--text-muted); font-size: 11px; line-height: 1.7; }
++.t1-storage-header > button { flex-shrink: 0; }
++.t1-storage-scroll { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 20px 24px; scrollbar-width: thin; }
++.t1-storage-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
++.t1-storage-stats > div { padding: 13px 14px; border: 1px solid var(--border); border-radius: 7px; background: var(--t1-inset); }
++.t1-storage-stats dt { color: var(--text-muted); font-size: 11px; }
++.t1-storage-stats dd { margin: 6px 0 0; font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
++.t1-storage-categories { display: flex; flex-wrap: wrap; gap: 5px 18px; margin: 14px 0; color: var(--text-muted); font-size: 11px; }
++.t1-storage-categories > div { display: flex; gap: 6px; }
++.t1-storage-categories dd { margin: 0; font-variant-numeric: tabular-nums; }
++.t1-storage-protection { margin-top: 14px; color: var(--text-muted); font-size: 11px; }
++.t1-storage-protection summary { width: fit-content; cursor: pointer; }
++.t1-storage-protection p { line-height: 1.8; }
++.t1-storage-protection ul { margin: 8px 0; padding: 0; list-style: none; }
++.t1-storage-protection li { display: flex; justify-content: space-between; gap: 14px; padding: 3px 0; }
++.t1-storage-protection li > :last-child { flex-shrink: 0; font-variant-numeric: tabular-nums; }
++.t1-storage-list-heading { display: flex; align-items: center; gap: 8px; margin-top: 24px; }
++.t1-storage-list-heading h3 { margin: 0; font-size: 13px; font-weight: 600; }
++.t1-storage-list-heading > span { color: var(--text-dim); font-size: 11px; }
++.t1-storage-list-heading > button { margin-left: auto; }
++.t1-storage-help { margin: 10px 0; color: var(--text-muted); font-size: 11px; line-height: 1.8; }
++.t1-storage-candidates { list-style: none; margin: 12px 0 0; padding: 0; border: 1px solid var(--border); border-radius: 7px; }
++.t1-storage-candidates > li + li { border-top: 1px solid var(--border); }
++.t1-storage-candidates label, .t1-storage-confirm-list > li { display: flex; align-items: center; gap: 12px; padding: 13px 14px; min-width: 0; }
++.t1-storage-candidates label { cursor: pointer; }
++.t1-storage-candidates label:hover { background: var(--t1-inset); }
++.t1-storage-candidates input { flex: 0 0 16px; width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
++.t1-storage-file { display: grid; gap: 3px; flex: 1; min-width: 0; }
++.t1-storage-file strong { font-weight: 500; font-size: 12px; overflow-wrap: anywhere; }
++.t1-storage-file span, .t1-storage-file small { font-size: 10px; color: var(--text-muted); overflow-wrap: anywhere; }
++.t1-storage-size { flex-shrink: 0; font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
++.t1-storage-empty { margin: 14px 0 0; padding: 28px 16px; border: 1px dashed var(--border); border-radius: 7px; text-align: center; font-size: 12px; color: var(--text-muted); }
++.t1-storage-warning { margin: 0 0 15px; color: var(--t1-warning); font-size: 12px; line-height: 1.9; }
++.t1-storage-selected-summary { margin: 0; font-size: 12px; }
++.t1-storage-problem { margin-bottom: 18px; padding: 12px 14px; border: 1px solid var(--t1-warning); border-radius: 7px; background: var(--t1-warning-bg); color: var(--t1-warning); font-size: 12px; overflow-wrap: anywhere; }
++.t1-storage-problem p { margin: 0; line-height: 1.8; }
++.t1-storage-problem ul { margin: 8px 0 0; padding-left: 18px; }
++.t1-storage-problem strong { font-weight: 500; }
++.t1-storage-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 24px; border-top: 1px solid var(--border); flex-shrink: 0; background: var(--t1-surface); }
++.t1-storage-footer > span { color: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
++.t1-storage-footer > div { display: flex; gap: 8px; }
++@media (max-width: 640px) {
++  .t1-sidebar-bottom .t1-storage-entry { min-height: 44px; }
++  .t1-storage-dialog { width: calc(100vw - 20px); height: min(780px, calc(var(--app-viewport-height, 100dvh) - 24px)); max-height: calc(var(--app-viewport-height, 100dvh) - 24px); border-radius: 10px; }
++  .t1-storage-header { padding: 17px 16px 14px; gap: 10px; }
++  .t1-storage-header > button { width: 40px; height: 40px; }
++  .t1-storage-scroll { padding: 16px; }
++  .t1-storage-stats { gap: 6px; }
++  .t1-storage-stats > div { padding: 10px 8px; }
++  .t1-storage-stats dt { font-size: 10px; min-height: 32px; line-height: 1.6; }
++  .t1-storage-stats dd { font-size: 16px; }
++  .t1-storage-list-heading > button { min-height: 40px; padding-left: 8px; padding-right: 8px; }
++  .t1-storage-candidates label, .t1-storage-confirm-list > li { padding: 12px 10px; gap: 10px; min-height: 62px; }
++  .t1-storage-footer { align-items: flex-start; flex-direction: column; gap: 10px; padding: 13px 16px; }
++  .t1-storage-footer > div { width: 100%; justify-content: flex-end; }
++  .t1-storage-footer button { min-height: 44px; }
++}
+ .t1-resize { width: 3px; flex-shrink: 0; cursor: col-resize; border-left: 1px solid var(--border); touch-action: none; outline-offset: -2px; }
+ .t1-resize:hover, .t1-resize:focus-visible { background: var(--bg-selected); }
+ .t1-main { display: flex; flex: 1; flex-direction: column; min-width: 0; overflow: hidden; }
+--- /dev/null
++++ b/code/apps/pi-web/t1/storage-gateway.test.ts
+@@ -0,0 +1,53 @@
++import assert from "node:assert/strict";
++import test from "node:test";
++import { GET, POST } from "../app/api/t1/[...path]/route";
++import { isT1ApiMethod, isT1ApiPath, t1BackendPath } from "./gateway-policy";
++import { cleanupStorage, previewStorage, WorkbenchError } from "./api";
++
++test("storage gateway admits only summary reads and the two explicit JSON operations", () => {
++  for (const [suffix, allowed] of [["", ["GET", "HEAD"]], ["/preview", ["POST"]], ["/cleanup", ["POST"]]] as const) {
++    const path = `/api/t1/workbench/storage${suffix}`;
++    assert.equal(isT1ApiPath(path), true);
++    for (const method of ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]) assert.equal(isT1ApiMethod(path, method), (allowed as readonly string[]).includes(method), `${method} ${path}`);
++    assert.equal(t1BackendPath(["workbench", "storage", ...suffix.split("/").filter(Boolean)]), `/api/workbench/storage${suffix}`);
++  }
++  for (const path of ["/api/t1/workbench/storage/delete", "/api/t1/workbench/storage/cleanup/all", "/api/t1/workbench/storage/%2e%2e", "/api/t1/workbench/storage/files", "/api/storage"]) assert.equal(isT1ApiPath(path), false);
++});
++
++test("gateway forwards exactly the preview and explicit selection; wrong methods and query selectors never reach upstream", async context => {
++  const forwarded: Array<{ url: string; method?: string; body: string }> = [];
++  context.mock.method(globalThis, "fetch", async (url: string, init: RequestInit) => {
++    forwarded.push({ url, method: init.method, body: init.body ? new TextDecoder().decode(init.body as Uint8Array) : "" });
++    return Response.json({ accepted: true });
++  });
++  const selection = { preview_id: "preview-fixture", version: "version-fixture", candidate_ids: ["only-this-candidate"] };
++  const request = (suffix: string, method: string, body?: unknown, query = "") => new Request(`http://127.0.0.1:30152/api/t1/workbench/storage${suffix}${query}`, { method, ...(body === undefined ? {} : { headers: { "content-type": "application/json" }, body: JSON.stringify(body) }) });
++  const route = (suffix: string) => ({ params: Promise.resolve({ path: ["workbench", "storage", ...suffix.split("/").filter(Boolean)] }) });
++  assert.equal((await POST(request("/preview", "POST", {}), route("/preview"))).status, 200);
++  assert.equal((await POST(request("/cleanup", "POST", selection), route("/cleanup"))).status, 200);
++  assert.deepEqual(forwarded, [
++    { url: "http://127.0.0.1:3210/api/workbench/storage/preview", method: "POST", body: "{}" },
++    { url: "http://127.0.0.1:3210/api/workbench/storage/cleanup", method: "POST", body: JSON.stringify(selection) },
++  ]);
++  assert.equal((await GET(request("/cleanup", "GET"), route("/cleanup"))).status, 405);
++  assert.equal((await POST(request("", "POST", {}), route(""))).status, 405);
++  assert.equal((await POST(request("/cleanup", "POST", selection, "?path=/tmp"), route("/cleanup"))).status, 400);
++  assert.equal(forwarded.length, 2);
++});
++
++test("storage client preserves the preview selection and propagates a stale-preview refusal", async context => {
++  const calls: Array<{ path: string; init: RequestInit }> = [];
++  context.mock.method(globalThis, "fetch", async (path: string, init: RequestInit) => {
++    calls.push({ path, init });
++    return path.endsWith("/preview") ? Response.json({ preview_id: "preview-fixture", version: "version-fixture", candidates: [] }) : Response.json({ error: "storage_preview_stale" }, { status: 409 });
++  });
++  const controller = new AbortController();
++  await previewStorage(controller.signal);
++  const selection = { preview_id: "preview-fixture", version: "version-fixture", candidate_ids: ["candidate-b"] };
++  await assert.rejects(cleanupStorage(selection), cause => cause instanceof WorkbenchError && cause.status === 409 && cause.code === "storage_preview_stale");
++  assert.equal(calls[0]?.path, "/api/t1/workbench/storage/preview");
++  assert.equal(calls[0]?.init.signal, controller.signal);
++  assert.equal(calls[0]?.init.body, "{}");
++  assert.equal(calls[1]?.init.body, JSON.stringify(selection));
++  assert.ok(calls.every(call => call.init.method === "POST" && call.init.cache === "no-store"));
++});
+--- /dev/null
++++ b/code/apps/pi-web/e2e/storage-management.mjs
+@@ -0,0 +1,224 @@
++/** Real components or a production Next page; all business APIs are mocked in-browser. Never deletes real files. */
++import assert from 'node:assert/strict';
++import { mkdir, readFile, writeFile } from 'node:fs/promises';
++import { dirname, join, resolve } from 'node:path';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++
++const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..'), web = join(code, 'apps/pi-web');
++const evidence = join(code, 'docs/acceptance/storage-management-2026-11-15'), production = Boolean(process.env.T1_STORAGE_ORIGIN), origin = process.env.T1_STORAGE_ORIGIN ?? 'http://127.0.0.1:30262';
++const reportName = production ? 'same-build-browser.json' : 'frontend.json';
++process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
++process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
++const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
++const { build } = await import(pathToFileURL(join(code, 'node_modules/esbuild/lib/main.js')).href);
++const bundle = production ? null : await build({ absWorkingDir: web, tsconfig: join(web, 'tsconfig.json'), bundle: true, write: false, platform: 'browser', format: 'iife', define: { 'process.env.NODE_ENV': '"development"' },
++  stdin: { resolveDir: web, sourcefile: 'storage-management-fixture.tsx', loader: 'tsx', contents: `
++    import React from 'react';
++    import { createRoot } from 'react-dom/client';
++    import { I18nProvider } from './hooks/useI18n';
++    import { T1Workbench } from './t1/T1Workbench';
++    createRoot(document.getElementById('root')).render(<I18nProvider><T1Workbench /></I18nProvider>);
++  ` },
++});
++const css = production ? '' : await readFile(join(web, 't1/workbench.css'), 'utf8'), font = production ? null : await readFile(join(web, 'public/t1-assets/fonts/noto-cjk.woff2'));
++const html = '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/workbench.css"><style>*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:default;opacity:.5}</style></head><body><div id="root"></div><script src="/fixture.js"></script></body></html>';
++const report = { status: 'running', method: production ? 'Actual production Next page and static resources; every business API is fulfilled by Playwright. No requests reach the live business service.' : 'Actual T1Workbench, StorageManagement, GlobalToasts and CSS bundled with esbuild; all requests fulfilled by Playwright without a listening server.', origin, BUILD_ID: process.env.T1_STORAGE_BUILD_ID ?? null, checks: [], errors: [], blocked: [], next_static_resources: [], screenshots: [], paid_calls: 0, production_business_writes: 0, production_deletions: 0 };
++if (process.env.T1_STORAGE_CASES && !production) {
++  const previous = await readFile(join(evidence, reportName), 'utf8').then(JSON.parse).catch(() => null);
++  if (previous) report.prior_mainline_validation = { status: previous.status, method: previous.method, checks: previous.checks, screenshots: previous.screenshots, note: 'Mainline verification before the narrow draft recovery change. The current run covers related scenarios only.' };
++}
++const browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
++const scope = { catalog_version: 'storage-fixture', matching_policy_version: 'storage-fixture', cancers: { mode: 'all', ids: [] }, image_types: { mode: 'all', ids: [] }, features: { mode: 'all', binding_ids: [] } };
++const catalog = { catalog_version: scope.catalog_version, cancers: [], image_types: [], features: [], bindings: [], default_scope: scope, restricted_available: true, development_only: false };
++const candidate = (id, kind = 'orphan_parse') => ({ id, kind, name: id === 'upload-1' ? '两年前上传的研究资料.pdf' : `无引用资料 ${id} / 非常长的论文名称与说明.pdf`, bytes: 4096, files: 2, paper_ids: kind === 'unused_upload' ? ['unused-paper'] : [], detail: kind === 'unused_upload' ? 'unused_upload_and_unreferenced_artifacts' : 'unreferenced_generated_files', parts: [{ kind: kind === 'unused_upload' ? 'pdf' : 'parse', bytes: 3072, files: 1 }, { kind: 'figures', bytes: 1024, files: 1 }] });
++function seed() {
++  return { candidates: [candidate('upload-1', 'unused_upload'), ...Array.from({ length: 27 }, (_, index) => candidate('parse-' + (index + 1)))], requests: [], cleanups: [], previews: 0, cleanupError: null, partial: false, gate: null, reads: 0, uploads: 0, uploadRequests: [],
++    papers: [{ id: 'unused-paper', title: 'unused.pdf', sha256: 'a'.repeat(64), language: 'en', pages: 1, note: '', output_ids: [], uploaded: true, filename: 'unused.pdf' }],
++  };
++}
++function summary(state) {
++  const reclaimable = state.candidates.reduce((size, item) => size + item.bytes, 0);
++  return { schema_version: 't1-storage-summary-1', observed_at: '2026-11-15T00:00:00.000Z', scope: 'managed_workbench_files', total_bytes: 1048576 + reclaimable + 512, protected_bytes: 1048576, reclaimable_bytes: reclaimable, unknown_bytes: 512, file_count: 100 + state.candidates.length * 2,
++    categories: [{ kind: 'pdf', bytes: 1048576, files: 2 }, { kind: 'parse', bytes: reclaimable, files: state.candidates.length * 2 }],
++    protected_reasons: [{ code: 'referenced', bytes: 1044480, files: 98 }, { code: 'recent_upload', bytes: 4096, files: 2 }], disk: { total_bytes: 9999999999, available_bytes: 8888888888 }, cleanup_available: !state.busyPreview, ...(state.busyPreview ? { unavailable_reason: 'storage_busy' } : {}), policy: { automatic_cleanup: false, recent_upload_protection_hours: 24 } };
++}
++const gate = () => { let release; const promise = new Promise(done => { release = done; }); return { release, promise }; };
++async function screenshot(page, name) { const filename = (production ? 'production-' : '') + name; await page.screenshot({ path: join(evidence, filename) }); report.screenshots.push(filename); }
++async function frame(page) {
++  return page.evaluate(() => {
++    const rect = document.querySelector('.t1-main').getBoundingClientRect();
++    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, documentHeight: document.documentElement.scrollHeight, bodyHeight: document.body.scrollHeight, url: location.href };
++  });
++}
++async function assertBounded(page) {
++  const result = await page.locator('.t1-storage-dialog').evaluate(element => {
++    const box = element.getBoundingClientRect(), scroller = element.querySelector('.t1-storage-scroll'), footer = element.querySelector('.t1-storage-footer').getBoundingClientRect();
++    return { x: box.x, y: box.y, right: box.right, bottom: box.bottom, width: innerWidth, height: innerHeight, client: scroller.clientHeight, scroll: scroller.scrollHeight, footerBottom: footer.bottom, overflow: getComputedStyle(scroller).overflowY };
++  });
++  assert.ok(result.x >= 0 && result.y >= 0 && result.right <= result.width + 1 && result.bottom <= result.height + 1, JSON.stringify(result));
++  assert.ok(result.footerBottom <= result.bottom && result.scroll > result.client && result.overflow === 'auto', JSON.stringify(result));
++}
++const panel = page => page.locator('.t1-storage-dialog');
++const review = page => panel(page).getByRole('button', { name: '核对清理内容', exact: true });
++const confirm = page => panel(page).getByRole('button', { name: '确认永久清理', exact: true });
++const box = (page, id) => page.locator(`[data-storage-candidate-id="${id}"] input`);
++async function open(page) {
++  if (!await page.locator('.t1-sidebar').count()) await page.getByRole('button', { name: '展开任务导航', exact: true }).click();
++  await page.getByRole('button', { name: '存储管理', exact: true }).click(); await panel(page).getByText('默认不选中任何资料，请核对名称与清理范围后勾选。', { exact: true }).waitFor();
++}
++async function scenario(name, work, { viewport = { width: 1440, height: 1000 }, clock = false } = {}) {
++  if (process.env.T1_STORAGE_CASES && !process.env.T1_STORAGE_CASES.split(',').includes(name)) return;
++  const context = await browser.newContext({ viewport, locale: 'zh-CN', reducedMotion: 'reduce' }), state = seed();
++  await context.addInitScript(() => { localStorage.setItem('pi-locale', 'zh-CN'); localStorage.setItem('pi-theme', 'light'); });
++  const json = (route, value, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(value) });
++  await context.route('**/*', async route => {
++    const request = route.request(), url = new URL(request.url()), path = url.pathname, method = request.method(), base = '/api/t1/workbench';
++    if (url.origin !== origin) { report.blocked.push({ name, path, method }); return route.abort('blockedbyclient'); }
++    if (production && !path.startsWith('/api/')) return route.continue();
++    if (method === 'GET' && path === '/') return route.fulfill({ contentType: 'text/html', body: html });
++    if (method === 'GET' && path === '/fixture.js') return route.fulfill({ contentType: 'text/javascript', body: bundle.outputFiles[0].text });
++    if (method === 'GET' && path === '/workbench.css') return route.fulfill({ contentType: 'text/css', body: css });
++    if (method === 'GET' && path === '/t1-assets/fonts/noto-cjk.woff2') return route.fulfill({ contentType: 'font/woff2', body: font });
++    if (path === '/favicon.ico') return route.fulfill({ status: 204 });
++    state.requests.push({ method, path });
++    if (method === 'GET' && path === base + '/capabilities') return json(route, { read_only: false, paper_upload: true, extraction_start: true, persisted_review: true, persisted_retention: true, retained_export: true, model_selection: false });
++    if (method === 'GET' && path === base + '/catalog') return json(route, catalog);
++    if (method === 'GET' && path === base + '/models') return json(route, { provider: 'fixture', default_profile_id: null, profiles: [] });
++    if (method === 'GET' && path === base + '/runs') return json(route, { runs: [] });
++    if (method === 'GET' && path === base + '/papers') { state.reads++; if (state.failNextPapers) { state.failNextPapers = false; return json(route, { error: 'fixture_papers_unavailable' }, 503); } return json(route, { papers: state.papers }); }
++    if (method === 'POST' && path === base + '/storage/preview') {
++      assert.deepEqual(request.postDataJSON(), {}); state.previews++;
++      if (state.previewError) { const error = state.previewError; state.previewError = null; return json(route, { error }, 503); }
++      return json(route, { schema_version: 't1-storage-preview-1', summary: summary(state), preview_id: 'preview-' + state.previews, version: 'version-' + state.previews, created_at: '2026-11-15T00:00:00Z', expires_at: '2026-11-15T00:10:00Z', candidates: state.busyPreview ? [] : state.candidates });
++    }
++    if (method === 'POST' && path === base + '/storage/cleanup') {
++      const input = request.postDataJSON(); state.cleanups.push(input); if (state.gate) await state.gate.promise;
++      if (state.cleanupError) { const error = state.cleanupError; state.cleanupError = null; if (error === 'storage_preview_stale') state.candidates = state.candidates.filter(item => item.id !== 'upload-1'); return json(route, { error }, error === 'storage_preview_expired' ? 410 : 409); }
++      const selected = state.candidates.filter(item => input.candidate_ids.includes(item.id)), removed = state.partial ? selected.slice(0, 1) : selected;
++      const removedPaperIds = removed.flatMap(item => item.paper_ids); state.papers = state.papers.filter(paper => !removedPaperIds.includes(paper.id)); state.candidates = state.candidates.filter(item => !removed.includes(item));
++      if (state.loseNextCleanup) { state.loseNextCleanup = false; if (state.failReadAfterLost) { state.failReadAfterLost = false; state.failNextPapers = true; } return route.abort('connectionreset'); }
++      return json(route, { schema_version: 't1-storage-cleanup-1', preview_id: input.preview_id, status: state.partial ? 'partial' : 'complete', already_executed: false,
++        removed_bytes: removed.reduce((bytes, item) => bytes + item.bytes, 0), removed_files: removed.reduce((files, item) => files + item.files, 0), removed_paper_ids: removedPaperIds,
++        results: selected.map(item => ({ id: item.id, status: removed.includes(item) ? 'removed' : 'protected', removed_bytes: removed.includes(item) ? item.bytes : 0, removed_files: removed.includes(item) ? item.files : 0, ...(!removed.includes(item) ? { error: 'storage_reference_changed' } : {}) })), summary: summary(state) });
++    }
++    if (method === 'POST' && path === base + '/papers') {
++      state.uploads++; state.uploadRequests.push({ key: request.headers()['x-t1-request-id'], body: request.postDataBuffer().toString('utf8') }); const paper = { id: 'draft-paper', title: 'draft.pdf', filename: 'draft.pdf', sha256: 'b'.repeat(64), pages: 1, language: 'en', note: '', output_ids: [], uploaded: true }; state.papers.push(paper); return json(route, { paper, reused: false });
++    }
++    report.blocked.push({ name, path, method }); return route.abort('blockedbyclient');
++  });
++  const page = await context.newPage(); page.setDefaultTimeout(10000); page.on('pageerror', error => report.errors.push({ name, error: String(error) }));
++  if (production) page.on('response', response => { const url = new URL(response.url()); if (url.origin === origin && url.pathname.startsWith('/_next/static/')) report.next_static_resources.push({ name, path: url.pathname, status: response.status() }); });
++  try {
++    await page.goto(origin); await page.getByLabel('任务标题（可选）', { exact: true }).waitFor(); await page.evaluate(() => document.fonts.ready);
++    if (clock) { await page.clock.install({ time: new Date('2026-11-15T00:00:00Z') }); await page.clock.pauseAt(new Date('2026-11-15T00:00:01Z')); }
++    await work({ page, state }); report.checks.push({ name, status: 'passed' }); process.stdout.write('Passed: ' + name + '\n');
++  } catch (error) { report.checks.push({ name, status: 'failed', error: error.stack ?? String(error) }); await screenshot(page, name + '-failed.png'); throw error; }
++  finally { state.gate?.release(); await context.close(); }
++}
++
++try {
++  await mkdir(evidence, { recursive: true });
++  await scenario('desktop_selection_confirmation_bounds_focus_and_success', async ({ page, state }) => {
++    await page.getByLabel('任务标题（可选）', { exact: true }).fill('保留我的创建任务草稿'); const before = await frame(page); await open(page);
++    assert.deepEqual(await frame(page), before); await assertBounded(page);
++    assert.equal(await panel(page).locator('input:checked').count(), 0); assert.equal(await review(page).isDisabled(), true); assert.equal(state.cleanups.length, 0);
++    assert.equal(await panel(page).locator('[data-storage-stat="storageProtected"]').textContent(), '1 MiB');
++    assert.ok(!(await panel(page).textContent()).includes('8.3 GiB'));
++    await panel(page).getByText('哪些资料会保留', { exact: true }).click(); await panel(page).getByText('最近 24 小时上传', { exact: true }).waitFor();
++    await screenshot(page, 'storage-desktop-preview.png');
++    await page.keyboard.press('Escape'); await panel(page).waitFor({ state: 'hidden' }); assert.equal(await page.getByRole('button', { name: '存储管理', exact: true }).evaluate(element => element === document.activeElement), true);
++    await open(page); await box(page, 'upload-1').check(); await box(page, 'parse-1').check(); await review(page).click();
++    assert.equal(state.cleanups.length, 0); assert.equal(await panel(page).locator('[data-storage-confirm-id]').count(), 2);
++    await panel(page).getByText('将永久删除以下无任务引用的文件，之后需要重新上传。删除后无法撤回。', { exact: true }).waitFor();
++    await screenshot(page, 'storage-desktop-confirm.png');
++    await panel(page).getByRole('button', { name: '返回选择', exact: true }).click(); assert.equal(await panel(page).locator('input:checked').count(), 2); await review(page).click();
++    state.gate = gate(); await confirm(page).click(); await panel(page).getByRole('button', { name: '正在清理所选资料…', exact: true }).waitFor();
++    await page.keyboard.press('Escape'); assert.equal(await panel(page).isVisible(), true);
++    await page.locator('.t1-storage-footer .t1-primary').dispatchEvent('click'); assert.equal(state.cleanups.length, 1); state.gate.release(); state.gate = null;
++    await page.locator('.t1-storage-toast').getByText('已清理 4 个文件 · 文件大小 8 KiB。', { exact: true }).waitFor();
++    assert.deepEqual(state.cleanups[0], { preview_id: 'preview-2', version: 'version-2', candidate_ids: ['upload-1', 'parse-1'] });
++    await box(page, 'parse-2').waitFor(); assert.equal(await box(page, 'upload-1').count(), 0); assert.equal(await panel(page).locator('input:checked').count(), 0); assert.ok(state.reads >= 2);
++    assert.equal(await page.locator('.t1-storage-toast').evaluate(element => Boolean(element.closest('dialog[open]'))), true);
++    const toast = await page.locator('.t1-storage-toast').boundingBox(); assert.ok(toast.x >= 0 && toast.y >= 0);
++    assert.equal(await page.getByLabel('任务标题（可选）', { exact: true }).inputValue(), '保留我的创建任务草稿'); assert.deepEqual(await frame(page), before);
++    await screenshot(page, 'storage-desktop-success.png');
++    await page.keyboard.press('Escape'); await panel(page).waitFor({ state: 'hidden' }); await page.locator('.t1-storage-toast').waitFor({ state: 'visible' });
++    await page.clock.runFor(4100); await page.locator('.t1-storage-toast[data-leaving="true"]').waitFor(); await page.clock.resume(); await page.locator('.t1-storage-toast').waitFor({ state: 'detached' });
++  }, { clock: true });
++  await scenario('mobile_bounded_scroll_confirmation_and_partial_counts', async ({ page, state }) => {
++    await page.getByLabel('任务标题（可选）', { exact: true }).fill('手机草稿'); await open(page); const before = await frame(page); await assertBounded(page);
++    const checkboxes = panel(page).locator('input[type="checkbox"]'); await checkboxes.evaluateAll(elements => elements.forEach(input => input.click())); await review(page).click();
++    assert.equal(state.cleanups.length, 0); assert.equal(await panel(page).locator('[data-storage-confirm-id]').count(), 28); await assertBounded(page); assert.deepEqual(await frame(page), before);
++    await panel(page).locator('.t1-storage-scroll').evaluate(element => { element.scrollTop = element.scrollHeight; }); await screenshot(page, 'storage-mobile-confirm-scroll.png');
++    await panel(page).getByRole('button', { name: '返回选择', exact: true }).click();
++    await checkboxes.evaluateAll(elements => elements.forEach(input => { if (input.checked) input.click(); })); await box(page, 'upload-1').check(); await box(page, 'parse-1').check(); await review(page).click();
++    state.partial = true; await confirm(page).click(); await page.locator('.t1-storage-toast').getByText('部分清理完成：2 个文件 · 4 KiB，部分资料已保留。', { exact: true }).waitFor();
++    await panel(page).getByText('发现新的任务引用，已保留', { exact: false }).waitFor();
++    assert.equal(await box(page, 'upload-1').count(), 0); assert.equal(await box(page, 'parse-1').count(), 1); assert.equal(await panel(page).locator('input:checked').count(), 0); assert.equal(await review(page).isDisabled(), true);
++    assert.equal(await page.getByLabel('任务标题（可选）', { exact: true }).inputValue(), '手机草稿'); assert.deepEqual(await frame(page), before); await assertBounded(page); await screenshot(page, 'storage-mobile-partial.png');
++    await page.clock.runFor(6100); await page.locator('.t1-storage-toast[data-leaving="true"]').waitFor(); await page.clock.resume(); await page.locator('.t1-storage-toast').waitFor({ state: 'detached' });
++  }, { viewport: { width: 390, height: 844 }, clock: true });
++  await scenario('stale_expired_busy_clear_selection_keep_upload_and_do_not_auto_retry', async ({ page, state }) => {
++    await page.getByLabel('任务标题（可选）', { exact: true }).fill('保留标题与文件');
++    await page.getByLabel('选择 PDF', { exact: true }).setInputFiles({ name: 'draft.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\nfixture\n%%EOF\n') });
++    await page.locator('[data-upload-state="uploaded"]').waitFor();
++    const before = await frame(page);
++    for (const [error, reason] of [['storage_preview_stale', '资料或任务引用已变化'], ['storage_preview_expired', '预览已过期'], ['storage_busy', '任务或文件操作正在执行']]) {
++      await open(page); const id = state.candidates[0].id; await box(page, id).check(); await review(page).click(); state.cleanupError = error; const previous = state.cleanups.length; await confirm(page).click();
++      await panel(page).locator('.t1-storage-problem').filter({ hasText: reason }).waitFor(); await panel(page).locator('input[type="checkbox"]').first().waitFor();
++      assert.equal(state.cleanups.length, previous + 1); assert.equal(await panel(page).locator('input:checked').count(), 0); assert.equal(await review(page).isDisabled(), true);
++      assert.equal(await page.getByLabel('任务标题（可选）', { exact: true }).inputValue(), '保留标题与文件'); assert.equal(await page.locator('[data-upload-state="uploaded"]').count(), 1); assert.equal(state.uploads, 1); assert.deepEqual(await frame(page), before);
++      if (error === 'storage_preview_stale') { assert.equal(await box(page, 'upload-1').count(), 0); await screenshot(page, 'storage-stale-preview.png'); }
++      if (error === 'storage_busy') await screenshot(page, 'storage-busy.png');
++      await page.keyboard.press('Escape'); await panel(page).waitFor({ state: 'hidden' });
++    }
++    assert.equal(state.cleanups.length, 3);
++  });
++  await scenario('empty_and_unavailable_preview_are_idle_and_read_failure_recovers', async ({ page, state }) => {
++    state.candidates = []; await page.getByRole('button', { name: '存储管理', exact: true }).click(); await panel(page).getByText('当前没有可清理的资料。', { exact: true }).waitFor();
++    assert.equal(await review(page).isDisabled(), true); assert.equal(await panel(page).locator('[aria-busy="true"]').count(), 0); assert.equal(state.cleanups.length, 0);
++    state.busyPreview = true; await panel(page).getByRole('button', { name: '刷新预览', exact: true }).click(); await panel(page).getByText('任务或文件操作正在执行，暂不能清理，请结束后刷新。', { exact: true }).waitFor();
++    assert.equal(await review(page).isDisabled(), true); assert.equal(await panel(page).locator('[aria-busy="true"]').count(), 0); assert.equal(state.cleanups.length, 0);
++    await screenshot(page, 'storage-empty-protected.png');
++    state.previewError = 'storage_scope_unavailable'; await panel(page).getByRole('button', { name: '刷新预览', exact: true }).click();
++    await panel(page).locator('.t1-storage-problem').filter({ hasText: '部分资料暂时无法完整核验' }).waitFor();
++    assert.equal(await review(page).isDisabled(), true); assert.equal(await panel(page).locator('input[type="checkbox"]').count(), 0);
++    state.busyPreview = false; await panel(page).getByRole('button', { name: '刷新预览', exact: true }).click(); await panel(page).getByText('当前没有可清理的资料。', { exact: true }).waitFor();
++    assert.equal(await panel(page).locator('.t1-storage-problem').count(), 0); assert.equal(state.cleanups.length, 0);
++  });
++  await scenario('cleaned_draft_keeps_file_title_scope_and_requires_explicit_reupload_with_new_key', async ({ page, state }) => {
++    const content = '%PDF-1.4\npreserved original File bytes\n%%EOF\n';
++    await page.getByLabel('任务标题（可选）', { exact: true }).fill('这份草稿保持不变');
++    await page.getByLabel('选择 PDF', { exact: true }).setInputFiles({ name: 'draft.pdf', mimeType: 'application/pdf', buffer: Buffer.from(content) });
++    await page.locator('[data-upload-state="uploaded"]').waitFor();
++    const savedScope = await page.locator('.t1-scope-card').textContent();
++    for (const mode of ['known_result', 'lost_result', 'lost_result_and_failed_read']) {
++      state.candidates = [{ ...candidate('draft-cleanup-' + mode, 'unused_upload'), name: 'draft.pdf', paper_ids: ['draft-paper'] }];
++      const key = state.uploadRequests.at(-1).key, previousUploads = state.uploads;
++      await open(page); await panel(page).locator('input[type="checkbox"]').check(); await review(page).click();
++      state.loseNextCleanup = mode !== 'known_result'; state.failReadAfterLost = mode === 'lost_result_and_failed_read'; await confirm(page).click();
++      await panel(page).getByText('当前没有可清理的资料。', { exact: true }).waitFor();
++      if (mode === 'lost_result_and_failed_read') {
++        await panel(page).locator('.t1-storage-problem').filter({ hasText: '资料列表核对失败' }).waitFor();
++        assert.equal(await page.locator('[data-upload-state="uploadRemoved"]').count(), 0, 'A failed list read is not evidence of deletion');
++        assert.equal(await page.locator('[data-upload-state="uploaded"]').count(), 1);
++        await panel(page).getByRole('button', { name: '刷新预览', exact: true }).click();
++      }
++      await page.locator('[data-upload-state="uploadRemoved"]').waitFor({ state: 'attached' });
++      assert.equal(await page.locator('[data-upload-state="uploaded"]').count(), 0); assert.equal(state.uploads, previousUploads, 'Cleanup never uploads automatically');
++      assert.equal(await page.getByLabel('任务标题（可选）', { exact: true }).inputValue(), '这份草稿保持不变'); assert.equal(await page.locator('.t1-scope-card').textContent(), savedScope);
++      assert.equal(await page.locator('.t1-batch-file strong').textContent(), 'draft.pdf');
++      await page.keyboard.press('Escape'); await panel(page).waitFor({ state: 'hidden' });
++      if (mode === 'known_result') await screenshot(page, 'storage-draft-needs-reupload.png');
++      await page.getByRole('button', { name: '重新上传', exact: true }).click(); await page.locator('[data-upload-state="uploaded"]').waitFor();
++      assert.equal(state.uploads, previousUploads + 1); assert.notEqual(state.uploadRequests.at(-1).key, key); assert.equal(state.uploadRequests.at(-1).body, content);
++      assert.equal(await page.getByLabel('任务标题（可选）', { exact: true }).inputValue(), '这份草稿保持不变'); assert.equal(await page.locator('.t1-scope-card').textContent(), savedScope);
++    }
++    assert.equal(state.requests.filter(item => item.method === 'POST' && /\/runs$/.test(item.path)).length, 0);
++  });
++  assert.deepEqual(report.errors, []); assert.deepEqual(report.blocked, []);
++  if (production) { assert.ok(report.next_static_resources.some(item => /\.js$/.test(item.path))); assert.ok(report.next_static_resources.every(item => item.status === 200)); }
++  report.status = 'passed';
++} catch (error) { report.status = 'failed'; report.error = error.stack ?? String(error); process.exitCode = 1; }
++finally { await browser.close(); await writeFile(join(evidence, reportName), JSON.stringify(report, null, 2) + '\n'); }
++if (report.status === 'failed') console.error(report.error);
+--- /dev/null
++++ b/code/apps/pi-web/e2e/storage-management-readonly.mjs
+@@ -0,0 +1,82 @@
++/** Live entry verification. Only fixed GET/HEAD requests are allowed; never opens the POST-based storage preview. */
++import assert from 'node:assert/strict';
++import { createHash } from 'node:crypto';
++import { mkdir, writeFile } from 'node:fs/promises';
++import { dirname, join, resolve } from 'node:path';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++
++const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..'), evidence = join(code, 'docs/acceptance/storage-management-2026-11-15');
++const origin = 'http://127.0.0.1:30141', BUILD_ID = process.env.T1_STORAGE_BUILD_ID ?? 'mYxCBdDdcBK7amEeDhlnC';
++const allowedApi = new Set(['capabilities', 'catalog', 'papers', 'runs', 'models', 'storage'].map(name => '/api/t1/workbench/' + name));
++const report = { status: 'running', method: 'Live production Next page and fixed business GET requests; every non-GET/HEAD, export and non-allowlisted API request is blocked. Storage preview is never opened.', origin, BUILD_ID, started_at: new Date().toISOString(), summary_phase: process.env.T1_STORAGE_SUMMARY_PHASE ?? 'before-backend-reference-fix', checks: [], request_log: [], blocked: [], errors: [], console_errors: [], layouts: {}, screenshots: [], paid_calls: 0, production_business_writes: 0, preview_requests: 0, cleanup_requests: 0, uploads: 0, exports: 0 };
++process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
++process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
++const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
++const browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
++const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN', reducedMotion: 'reduce' });
++const sha = bytes => createHash('sha256').update(bytes).digest('hex');
++await context.addInitScript(() => { localStorage.setItem('pi-locale', 'zh-CN'); localStorage.setItem('pi-theme', 'light'); });
++await context.route('**/*', async route => {
++  const request = route.request(), url = new URL(request.url()), path = url.pathname, method = request.method();
++  const entry = { source: 'browser', method, path };
++  report.request_log.push(entry);
++  if (url.origin !== origin || !['GET', 'HEAD'].includes(method) || /\/exports(?:\/|$)/.test(path) || path.startsWith('/api/') && !allowedApi.has(path)) {
++    report.blocked.push(entry); return route.abort('blockedbyclient');
++  }
++  return route.continue();
++});
++async function get(path) {
++  assert.ok(allowedApi.has(path) || path === '/' || path === `/_next/static/${BUILD_ID}/_buildManifest.js`);
++  const response = await context.request.get(origin + path, { maxRedirects: 0 });
++  const body = await response.body();
++  report.request_log.push({ source: 'fixed-read', method: 'GET', path, status: response.status(), sha256: sha(body) });
++  assert.equal(response.status(), 200, path);
++  return { body, hash: sha(body), type: response.headers()['content-type'] ?? '' };
++}
++async function hashes() {
++  const values = {};
++  for (const name of ['papers', 'runs', 'models']) { const result = await get('/api/t1/workbench/' + name); values[name] = result.hash; }
++  return values;
++}
++async function layout(page, name) {
++  const metrics = await page.locator('.t1-storage-entry').evaluate(element => {
++    const box = element.getBoundingClientRect();
++    return { viewport_width: innerWidth, viewport_height: innerHeight, document_width: document.documentElement.scrollWidth, document_height: document.documentElement.scrollHeight, entry: { x: box.x, y: box.y, width: box.width, height: box.height, right: box.right, bottom: box.bottom }, storage_dialog_open: Boolean(document.querySelector('.t1-storage-dialog[open]')) };
++  });
++  assert.ok(metrics.document_width <= metrics.viewport_width + 1 && metrics.document_height <= metrics.viewport_height + 1, JSON.stringify(metrics));
++  assert.ok(metrics.entry.x >= 0 && metrics.entry.y >= 0 && metrics.entry.right <= metrics.viewport_width + 1 && metrics.entry.bottom <= metrics.viewport_height + 1, JSON.stringify(metrics));
++  assert.equal(metrics.storage_dialog_open, false);
++  if (name === 'mobile') assert.ok(metrics.entry.height >= 44);
++  report.layouts[name] = metrics;
++  const filename = name === 'desktop' ? 'live-desktop.png' : 'live-mobile.png';
++  await page.screenshot({ path: join(evidence, filename) }); report.screenshots.push(filename);
++  report.checks.push(name + '_storage_entry_visible_without_overflow_or_preview');
++}
++try {
++  await mkdir(evidence, { recursive: true });
++  report.before_hashes = await hashes();
++  const summaryResponse = await get('/api/t1/workbench/storage'), summary = JSON.parse(summaryResponse.body.toString('utf8'));
++  assert.equal(summary.schema_version, 't1-storage-summary-1'); assert.equal(summary.scope, 'managed_workbench_files');
++  for (const key of ['total_bytes', 'protected_bytes', 'reclaimable_bytes', 'unknown_bytes', 'file_count']) assert.ok(Number.isSafeInteger(summary[key]) && summary[key] >= 0, key);
++  assert.equal(summary.total_bytes, summary.protected_bytes + summary.reclaimable_bytes + summary.unknown_bytes);
++  assert.equal(summary.policy.automatic_cleanup, false); report.storage_summary = summary;
++  report.checks.push('live_storage_summary_readable_and_file_bytes_consistent');
++  const manifest = await get(`/_next/static/${BUILD_ID}/_buildManifest.js`);
++  assert.ok(/javascript/.test(manifest.type) && manifest.body.toString('utf8').includes('__BUILD_MANIFEST'));
++  report.build_manifest_sha256 = manifest.hash; report.checks.push('expected_build_manifest_served');
++  const page = await context.newPage(); page.setDefaultTimeout(15000);
++  page.on('pageerror', error => report.errors.push(String(error)));
++  page.on('console', message => { if (message.type() === 'error') report.console_errors.push(message.text()); });
++  await page.goto(origin + '/', { waitUntil: 'networkidle' }); await page.getByRole('button', { name: '存储管理', exact: true }).waitFor();
++  await page.evaluate(() => document.fonts.ready); await layout(page, 'desktop');
++  await page.setViewportSize({ width: 390, height: 844 }); await page.locator('.t1-sidebar').waitFor({ state: 'detached' });
++  await page.getByRole('button', { name: '展开任务导航', exact: true }).click(); await page.getByRole('button', { name: '存储管理', exact: true }).waitFor();
++  await layout(page, 'mobile');
++  report.after_hashes = await hashes(); assert.deepEqual(report.after_hashes, report.before_hashes); report.checks.push('papers_runs_models_response_hashes_unchanged');
++  assert.deepEqual(report.errors, []); assert.deepEqual(report.blocked, []);
++  assert.ok(report.request_log.every(item => ['GET', 'HEAD'].includes(item.method)));
++  assert.ok(report.request_log.every(item => !/\/storage\/(?:preview|cleanup)$/.test(item.path)));
++  report.checks.push('zero_page_errors_and_only_GET_HEAD_requests_no_preview_cleanup'); report.status = 'passed';
++} catch (error) { report.status = 'failed'; report.error = error.stack ?? String(error); process.exitCode = 1; }
++finally { report.finished_at = new Date().toISOString(); await browser.close(); await writeFile(join(evidence, 'live-readonly.json'), JSON.stringify(report, null, 2) + '\n'); }
++console.log(JSON.stringify({ status: report.status, checks: report.checks, error: report.error, summary_phase: report.summary_phase, business_writes: report.production_business_writes, previews: report.preview_requests, cleanups: report.cleanup_requests }));

@@ -1,0 +1,76 @@
+{
+  "schema_version": "t1-round3-IN07-preflight-1",
+  "checked_at_utc": "2026-11-11T10:56:03.231205+00:00",
+  "status": "ready_zero_allowance_pending_root_exact_dispatch",
+  "plan_sha256": "eac9419c38a4c9e0ce2c026d827cad34ab10a0cf44f4da72e772fc5d0e5dc3e1",
+  "image_id": "sha256:32a0e53ab6be8bed82c579b8be589cbb25787f076d5133f74163999724d76977",
+  "host_and_image_runtime_pins_actually_checked": 123,
+  "all_image_source_pins_verified_by_image_owner": 1174,
+  "unchanged_UI_artifacts_verified": 161,
+  "final_UI_BUILD_ID": "9WeI9zkvHd20Y0lBTDX5C",
+  "same_final_UI_zeroAPI_complete_controlled_path_passed": true,
+  "source_preflight": {
+    "source_id": "IN07",
+    "source_role": "exposed parser regression; independent first structure failure preserved",
+    "raw_blocks": 192,
+    "authorized_source_blocks": 171,
+    "bibliography_excluded_blocks": 21,
+    "glyph_quarantine": 0,
+    "complete_current_caption_lines": [
+      6,
+      8,
+      4
+    ],
+    "partial_native_author_units": 1,
+    "image_text_unverified_pages": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "ordinary_policy_only_no_trial_override": true,
+  "latest_tests": {
+    "SDK_diagnostic_plus_related_policy_and_summary": 21,
+    "new_diagnostic_tests": 6,
+    "typecheck": "passed"
+  },
+  "earlier_unchanged_parser_tests": 17,
+  "normal_services": {
+    "30141_HTTP": 200,
+    "3210_HTTP": 200,
+    "model_enabled": false,
+    "controlled_fixture": false,
+    "active_tasks": 0,
+    "all13_production_tables_rows_unchanged": true,
+    "private_env_bytes_unchanged": true
+  },
+  "old_isolated_verification_containers_running": 0,
+  "limits": {
+    "requests": 24,
+    "input_tokens": 600000,
+    "output_tokens": 32000,
+    "seconds": 900,
+    "request_seconds": 120,
+    "document_seconds": 900,
+    "transient_retries": 2,
+    "response_output_tokens": 8192,
+    "batch_responses": 16
+  },
+  "prior_window_usage": {
+    "physical_requests": 22,
+    "budget_accounted_input_tokens": 316103,
+    "budget_accounted_output_tokens": 18362,
+    "missing_usage_requests": 1
+  },
+  "proposed24_600k_32k_within_remaining_aggregate_ceiling": true,
+  "prior_IN06_failure_not_claimed_resolved": true,
+  "prior_failed_plan_and_all12_host_evidence_bindings_preserved": true,
+  "new_external_model_calls": 0,
+  "current_effective_API_allowance": 0,
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3,
+  "business_approval_added": false,
+  "medical_quality_approved": false,
+  "complete_independent_S6_passed": false
+}

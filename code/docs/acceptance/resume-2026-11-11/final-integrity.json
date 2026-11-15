@@ -1,0 +1,31 @@
+{
+  "schema_version": "t1-final-handoff-integrity-1",
+  "checked_at_utc": "2026-11-11T11:26:20.995470+00:00",
+  "ordinary_frontend_HTTP": 200,
+  "ordinary_backend_HTTP": 200,
+  "ordinary_model_enabled": true,
+  "controlled_fixture": false,
+  "active_ordinary_tasks": 0,
+  "production_table_count": 13,
+  "all13_production_tables_rows_unchanged": true,
+  "private_env_bytes_unchanged": true,
+  "all3_experimental_containers_stopped_and_removed": true,
+  "all3_temporary_model_key_copies_absent": true,
+  "all3_attempt_sentinels_and_stopped_audit_volumes_retained": true,
+  "all_experimental_allowances_closed": true,
+  "experimental_requests_final": 24,
+  "additional_model_requests_for_final_patch_enabling_or_checks": 0,
+  "paid_plan_host_evidence_original_bindings_preserved": {
+    "resume-in04-20261111": 5,
+    "repaired-in06-20261111": 12,
+    "repaired-in07-20261111": 16
+  },
+  "enabled_UI_readonly_checks_passed": 4,
+  "enabled_UI_no_writes_Start_upload_review_export_or_model": true,
+  "documentation_sync_passed": true,
+  "documentation_files_validated": 16,
+  "documentation_files_changed": 15,
+  "no_commit_or_push": true,
+  "owned_temporary_task_notes_removed": 2,
+  "all_frozen_evidence_and_permanent_rules_retained": true
+}

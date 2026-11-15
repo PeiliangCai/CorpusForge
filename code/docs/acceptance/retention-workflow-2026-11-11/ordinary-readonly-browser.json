@@ -1,0 +1,39 @@
+{
+  "schema_version": "t1-retention-ordinary-readonly-1",
+  "at": "2026-11-11T15:58:13.444Z",
+  "origin": "http://127.0.0.1:30141",
+  "paid_model_calls": 0,
+  "write_requests": 0,
+  "exports_requested": 0,
+  "Start_clicked": false,
+  "checks": [
+    {
+      "name": "ordinary_manual_model_limits_and_retention_capabilities_preserved",
+      "status": "passed",
+      "limits": {
+        "requests": 80,
+        "input_tokens": 2000000,
+        "output_tokens": 120000,
+        "execution_seconds": 1800
+      },
+      "concurrent_slots": 2
+    },
+    {
+      "name": "new_continuous_reading_and_keep_exclude_UI_served_on_30141",
+      "status": "passed",
+      "record_id": "ev-176eaf128d826f3065e1c62b922999b065c881c9",
+      "source_fragments": 4,
+      "displayed_paragraphs": 1,
+      "default_kept": 26,
+      "excluded": 0
+    },
+    {
+      "name": "final_build_static_manifest_and_readonly_network_boundary",
+      "status": "passed",
+      "BUILD_ID": "70rlFysXNabL_xnVlhbNI"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "status": "passed"
+}

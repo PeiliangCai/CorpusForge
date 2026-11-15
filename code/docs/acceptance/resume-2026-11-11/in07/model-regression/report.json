@@ -1,0 +1,136 @@
+{
+  "schema_version": "t1-IN07-final-stack-model-regression-report-1",
+  "reported_at_utc": "2026-11-11T11:20:07.655209+00:00",
+  "status": "failed_provider_reported_high_load_after2requests_closed_last_experiment",
+  "source_id": "IN07",
+  "source_role": "Exposed parser regression after preserved first independent source-structure failure. No independent complete-pipeline acceptance.",
+  "plan": {
+    "path": "plan.json",
+    "sha256": "eac9419c38a4c9e0ce2c026d827cad34ab10a0cf44f4da72e772fc5d0e5dc3e1"
+  },
+  "dispatch": "dispatch.json",
+  "image_id": "sha256:32a0e53ab6be8bed82c579b8be589cbb25787f076d5133f74163999724d76977",
+  "final_UI_BUILD_ID": "9WeI9zkvHd20Y0lBTDX5C",
+  "actual_model_execution_code_freeze": "code/docs/acceptance/resume-2026-11-11/diagnostic-source-freeze.json",
+  "ordinary_response_model_policy_assembled": true,
+  "trial_alias_override": false,
+  "run_id": "run-137e8f96-47f8-43e9-ac7f-98f41bd6a79f",
+  "HTTP_admission_at": "2026-11-11T10:57:36.065Z",
+  "first_model_request_at": "2026-11-11T10:57:46.600Z",
+  "closed_at": "2026-11-11T10:58:14.127Z",
+  "usage": {
+    "physical_requests": 2,
+    "provider_reported_input_tokens": 4782,
+    "provider_reported_output_tokens": 15,
+    "budget_accounted_input_tokens": 79879,
+    "budget_accounted_output_tokens": 8207,
+    "missing_usage_requests": 1,
+    "cache_read_tokens_reported": 0,
+    "cache_write_tokens_reported": 4779,
+    "reasoning_tokens_reported": 0,
+    "actual_currency_cost": null,
+    "currency_cost_status": "unknown_gateway_billing",
+    "unused_requests_closed": 22,
+    "all_unused_allowance_closed": true,
+    "current_effective_API_allowance": 0,
+    "current_paid_requests_running": false
+  },
+  "failure": {
+    "application_code": "model_response_failed",
+    "SDK_error_message": "Service load is too high, please try again later",
+    "SDK_message_characters": 48,
+    "SDK_message_sha256": "c1c604bb7e48326f82d2c9cc9e842fcbcd895ef6cbc2ea75f45d84f9b2b9ac6e",
+    "HTTP_status": 200,
+    "provider_reported_high_load": true,
+    "independent_server_load_proven": false,
+    "first_request_model": "gpt-6-luna",
+    "first_request_identity": "matched literal provider metadata only",
+    "first_request_usage": {
+      "input_tokens": 4782,
+      "output_tokens": 15
+    },
+    "first_tool": "read_document_blocks",
+    "second_request_model_and_usage": "unknown;75097input/8192output conservatively reserved",
+    "same_prior_IN06_SDK_error_hash": true,
+    "prior_correlation": "code/docs/acceptance/resume-2026-11-11/in06/model-regression/diagnostic-correlation.json",
+    "no_whole_run_retry_or_further_paid_experiment": true
+  },
+  "output": {
+    "current_candidates": 0,
+    "random_review_denominator": null,
+    "zero_is_not_recall_or_no_eligible_evidence_proof": true,
+    "review_pack": "review-pack.json",
+    "actual_human_reviewed_count": 0,
+    "summary_started": false,
+    "actual_browser_upload_result_original_page_and3_export_buttons_passed": true,
+    "downloads": [
+      {
+        "kind": "candidate_jsonl",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "kind": "candidate_csv",
+        "bytes": 108,
+        "sha256": "fda0b6b60b31aa2378e11e03f6d304064b6d3b8b0b22f96ab25e2f8c291605d8"
+      },
+      {
+        "kind": "candidate_package",
+        "bytes": 5798,
+        "sha256": "500d7f0ff01d0985a883984a6baab243ea01a9b3ad977937573798b565dffa47"
+      }
+    ]
+  },
+  "coverage": {
+    "raw_source_blocks": 192,
+    "bibliography_excluded_blocks": 21,
+    "model_authorized_blocks": 171,
+    "read_source_blocks": 122,
+    "completed_source_blocks": 0,
+    "summary_complete": false,
+    "task_processing_complete": false,
+    "glyph_quarantine": 0,
+    "partial_native_author_units": 1,
+    "image_text_unverified_pages": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "current_Figure_caption_lines": [
+      6,
+      8,
+      4
+    ],
+    "source_catalog_18literal_caption_ranges_audited": true,
+    "current_Figure_assets": "source-figures",
+    "new_original_page_renders_for_review": 0,
+    "engine_final_coverage_fields_equal_export_snapshot": true
+  },
+  "isolation_and_cleanup": {
+    "container_stopped": true,
+    "private_key_copy_removed": true,
+    "ordinary_preserved_by_driver": true,
+    "review_rows": 0,
+    "annotation_rows": 0,
+    "unused_allowance_closed": true,
+    "all_prior_frozen_host_evidence_bindings_preserved": {
+      "repaired-in06-20261111": 12,
+      "repaired-in07-20261111": 16
+    }
+  },
+  "later_reliability_patch": {
+    "source_freeze": "code/docs/acceptance/resume-2026-11-11/delivery-source-freeze.json",
+    "scope": "Exact service-load message only; bounded physical-response retry before output, prior tools not replayed, existing two retries shared, all original caps/cancel/identity gates retained.",
+    "offline_validation": "30relatedSDK/policy/summary plus4existingtransient/deadline/concurrency tests andTS passed",
+    "actual_AGICTO_recovery_after_patch_live_verified": false,
+    "additional_model_requests": 0
+  },
+  "complete_independent_S6_passed": false,
+  "full_S7_gate_passed": false,
+  "medical_quality_approved": false,
+  "business_approval_added": false,
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3,
+  "current_effective_API_allowance": 0
+}

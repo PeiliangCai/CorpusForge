@@ -1,0 +1,305 @@
+{
+  "schema_version": "t1-IN07-first-frozen-parser-quality-1",
+  "reported_at": "2026-11-11T10:12:47.074833+00:00",
+  "source_id": "IN07",
+  "source_role": "Independent current-pipeline assessment material: fixed preselected paper, first parser result after frozen generic repair; no per-source parser/prompt adjustment and no output-based replacement.",
+  "fixed_repair_frozen_at": "2026-11-11T10:04:16.379709+00:00",
+  "physical_pages": 4,
+  "raw_blocks": 192,
+  "parser": {
+    "id": "docling-standard-cpu",
+    "version": "2.145.0",
+    "status": "partial",
+    "seconds": 8.888409121000223,
+    "CPU": true,
+    "GPU_used": false,
+    "remote_document_uploads": 0,
+    "model_calls": 0
+  },
+  "source_coverage": {
+    "page_enumeration_complete": true,
+    "decoded_pages": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "failed_pages": [],
+    "image_text_unverified_pages": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "source_glyph_issue_blocks": [],
+    "unmapped_unit_ids": [
+      "2d1f3cee0295d2fb-u-14dfdd4a1383b8db"
+    ],
+    "partial_unit_details": [
+      {
+        "unit_id": "2d1f3cee0295d2fb-u-14dfdd4a1383b8db",
+        "kind": "text",
+        "native_text_untrusted": "Joshua Wortsman , Syed M. Naqvi , Dean-Yar Tigrani , Sushant Nanavati , Hasnain Bawaadam 1 1 2 3 3",
+        "mapping": {
+          "status": "partial",
+          "method": "geometry_and_nfkd_whitespace_hyphen_alignment_4",
+          "matched_native_code_points": 73,
+          "alignable_native_code_points": 78,
+          "transformations": [
+            "NFKD/whitespace/hyphens ignored for matching only; source text is retained verbatim"
+          ],
+          "warnings": [
+            "Only disjoint equal substrings aligned; their concatenation is not a whole native quotation",
+            "Native processed text differs from literal segments; preserve segment boundaries and source spelling"
+          ]
+        }
+      }
+    ],
+    "raw_text_fidelity_human_verified": false,
+    "structure_verified_by_human": false
+  },
+  "input_scope": {
+    "kept": 171,
+    "deferred": 0,
+    "shared_bibliography_excluded": 21,
+    "rule_version": "explicit-bibliography-task-scope-2"
+  },
+  "figures": [
+    {
+      "figure_id": "figure-df67b8d36cbe5582de712176",
+      "figure_number": "1",
+      "caption_original_segments": [
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000000",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 67,
+          "exact_quote": "FIGURE 1: CT imaging demonstrating two suspicious pulmonary lesions",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            174.34210895691467,
+            521.3054234489331,
+            185.07010163790585
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000001",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 105,
+          "exact_quote": "Panel A: CT showing a spiculated lateral subpleural right upper lobe nodule measuring 11 × 12 mm (arrow),",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            192.0628726682695,
+            503.1696392740925,
+            199.43836763645095
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000002",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 54,
+          "exact_quote": "confirmed as moderately differentiated adenocarcinoma.",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            200.46521659376947,
+            355.06894997116666,
+            207.8407115619509
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "regions": [
+        {
+          "asset_id": "figure-df67b8d36cbe5582de712176-0",
+          "path": "docs/acceptance/resume-2026-11-11/in07/parser/figure-assets/figure-df67b8d36cbe5582de712176-p2-0.png",
+          "sha256": "0a51f5004e3524120735fa47d75c3966aa81935ef9ed94f35c9020029126b0c4",
+          "mime_type": "image/png",
+          "physical_page": 2,
+          "bbox": [
+            182.19862365722656,
+            56.7641487121582,
+            530.5045776367188,
+            162.625
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 698,
+          "height_px": 213,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+          "visual_modification": "none"
+        }
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Literal caption continuation inside one original PDF filled rectangle retained; relation and completeness require original-page review. Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      }
+    },
+    {
+      "figure_id": "figure-8b5d7ebd3027a9f4975e0ad1",
+      "figure_number": "2",
+      "caption_original_segments": [
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000006",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 61,
+          "exact_quote": "FIGURE 2: PET/CT imaging demonstrating two FDG-avid pulmonary",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            395.2037207129147,
+            499.4555781962378,
+            405.93171339390574
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000007",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 7,
+          "exact_quote": "lesions",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            409.6077388709148,
+            223.5661158210034,
+            420.33573155190584
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "regions": [
+        {
+          "asset_id": "figure-8b5d7ebd3027a9f4975e0ad1-0",
+          "path": "docs/acceptance/resume-2026-11-11/in07/parser/figure-assets/figure-8b5d7ebd3027a9f4975e0ad1-p2-0.png",
+          "sha256": "aad8a2028add54299f1bca5cc0d91a46d4c899d4850fda46bf52b9ee958c8bab",
+          "mime_type": "image/png",
+          "physical_page": 2,
+          "bbox": [
+            182.5463104248047,
+            288.36187744140625,
+            530.4596557617188,
+            383.5
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 696,
+          "height_px": 191,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+          "visual_modification": "none"
+        }
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      }
+    },
+    {
+      "figure_id": "figure-af729e888ac33300b929562b",
+      "figure_number": "3",
+      "caption_original_segments": [
+        {
+          "block_id": "793d0f639e85cc00d940-p0003-l000000",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 31,
+          "exact_quote": "FIGURE 3: Histopathology slides",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            190.5452042775,
+            185.1451271661649,
+            340.06423924342135,
+            195.87311984715598
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0003-l000001",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 70,
+          "exact_quote": "Hematoxylin and eosin (H&E) stained sections of lung biopsy specimens.",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            190.5452042775,
+            202.86589087751986,
+            403.8231754942409,
+            210.24138584570096
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "regions": [
+        {
+          "asset_id": "figure-af729e888ac33300b929562b-0",
+          "path": "docs/acceptance/resume-2026-11-11/in07/parser/figure-assets/figure-af729e888ac33300b929562b-p3-0.png",
+          "sha256": "2bf26fafa596d745afa98f9f4b07181832638c87eac8dabc4ace5bc0904d1964",
+          "mime_type": "image/png",
+          "physical_page": 3,
+          "bbox": [
+            182.33563232421875,
+            56.429176330566406,
+            530.8933715820312,
+            173.4375
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 698,
+          "height_px": 235,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+          "visual_modification": "none"
+        }
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Literal caption continuation inside one original PDF filled rectangle retained; relation and completeness require original-page review. Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      }
+    }
+  ],
+  "detected_tables": 0,
+  "table_acceptance_sample": false,
+  "original_pages": "original-pages.json",
+  "medical_quality_approved": false,
+  "actual_human_reviewed_count": 0,
+  "registry_state": "sealed; extraction model unseen; model admission not dispatched",
+  "sampling_protocol": "sampling-protocol.json",
+  "current_effective_API_allowance": 0,
+  "no_source_code_change_using_this_paper": true,
+  "unknown_or_partial_source_is_not_complete_medical_coverage": true
+}

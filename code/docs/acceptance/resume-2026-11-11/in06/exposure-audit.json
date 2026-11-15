@@ -1,0 +1,26 @@
+{
+  "schema_version": "t1-IN06-pre-model-exposure-audit-1",
+  "observed_at": "2026-11-11T09:34:37.648417+00:00",
+  "source_id": "IN06",
+  "DOI": "10.7759/cureus.63045",
+  "article_family_id": "doi:10.7759/cureus.63045",
+  "sha256": "1784b4b7ab855b3d0dbe6797b2cf7d340ac90b750844c4d8a7df79aeb802a4c1",
+  "existing_independent_sources": 4,
+  "historical_manifest_sources": 14,
+  "DOI_family_SHA_collisions": [],
+  "all_existing_corpus_PDFs_hashed": 9,
+  "same_byte_PDF_collisions": [],
+  "historical_text_search_hits": 0,
+  "historical_search_scope": [
+    "research",
+    "方案",
+    "evaluation",
+    "docs (excluding current resume self-records and duplicate source snapshots)"
+  ],
+  "root_public_summary_selection_exposure_only": true,
+  "extraction_model_exposure_before_this_preparation": false,
+  "pre_model_CPU_source_quality_check_is_not_output_tuning": true,
+  "new_independent_eligible_subject_to_identity_seal_and_root_admission": true,
+  "medical_quality_approved": false,
+  "model_calls": 0
+}

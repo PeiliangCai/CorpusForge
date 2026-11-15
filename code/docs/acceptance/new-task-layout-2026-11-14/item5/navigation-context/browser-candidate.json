@@ -1,0 +1,66 @@
+{
+  "status": "failed",
+  "phase": "candidate",
+  "origin": "http://127.0.0.1:30158",
+  "BUILD_ID": "z5qOyRRXGwS3gqwTjQ2HH",
+  "dist": "apps/pi-web/build/navigation-content-delivery-validated-20261115",
+  "checks": [
+    {
+      "name": "fresh_and_stale_global_urls",
+      "status": "failed",
+      "error": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(!new URL(page.url()).searchParams.has('paper'))\n"
+    },
+    {
+      "name": "exact_single_context_global_hierarchy_and_draft",
+      "status": "passed"
+    },
+    {
+      "name": "single_batch_figures_and_original_follow_exact_child",
+      "status": "passed"
+    },
+    {
+      "name": "deleting_current_never_selects_same_paper_sibling_and_all_tasks_leave_no_orphan_context",
+      "status": "passed"
+    },
+    {
+      "name": "external_delete_refresh_clears_context_without_touching_draft",
+      "status": "passed"
+    },
+    {
+      "name": "missing_source_and_not_found_do_not_expose_another_original",
+      "status": "passed"
+    },
+    {
+      "name": "mobile_navigation_is_global_and_source_action_stays_with_results",
+      "status": "passed"
+    },
+    {
+      "name": "content_composition_and_processing_batches_remain_truthful_for_new_and_legacy_runs",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "mock_mutations": [
+    {
+      "method": "POST",
+      "path": "/api/t1/workbench/papers"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/t1/workbench/runs/single-a"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/t1/workbench/batches/11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/t1/workbench/runs/single-b"
+    }
+  ],
+  "production_business_writes": 0,
+  "paid_calls": 0,
+  "production_exports": 0,
+  "completed_at_utc": "2026-11-15T08:26:05.343Z"
+}

@@ -1,0 +1,596 @@
+{
+  "schema_version": "two-layer-catalog-acceptance-1",
+  "status": "completed",
+  "started_at": "2026-11-14T07:45:32.803839+00:00",
+  "formal_reviews": {
+    "used": 3,
+    "max": 3,
+    "conclusions": [
+      "第1轮继续：目录快照冻结，失效选择提示，历史兼容保留。",
+      "第2轮继续：修正测试错误类型、无此论文ID与summary逐候选脚本，不放宽生产守卫。",
+      "第3轮继续：81自动项+5隔离场景通过，可按授权更新网页；上线核活动/DB/env，配置可用不是医学审核。"
+    ]
+  },
+  "paid_model_calls": 0,
+  "production_business_writes": 0,
+  "medical_quality_approved": false,
+  "independent_IN_material_read": false,
+  "deployment": {
+    "status": "deployed_and_readonly_verified",
+    "before": {
+      "checked_at": "2026-11-14T07:55:50.564648+00:00",
+      "database": "runtime-data/t1.sqlite",
+      "table_count": 17,
+      "tables": {
+        "events": {
+          "rows": 5,
+          "sha256": "fbbff2d383b1d0e3ad542508893dbd9070c0d6336322bc2a5f4dd4afc759159e"
+        },
+        "records": {
+          "rows": 1,
+          "sha256": "901aab0c50914aa67d213ed68cc7bfb129ef75c8c95adbd931b7f99faa08578d"
+        },
+        "runs": {
+          "rows": 1,
+          "sha256": "6d5e665f0ded12e18f4b002df13980af91e4c03db095f17cb928def2fb74e9fb"
+        },
+        "s4_batches": {
+          "rows": 5,
+          "sha256": "914bf9665cf518936446287377b2d0826485ee632d81586c0aa9b61f76d83e30"
+        },
+        "s4_events": {
+          "rows": 67,
+          "sha256": "dca7fd9f2e8234d37b2fd98391b85b8c3a1e74d23eb69d2b9a78689ecb6db3e0"
+        },
+        "s4_runs": {
+          "rows": 9,
+          "sha256": "010a757fae4ed9699b4fb27bd09f55f1014c5f349c7fa0b4217077318b881c17"
+        },
+        "s4_versions": {
+          "rows": 262,
+          "sha256": "8f1d223c206ae84a09dbe584e7d491caaaa1899c14b9103704edff9f120a887c"
+        },
+        "workbench_annotations": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_deleted_runs": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_deleted_sources": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_exports": {
+          "rows": 3,
+          "sha256": "5b4ad81cc1d51a0c611c18a3d0fac84646821322d1eee4879f2091c735631401"
+        },
+        "workbench_model_profiles": {
+          "rows": 1,
+          "sha256": "c205b299c4cf5067e5b2b6a717178370e1311c04d961b477d0718bba71e03001"
+        },
+        "workbench_papers": {
+          "rows": 6,
+          "sha256": "f312e39f8fbe636c6928ab8597086959101da2dfe3270ae551fccc7c4411ac09"
+        },
+        "workbench_requests": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_retentions": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_reviews": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_runs": {
+          "rows": 9,
+          "sha256": "eac080c2642f3e5c5fb4f8e0bcdfe74737a94e2a1fe8bd8317f7df6abc71b59f"
+        }
+      },
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "run_count": 9,
+      "active_runs": [],
+      "env_sha256": {
+        ".env": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+        "deploy/local/workbench.env": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea"
+      },
+      "frontend_pid": 5551,
+      "backend_pid": 5430
+    },
+    "database_backup": "runtime-data/backups/two-layer-catalog-20261114-before/t1.sqlite",
+    "rollback_dist": "apps/pi-web/build/task-records-validated-20261113",
+    "rollback_BUILD_ID": "zLRleMlhhhZ-kExpdh9-R",
+    "backend_pid": 33530,
+    "frontend_launcher_pid": 33563,
+    "backend_log": "runtime-data/logs/t1-backend-two-layer-catalog-20261114.log",
+    "frontend_log": "runtime-data/logs/pi-web-two-layer-catalog-20261114.log",
+    "dist": "apps/pi-web/build/two-layer-catalog-validated-20261114",
+    "BUILD_ID": "DcG1glAOPcj0mod8YXzIX",
+    "fresh_activity_checks_before_stop": 3,
+    "fresh_active_runs": [],
+    "cutover_notes": [
+      "Old Next SIGTERM released30141 but retained its process beyond10s with existing streams; verified listener closed and backend still0active, then graceful backend shutdown closed streams. Waited for listeners rather than forcing processes."
+    ],
+    "observed_business_activity": {
+      "checked_at": "2026-11-14T08:01:58.888233+00:00",
+      "before_run_count": 9,
+      "observed_run_count": 7,
+      "observed_tombstones": [
+        {
+          "run_id": "run-c81de6e7-2a4b-47ec-afff-9b75341300c3",
+          "paper_id": "paper-6dce31c5-dcbf-4b0b-861a-233a3919467f",
+          "deleted_at": "2026-11-14T07:59:39.911Z"
+        },
+        {
+          "run_id": "b0-revalidation-2151bbfc-5883-49c4-9e17-d3b600f92a9f:source-L05",
+          "paper_id": "L05",
+          "deleted_at": "2026-11-14T07:59:44.853Z"
+        }
+      ],
+      "missing_runs_exactly_match_tombstones": true,
+      "row_delta": {
+        "s4_batches": {
+          "before_rows": 5,
+          "after_rows": 0,
+          "removed_rows": 5,
+          "added_rows": 0
+        },
+        "s4_events": {
+          "before_rows": 67,
+          "after_rows": 14,
+          "removed_rows": 53,
+          "added_rows": 0
+        },
+        "s4_runs": {
+          "before_rows": 9,
+          "after_rows": 7,
+          "removed_rows": 2,
+          "added_rows": 0
+        },
+        "workbench_deleted_runs": {
+          "before_rows": 0,
+          "after_rows": 2,
+          "removed_rows": 0,
+          "added_rows": 2
+        },
+        "workbench_exports": {
+          "before_rows": 3,
+          "after_rows": 0,
+          "removed_rows": 3,
+          "added_rows": 0
+        },
+        "workbench_runs": {
+          "before_rows": 9,
+          "after_rows": 7,
+          "removed_rows": 2,
+          "added_rows": 0
+        }
+      },
+      "preexisting_rows_only_deleted_no_added_or_modified": true,
+      "actor": "user_confirmed",
+      "database_unchanged": false,
+      "user_confirmation": "是，我刚刚删除了两条",
+      "confirmation_source": "user message relayed by main /root on2026-11-14",
+      "restored": false,
+      "agent_test_mutations": 0
+    },
+    "after": {
+      "tables": {
+        "events": {
+          "rows": 5,
+          "sha256": "fbbff2d383b1d0e3ad542508893dbd9070c0d6336322bc2a5f4dd4afc759159e"
+        },
+        "records": {
+          "rows": 1,
+          "sha256": "901aab0c50914aa67d213ed68cc7bfb129ef75c8c95adbd931b7f99faa08578d"
+        },
+        "runs": {
+          "rows": 1,
+          "sha256": "6d5e665f0ded12e18f4b002df13980af91e4c03db095f17cb928def2fb74e9fb"
+        },
+        "s4_batches": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "s4_events": {
+          "rows": 14,
+          "sha256": "232fb88744d2b3086f5cae52ee562957fec75c338927fc4239400188f002a66e"
+        },
+        "s4_runs": {
+          "rows": 7,
+          "sha256": "96ce85bf807e32ac81bc3c5d962934025e470043e8a2eeef74fd4ed424ff4d85"
+        },
+        "s4_versions": {
+          "rows": 262,
+          "sha256": "8f1d223c206ae84a09dbe584e7d491caaaa1899c14b9103704edff9f120a887c"
+        },
+        "workbench_annotations": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_deleted_runs": {
+          "rows": 2,
+          "sha256": "d569b1762278114120f3fa93b6540ebaf0779cdf33ec0df1e1ce4c29e8eb6d58"
+        },
+        "workbench_deleted_sources": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_exports": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_model_profiles": {
+          "rows": 1,
+          "sha256": "c205b299c4cf5067e5b2b6a717178370e1311c04d961b477d0718bba71e03001"
+        },
+        "workbench_papers": {
+          "rows": 6,
+          "sha256": "f312e39f8fbe636c6928ab8597086959101da2dfe3270ae551fccc7c4411ac09"
+        },
+        "workbench_requests": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_retentions": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_reviews": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_runs": {
+          "rows": 7,
+          "sha256": "2ca96edce4c30857a0071bc105d1661827fcc41e1eac06e1c4746628a7cc78ee"
+        }
+      },
+      "table_count": 17,
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "run_count": 7,
+      "active_runs": [],
+      "env_sha256": {
+        ".env": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+        "deploy/local/workbench.env": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea"
+      },
+      "checked_at": "2026-11-14T08:03:46.008827+00:00"
+    },
+    "database_tables_rows_and_logical_hashes_unchanged": false,
+    "frontend_pid": 33584,
+    "post_user_deletion_tables_rows_and_hashes_stable_during_readonly_checks": true,
+    "env_bytes_unchanged": true,
+    "paid_model_calls": 0,
+    "agent_production_business_writes": 0
+  },
+  "browser": {
+    "status": "passed",
+    "origin": "http://127.0.0.1:30155",
+    "isolated_backend": "http://127.0.0.1:3215",
+    "dist": "apps/pi-web/build/two-layer-catalog-validated-20261114",
+    "BUILD_ID": "DcG1glAOPcj0mod8YXzIX",
+    "checks": [
+      "exactly_two_default_unrestricted_layers_and_empty_selection_blocks_start",
+      "unrefreshed_version_is_409_with_clear_feedback_then_refresh_preserves_ids",
+      "add_rename_delete_and_dependency_updates_need_no_restart_and_never_drop_invalid_ids",
+      "admitted_batch_retries_keep_server_catalog_after_config_changes",
+      "historical_scope_names_use_admission_snapshot_and_bad_json_keeps_saved_tasks_visible"
+    ],
+    "errors": [],
+    "blocked": [],
+    "mutations": [
+      {
+        "method": "POST",
+        "path": "/api/t1/workbench/papers"
+      },
+      {
+        "method": "POST",
+        "path": "/api/t1/workbench/papers/paper-b8a94716-7050-41df-ae34-92233547a0b9/runs"
+      },
+      {
+        "method": "POST",
+        "path": "/api/t1/workbench/papers"
+      },
+      {
+        "method": "POST",
+        "path": "/api/t1/workbench/papers"
+      },
+      {
+        "method": "POST",
+        "path": "/api/t1/workbench/papers"
+      },
+      {
+        "method": "POST",
+        "path": "/api/t1/workbench/papers/paper-fbac697c-a4a2-4c6b-a984-9b77aca89509/runs"
+      },
+      {
+        "method": "POST",
+        "path": "/api/t1/workbench/papers/paper-fdf01512-ca1d-41cf-9fd9-be7c6cdb8e58/runs"
+      },
+      {
+        "method": "POST",
+        "path": "/api/t1/workbench/papers/paper-7fb8fc38-48fb-4600-b9ce-d82beec3ecbc/runs"
+      },
+      {
+        "method": "POST",
+        "path": "/api/t1/workbench/papers/paper-fdf01512-ca1d-41cf-9fd9-be7c6cdb8e58/runs"
+      }
+    ],
+    "screenshots": [
+      "scope-desktop.png",
+      "scope-mobile.png"
+    ],
+    "paid_model_calls": 0,
+    "production_business_writes": 0
+  },
+  "implementation": {
+    "source": "code/config/scope-catalog.json",
+    "schema_version": "scope-catalog-1",
+    "sha256": "cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+    "byte_length": 813,
+    "catalog_version": "scope-cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+    "status": "operator_configured",
+    "cancer_ids": [
+      "CANCER-LUNG",
+      "CANCER-BOWEL",
+      "CANCER-COLON",
+      "CANCER-RECTUM"
+    ],
+    "image_type_ids": [
+      "MODALITY-CT",
+      "MODALITY-MRI"
+    ],
+    "choice_layers": [
+      "cancers",
+      "image_types"
+    ],
+    "manual_version_required": false,
+    "live_reload": "GET and new run admission re-read fixed source; workspace refresh accepts new hash and keeps selected IDs",
+    "invalid_config": "no cached config fallback; new tasks disabled while historical task lists/results remain usable",
+    "immutable_snapshot": "per-run scope_catalog persisted in RunRow; runner, source revisions, output names, batch remaining members/retries and restart use original snapshot",
+    "legacy_compatibility": "Scope v1 retained; features must be all/empty for new requests; saved old scopes/features remain; idempotent replay and deleted-result guards run before new admission",
+    "pair_semantics": "configured pairs checked when both dimensions are selected; a dimension in all mode remains open",
+    "features": "open original-source descriptions; no feature vocabulary or normalization bindings",
+    "optional_fields": [
+      "aliases",
+      "description"
+    ],
+    "description_consumers": [
+      "model scope_catalog",
+      "option tooltip"
+    ],
+    "gateway": "production loopback3210 unchanged; isolated tests used existing process fetch-hook"
+  },
+  "archive": {
+    "path": "code/docs/acceptance/two-layer-catalog-2026-11-14/previous-catalog-material.json",
+    "sha256": "2923c710343b526c3371d4742b4bdabf8271190c086aa941d16d33ff08fcfd51",
+    "byte_length": 178700,
+    "maintained_as_current_source": false,
+    "prior_acceptance_untouched": true
+  },
+  "removed_obsolete_files": [
+    "code/config/medical-catalog-material.json",
+    "code/apps/server/src/catalog-material.ts",
+    "code/packages/contracts/src/catalog-material.ts",
+    "code/scripts/check-catalog-material.ts",
+    "code/apps/server/test/catalog-material.test.ts"
+  ],
+  "checks": {
+    "automated_total": 81,
+    "legacy_regression": {
+      "passed": 70,
+      "failed": 0,
+      "log": "regression-tests.log"
+    },
+    "new_catalog": {
+      "passed": 5,
+      "failed": 0,
+      "log": "catalog-tests.log"
+    },
+    "batch_concurrency": {
+      "passed": 1,
+      "failed": 0,
+      "log": "batch-concurrency.log"
+    },
+    "frontend_scope_gateway": {
+      "passed": 5,
+      "failed": 0,
+      "log": "web-unit.log"
+    },
+    "typecheck": {
+      "status": "passed",
+      "logs": [
+        "typecheck.log",
+        "web-typecheck.log",
+        "final-typecheck.log"
+      ],
+      "final_build_typescript": "passed after latest product changes"
+    },
+    "frontend_lint": {
+      "errors": 0,
+      "warnings": 1,
+      "warning": "Unused eslint-disable directive in T1Workbench workspace-load effect",
+      "log": "web-lint.log"
+    },
+    "catalog_cli": {
+      "status": "passed",
+      "command": "bash scripts/with-node.sh npm run check:scope-catalog",
+      "log": "catalog-check.log"
+    },
+    "schema_export": {
+      "status": "passed",
+      "log": "contract-export.log"
+    },
+    "build": {
+      "status": "passed",
+      "dist": "apps/pi-web/build/two-layer-catalog-validated-20261114",
+      "BUILD_ID": "DcG1glAOPcj0mod8YXzIX",
+      "log": "build.log"
+    },
+    "initial_failures_preserved": [
+      "initial-catalog-tests.log",
+      "initial-browser.log"
+    ]
+  },
+  "deployment_scope": "existing loopback30141/3210 only; after final parent review and a fresh no-active-task check; real checks GET/HEAD only",
+  "review_diff": "code/docs/acceptance/two-layer-catalog-2026-11-14/review.diff",
+  "limitations": [
+    "No new real provider/model call or fresh real PDF extraction. Installed Pi exercised via local scripted Responses only.",
+    "No real database upload/start/cancel/delete/export used for testing.",
+    "Browser mobile check used Chromium viewport simulation; no physical device.",
+    "Configuration usability and retained evidence do not certify medical correctness.",
+    "Independent IN materials were not read; full S6/S7 medical acceptance was not extended."
+  ],
+  "source_manifest": {
+    "code/.dockerignore": "06071965dd8986e492d24976054f1f8f7d3de2bac63bbde19955e36dd07bcaf1",
+    "code/Dockerfile": "e017e420cb6e2e329aa679643d09914f1d4576b50153aeedfa690aeb96830f2a",
+    "code/.env.example": "788ef4dd594716dc293d91f7d93883d8491c783c63a9df7ae176f2bffafc6d4f",
+    "code/README.md": "7bc28817a9f84ce760367d431f1b63d5f1548212fd204c0e905b32276c990103",
+    "code/deploy/README.md": "56200a3c29884f70873e39cdd5fd73523436c6e1760bb0b59d62f4bf668a9235",
+    "code/package.json": "1656075d9c9c48300e5fc9c625dbf27460e3b5d4eae243c870906fdccfc77f4d",
+    "code/config/scope-catalog.json": "cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+    "code/apps/server/src/catalog-config.ts": "ae8fb5bf7a9c0dd64d11efc6159e439dcd13919ecf05b9d23309ec5c196426d9",
+    "code/apps/server/src/main.ts": "23a4a3ad8fb4dc6d8e570f8ccc1e04adc9877533e692761705519dea01b2dfb9",
+    "code/apps/server/src/workflow.ts": "b2120012d3fbdea2cd3a41748b3fd0f97a1063547ff7b23617c8b423ead3fb32",
+    "code/apps/server/src/app.ts": "753bc26349283372b29da507bea7c14cae25cc01f9ce1d50d2f00b67cc8a4fbc",
+    "code/apps/server/test/catalog-config.test.ts": "2594e6a2ae3900ea459e13b4a3ddaf520a5509cced5554e543aa5f607a6a795b",
+    "code/apps/server/test/two-layer-catalog-fixture.ts": "0443d86b58e3e37185d6c57702d52a492e63a0af6183c9cd3ec0bd2812c06921",
+    "code/packages/contracts/src/index.ts": "80122cebe910304a8e41f1c2275d75d4968220c66b6eb1af562ec85f75280e9d",
+    "code/packages/contracts/src/extraction-evidence.ts": "d2275ce81486545fb650f54075a24804977f4f3408f12439bacd76d312da742b",
+    "code/packages/contracts/src/workbench.ts": "b4dc63886969a27ac1ce77e16bb9eb8b3d4e184db41d0cafe285754a90126204",
+    "code/packages/contracts/src/scope-catalog.ts": "cbd9271350d86e6d713938afaf91ec431b1ca0397dda9a65526284fa664d0802",
+    "code/packages/contracts/schema/EvidenceCatalog.json": "afbe699361251b2cfa60561571235eeb7969082354bb436aa45bc787e7b2f467",
+    "code/packages/contracts/schema/EvidenceRecord.json": "2d293512ea5f250e7a1fae6719e92f11bdec11d11941c91ea8fecf56ffda847b",
+    "code/packages/contracts/schema/ScopeCatalogConfig.json": "93ddc84cc0a0ec7c472eee9f15c2e9d96aac8ebea98ff0509cc7e14cf07ac5f4",
+    "code/packages/agent/src/scope-matching.ts": "efdd6c93ec9766b10dc2a3e335b5a8caa101034eb3cfa3503c61c41dfad0c6a2",
+    "code/packages/agent/src/extraction-tools.ts": "6e0488d0bb409e3891101c8980260347284f621d17b2eb8818cc49e0695f5fc4",
+    "code/packages/agent/src/extraction-run.ts": "d2bdfff726522433235d730f856188fc09d27f5ad2c2f906f61fe64ee085e664",
+    "code/apps/pi-web/t1/scope.ts": "986ae531726ad5f26098c108449bf93341e8cfbdf0e9d01c1946bedec5da214c",
+    "code/apps/pi-web/t1/ScopeEditor.tsx": "c7bcd26f6c2596750eec861b8be8819deea144105d13973114466bcb06c5754e",
+    "code/apps/pi-web/t1/BatchSubmission.tsx": "eb857a67dc71a73dd9db1f7d46c08a933daca7917f6023633a096e55403abaca",
+    "code/apps/pi-web/t1/T1Workbench.tsx": "fb64113ffb368f1586963c6f0562324a56cbf046fdeaa20071938267e656af05",
+    "code/apps/pi-web/t1/api.ts": "f060f72c914016cd4e08e60fb1278f701bf78d0ec638201e37ad34b3ec898ca2",
+    "code/apps/pi-web/t1/messages.mjs": "9ae2403e6142773c5e6ba880ae4c429e1563e49e622b209cda1e9cb0f24149c7",
+    "code/apps/pi-web/lib/t1-workflow.test.mjs": "beed757bf9517901e23b3cec18107620375fbad6a30f8b9790ab00c677fb3f30",
+    "code/apps/pi-web/e2e/two-layer-catalog.mjs": "ef4c94bfb098a5f1252d6f60c413cbdcc035bc9dbe55d950a79cd3f5a5dda715",
+    "code/scripts/check-scope-catalog.ts": "a685249f72b84eaa3ded4534de784c90b51f7a873151402d9290749e89c98214",
+    "code/scripts/export-s4-contracts.ts": "a6a31f67bc210fe864fe44cad52da062fad05002ed5691ac8f81ec6dd5053e67"
+  },
+  "review_ready_at": "2026-11-14T07:56:45.823444+00:00",
+  "S6_S7_status": "unchanged; no new independent or full real acceptance",
+  "production_readonly_initial_assertion": {
+    "status": "failed",
+    "methods": [
+      "GET",
+      "HEAD"
+    ],
+    "checks": [],
+    "page_errors": [],
+    "console_errors": [],
+    "blocked_requests": [],
+    "paid_model_calls": 0,
+    "production_business_writes": 0,
+    "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n7 !== 9\n\n    at file:///home/ecs-user/projects/t1-agent/code/[eval1]:14:308",
+    "resolution": "User explicitly confirmed deleting two runs; no restoration performed. Repeated final GET/HEAD verification passed against confirmed current7runs."
+  },
+  "production_readonly": {
+    "status": "passed",
+    "methods": [
+      "GET",
+      "HEAD"
+    ],
+    "checks": [
+      "real_gateway_catalog_same_sha_and_operator_status_current_runs_no_active",
+      "same_validated_build_renders_two_default_unrestricted_layers_and_current_history",
+      "real4cancer2modality_options_linked_without_business_request",
+      "remaining_existing_run_results_readable"
+    ],
+    "page_errors": [],
+    "console_errors": [],
+    "blocked_requests": [],
+    "paid_model_calls": 0,
+    "production_business_writes": 0,
+    "expected_current_run_count": 7,
+    "predeploy_run_count": 9,
+    "BUILD_ID": "DcG1glAOPcj0mod8YXzIX",
+    "catalog": {
+      "status": "operator_configured",
+      "catalog_version": "scope-cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+      "restricted_available": true,
+      "cancer_count": 4,
+      "image_type_count": 2,
+      "feature_count": 0
+    },
+    "run_count": 7,
+    "screenshot": "code/docs/acceptance/two-layer-catalog-2026-11-14/production-two-layer.png"
+  },
+  "stage_decision": {
+    "S2": {
+      "stage_passed": true,
+      "engineering_complete_for_current_scope": true,
+      "scope": "调整后的癌种→图像模态两层范围准备/配置及抽样协议准备",
+      "basis": [
+        "R03来源身份与独立隔离治理已有准备工程完成证据",
+        "R04/R05抽查与核验协议已有准备工程完成证据",
+        "用户本次取消特征词表与第三层限制，旧唯一remaining随范围变更取消",
+        "R27由本轮81项自动检查和5场景同构建隔离Chromium核验覆盖"
+      ],
+      "medical_quality_approved": false,
+      "decision_authority": "main session formal review3/3 continue"
+    },
+    "S6": {
+      "acceptance_extended": false,
+      "independent_medical_acceptance": "not_granted_by_this_task"
+    },
+    "S7": {
+      "acceptance_extended": false,
+      "full_real_acceptance": "not_granted_by_this_task"
+    }
+  },
+  "completed_at": "2026-11-14T08:03:46.014993+00:00",
+  "cleanup": {
+    "isolated_frontend_stopped": 30697,
+    "isolated_backend_stopped": 27015,
+    "removed_task_temporaries": [
+      "code/runtime-data/two-layer-catalog-fixture-20261114",
+      "code/runtime-data/logs/two-layer-catalog-fixture-20261114.log",
+      "code/runtime-data/logs/two-layer-catalog-web-fixture-20261114.log",
+      "code/runtime-data/agent-notes/two-layer-catalog-2026-11-14.json"
+    ],
+    "preserved": [
+      "report.json",
+      "initial-catalog-tests.log",
+      "initial-browser.log",
+      "previous-catalog-material.json",
+      "runtime-data/backups/two-layer-catalog-20261114-before",
+      "apps/pi-web/build/two-layer-catalog-validated-20261114",
+      "apps/pi-web/build/task-records-validated-20261113"
+    ],
+    "permanent_rules_and_other_task_files_removed": false
+  },
+  "documentation_sync": "code/docs/acceptance/two-layer-catalog-2026-11-14/documentation-sync.json",
+  "handoff_ready_at": "2026-11-14T08:05:21.798793+00:00",
+  "documentation_verification": {
+    "report": "code/docs/acceptance/two-layer-catalog-2026-11-14/documentation-sync.json",
+    "sha256": "ddee8888d63084cd14c6f256467dfc5bdefd4b932e4546547a5519a2e2e8cfdf",
+    "status": "passed_document_structure_semantics_and_preservation_with_scoped_engineering_and_deployment",
+    "file_count": 15,
+    "docx_fingerprints": {
+      "方案/子任务T1/T1智能体开发计划.docx": "c6803c0d51bc597ce7a009a90d62172d2f970f50ebcaea5b99725a79bc2ddecd",
+      "方案/子任务T1/T1开发执行说明.docx": "ba75a351d520e6a3fa709355126aff34f789af2d288d163bc27f517791423078"
+    },
+    "preservation_as_verified_by_documentation_owner": {
+      "historical_subtrees": 128,
+      "protected_objects": 57,
+      "E09_preserved": true
+    },
+    "stage_pointer": "report.json#/stage_decision/S2",
+    "formal_review_pointer": "report.json#/formal_reviews"
+  },
+  "handoff_completed_at": "2026-11-14T08:06:27.080708+00:00"
+}

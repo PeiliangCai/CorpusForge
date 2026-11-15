@@ -20,7 +20,7 @@ import { STRICT_SOURCE_GROUPING_POLICY_VERSION } from '../packages/agent/src/str
 import { readPreparedExtractionSources, extractionRuntimeSourceHashes } from '../packages/agent/src/prepared-extraction-sources.js';
 
 interface Config {
-  schema_version: 'two-method-comparison-config-1'; status: 'prepared_pending_new_user_authorization'; execute_model_calls: false;
+  schema_version: 'two-method-comparison-config-1'; status: 'prepared_pending_new_user_authorization' | 'historical_research_template_inactive'; execute_model_calls: false;
   methods: ['B0', 'F'];
   bibliography_scope_rule_version: typeof BIBLIOGRAPHY_SCOPE_RULE_VERSION;
   source_selection_rule_version: typeof SOURCE_SELECTION_VERSION;
@@ -62,7 +62,7 @@ function assertConfig(v: Config) {
   if (v.bibliography_scope_rule_version !== BIBLIOGRAPHY_SCOPE_RULE_VERSION) throw new ContractError('comparison_bibliography_scope_version_mismatch');
   if (v.source_selection_rule_version !== SOURCE_SELECTION_VERSION) throw new ContractError('comparison_source_selection_version_mismatch');
   assertSchema(EvidenceCatalogSchema, v.catalog); assertSchema(ScopeSchema, v.scope);
-  if (v.status !== 'prepared_pending_new_user_authorization' || v.execute_model_calls !== false ||
+  if (!['prepared_pending_new_user_authorization', 'historical_research_template_inactive'].includes(v.status) || v.execute_model_calls !== false ||
     v.formal_model_selected !== false || v.strategy !== 'baseline' || v.concurrency !== 1 || v.model.reasoning_effort !== 'medium' ||
     !['openai-responses', 'openai-completions'].includes(v.model.api) || !/^[A-Za-z0-9_./:@+-]{1,160}$/u.test(v.model.model_id) ||
     !v.papers.length || new Set(v.papers.map(p => p.source_id)).size !== v.papers.length ||

@@ -1,0 +1,439 @@
+{
+  "schema_version": "t1-IN07-bounded-multi-paragraph-caption-repair-1",
+  "reported_at_utc": "2026-11-11T10:29:00.586371+00:00",
+  "source_id": "IN07",
+  "status": "independent_first_source_structure_check_failed_preserved_then_bounded_parser_regression_repair",
+  "source_role": "Parser regression. Extraction model unseen; its first independent structure check failed, and repair using its observed layout prevents an independent complete-pipeline success claim.",
+  "baseline": "baseline/freeze.json",
+  "final_code_freeze": "code/docs/acceptance/resume-2026-11-11/final-code-policy-freeze.json",
+  "original_issue": "First frozen parser catalog truncated all three original grey-box captions at paragraph spacing or a wrapped numbered title, omitting Panel B and/or abbreviations already present in original raw text.",
+  "generic_change": "Within one actual source PDF filled caption rectangle only, permit bounded paragraph gaps and defer body-font inference until the smaller first description line; preserve source order, full line coordinates/versions, unique image, column, competing Figure/Table/section and outside-frame barriers.",
+  "publisher_DOI_or_medical_keyword_specific_rules": false,
+  "source_PDF_IR_or_block_text_rewritten": false,
+  "prompt_extraction_algorithm_or_model_selection_changed": false,
+  "repair_timebox_minutes": 20,
+  "repair_started_at_utc": "2026-11-11T10:19:03.619595+00:00",
+  "repair_frozen_at_utc": "2026-11-11T10:24:10.306973+00:00",
+  "figures": [
+    {
+      "figure_number": "1",
+      "figure_id": "figure-df67b8d36cbe5582de712176",
+      "before_source_lines": 3,
+      "after_source_lines": 6,
+      "after_original_segments": [
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000000",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 67,
+          "exact_quote": "FIGURE 1: CT imaging demonstrating two suspicious pulmonary lesions",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            174.34210895691467,
+            521.3054234489331,
+            185.07010163790585
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000001",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 105,
+          "exact_quote": "Panel A: CT showing a spiculated lateral subpleural right upper lobe nodule measuring 11 × 12 mm (arrow),",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            192.0628726682695,
+            503.1696392740925,
+            199.43836763645095
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000002",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 54,
+          "exact_quote": "confirmed as moderately differentiated adenocarcinoma.",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            200.46521659376947,
+            355.06894997116666,
+            207.8407115619509
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000003",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 111,
+          "exact_quote": "Panel B: CT showing a juxta-cardiac left lower lobe nodule measuring 10 × 16 mm (arrow), confirmed as a typical",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            220.87090898426948,
+            520.4767422792806,
+            228.24640395245092
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000004",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 16,
+          "exact_quote": "carcinoid tumor.",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            229.27325290976944,
+            236.8359675909167,
+            236.64874787795088
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000005",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 23,
+          "exact_quote": "CT, computed tomography",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            249.67894530026945,
+            267.97790497408016,
+            257.0544402684509
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "Figure_ID_and_image_bytes_unchanged": true,
+      "whole_regions": [
+        {
+          "asset_id": "figure-df67b8d36cbe5582de712176-0",
+          "path": "docs/acceptance/resume-2026-11-11/in07/repaired/figure-assets/figure-df67b8d36cbe5582de712176-p2-0.png",
+          "sha256": "0a51f5004e3524120735fa47d75c3966aa81935ef9ed94f35c9020029126b0c4",
+          "mime_type": "image/png",
+          "physical_page": 2,
+          "bbox": [
+            182.19862365722656,
+            56.7641487121582,
+            530.5045776367188,
+            162.625
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 698,
+          "height_px": 213,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+          "visual_modification": "none"
+        }
+      ],
+      "verification_status": "needs_review",
+      "human_approved": false
+    },
+    {
+      "figure_number": "2",
+      "figure_id": "figure-8b5d7ebd3027a9f4975e0ad1",
+      "before_source_lines": 2,
+      "after_source_lines": 8,
+      "after_original_segments": [
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000006",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 61,
+          "exact_quote": "FIGURE 2: PET/CT imaging demonstrating two FDG-avid pulmonary",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            395.2037207129147,
+            499.4555781962378,
+            405.93171339390574
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000007",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 7,
+          "exact_quote": "lesions",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            409.6077388709148,
+            223.5661158210034,
+            420.33573155190584
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000008",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 111,
+          "exact_quote": "Panel A: Axial PET/CT showing a spiculated lateral subpleural right upper lobe nodule measuring 11 × 12 mm with",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            427.3285025822695,
+            522.3497147653882,
+            434.7039975504508
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000009",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 96,
+          "exact_quote": "intense FDG uptake (SUV max 8.2) (arrow), confirmed as moderately differentiated adenocarcinoma.",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            435.73084650776946,
+            485.12710611263935,
+            443.106341475951
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000010",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 107,
+          "exact_quote": "Panel B: Axial PET/CT showing a juxta-cardiac left lower lobe nodule measuring 10 × 16 mm with moderate FDG",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            456.13653889826946,
+            519.497794191032,
+            463.512033866451
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000011",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 69,
+          "exact_quote": "uptake (SUV max 3.5) (arrow), confirmed as a typical carcinoid tumor.",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            464.5388828237694,
+            393.63908453096747,
+            471.914377791951
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000012",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 103,
+          "exact_quote": "PET/CT, positron emission tomography/computed tomography; FDG, fluorodeoxyglucose; SUV, standard uptake",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            484.94457521426943,
+            518.0360114107787,
+            492.320070182451
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0002-l000013",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 5,
+          "exact_quote": "value",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            493.3469191397694,
+            206.28654549635684,
+            500.72241410795095
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "Figure_ID_and_image_bytes_unchanged": true,
+      "whole_regions": [
+        {
+          "asset_id": "figure-8b5d7ebd3027a9f4975e0ad1-0",
+          "path": "docs/acceptance/resume-2026-11-11/in07/repaired/figure-assets/figure-8b5d7ebd3027a9f4975e0ad1-p2-0.png",
+          "sha256": "aad8a2028add54299f1bca5cc0d91a46d4c899d4850fda46bf52b9ee958c8bab",
+          "mime_type": "image/png",
+          "physical_page": 2,
+          "bbox": [
+            182.5463104248047,
+            288.36187744140625,
+            530.4596557617188,
+            383.5
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 696,
+          "height_px": 191,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+          "visual_modification": "none"
+        }
+      ],
+      "verification_status": "needs_review",
+      "human_approved": false
+    },
+    {
+      "figure_number": "3",
+      "figure_id": "figure-af729e888ac33300b929562b",
+      "before_source_lines": 2,
+      "after_source_lines": 4,
+      "after_original_segments": [
+        {
+          "block_id": "793d0f639e85cc00d940-p0003-l000000",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 31,
+          "exact_quote": "FIGURE 3: Histopathology slides",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            190.5452042775,
+            185.1451271661649,
+            340.06423924342135,
+            195.87311984715598
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0003-l000001",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 70,
+          "exact_quote": "Hematoxylin and eosin (H&E) stained sections of lung biopsy specimens.",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            190.5452042775,
+            202.86589087751986,
+            403.8231754942409,
+            210.24138584570096
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0003-l000002",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 76,
+          "exact_quote": "Panel A: Right upper lobe lesion demonstrating adenocarcinoma (400×, arrow).",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            190.5452042775,
+            223.27158326801987,
+            421.34056216035026,
+            230.64707823620097
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "793d0f639e85cc00d940-p0003-l000003",
+          "text_version": "s3v3-4b1cda0e6902aba7c75e81f0cddde5d7",
+          "start": 0,
+          "end": 72,
+          "exact_quote": "Panel B: Left lower lobe specimen showing carcinoid tumor (400×, arrow).",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            190.5452042775,
+            243.67727565851987,
+            406.16757949131124,
+            251.05277062670098
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "Figure_ID_and_image_bytes_unchanged": true,
+      "whole_regions": [
+        {
+          "asset_id": "figure-af729e888ac33300b929562b-0",
+          "path": "docs/acceptance/resume-2026-11-11/in07/repaired/figure-assets/figure-af729e888ac33300b929562b-p3-0.png",
+          "sha256": "2bf26fafa596d745afa98f9f4b07181832638c87eac8dabc4ace5bc0904d1964",
+          "mime_type": "image/png",
+          "physical_page": 3,
+          "bbox": [
+            182.33563232421875,
+            56.429176330566406,
+            530.8933715820312,
+            173.4375
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 698,
+          "height_px": 235,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+          "visual_modification": "none"
+        }
+      ],
+      "verification_status": "needs_review",
+      "human_approved": false
+    }
+  ],
+  "negative_boundaries": [
+    "Figure2 following Given… body paragraph remains outside caption",
+    "Figure3 following Discussion heading/body remains outside caption",
+    "Different column/frame/Figure/Table and larger/body-style boundaries remain guarded"
+  ],
+  "validation": {
+    "Figure_Python_tests": {
+      "passed": 17,
+      "failed": 0,
+      "log": "figure-repair-tests.log"
+    },
+    "includes": "IN07 actual 6/8/4, IN06 actual 4/4/4 and three body negative boundaries, IN04 unchanged complete captions/image SHA, representative L01/L05/L07, synthetic wrapped-title/paragraph/abbreviation case and boundary negatives"
+  },
+  "root_delegated_original_page_readback": {
+    "performed_by": "Main session GPT-6-Astra max",
+    "basis": "Actual original IN07 pages2/3 and all3 final whole-Figure PNGs plus final 6/8/4 caption raw lines",
+    "visible_match": [
+      "Figure1 A/B,11×12 and10×16mm",
+      "Figure2 A/B,SUV8.2 and3.5 with original abbreviations",
+      "Figure3 H&E plus both400× paragraphs",
+      "Arrows and whole A/B image boundaries visible; Given…/Discussion not mixed"
+    ],
+    "meaning": "Current literal source/structure check by delegated AI; no medical correctness or per-record business approval; independent identity not restored."
+  },
+  "all_Figure_pairings_still_need_review": true,
+  "medical_quality_approved": false,
+  "actual_human_reviewed_count": 0,
+  "production_record_approvals": 0,
+  "new_model_calls": 0,
+  "current_effective_API_allowance": 0,
+  "complete_independent_S6_passed": false,
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3
+}

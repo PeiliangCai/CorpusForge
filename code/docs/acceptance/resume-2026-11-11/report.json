@@ -1,0 +1,501 @@
+{
+  "schema_version": "t1-resume-engineering-report-1",
+  "reported_at_utc": "2026-11-11T11:30:51.530773+00:00",
+  "status": "engineering_handoff_complete_ordinary_enabled_all_experiments_closed_complete_S2_S6_S7_unpassed",
+  "formal_reviews": {
+    "used": 3,
+    "maximum": 3,
+    "additional": 0
+  },
+  "authority": "authority.json",
+  "autonomous_window_control": "window-control.json",
+  "plan": {
+    "path": "plan.json",
+    "sha256": "ad6375beabe1808370f9bb70aabbcc8612c03282f51192b143159427f877aa6b"
+  },
+  "first_round": {
+    "source_id": "IN04",
+    "already_exposed": true,
+    "new_independent_sample_count": 0,
+    "scope": "One actual fresh-container browser upload→Docling CPU→unchanged B0/Pi→whole-document summary→3 candidate exports",
+    "passed_within_model_authorized_text_scope": true,
+    "state": "partial",
+    "full_document_processing_claimed": false,
+    "full_S6_independent_gate_passed": false,
+    "run_id": "run-1cd86d00-1256-465a-8a9a-cddd2a8294ac",
+    "input_sha256": "50427f2871550116a3ef9530b09fe5a8591299f6352ab58af1aaa46273437a3b",
+    "physical_pages": 6,
+    "HTTP_admission_at": "2026-11-11T09:18:38.974Z",
+    "first_model_request_at": "2026-11-11T09:18:52.178Z",
+    "model_execution_finished_at": "2026-11-11T09:24:40.542Z",
+    "allowance_closed_at": "2026-11-11T09:24:40.773Z",
+    "execution_seconds_including_parse_until_close": 361.799,
+    "driver_seconds_including_prepare_browser_cleanup": 377.031,
+    "summary_requests": 7,
+    "runtime_tool_correction_events": 0,
+    "runtime_correction_branch_caveat": "This successful live run did not require either corrected-argument branch; those branches were exercised through the installed SDK against local fixtures.",
+    "usage": {
+      "physical_requests": 21,
+      "provider_reported_input_tokens": 283335,
+      "provider_reported_output_tokens": 10170,
+      "budget_accounted_input_tokens": 283335,
+      "budget_accounted_output_tokens": 10170,
+      "cache_read_tokens": 53976,
+      "reasoning_tokens_included_in_output": 4759,
+      "missing_usage_requests": 0,
+      "actual_currency_cost": null,
+      "currency_cost_status": "unknown_gateway_billing",
+      "usage_final": true,
+      "unused_requests_closed": 3,
+      "all_unused_allowance_closed": true,
+      "current_effective_API_allowance": 0,
+      "current_paid_requests_running": false
+    },
+    "output": {
+      "current_candidates": 8,
+      "primary_pending": 8,
+      "background_suggestions": 0,
+      "model_primary_assessment": "visual_evidence_suggested for all8; unapproved",
+      "review_status": "needs_context for all8",
+      "figure_pairing_status": "pending for all8",
+      "delivery_validation": {
+        "status": "passed",
+        "rejected_delivery_written": false
+      },
+      "downloads": [
+        {
+          "kind": "candidate_jsonl",
+          "bytes": 19316,
+          "sha256": "48c5be2cc0b203af9eb428402ff4b4730afe121037574d79ad438cc924afdb0d"
+        },
+        {
+          "kind": "candidate_csv",
+          "bytes": 3662,
+          "sha256": "69a93ad85a1a1c80a2972ec6a7b565f4c24c044523b53de06c10b1861612585e"
+        },
+        {
+          "kind": "candidate_package",
+          "bytes": 1782434,
+          "sha256": "1cca9b12f0a64c680b6dd0f542c2d677867ee7f2b9c4fca41aafded004c84c5d"
+        }
+      ],
+      "sample_pack": "review-pack.json",
+      "mechanical_source_audit": "mechanical-source-audit.json",
+      "root_delegated_source_review_status": "completed_new_current_source_only_check;8/8visible;duplication/context/medical limits preserved",
+      "source_review_record": "source-review.json",
+      "source_same_sentence_duplicates": {
+        "CT_body_members": 2,
+        "PET_body_members": 3,
+        "not_independent_fact_count": true
+      }
+    },
+    "coverage": {
+      "all_source_blocks": 403,
+      "model_authorized_source_blocks": 389,
+      "completed_source_blocks": 389,
+      "failed_source_blocks": 0,
+      "selected_source_block_processing_complete": true,
+      "whole_document_summary_complete": true,
+      "task_processing_complete": false,
+      "task_processing_blockers": [
+        "source_glyph_quarantine_unresolved"
+      ],
+      "source_glyph_quarantined_blocks": 14,
+      "glyph_gaps_not_completed_or_task_excluded": true,
+      "image_text_unverified_pages": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "full_document_extraction_completed": false,
+      "source_fidelity_human_verified": false,
+      "medical_recall_proven_by_coverage": false
+    },
+    "identity": {
+      "requested_model": "gpt-6-luna",
+      "reasoning_effort": "medium",
+      "api": "openai-responses",
+      "returned_name_distribution": {
+        "gpt-6-luna": 21
+      },
+      "identity_status_distribution": {
+        "matched": 21
+      },
+      "new_trial_mapping_observed_live": false,
+      "new_mapping_basis": "User acceptance for this trial only; no supplier confirmation/underlying weight verification",
+      "ordinary_policy_expanded": false
+    },
+    "isolation_and_cleanup": {
+      "container_stopped": true,
+      "private_key_copy_removed": true,
+      "isolated_business_reviews": 0,
+      "isolated_annotations": 0,
+      "ordinary_preserved_by_driver": true,
+      "schema_version": "t1-post-run-integrity-1",
+      "observed_at": "2026-11-11T09:26:19.693290+00:00",
+      "production_table_count": 13,
+      "all_13_tables_rows_unchanged": true,
+      "private_env_bytes_unchanged": true,
+      "old_frozen_four_reports_unchanged": true,
+      "new_model_requests_for_collection": 0,
+      "private_key_copy_absent": true,
+      "production_business_approval_added": false
+    }
+  },
+  "verification_boundaries": {
+    "S2_real_medical_catalog_approved": false,
+    "complete_independent_S6_passed": false,
+    "source_limited_S7_deployment_workflow_passed": true,
+    "full_PDF_task_processing_passed": false,
+    "medical_quality_approved": false,
+    "real_human_reviewed_count": 0,
+    "production_record_approvals": 0,
+    "old_failed_reports_unchanged": true,
+    "final_UI_zeroAPI_controlled_full_path_passed": true,
+    "new_final_stack_real_model_full_workflow_passed": false,
+    "first_IN04_paid_round_used_final_UI": false,
+    "ordinary_engineering_extraction_enabled": true,
+    "full_S7_gate_passed": false,
+    "last_reliability_patch_AGICTO_recovery_live_verified": false
+  },
+  "evidence": {
+    "preflight": "preflight.json",
+    "driver": "execution-report.json",
+    "browser": "browser-report.json",
+    "allowance_and_request_ledger": "allowance-ledger-and-state.json",
+    "final_source_IR": "source-document-ir.json",
+    "final_source_figures": "source-figure-catalog.json",
+    "final_result": "final-result.json",
+    "final_summary": "final-summary.json",
+    "final_coverage": "final-coverage.json",
+    "final_delivery": "final-delivery.json",
+    "source_review_materials": "review-pack.json",
+    "candidate_package": "candidate_package.tar.gz",
+    "current_UI_refinement": "ui/report.json",
+    "current_document_sync": "documentation-sync.json",
+    "root_delegated_new_current_source_review": "source-review.json",
+    "ordinary_final_UI_runtime": "ordinary-final-UI-runtime.json",
+    "generic_source_repairs": "in06/repair-report.json",
+    "source_repair_freeze": "source-repair-freeze.json",
+    "final_code_policy_freeze": "final-code-policy-freeze.json",
+    "IN07_first_failed_then_parser_regression_repair": "in07/repair-report.json",
+    "unified_final_UI_parser_image": "final-stack-image/report.json",
+    "second_round_final_stack": "in06/model-regression/report.json",
+    "final_UI_controlled_full_workflow": "final-ui-controlled-smoke/execution-report.json",
+    "minimal_redacted_SDK_diagnostics": "sdk-diagnostics-report.json",
+    "current_diagnostic_source_freeze": "diagnostic-source-freeze.json",
+    "third_round_final_stack": "in07/model-regression/report.json",
+    "current_delivery_source_freeze": "delivery-source-freeze.json",
+    "ordinary_enable_authority": "ordinary-enable-authority.json",
+    "current_ordinary_enabled_runtime": "ordinary-enabled-runtime.json",
+    "IN06_later_exact_error_correlation": "in06/model-regression/diagnostic-correlation.json",
+    "current_delivery_local_image": "final-stack-image/delivery-image-report.json",
+    "current_UI": "ui/report.json",
+    "last_busy_retry_test_log": "high-load-related-tests.log",
+    "existing_retry_deadline_concurrency_test_log": "high-load-existing-boundaries.log",
+    "last_reliability_typecheck": "high-load-typecheck.log",
+    "final_enabled_UI_readonly": "ui/delivery-readonly-report.json",
+    "final_integrity": "final-integrity.json",
+    "current_documentation": "documentation-sync.json"
+  },
+  "remaining_items": [
+    "Current ordinary extraction is enabled for explicit user clicks; supplier intermittent high-load remains possible. Last exact-busy retry patch was verified offline only; no paid recovery test after closing24requests.",
+    "S2 medical catalog, complete independent S6 and full S7 acceptance remain false; IN06/IN07 are exposed parser regressions, with preserved first source-structure failures.",
+    "IN04 unresolved14glyph blocks, image/OCR text, Figure medical relationships and actual human subject-context/per-record approval remain unverified."
+  ],
+  "next_paid_action": "No agent paid experiment remains authorized. Ordinary future user-click tasks retain80requests/2m input/120k output/30min and2slots/cancellation; no background automatic paid loop.",
+  "source_repairs": {
+    "IN06": {
+      "status": "generic_caption_frame_and_complete_bibliography_format_repairs_frozen_targeted_regressions_passed",
+      "source_role": "Parser regression after its observed original-version defects were used for repair; extraction model unseen and no complete pipeline independent success claim.",
+      "caption_lines_before": [
+        1,
+        1,
+        2
+      ],
+      "caption_lines_after": [
+        4,
+        4,
+        4
+      ],
+      "bibliography_excluded_blocks_before": 4,
+      "bibliography_excluded_blocks_after": 39,
+      "complete_bibliography_entries_excluded": 19,
+      "explicit_entries": 22,
+      "remaining3_reasons": [
+        "compound surname Dela Cruz",
+        "five-digit source year19911",
+        "institutional WHO author"
+      ],
+      "new_model_calls": 1,
+      "current_model_plan_dispatched": true,
+      "last_model_trial_status": "failed_closed_1request",
+      "model_trial_report": "in06/model-regression/report.json"
+    },
+    "IN07": {
+      "status": "independent_first_source_structure_check_failed_preserved_then_bounded_parser_regression_repair",
+      "source_role": "Parser regression. Extraction model unseen; its first independent structure check failed, and repair using its observed layout prevents an independent complete-pipeline success claim.",
+      "caption_lines_before": [
+        3,
+        2,
+        2
+      ],
+      "caption_lines_after": [
+        6,
+        8,
+        4
+      ],
+      "Figure_tests_passed": 17,
+      "new_model_calls": 2,
+      "complete_independent_S6_passed": false,
+      "last_model_trial_status": "failed_provider_reported_high_load_after2requests_closed_last_experiment",
+      "model_trial_report": "in07/model-regression/report.json"
+    }
+  },
+  "second_round": {
+    "source_id": "IN06",
+    "status": "failed_first_provider_HTTP200_SDK_error_closed_without_retry",
+    "report": "in06/model-regression/report.json",
+    "usage": {
+      "physical_requests": 1,
+      "provider_reported_input_tokens": null,
+      "provider_reported_output_tokens": null,
+      "budget_accounted_input_tokens": 32768,
+      "budget_accounted_output_tokens": 8192,
+      "missing_usage_requests": 1,
+      "actual_currency_cost": null,
+      "currency_cost_status": "unknown_gateway_billing",
+      "provider_usage_status": "missing; reservation is not actual confirmed cost",
+      "unused_requests_closed": 23,
+      "all_unused_allowance_closed": true,
+      "current_effective_API_allowance": 0,
+      "current_paid_requests_running": false
+    },
+    "model_or_usage_identity_not_observed": true,
+    "no_retry": true,
+    "later_error_literal_correlation": "in06/model-regression/diagnostic-correlation.json"
+  },
+  "window_usage": {
+    "physical_requests": 24,
+    "provider_reported_input_tokens": 288117,
+    "provider_reported_output_tokens": 10185,
+    "reported_totals_have_missing_requests": true,
+    "budget_accounted_input_tokens": 395982,
+    "budget_accounted_output_tokens": 26569,
+    "cache_read_tokens_reported": 53976,
+    "cache_write_tokens_reported": 4779,
+    "reasoning_tokens_reported": 4759,
+    "missing_usage_requests": 2,
+    "actual_currency_cost": null,
+    "currency_cost_status": "unknown_gateway_billing",
+    "unused_requests_closed": 48,
+    "all_unused_allowance_closed": true,
+    "current_effective_API_allowance": 0,
+    "current_paid_requests_running": false,
+    "rounds_completed": 3
+  },
+  "third_round": {
+    "source_id": "IN07",
+    "status": "failed_provider_reported_high_load_after2requests_closed_last_experiment",
+    "report": "in07/model-regression/report.json",
+    "usage": {
+      "physical_requests": 2,
+      "provider_reported_input_tokens": 4782,
+      "provider_reported_output_tokens": 15,
+      "budget_accounted_input_tokens": 79879,
+      "budget_accounted_output_tokens": 8207,
+      "missing_usage_requests": 1,
+      "cache_read_tokens_reported": 0,
+      "cache_write_tokens_reported": 4779,
+      "reasoning_tokens_reported": 0,
+      "actual_currency_cost": null,
+      "currency_cost_status": "unknown_gateway_billing",
+      "unused_requests_closed": 22,
+      "all_unused_allowance_closed": true,
+      "current_effective_API_allowance": 0,
+      "current_paid_requests_running": false
+    },
+    "SDK_error_message": "Service load is too high, please try again later",
+    "no_retry_or_additional_experiment": true
+  },
+  "all_experimental_allowances_closed": true,
+  "current_effective_experimental_API_allowance": 0,
+  "ordinary_runtime": {
+    "enabled": true,
+    "controlled_fixture": false,
+    "frontend": "http://127.0.0.1:30141/",
+    "backend": "http://127.0.0.1:3210",
+    "runtime_report": "ordinary-enabled-runtime.json",
+    "source_freeze": "delivery-source-freeze.json",
+    "per_click_limits": {
+      "requests": 80,
+      "input_tokens": 2000000,
+      "output_tokens": 120000,
+      "seconds": 1800,
+      "slots": 2,
+      "transient_retries": 2
+    },
+    "agent_Start_clicks_or_model_calls_after_enabling": 0,
+    "future_user_click_required_for_paid_task": true,
+    "enabled_UI_readonly_passed": true,
+    "final_UI_report": "ui/delivery-readonly-report.json"
+  },
+  "final_reliability_patch": {
+    "purpose": "Exact observed service-load response gets at most2physical retries before output, same completed-tool context; no outer-agent retry stacking, identity/unknown/limits/cancel stop",
+    "tests": {
+      "related": 30,
+      "new_boundary_cases": 9,
+      "existing_transient_deadline_concurrency": 4,
+      "typecheck": "passed"
+    },
+    "AGICTO_recovery_live_verified": false,
+    "source_freeze": "delivery-source-freeze.json"
+  },
+  "stage_status": [
+    {
+      "id": "S0",
+      "status": "passed",
+      "stage_passed": true,
+      "engineering_complete_for_current_scope": true
+    },
+    {
+      "id": "S1",
+      "status": "passed",
+      "stage_passed": true,
+      "engineering_complete_for_current_scope": true
+    },
+    {
+      "id": "S2",
+      "status": "engineering_complete_real_medical_catalog_unverified",
+      "stage_passed": false,
+      "engineering_complete_for_current_scope": true
+    },
+    {
+      "id": "S3",
+      "status": "passed_scoped_engineering",
+      "stage_passed": true,
+      "engineering_complete_for_current_scope": true
+    },
+    {
+      "id": "S4",
+      "status": "accepted_current_development_iteration",
+      "stage_passed": true,
+      "engineering_complete_for_current_scope": true
+    },
+    {
+      "id": "S5",
+      "status": "accepted_delegated_functional_engineering_and_UI",
+      "stage_passed": true,
+      "engineering_complete_for_current_scope": true
+    },
+    {
+      "id": "S6",
+      "status": "not_passed_complete_independent_validation",
+      "stage_passed": false,
+      "engineering_complete_for_current_scope": false
+    },
+    {
+      "id": "S7",
+      "status": "not_passed_full_real_deployment_gate",
+      "stage_passed": false,
+      "engineering_complete_for_current_scope": false
+    }
+  ],
+  "stage_status_basis": "Frozen11/9matrix scope retained. Current UI,source/parser fixes,real trial outcomes and ordinary enable are engineering evidence only; no complete S2,S6,S7 upgrade or medical approval.",
+  "frozen_historical_matrix": "code/docs/acceptance/finalization-2026-11-09/stage-matrix.json",
+  "delivery_version": {
+    "ordinary_runtime_mode": "Existing host Node backend3210 and validated Next build30141; current runtime source matches delivery-source-freeze.",
+    "current_delivery_local_image": {
+      "tag": "t1-workbench:delivery-20261111",
+      "image_id": "sha256:4d2a334b0bf50663503b33a6ddc7d9631bc9a05551a198c0053409ab3a2e9904",
+      "report": "final-stack-image/delivery-image-report.json",
+      "source_freeze": "delivery-source-freeze.json",
+      "image_source_files_verified": 1176,
+      "UI_artifacts_verified": 161,
+      "UI_BUILD_ID": "9WeI9zkvHd20Y0lBTDX5C",
+      "local_registry_push_performed": false,
+      "cold_build_revalidated": false,
+      "build_method": "Exact local existing image layers plus frozen source files and previously validated UI artifact; no npm/pip/apt/Next rebuild."
+    },
+    "last_actual_paid_image": {
+      "image_id": "sha256:32a0e53ab6be8bed82c579b8be589cbb25787f076d5133f74163999724d76977",
+      "source": "IN07",
+      "report": "in07/model-regression/report.json",
+      "status": "failed_supplier_reported_high_load;0currentrecords/summarynotreached"
+    },
+    "changes_after_last_paid_run": [
+      "packages/agent/src/extraction-pi.ts: physical response retry accounting and no outer retry stacking",
+      "packages/agent/src/extraction-high-load-retry.ts: new exact-busy no-output retry adapter",
+      "tests/extraction/fixtures/runtime-responses.ts: local error-stream fixtures only",
+      "tests/extraction/high-load-retry.test.ts:9boundary scenarios"
+    ],
+    "current_delivery_AGICTO_after_patch_live_verified": false,
+    "ordinary_public_model_flag": "true incode/deploy/local/workbench.env; image safe default remainsfalse until explicitly configured",
+    "documentation_difference": "Current repository README/deploy README are synchronized after the source execution freeze; these documentation edits may differ from image snapshot. Runtime124related source pins and UI artifact remain frozen.",
+    "documentation_source_snapshot_differences": [
+      {
+        "path": "code/deploy/README.md",
+        "change_scope": "Post-freeze current documentation only; runtime source/UI unchanged.",
+        "frozen_image_source_sha256": "c7dabd28c9621aa71dbe6d177b6ca381629a79dab384697eb3aa911cf896a101",
+        "current_repository_sha256": "b2691d0e9b59e982bce63a489bd87c8f0b4f1be5531c0b60ae161400e5440ef1"
+      }
+    ],
+    "current_documentation_outside_image_source_manifest": [
+      "code/README.md"
+    ]
+  },
+  "actual_decisions": {
+    "user_delegation_quote": "接下来3小时你自行执行即可，我到时候直接看最终效果。",
+    "window": "2026-11-11T09:15:01Z–12:15:01Z",
+    "current_experimental_allowance": 0,
+    "all_paid_rounds_finished_before_hard_stop": true,
+    "formal_reviews_used": 3,
+    "formal_review_limit": 3,
+    "B0_Docling_CPU_Pi_Next_preserved": true,
+    "precise_extra_returned_name_basis": "User and delegated deployment choice only; no supplier confirmation/weight identity proof, no prefix stripping.",
+    "ordinary_enable_is_not_full_S7_acceptance": true
+  },
+  "identity_observed_this_window": {
+    "requested_model": "gpt-6-luna",
+    "reasoning_effort": "medium",
+    "API": "openai-responses",
+    "known_literal_returned_names": {
+      "gpt-6-luna": 22
+    },
+    "matched_metadata_requests": 22,
+    "unknown_model_requests_due_to_early_provider_error": 2,
+    "new_data_zone_alias_observed_live": false,
+    "underlying_weights_authenticated": false
+  },
+  "continuity_handoff": {
+    "implementation_test_owner": "GPT-6.1-Sol max",
+    "orchestrator_and_daily_quality_owner": "Main session GPT-6-Astra max",
+    "formal_reviews_remain": "3/3,no additional round",
+    "paid_work": "All3plans,dispatches,ledgers,failed and successful outputs preserved; no additional API/model experiment authorized.",
+    "source_roles": "IN04 already exposed; IN06/IN07 now parser regressions after their first source defects, not independent passed papers.",
+    "ordinary_running_services": "Keep ordinary frontend30141/backend3210running; model enabled for explicit user clicks, no automatic task/resume/loop.",
+    "keys_and_data": "Private.env bytes and13ordinary tables unchanged; all3experimental temporary key copies removed; no production approvals/imports.",
+    "pending_only": "No remaining authorized engineering action. Medical/source/independent-validation gaps and supplier recovery remain explicitly unverified, not queued paid experiments.",
+    "temporary_note_cleanup": "Completed after evidence handoff: removed2owned temporary notes; use this mainreport and linked evidence for future continuity.",
+    "no_commit_or_push": true
+  },
+  "delivery_completion": {
+    "ordinary_runtime": "ordinary-enabled-runtime.json",
+    "final_UI_readonly": "ui/delivery-readonly-report.json",
+    "UI_checks_passed": 4,
+    "image": "final-stack-image/delivery-image-report.json",
+    "current_documentation": "documentation-sync.json",
+    "documentation_validated_files": 16,
+    "documentation_changed_files": 15,
+    "Word_pagination_visually_reviewed": false,
+    "all_engineering_work_authorized_this_window_completed": true,
+    "all_paid_experiments_and_allowances_closed": true,
+    "final_integrity": "final-integrity.json",
+    "temporary_task_notes_cleanup": {
+      "completed": true,
+      "removed_owned_note_files": 2,
+      "scope": "Only this completed task’s temporary continuity/baseline notes; all source snapshots,trial sentinels/volumes,audit/failure evidence and permanent.agent rules retained."
+    }
+  }
+}

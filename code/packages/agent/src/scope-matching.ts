@@ -21,7 +21,7 @@ export function containsLiteral(source: string, value: string): boolean {
 }
 
 function catalogEnabled(catalog: EvidenceCatalog, options: ScopeMatchOptions): boolean {
-  return catalog.status === 'approved' && (!catalog.fixture || options.fixture === true) ||
+  return catalog.status === 'operator_configured' && !catalog.fixture || catalog.status === 'approved' && (!catalog.fixture || options.fixture === true) ||
     catalog.status === 'development_only' && options.allowDevelopmentCatalog === true;
 }
 function usable(entry: { approval_status: EvidenceCatalog['status']; source: string }, catalog: EvidenceCatalog): boolean {
@@ -42,6 +42,8 @@ function observedGrounding(observation: Observation): boolean {
 export function evidenceScopeIssues(scope: EvidenceScope, catalog: EvidenceCatalog, options: ScopeMatchOptions = {}): string[] {
   if (!Value.Check(EvidenceCatalogSchema, catalog)) return ['evidence_catalog_schema_invalid'];
   const issues: string[] = [];
+  if (catalog.status === 'operator_configured' && (scope.features.mode !== 'all' || scope.features.binding_ids.length)) issues.push('feature_scope_removed');
+  if (catalog.status === 'operator_configured' && (catalog.features.length || catalog.bindings.length)) issues.push('operator_catalog_features_not_supported');
   if (scope.catalog_version !== catalog.catalog_version) issues.push('catalog_version_mismatch');
   const selected = scope.cancers.mode === 'selected' || scope.image_types.mode === 'selected' || scope.features.mode === 'selected';
   const enabled = catalogEnabled(catalog, options);
@@ -112,6 +114,16 @@ export function matchEvidenceScope(evidence: EvidenceSubmission | EvidenceRecord
   };
   const cancerIds = resolveObserved('cancer', evidence.disease_or_lesion, catalog.cancers, scope.cancers.ids, scope.cancers.mode);
   const modalityIds = resolveObserved('modality', evidence.modality, catalog.image_types, scope.image_types.ids, scope.image_types.mode);
+  // Current operator choices only restrict cancer/modality. Feature names remain open original-source observations.
+  if (catalog.status === 'operator_configured') {
+    if (scope.cancers.mode === 'selected' && scope.image_types.mode === 'selected' && cancerIds.length && modalityIds.length &&
+      !catalog.image_types.some(image => modalityIds.includes(image.id) && image.cancer_ids.some(id => cancerIds.includes(id)))) {
+      mark('out_of_scope', 'cancer_modality_pair_not_configured');
+    }
+    if ('feature_binding_id' in evidence && evidence.feature_binding_id !== null) mark('out_of_scope', 'feature_binding_removed');
+    result.feature_match = 'new_term';
+    return result;
+  }
   const requestedBinding = 'feature_binding_id' in evidence ? evidence.feature_binding_id : evidence.normalized_terms[0]?.binding_id ?? null;
   const matchingBindings = enabled && evidence.feature_name_raw ? catalog.bindings.flatMap(binding => {
     const feature = catalog.features.find(f => f.feature_id === binding.feature_id);

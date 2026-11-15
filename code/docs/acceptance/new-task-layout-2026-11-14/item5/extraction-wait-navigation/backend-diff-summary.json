@@ -1,0 +1,72 @@
+{
+  "basis": "this feedback pre-edit snapshots; no full git diff; frontend separate exact diff",
+  "files": [
+    {
+      "path": "README.md",
+      "new": false,
+      "before_sha256": "04f4468446fc4875fb3e078e82338a462701aa9ee78adca21204d8da02ff2bdb",
+      "after_sha256": "d7edd92d326b0b0dbe9fd26010b8f2f880cf57778cb27bb97a99630c407c0593"
+    },
+    {
+      "path": "apps/server/src/workbench-progress.ts",
+      "new": false,
+      "before_sha256": "874f3b299f7859b193de8464d31943b8cd51135107b6b08aac9ec517ae6a0544",
+      "after_sha256": "f84a5fdc7ed1e7659d2e6187ace0aa4870eff14ab4940733b8176d9a8ded79bb"
+    },
+    {
+      "path": "apps/server/src/workflow.ts",
+      "new": false,
+      "before_sha256": "eab69f9ec9cedace7296c226565c94b5c67c901d9da700cb29dd362e05beed17",
+      "after_sha256": "11c701fe34de9481995f69b74e0c0e5916998229a9eb6e9ea1f49e152bfc268b"
+    },
+    {
+      "path": "apps/server/test/run-activity-progress.test.ts",
+      "new": true,
+      "before_sha256": null,
+      "after_sha256": "777657c62c63d4a9e0d37d029b72dfe86d37476112e50d0e627c997f26ccaac5"
+    },
+    {
+      "path": "apps/server/test/termination-reason.test.ts",
+      "new": true,
+      "before_sha256": null,
+      "after_sha256": "4d668c1e04a98ce22458a4ca54d23262e5629967db1843c4e3f03b0a8aab324c"
+    },
+    {
+      "path": "deploy/README.md",
+      "new": false,
+      "before_sha256": "c18a8404e7fe2ed751a9bd17312fe4a048ea001475c355f73595ad08efd541d4",
+      "after_sha256": "0be9b3541c839d0400006e5f059d60e01d1fc202c984a1b8a9cf80e7ab2bc728"
+    },
+    {
+      "path": "packages/agent/src/extraction-budget.ts",
+      "new": false,
+      "before_sha256": "a3bda40ee4a510c1db9abe2bc16c31d5886b92c51f94d5fed4259132a75e6540",
+      "after_sha256": "886700c024b1e9b51c1dbd18c23530e76bff212a95a95fc403af5497143a7509"
+    },
+    {
+      "path": "packages/agent/src/extraction-pi.ts",
+      "new": false,
+      "before_sha256": "71f31e7fe7fad85b97b37bb4955a80442ee641420b0660167b1632202b860923",
+      "after_sha256": "5a3198d39a9117443edfbd498314098f1f8eff519010667328008609a882c7ec"
+    },
+    {
+      "path": "packages/agent/src/extraction-run.ts",
+      "new": false,
+      "before_sha256": "c117a3a174487032426fceebfd895dcd3cafa8dca018e5aa1e5c1568c3b47c01",
+      "after_sha256": "83aa59fda6dacdb2fe2f04c9b6cbe36b70fca35643bdc068a5de442c5a082f7a"
+    },
+    {
+      "path": "packages/contracts/src/workbench.ts",
+      "new": false,
+      "before_sha256": "bc23a71dfc1a00ffbda6967d7c5a7da8d13d857c967939b566d0b853e9904960",
+      "after_sha256": "a7b95ff3616a63eda16dc31fa4e13db6c08687392dcb57575a55c41ba944f747"
+    },
+    {
+      "path": "tests/extraction/runtime-activity.test.ts",
+      "new": true,
+      "before_sha256": null,
+      "after_sha256": "11bdd70a9bb628ba2b5a672238130de4739bf9218969fb4b6b9d7afa533f9dcb"
+    }
+  ],
+  "sha256": "05e1c0de38278005095fe2b91d7865f36ba696fb5757949c1a5edbd0328521c9"
+}

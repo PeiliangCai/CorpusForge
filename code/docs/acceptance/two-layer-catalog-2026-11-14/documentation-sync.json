@@ -1,0 +1,773 @@
+{
+  "schema_version": "documentation-sync-1",
+  "task": "two-layer-catalog-2026-11-14",
+  "checked_at_utc": "2026-11-14T08:04:34.829125+00:00",
+  "status": "passed_document_structure_semantics_and_preservation_with_scoped_engineering_and_deployment",
+  "scope": "15 current planning documents synchronized for two-layer runtime semantics and the main-session S2 current preparation/configuration engineering acceptance; application checks and deployment supplied by their owner.",
+  "engineering_report": "code/docs/acceptance/two-layer-catalog-2026-11-14/report.json",
+  "formal_review_record": {
+    "record": "code/docs/acceptance/two-layer-catalog-2026-11-14/report.json#/formal_reviews",
+    "scope": "The main engineering report owns this task review count; all previous task review counts remain at their original locations."
+  },
+  "checks": {
+    "all_changed_json_parsed": true,
+    "existing_historical_subtrees_checked": 128,
+    "existing_historical_subtrees_unchanged": true,
+    "existing_budget_review_audit_and_engineering_fact_objects_checked": 57,
+    "protected_fact_objects_unchanged": true,
+    "original_E09_exactly_preserved_with_current_override": true,
+    "old_current_S2_material_moved_once_and_preserved": true,
+    "active_scope_contracts_equal_and_exactly_two_layers": true,
+    "open_feature_extraction_without_vocabulary": true,
+    "explicit_legacy_feature_restrictions_rejected_for_new_runs": true,
+    "runtime_source_schema_and_stable_ids_observed_match": true,
+    "operator_configuration_is_not_medical_approval": true,
+    "S2_current_preparation_stage_accepted": true,
+    "S2_medical_quality_approval": false,
+    "medical_quality_approval_not_invented": true,
+    "CSV_JSON_consistency": [
+      {
+        "file": "开发任务清单.csv",
+        "new_inconsistencies": 0,
+        "preexisting_unrelated_differences_preserved": 0
+      },
+      {
+        "file": "开发阶段与验收.csv",
+        "new_inconsistencies": 0,
+        "preexisting_unrelated_differences_preserved": 2
+      },
+      {
+        "file": "待讨论实现决策.csv",
+        "new_inconsistencies": 0,
+        "preexisting_unrelated_differences_preserved": 5
+      },
+      {
+        "file": "验收清单.csv",
+        "new_inconsistencies": 0,
+        "preexisting_unrelated_differences_preserved": 3
+      }
+    ],
+    "DOCX_current_hashes_match": true,
+    "evidence_fields": {
+      "existing_field_spec_path": "方案/子任务T1/抽取结果字段规范.csv",
+      "observed_sha256": "fcf56075caf8f6bc96a338946f161afa6785a3e7e4f42427bb2318ecbd8bb992",
+      "rows": 35,
+      "base_fields": 28,
+      "documentation_executor_modified_field_spec": false,
+      "extracted_feature_information_and_original_evidence_fields_retained": true
+    },
+    "application_tests_run_by_documentation_executor": false,
+    "Word_pagination_visually_reviewed": false,
+    "paid_model_calls_by_documentation_executor": 0,
+    "deployment_by_documentation_executor": false
+  },
+  "files": [
+    {
+      "path": "方案/子任务T1/T1智能体开发计划.docx",
+      "before_sha256": "5d782be1635f3342d5e3e566037d9f54c932ae49b08223a9b24983cd86a409db",
+      "after_sha256": "c6803c0d51bc597ce7a009a90d62172d2f970f50ebcaea5b99725a79bc2ddecd",
+      "zip_integrity": "passed",
+      "member_count": 15,
+      "changed_members": [
+        "word/document.xml"
+      ],
+      "all_other_member_contents_unchanged": true,
+      "unchanged_member_manifest_sha256": "fd08ab006ee854ceb12c996435bea51b5190be893f2d27e91550fca115b2f44f",
+      "paragraph_count": 66,
+      "changed_paragraph_indices_zero_based": [
+        1,
+        6,
+        7,
+        8,
+        31,
+        37,
+        41,
+        42,
+        43,
+        63
+      ],
+      "unrelated_paragraphs_and_XML_bytes_unchanged": true,
+      "all_XML_parts_parse": true,
+      "Word_pagination_visually_reviewed": false
+    },
+    {
+      "path": "方案/子任务T1/T1开发执行说明.docx",
+      "before_sha256": "75f844c6b9dd9764b9d8db8227b51e43634df56631a6af689de319926b45afc8",
+      "after_sha256": "ba75a351d520e6a3fa709355126aff34f789af2d288d163bc27f517791423078",
+      "zip_integrity": "passed",
+      "member_count": 15,
+      "changed_members": [
+        "word/document.xml"
+      ],
+      "all_other_member_contents_unchanged": true,
+      "unchanged_member_manifest_sha256": "30cb7b85fe17d4a6e26c57f96c04d28212567e1904218e56244877398db24cc9",
+      "paragraph_count": 85,
+      "changed_paragraph_indices_zero_based": [
+        1,
+        3,
+        15,
+        16,
+        17,
+        38,
+        55
+      ],
+      "unrelated_paragraphs_and_XML_bytes_unchanged": true,
+      "all_XML_parts_parse": true,
+      "Word_pagination_visually_reviewed": false
+    },
+    {
+      "path": "方案/子任务T1/开发计划.json",
+      "before_sha256": "48dc39a59eece3c3f5d1085a2148fb8ecf8162b702540ebc241bbe31a0508004",
+      "after_sha256": "d869606fe91707b0b1b704b1b21ab5f9b6166e0a7f900edd8213cb333fabb1b8",
+      "json_parsed": true,
+      "changed_current_paths": [
+        "/status",
+        "/revision",
+        "/scope/new_term_behavior",
+        "/scope/feature_scope_status",
+        "/scope/scope_selection/order",
+        "/scope/scope_selection/relationship",
+        "/scope/scope_selection/restricted_feature_behavior",
+        "/scope/scope_selection/unrestricted_feature_behavior",
+        "/scope/scope_selection/out_of_scope_behavior",
+        "/scope/scope_selection/scope_evidence",
+        "/scope/scope_selection/missing_catalog_behavior",
+        "/scope/scope_selection/initial_modes/features",
+        "/scope/scope_selection/initial_status",
+        "/scope/scope_selection/restricted_empty_behavior",
+        "/scope/scope_selection/upstream_change_behavior",
+        "/scope/scope_selection/submit_behavior",
+        "/scope/scope_selection/taxonomy_policy",
+        "/scope/scope_selection/feature_extraction",
+        "/scope/scope_selection/refresh_behavior",
+        "/scope/scope_selection/snapshot_policy",
+        "/scope/scope_selection/explicit_legacy_feature_limit_request",
+        "/scope/scope_selection/legacy_runs_and_exports",
+        "/scope/feature_catalog",
+        "/scope/scope_selector_UI_status",
+        "/scope/scope_catalog",
+        "/architecture/boundaries/1",
+        "/progression/current_stage",
+        "/progression/current_task/0",
+        "/progression/current_task/1",
+        "/progression/current_task/2",
+        "/progression/immediate_order/0",
+        "/progression/immediate_order/1",
+        "/progression/immediate_order/2",
+        "/progression/stages/0/work",
+        "/progression/stages/2/name",
+        "/progression/stages/2/work",
+        "/progression/stages/2/deliverables",
+        "/progression/stages/2/gate",
+        "/progression/stages/2/status",
+        "/progression/stages/2/stage_passed",
+        "/progression/stages/2/current_progress",
+        "/progression/stages/2/current_evidence",
+        "/progression/dependencies_semantics",
+        "/progression/current_stage_kind",
+        "/progression/current_scope_acceptance",
+        "/tasks/0/work",
+        "/tasks/0/engineering_progress",
+        "/tasks/1/engineering_progress",
+        "/tasks/6/status",
+        "/tasks/6/engineering_progress",
+        "/tasks/6/stage_passed",
+        "/tasks/6/current_ordered_audit",
+        "/tasks/6/current_audit_evidence",
+        "/tasks/7/name",
+        "/tasks/7/work",
+        "/tasks/7/deliverable",
+        "/tasks/7/status",
+        "/tasks/7/engineering_progress",
+        "/tasks/7/stage_passed",
+        "/tasks/7/current_ordered_audit",
+        "/tasks/7/current_audit_evidence",
+        "/tasks/7/current_progress_evidence",
+        "/tasks/7/material_file",
+        "/tasks/8/work",
+        "/tasks/8/status",
+        "/tasks/8/engineering_progress",
+        "/tasks/8/stage_passed",
+        "/tasks/8/current_ordered_audit",
+        "/tasks/8/current_audit_evidence",
+        "/tasks/9/status",
+        "/tasks/9/engineering_progress",
+        "/tasks/9/stage_passed",
+        "/tasks/9/current_ordered_audit",
+        "/tasks/9/current_audit_evidence",
+        "/tasks/17/work",
+        "/tasks/19/work",
+        "/tasks/24/work",
+        "/decisions/3/topic",
+        "/decisions/3/status",
+        "/decisions/3/detail",
+        "/decisions/3/confirmed_basis",
+        "/decisions/3/options",
+        "/decisions/4/detail",
+        "/decisions/4/options",
+        "/decisions/12/detail",
+        "/decisions/12/confirmed_basis",
+        "/decisions/18/topic",
+        "/decisions/18/status",
+        "/decisions/18/detail",
+        "/decisions/18/confirmed_basis",
+        "/decisions/18/options",
+        "/decisions/18/impact",
+        "/decisions/20/options",
+        "/future_extensions/0/later_design_topics/1",
+        "/last_status_update_Asia_Shanghai",
+        "/current_improvement/current_next_steps/1",
+        "/current_document_fingerprints/plan_sha256",
+        "/current_document_fingerprints/execution_guide_sha256",
+        "/current_document_fingerprints/validation",
+        "/current_document_fingerprints/validation_status",
+        "/maintenance_revision",
+        "/current_execution_stage",
+        "/current_requirement_formal_reviews/record",
+        "/current_requirement_formal_reviews/scope",
+        "/current_S2_catalog_material",
+        "/historical_before_two_layer_scope_2026_11_14",
+        "/current_scope_catalog"
+      ],
+      "existing_historical_subtrees_checked": 19,
+      "existing_historical_subtrees_unchanged": true,
+      "historical_aggregate_sha256": "234a345f6036b85e48f8c5ff60df3a710cc2a0506e2a29f053d2fd26183838ea",
+      "protected_fact_objects_checked": 12,
+      "protected_fact_objects_unchanged": true
+    },
+    {
+      "path": "方案/子任务T1/当前版本.json",
+      "before_sha256": "f5d4e3b534d841576a7434a5c6070a5b269c9e06429492086f6a20dba4d174bf",
+      "after_sha256": "87318bea1b78804d734e6303039a21606bc904877884722293dbae4e99febb0e",
+      "json_parsed": true,
+      "changed_current_paths": [
+        "/status",
+        "/revision",
+        "/architecture_scope",
+        "/stages/S2/status",
+        "/stages/S2/stage_passed",
+        "/stages/S2/current_progress",
+        "/stages/S2/current_evidence",
+        "/stages/S2/current_pass_condition",
+        "/immediate_execution_order/3",
+        "/execution_guide/confirmed_decisions/E04/rule",
+        "/execution_guide/current_development_target",
+        "/execution_guide/sha256",
+        "/execution_guide/current_plan_sha256",
+        "/execution_guide/current_scope_override",
+        "/last_status_update_Asia_Shanghai",
+        "/current_execution_stage",
+        "/current_execution_work/0",
+        "/current_execution_work/1",
+        "/current_execution_work/2",
+        "/current_improvement/current_next_steps/1",
+        "/current_document_fingerprints/plan_sha256",
+        "/current_document_fingerprints/execution_guide_sha256",
+        "/current_document_fingerprints/validation",
+        "/current_document_fingerprints/validation_status",
+        "/maintenance_revision",
+        "/current_retention_workflow/ordinary_rule",
+        "/current_requirement_formal_reviews/record",
+        "/current_requirement_formal_reviews/scope",
+        "/current_S2_catalog_material",
+        "/historical_before_two_layer_scope_2026_11_14",
+        "/current_scope_catalog"
+      ],
+      "existing_historical_subtrees_checked": 27,
+      "existing_historical_subtrees_unchanged": true,
+      "historical_aggregate_sha256": "b974b57194f00276b5c791ca64b6f88af786666991adcb50c5fce67bd07d4dd4",
+      "protected_fact_objects_checked": 17,
+      "protected_fact_objects_unchanged": true
+    },
+    {
+      "path": "方案/子任务T1/质量与性能验收契约.json",
+      "before_sha256": "6ae79c758c6366c7e1e312c39090ed327553c75ddf84064040a624f08697bfa1",
+      "after_sha256": "08334dc1d193ca6b988e55346193756a5fa62650fcecab37e7a1906990861d43",
+      "json_parsed": true,
+      "changed_current_paths": [
+        "/fixed_evidence_invariants/2",
+        "/confirmed_usage/scope_selection/order",
+        "/confirmed_usage/scope_selection/relationship",
+        "/confirmed_usage/scope_selection/restricted_feature_behavior",
+        "/confirmed_usage/scope_selection/unrestricted_feature_behavior",
+        "/confirmed_usage/scope_selection/out_of_scope_behavior",
+        "/confirmed_usage/scope_selection/scope_evidence",
+        "/confirmed_usage/scope_selection/missing_catalog_behavior",
+        "/confirmed_usage/scope_selection/initial_modes/features",
+        "/confirmed_usage/scope_selection/initial_status",
+        "/confirmed_usage/scope_selection/restricted_empty_behavior",
+        "/confirmed_usage/scope_selection/upstream_change_behavior",
+        "/confirmed_usage/scope_selection/submit_behavior",
+        "/confirmed_usage/scope_selection/taxonomy_policy",
+        "/confirmed_usage/scope_selection/feature_extraction",
+        "/confirmed_usage/scope_selection/refresh_behavior",
+        "/confirmed_usage/scope_selection/snapshot_policy",
+        "/confirmed_usage/scope_selection/explicit_legacy_feature_limit_request",
+        "/confirmed_usage/scope_selection/legacy_runs_and_exports",
+        "/confirmed_usage/scope_catalog",
+        "/functional_invariants/5/name",
+        "/functional_invariants/5/rule",
+        "/functional_invariants/5/status",
+        "/functional_invariants/5/measurement",
+        "/functional_invariants/5/current_observation",
+        "/functional_invariants/5/current_evidence",
+        "/functional_invariants/6/name",
+        "/functional_invariants/6/rule",
+        "/functional_invariants/6/status",
+        "/functional_invariants/6/measurement",
+        "/functional_invariants/6/current_observation",
+        "/functional_invariants/6/current_evidence",
+        "/functional_invariants/7/rule",
+        "/functional_invariants/11/rule",
+        "/scope_evaluation",
+        "/status",
+        "/last_status_update_Asia_Shanghai",
+        "/current_improvement/current_next_steps/1",
+        "/revision",
+        "/current_document_fingerprints/plan_sha256",
+        "/current_document_fingerprints/execution_guide_sha256",
+        "/current_document_fingerprints/validation",
+        "/current_document_fingerprints/validation_status",
+        "/maintenance_revision",
+        "/current_execution_stage",
+        "/current_requirement_formal_reviews/record",
+        "/current_requirement_formal_reviews/scope",
+        "/historical_before_two_layer_scope_2026_11_14",
+        "/configuration_trust_policy",
+        "/current_scope_catalog"
+      ],
+      "existing_historical_subtrees_checked": 35,
+      "existing_historical_subtrees_unchanged": true,
+      "historical_aggregate_sha256": "df0c6ac16cee4ee0f63f191e38a5d9df71b439a55fa85f8307714909f15b0f57",
+      "protected_fact_objects_checked": 6,
+      "protected_fact_objects_unchanged": true
+    },
+    {
+      "path": "方案/子任务T1/材料检查结果.json",
+      "before_sha256": "c98f8f5642e13f540ceac31a0eb7a7ad83271738baace27fe348c81135de09a7",
+      "after_sha256": "f42d56735afd6b9e8a1983b41f5af5260ba2f7e0f65d0581d829ed55b8aa7e82",
+      "json_parsed": true,
+      "changed_current_paths": [
+        "/status",
+        "/date",
+        "/current_state",
+        "/counts/current_document_files_in_this_increment",
+        "/current_document_checks/record",
+        "/current_document_checks/status",
+        "/current_document_checks/scope",
+        "/not_done",
+        "/last_status_update_Asia_Shanghai",
+        "/current_improvement/current_next_steps/1",
+        "/current_document_validation",
+        "/revision",
+        "/current_document_fingerprints/plan_sha256",
+        "/current_document_fingerprints/execution_guide_sha256",
+        "/current_document_fingerprints/validation",
+        "/current_document_fingerprints/validation_status",
+        "/maintenance_revision",
+        "/current_execution_stage",
+        "/current_requirement_formal_reviews/record",
+        "/current_requirement_formal_reviews/scope",
+        "/current_requirement_engineering_status",
+        "/historical_before_two_layer_scope_2026_11_14",
+        "/current_scope_catalog"
+      ],
+      "existing_historical_subtrees_checked": 20,
+      "existing_historical_subtrees_unchanged": true,
+      "historical_aggregate_sha256": "179307c2631aae4f96867b9ab0c9f2b511eda7e49f7a446c35fcb127e3284641",
+      "protected_fact_objects_checked": 8,
+      "protected_fact_objects_unchanged": true
+    },
+    {
+      "path": "方案/子任务T1/开发任务清单.csv",
+      "before_sha256": "007fadd592aa6a11b02caef800d3350b121a0207039adce972561931c07dcac6",
+      "after_sha256": "a5c8e191d4509a7cb141b17660804b49e00ae08c2d2dd04c3e900f3255574f4b",
+      "rows_including_header": 28,
+      "header_and_stable_row_ids_unchanged": true,
+      "encoding_BOM_preserved": true,
+      "changed_rows": [
+        {
+          "id": "T1-R01",
+          "columns": [
+            "具体工作",
+            "工程进度"
+          ]
+        },
+        {
+          "id": "T1-R02",
+          "columns": [
+            "工程进度"
+          ]
+        },
+        {
+          "id": "T1-R03",
+          "columns": [
+            "状态",
+            "工程进度",
+            "现行需求修订"
+          ]
+        },
+        {
+          "id": "T1-R27",
+          "columns": [
+            "工作项",
+            "具体工作",
+            "交付物",
+            "状态",
+            "工程进度",
+            "现行需求修订",
+            "本次工程交付"
+          ]
+        },
+        {
+          "id": "T1-R04",
+          "columns": [
+            "具体工作",
+            "状态",
+            "工程进度",
+            "现行需求修订"
+          ]
+        },
+        {
+          "id": "T1-R05",
+          "columns": [
+            "状态",
+            "工程进度",
+            "现行需求修订"
+          ]
+        },
+        {
+          "id": "T1-R13",
+          "columns": [
+            "具体工作"
+          ]
+        },
+        {
+          "id": "T1-R15",
+          "columns": [
+            "具体工作"
+          ]
+        },
+        {
+          "id": "T1-R20",
+          "columns": [
+            "具体工作"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "方案/子任务T1/开发阶段与验收.csv",
+      "before_sha256": "2fdb3cff29de57bb22eeec46a0e003a5ae052f497a43d1de053b6f38b8d6a02e",
+      "after_sha256": "86d77511d9ee8086b06913c219436ebb14799c87524e75b43b545605ec6ae572",
+      "rows_including_header": 9,
+      "header_and_stable_row_ids_unchanged": true,
+      "encoding_BOM_preserved": true,
+      "changed_rows": [
+        {
+          "id": "S0",
+          "columns": [
+            "工作"
+          ]
+        },
+        {
+          "id": "S2",
+          "columns": [
+            "名称",
+            "工作",
+            "交付物",
+            "通过条件",
+            "状态",
+            "工程进度",
+            "现行需求修订",
+            "本次工程交付"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "方案/子任务T1/待讨论实现决策.csv",
+      "before_sha256": "05c66355eca6fe38e09f1e34666c5624a155e84d90d39c87fa046ab4f25a292f",
+      "after_sha256": "4f72e29d4ae51f8852d98eef2e84dcdf6b986c18fb563cec92c6ac709f51ee40",
+      "rows_including_header": 26,
+      "header_and_stable_row_ids_unchanged": true,
+      "encoding_BOM_preserved": true,
+      "changed_rows": [
+        {
+          "id": "D04",
+          "columns": [
+            "主题",
+            "状态",
+            "具体内容",
+            "已确认依据",
+            "讨论选项"
+          ]
+        },
+        {
+          "id": "D05",
+          "columns": [
+            "具体内容",
+            "讨论选项"
+          ]
+        },
+        {
+          "id": "D13",
+          "columns": [
+            "具体内容",
+            "已确认依据"
+          ]
+        },
+        {
+          "id": "D19",
+          "columns": [
+            "主题",
+            "状态",
+            "具体内容",
+            "已确认依据",
+            "讨论选项",
+            "影响"
+          ]
+        },
+        {
+          "id": "D21",
+          "columns": [
+            "讨论选项"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "方案/子任务T1/验收清单.csv",
+      "before_sha256": "0ad0f303284d8ab7353eff39a5c1050bd369fd3156a347e1223dcf5b09ecf488",
+      "after_sha256": "20c2ea2ec4d92ad928622c3ad25eea463764a38e287d2dbace942b6c001729a8",
+      "rows_including_header": 28,
+      "header_and_stable_row_ids_unchanged": true,
+      "encoding_BOM_preserved": true,
+      "changed_rows": [
+        {
+          "id": "F06",
+          "columns": [
+            "名称",
+            "定义",
+            "测量依据",
+            "状态"
+          ]
+        },
+        {
+          "id": "F07",
+          "columns": [
+            "名称",
+            "定义",
+            "测量依据",
+            "状态"
+          ]
+        },
+        {
+          "id": "F08",
+          "columns": [
+            "定义"
+          ]
+        },
+        {
+          "id": "F12",
+          "columns": [
+            "定义"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "方案/当前版本.json",
+      "before_sha256": "f716c1ca813a3de429fa74e567b45a9998e6b9fb226af720e8b38b0eef1f28b7",
+      "after_sha256": "3c1cacd90cf96272b2561e8826b4cc4da23abaee3696a41aa227901421b63031",
+      "json_parsed": true,
+      "changed_current_paths": [
+        "/status",
+        "/scope_correction",
+        "/latest_t1_scope_revision/status",
+        "/latest_t1_scope_revision/current_plan_sha256",
+        "/latest_t1_scope_revision/current_execution_guide_sha256",
+        "/latest_t1_scope_revision/current_document_validation",
+        "/latest_t1_scope_revision/current_stage_summary",
+        "/latest_t1_scope_revision/current_runtime_evidence",
+        "/latest_t1_scope_revision/revision",
+        "/latest_t1_scope_revision/scope_contract",
+        "/latest_t1_scope_revision/current_scope_catalog",
+        "/current_T1_improvement/current_next_steps/1",
+        "/current_S2_catalog_material",
+        "/historical_before_two_layer_scope_2026_11_14",
+        "/current_scope_catalog",
+        "/current_requirement_formal_reviews",
+        "/last_status_update_Asia_Shanghai"
+      ],
+      "existing_historical_subtrees_checked": 8,
+      "existing_historical_subtrees_unchanged": true,
+      "historical_aggregate_sha256": "94525df1b2205634a4ac390ee0e39591119a21c9dcf13d00baff3b4c33187a6e",
+      "protected_fact_objects_checked": 4,
+      "protected_fact_objects_unchanged": true
+    },
+    {
+      "path": "方案/任务分解.json",
+      "before_sha256": "e7513d96a2e678a064c509834e3076de591caad8c4b1948dc06f950e09ae9c95",
+      "after_sha256": "2a2fa23bc7fa7db30dbe07e38a4e958d3ea08270b656e7e6981eb3f776bdc16f",
+      "json_parsed": true,
+      "changed_current_paths": [
+        "/updated",
+        "/subtasks/0/development_status",
+        "/subtasks/0/scope_selection/order",
+        "/subtasks/0/scope_selection/relationship",
+        "/subtasks/0/scope_selection/restricted_feature_behavior",
+        "/subtasks/0/scope_selection/unrestricted_feature_behavior",
+        "/subtasks/0/scope_selection/out_of_scope_behavior",
+        "/subtasks/0/scope_selection/scope_evidence",
+        "/subtasks/0/scope_selection/missing_catalog_behavior",
+        "/subtasks/0/scope_selection/feature_extraction",
+        "/subtasks/0/scope_selection/initial_modes",
+        "/subtasks/0/scope_selection/restricted_empty_behavior",
+        "/subtasks/0/scope_selection/upstream_change_behavior",
+        "/subtasks/0/scope_selection/refresh_behavior",
+        "/subtasks/0/scope_selection/submit_behavior",
+        "/subtasks/0/scope_selection/snapshot_policy",
+        "/subtasks/0/scope_selection/explicit_legacy_feature_limit_request",
+        "/subtasks/0/scope_selection/legacy_runs_and_exports",
+        "/subtasks/0/scope_selection/taxonomy_policy",
+        "/subtasks/0/scope_selection/default_item_confirmation_popups",
+        "/subtasks/0/scope_selection/benchmark_scope_as_initial_default",
+        "/subtasks/0/current_stage_kind",
+        "/confirmed_architecture/1",
+        "/latest_t1_scope_revision/version",
+        "/latest_t1_scope_revision/execution_guide_version",
+        "/latest_t1_scope_revision/status",
+        "/latest_t1_scope_revision/revision",
+        "/latest_t1_scope_revision/scope_contract",
+        "/latest_t1_scope_revision/current_stage_summary",
+        "/historical_before_two_layer_scope_2026_11_14",
+        "/last_status_update_Asia_Shanghai"
+      ],
+      "existing_historical_subtrees_checked": 2,
+      "existing_historical_subtrees_unchanged": true,
+      "historical_aggregate_sha256": "03dac7f9295497e835987bc48b1c032effa571a72fec3b7283d98b3c262595d8",
+      "protected_fact_objects_checked": 2,
+      "protected_fact_objects_unchanged": true
+    },
+    {
+      "path": "方案/工作流与模块职责.json",
+      "before_sha256": "b9153e288ab2b74c62f48ec75d752525c466261ca591fc9b68960972032a3f67",
+      "after_sha256": "9a0fe055d64737643046ab85b041e5de9d33febf7c5e37b5fbaacb7f551d95e7",
+      "json_parsed": true,
+      "changed_current_paths": [
+        "/status",
+        "/persistence/must_keep_for_delivery/3",
+        "/t1_input_contract/checks/4",
+        "/t1_input_contract/confirmation_semantics",
+        "/t1_input_contract/scope_selection/order",
+        "/t1_input_contract/scope_selection/relationship",
+        "/t1_input_contract/scope_selection/restricted_feature_behavior",
+        "/t1_input_contract/scope_selection/unrestricted_feature_behavior",
+        "/t1_input_contract/scope_selection/out_of_scope_behavior",
+        "/t1_input_contract/scope_selection/scope_evidence",
+        "/t1_input_contract/scope_selection/missing_catalog_behavior",
+        "/t1_input_contract/scope_selection/feature_extraction",
+        "/t1_input_contract/scope_selection/initial_modes",
+        "/t1_input_contract/scope_selection/restricted_empty_behavior",
+        "/t1_input_contract/scope_selection/upstream_change_behavior",
+        "/t1_input_contract/scope_selection/refresh_behavior",
+        "/t1_input_contract/scope_selection/submit_behavior",
+        "/t1_input_contract/scope_selection/snapshot_policy",
+        "/t1_input_contract/scope_selection/explicit_legacy_feature_limit_request",
+        "/t1_input_contract/scope_selection/legacy_runs_and_exports",
+        "/t1_input_contract/scope_selection/taxonomy_policy",
+        "/t1_input_contract/scope_selection/default_item_confirmation_popups",
+        "/t1_input_contract/scope_selection/benchmark_scope_as_initial_default",
+        "/t1_input_contract/scope_catalog",
+        "/t1_input_contract/current_scope_rule",
+        "/historical_before_two_layer_scope_2026_11_14",
+        "/last_status_update_Asia_Shanghai"
+      ],
+      "existing_historical_subtrees_checked": 2,
+      "existing_historical_subtrees_unchanged": true,
+      "historical_aggregate_sha256": "d20c342aacb60d9b397c7ab35c00e54766682b36ddfc1d974e9bf95d44a26c78",
+      "protected_fact_objects_checked": 1,
+      "protected_fact_objects_unchanged": true
+    },
+    {
+      "path": "方案/实施计划.json",
+      "before_sha256": "724a2b194d0aec31b9865c56705e07f6b5c9c2a116c6399f13c87a9aa788bbd3",
+      "after_sha256": "06633e2811c3da142471fd0320d5d953416671a028863af7130fe30f40b5bd16",
+      "json_parsed": true,
+      "changed_current_paths": [
+        "/date",
+        "/status",
+        "/confirmed_architecture/1",
+        "/stages/2/work",
+        "/still_open/2",
+        "/latest_t1_scope_revision/version",
+        "/latest_t1_scope_revision/execution_guide_version",
+        "/latest_t1_scope_revision/status",
+        "/latest_t1_scope_revision/current_plan_sha256",
+        "/latest_t1_scope_revision/current_execution_guide_sha256",
+        "/latest_t1_scope_revision/current_document_validation",
+        "/latest_t1_scope_revision/current_stage_summary/S2",
+        "/latest_t1_scope_revision/revision",
+        "/latest_t1_scope_revision/scope_contract",
+        "/latest_t1_scope_revision/current_scope_catalog",
+        "/current_T1_improvement/current_next_steps/0",
+        "/historical_before_two_layer_scope_2026_11_14",
+        "/last_status_update_Asia_Shanghai"
+      ],
+      "existing_historical_subtrees_checked": 6,
+      "existing_historical_subtrees_unchanged": true,
+      "historical_aggregate_sha256": "a894507a39ba1d49f676b316dd708e2a25f46a78c2c7dfe138a3bff4d915de45",
+      "protected_fact_objects_checked": 4,
+      "protected_fact_objects_unchanged": true
+    },
+    {
+      "path": "方案/材料检查结果.json",
+      "before_sha256": "607ad01c2c0c3d220e22814376d240c20875b127d302236ec73572e1015aa3bd",
+      "after_sha256": "8c0a56c33b0041e67533e13648bf612cb0b6814547dc016e2752f7700ba7a714",
+      "json_parsed": true,
+      "changed_current_paths": [
+        "/status",
+        "/date",
+        "/current_T1_sync/version",
+        "/current_T1_sync/execution_guide_version",
+        "/current_T1_sync/status",
+        "/current_T1_sync/current_plan_sha256",
+        "/current_T1_sync/current_execution_guide_sha256",
+        "/current_T1_sync/current_document_validation",
+        "/current_T1_sync/current_stage_summary/S2",
+        "/current_T1_sync/revision",
+        "/current_T1_sync/scope_contract",
+        "/current_T1_sync/current_scope_catalog",
+        "/current_T1_improvement/current_next_steps/0",
+        "/historical_before_two_layer_scope_2026_11_14",
+        "/current_scope_override",
+        "/last_status_update_Asia_Shanghai"
+      ],
+      "existing_historical_subtrees_checked": 9,
+      "existing_historical_subtrees_unchanged": true,
+      "historical_aggregate_sha256": "1c06e500b95fd22b67da52c4de6046d2ed8a08301b314c562aef434999c81d5d",
+      "protected_fact_objects_checked": 3,
+      "protected_fact_objects_unchanged": true
+    }
+  ],
+  "engineering_results": {
+    "engineering_report": "code/docs/acceptance/two-layer-catalog-2026-11-14/report.json",
+    "engineering_summary": "目录校验CLI、81项自动检查、两端typecheck、最终生产构建及其TypeScript检查通过；前端lint为0错误、1条unused disable指令警告。同一构建的隔离Chromium5场景通过，覆盖桌面与390px手机模拟。",
+    "deployment_summary": "同一已验构建已更新普通30141/3210，线上4项只读核对通过，page/console错误0。当前17表、7run、2删除标记、6paper、1profile、0活动，integrity ok、外键错误0，两份env字节hash保持。上线窗口用户已确认自行删除2条（9→7run、0→2删除标记），未还原；用户删除后17表行数/逻辑hash稳定，余存原行未改。",
+    "limitations": "代理新增付费模型调用0、生产业务写入0，未读取独立IN内容。浏览器限Chromium及手机模拟，未新增真实抽取医学质量、20篇长期负载或完整独立S6/S7验收。",
+    "S2_preparation_accepted": true,
+    "S2_acceptance_record": "code/docs/acceptance/two-layer-catalog-2026-11-14/report.json#/stage_decision/S2",
+    "medical_quality_approved": false,
+    "full_S6_S7_upgraded": false,
+    "concurrent_user_activity": {
+      "confirmed_verbatim": "是，我刚刚删除了两条",
+      "before_runs": 9,
+      "after_runs": 7,
+      "deleted_run_tombstones": 2,
+      "actor": "user_confirmed",
+      "agent_production_business_writes": 0,
+      "restored": false
+    }
+  }
+}

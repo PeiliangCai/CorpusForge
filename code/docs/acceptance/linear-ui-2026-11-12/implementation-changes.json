@@ -1,0 +1,61 @@
+{
+  "scope": "Only this task baseline to current; previous dirty changes preserved",
+  "changed_files": 9,
+  "files": [
+    {
+      "path": "code/apps/pi-web/t1/T1Workbench.tsx",
+      "status": "modified",
+      "baseline_sha256": "fff8506f6a71696bd2c06562aee0eb53556ce2535596f1610fc25079d9860b7f",
+      "current_sha256": "1202df41a4ac7f6f11aacb0eb2afd5eabf7dd77d7e5c549baea4674591fba4a7"
+    },
+    {
+      "path": "code/apps/pi-web/t1/RecordRetention.tsx",
+      "status": "modified",
+      "baseline_sha256": "be33962d1c953d6fbbb6b9130c8b786eb3bee716b6871740603c873b303302ae",
+      "current_sha256": "fc07e770c1bf8d3c656bf6a3bf1f3c5ab456ed9253343a377bcb5ffe7cd3d588"
+    },
+    {
+      "path": "code/apps/pi-web/t1/EvidenceSource.tsx",
+      "status": "modified",
+      "baseline_sha256": "48d8858a0906aad7594855566323191adf4b06a8f137223c54ab80a05d442f6e",
+      "current_sha256": "08d7882db68e79652a78fe6c5fadb436b9b0b7f2dd19673a09e8f1c1b08f83e4"
+    },
+    {
+      "path": "code/apps/pi-web/t1/ResultIndex.tsx",
+      "status": "modified",
+      "baseline_sha256": "6c7472a5b7ef52d3e59aadf0b31b015fce368f1d2debe3fea5d7fcf6fae47d16",
+      "current_sha256": "e00c0cb61df7310e32d2e6b94d63256fde3876ca08c678b8983fc224e2afbe06"
+    },
+    {
+      "path": "code/apps/pi-web/t1/messages.mjs",
+      "status": "modified",
+      "baseline_sha256": "7ee6e6b354e841ea3005909914fd5d3615e0645f38f8167f15515dcb5833686b",
+      "current_sha256": "afcdc03aeb43cade0e5c48068cb9c6eb0734e0d446a2c635e61341e2e787992a"
+    },
+    {
+      "path": "code/apps/pi-web/t1/workbench.css",
+      "status": "modified",
+      "baseline_sha256": "f40029f957728270747b3b57adbbae2b8bd8fb5efaa120321fa28338812eb656",
+      "current_sha256": "2ad604a4d0cd1aabf8cb5ae147082b1c395377d6d50fad828a40e881e3fcef49"
+    },
+    {
+      "path": "code/apps/pi-web/e2e/retention-workflow.mjs",
+      "status": "modified",
+      "baseline_sha256": "7984b2ee5abc6816900ef77a3e9b9f1aceb096005e6c109a68384d4a35ade16a",
+      "current_sha256": "640a6a1a5309326cc3b0c44e2ead51a1057e681b2ff1dc39fa5102ce945dec77"
+    },
+    {
+      "path": "code/apps/pi-web/e2e/retention-readonly.mjs",
+      "status": "modified",
+      "baseline_sha256": "5089479f112cd900bece05ce15d323f997e03dac8ca2e233ff9f6f4135bca350",
+      "current_sha256": "f5e0d857cbd6951aed0f50f9c49d7da2bf14e04b75d80f064b4a788177864176"
+    },
+    {
+      "path": "code/apps/pi-web/t1/WorkbenchNotes.tsx",
+      "status": "added",
+      "baseline_sha256": null,
+      "current_sha256": "8a1084e4984e60b3ee1eea111cd9a57b1477c9cf61ca43ad6363dabaa001f589"
+    }
+  ],
+  "patch_sha256": "0540a10f373c0e53fbf1b462f139e8d0c666fbf149eb6b8d71595fa85455ae93"
+}

@@ -298,13 +298,13 @@ test('installed Pi Responses adapter reports cached input and reasoning without 
   });
 });
 
-test('installed SDK replay of observed usage keeps the new output allowance while context metadata leaves budget reservations unchanged', async () => {
+test('installed SDK preserves new output allowance while the application guard stops the historical 32K context', async () => {
   await temporary(async directory => {
     const firstUsage = { input_tokens: 25781, output_tokens: 72, total_tokens: 25853 };
     const secondUsage = { input_tokens: 6704, output_tokens: 16, total_tokens: 6720,
       input_tokens_details: { cached_tokens: 0, cache_write_tokens: 6701 }, output_tokens_details: { reasoning_tokens: 16 } };
     const scripted = await createRuntimeResponsesFixture([
-      { calls: [{ name: 'read_document_blocks', arguments: {} }], usage: firstUsage }, { text: 'Synthetic replay complete.', usage: secondUsage },
+      { calls: [{ name: 'read_document_blocks', arguments: {} }], usage: firstUsage },
       { calls: [{ name: 'read_document_blocks', arguments: {} }], usage: firstUsage }, { text: 'Synthetic replay complete.', usage: secondUsage },
     ]);
     const profiles = [
@@ -320,29 +320,30 @@ test('installed SDK replay of observed usage keeps the new output allowance whil
           const budget = new ExtractionBudget(join(directory, `ledger-${index}.json`), scripted.endpoint);
           const created = await createExtractionSession(scripted.config, profile, c.tools.definitions(), join(directory, `profile-${index}`), budget, 'observed-usage-context-replay');
           const result = await promptExtractionSession(created, 'Read the synthetic source once, then finish.', budget);
-          assert.equal(result.error, undefined); assert.equal(result.responses, 2);
-          assert.equal(created.audit.application_context_estimate_limit, 128000);
+          assert.equal(result.error?.code, index === 0 ? 'application_context_estimate_limit' : undefined); assert.equal(result.responses, 2);
+          const expectedContextLimit = Math.min(128000, profile.context_window - profile.max_output_tokens);
+          assert.equal(created.audit.application_context_estimate_limit, expectedContextLimit);
           assert.equal(created.audit.model_context_window_metadata, profile.context_window);
           assert.equal(created.audit.model_capacity_source, 'official_OpenAI_model_specification_not_supplier_stress_test');
           assert.ok(created.entries.every(entry => entry.model_context_window_metadata === profile.context_window &&
-            typeof entry.application_context_estimate === 'number' && entry.application_context_estimate < 128000));
-          assert.deepEqual(created.entries.map(entry => entry.requested_max_output_tokens), scripted.requests.slice(index * 2, index * 2 + 2).map(request => request.body.max_output_tokens));
+            typeof entry.application_context_estimate === 'number' && entry.application_context_estimate < expectedContextLimit));
+          assert.deepEqual(created.entries.map(entry => entry.requested_max_output_tokens), scripted.requests.slice(index === 0 ? 0 : 1, index === 0 ? 1 : 3).map(request => request.body.max_output_tokens));
           reservations.push(created.entries.map(entry => entry.input_ceiling)); totals.push(budget.totals());
-          assert.equal(budget.totals().input_tokens, 32485); assert.equal(budget.totals().output_tokens, 88);
+          assert.equal(budget.totals().input_tokens, index === 0 ? 25781 : 32485); assert.equal(budget.totals().output_tokens, index === 0 ? 72 : 88);
           assert.equal(budget.ledger.limits.input_tokens, 2000000); assert.equal(budget.ledger.limits.output_tokens, 400000);
           assert.equal(budget.ledger.limits.requests, 400); assert.equal(budget.ledger.limits.seconds, 7200);
         } finally { c.store.close(); }
       }
-      const oldWire = scripted.requests.slice(0, 2).map(request => request.body.max_output_tokens);
-      const newWire = scripted.requests.slice(2).map(request => request.body.max_output_tokens);
+      const oldWire = scripted.requests.slice(0, 1).map(request => request.body.max_output_tokens);
+      const newWire = scripted.requests.slice(1).map(request => request.body.max_output_tokens);
       process.stdout.write(JSON.stringify({ test_evidence: 'installed_sdk_context_clamp_replay', observed_usage: firstUsage,
         historical_context_window: profiles[0]!.context_window, new_context_window: profiles[1]!.context_window,
         historical_wire_output_limits: oldWire, new_wire_output_limits: newWire,
         historical_input_reservations: reservations[0], new_input_reservations: reservations[1], reported_token_totals: totals,
-        gateway_context_window_verified: false }) + '\n');
-      assert.deepEqual(oldWire, [8192, 16], 'the historical metadata must reproduce the installed SDK clamp');
+        historical_unsafe_followup_stopped_by_application_guard: true, gateway_context_window_verified: false }) + '\n');
+      assert.deepEqual(oldWire, [8192], 'the current application guard must stop before the historical SDK output clamp');
       assert.deepEqual(newWire, [8192, 8192], 'the new profile must preserve its configured output room after the same observed usage and tool receipt');
-      assert.deepEqual(reservations[1], reservations[0], 'larger context metadata must not silently raise per-request input reservations');
+      assert.equal(reservations[1]![0], reservations[0]![0], 'larger context metadata must not silently raise the identical first-request input reservation');
     } finally { await scripted.close(); }
   });
 });

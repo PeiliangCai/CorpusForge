@@ -1,0 +1,32 @@
+{
+  "schema_version": "t1-independent-source-preselection-1",
+  "preselected_at_utc": "2026-11-11T09:33:27.639398+00:00",
+  "metadata": {
+    "source_id": "IN06",
+    "article_family_id": "doi:10.7759/cureus.63045",
+    "doi": "10.7759/cureus.63045",
+    "title": "Pulmonary Sarcomatoid Carcinoma: What Makes This Rare Lung Cancer So Challenging?",
+    "source_url": "https://assets.cureus.com/uploads/case_report/pdf/262878/20240724-411166-xxq9jt.pdf"
+  },
+  "publisher": "Cureus",
+  "authors_supplied_by_root": "Kharouaa et al.",
+  "publication_date_supplied_by_root": "2024-06-24",
+  "license_supplied_by_root": "CC BY4.0",
+  "identity_and_license_status": "Pending actual downloaded PDF verification",
+  "scope": "One previously unexposed short English CT lung-cancer case from a different publisher/layout. Brain imaging/pathology are not automatically validated for medical type or applicability.",
+  "selection_basis": "Main-session material preselection before extraction-model admission; different title/DOI/publisher/layout, not chosen from model output. Root saw public abstract/search snippets for selection only, not supplied to extraction model or used to tune prompts.",
+  "no_output_based_source_replacement": true,
+  "no_algorithm_or_prompt_adaptation_to_this_paper": true,
+  "preparation_only": true,
+  "model_calls_authorized_now": 0,
+  "possible_next_limits_not_dispatched": {
+    "requests": 24,
+    "input_tokens": 600000,
+    "output_tokens": 32000,
+    "seconds": 900
+  },
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3,
+  "new_formal_reviews": 0,
+  "medical_quality_approved": false
+}

@@ -1,0 +1,137 @@
+{
+  "schema_version": "t1-final-delivery-image-lineage-1",
+  "cold_build": false,
+  "started_at": "2026-11-11T11:17:56.940877+00:00",
+  "prior_tested_diagnostic_report": {
+    "path": "docs/acceptance/resume-2026-11-11/final-stack-image/diagnostic-layer-report.json",
+    "sha256": "4745cc0ba854fce85024afe561379c422e4e897782679614cb76963004bf67fd",
+    "local_image_id": "sha256:32a0e53ab6be8bed82c579b8be589cbb25787f076d5133f74163999724d76977",
+    "executed_IN07_plan_binding_preserved": true
+  },
+  "prior_tested_stack_report": {
+    "path": "docs/acceptance/resume-2026-11-11/final-stack-image/report.json",
+    "sha256": "d63012c46e22e07481b17d96f96614a26d7a49b5af47187b54c62595fea7038c",
+    "executed_IN06_plan_binding_preserved": true
+  },
+  "delivery_reliability_only": true,
+  "provider_capacity_or_prior_error_repair_claimed": false,
+  "live_provider_recovery_after_patch_verified": false,
+  "prior_failed_records_or_experimental_allowances_modified": false,
+  "all_experimental_allowances_closed": true,
+  "ordinary_readonly_browser_evidence": {
+    "path": "../ui/delivery-readonly-report.json",
+    "sha256": "bf15e4957f9bb2968f90dea74f52406fb0e970caae864a8d7ff124f4bb65d9ed",
+    "passed": true,
+    "checks": 4,
+    "model_notice_and_enabled_start_checked_without_clicking": true,
+    "existing_source_fragments_and_pdf_location_checked": true,
+    "candidate_export_buttons_checked_without_export_request": true,
+    "old_output_sha256_unchanged": true,
+    "starts_uploads_approvals_exports_model_calls": 0,
+    "page_or_http_errors": 0
+  },
+  "model_calls_for_image_construction": 0,
+  "application_services_started_for_construction": 0,
+  "status": "delivery-image-built-offline-pins-verified",
+  "final_local_image_id": "sha256:4d2a334b0bf50663503b33a6ddc7d9631bc9a05551a198c0053409ab3a2e9904",
+  "final_image_tag": "t1-workbench:delivery-20261111",
+  "image_lineage": [
+    "sha256:174bf034452d4a58aa94d83b69bd670d68d23f750020afade5ed9ee0c35cfe3d",
+    "sha256:4bd87702fd41461e745e96c230b5d3b9b53dbc030c0de84140a5df7e131a3a75",
+    "sha256:bc08b00b2dd818e8fd2c0fca68912bf828f78eb43be0be63ccb516769a437b68",
+    "sha256:32a0e53ab6be8bed82c579b8be589cbb25787f076d5133f74163999724d76977",
+    "sha256:4d2a334b0bf50663503b33a6ddc7d9631bc9a05551a198c0053409ab3a2e9904"
+  ],
+  "delivery_overlay": {
+    "parent_local_image_id": "sha256:32a0e53ab6be8bed82c579b8be589cbb25787f076d5133f74163999724d76977",
+    "local_image_id": "sha256:4d2a334b0bf50663503b33a6ddc7d9631bc9a05551a198c0053409ab3a2e9904",
+    "repo_digests": [
+      "t1-workbench@sha256:4d2a334b0bf50663503b33a6ddc7d9631bc9a05551a198c0053409ab3a2e9904"
+    ],
+    "registry_push_performed": false,
+    "source_freeze_record": "docs/acceptance/resume-2026-11-11/delivery-source-freeze.json",
+    "source_freeze_sha256": "34469b992a0ec8647fa4f59dbc1d7f6c870dbeb2536bf7c46bbdb5f06c663bb9",
+    "source_snapshot": "runtime-data/s7-source-snapshot-20261111-delivery",
+    "source_frozen_at": "2026-11-11T11:15:54.246134+00:00",
+    "overlay_files": {
+      "packages/agent/src/extraction-pi.ts": "8e5982c1bc5ba3fe11dd168e336c439dc7b7a1c482250cd9f3a9c3671050509c",
+      "packages/agent/src/extraction-high-load-retry.ts": "fc8face0a94e9f8e8575f83c56e56e27fcc348dcdd7125a499bffb24321332da",
+      "tests/extraction/fixtures/runtime-responses.ts": "2b57324c4a15178ffb1c4fe679e896f3b6e110d43e6fb0c6c665029d243b39d0",
+      "tests/extraction/high-load-retry.test.ts": "15a651a5710329683a4c6bede00c294c7b1d45c9be2bb14fab7a89439976ee5b"
+    },
+    "dockerfile": "FROM sha256:32a0e53ab6be8bed82c579b8be589cbb25787f076d5133f74163999724d76977\nUSER root\nCOPY overlay/ /app/\nLABEL t1.source.freeze.sha256=\"34469b992a0ec8647fa4f59dbc1d7f6c870dbeb2536bf7c46bbdb5f06c663bb9\" t1.delivery.overlay.parent=\"sha256:32a0e53ab6be8bed82c579b8be589cbb25787f076d5133f74163999724d76977\"\nUSER 10001:10001\n",
+    "dockerfile_sha256": "6d62a95f917236fdd26402521fad70104bab3cd0ea915a5834f7f05812ef9cf6",
+    "actual_build_command": [
+      "sudo",
+      "-n",
+      "env",
+      "DOCKER_BUILDKIT=0",
+      "docker",
+      "build",
+      "--pull=false",
+      "--network=none",
+      "-f",
+      "/home/ecs-user/projects/t1-agent/code/runtime-data/final-delivery-overlay-ljqvv6mg/Dockerfile",
+      "-t",
+      "t1-workbench:delivery-20261111",
+      "/home/ecs-user/projects/t1-agent/code/runtime-data/final-delivery-overlay-ljqvv6mg"
+    ],
+    "image_size_bytes": 1030138650,
+    "build_log_sha256": "0b29834131fca4e75a83c848ab116b15c0fed68956572d7cf0ade6162fdf2c27",
+    "construction_definition": "docs/acceptance/resume-2026-11-11/final-stack-image/construct-delivery-overlay.py",
+    "construction_definition_sha256": "86eb8f59fe8a2e8e18f7dd70fa3f8f18d2c846a6c10c04b51680141fb714bd02",
+    "no_dependency_or_UI_build": true,
+    "no_syntax_frontend_or_registry_pull": true,
+    "credentials_databases_input_pdfs_copied": false,
+    "parent_rootfs_layers_preserved": true,
+    "image_environment_verified": {
+      "NODE_ENV": "production",
+      "T1_NEXT_DIST_DIR": "build/ui-next-20261111",
+      "T1_WORKBENCH_MODEL_ENABLED": "false",
+      "T1_IMPORT_RETAINED": "false"
+    },
+    "image_user": "10001:10001",
+    "image_cmd": [
+      "node",
+      "deploy/supervisor.mjs"
+    ]
+  },
+  "all_frozen_source_pins": {
+    "expected": 1176,
+    "matched": 1176,
+    "missing": [],
+    "mismatches": [],
+    "expected_manifest_sha256": "e909b58daed5fb9d93e391df8f1543a4fe6df6162a563afa88cb3a591a5822ad",
+    "actual_image_manifest_sha256": "e909b58daed5fb9d93e391df8f1543a4fe6df6162a563afa88cb3a591a5822ad",
+    "method": "Grouped docker cp tar streams from an unstarted final-image container; files whitelisted and hashed by Python against freeze JSON, never a large argv."
+  },
+  "final_UI_artifact_verification": {
+    "source_pins": {
+      "apps/pi-web/t1/T1Workbench.tsx": "c89e3db0b27164960f873f116ad704159e8c6c7b32cb8edb089fbe3495c313af",
+      "apps/pi-web/t1/EvidenceSource.tsx": "bcec5844e2f778cb23ce0bdd4ba341e12b7e0336c4f3b830af5bbfa31fe9bad3",
+      "apps/pi-web/t1/ResultIndex.tsx": "c00596885692cf5086a1431d57670b6af01c8a610c502ceaa598219d2565967e",
+      "apps/pi-web/t1/result-navigation.ts": "ec874c385c3ec4d1e18b6757d2aa3e20dcb53fabbc2e581dfe76b18940c61a56",
+      "apps/pi-web/t1/messages.mjs": "bdfb01298a5f2bebf1a9baa68892d79ef2ab6175c08a3d43e888aa8982bee006",
+      "apps/pi-web/t1/workbench.css": "078e5413231d76471dc73ca7421197fc8be30c4e14e72df1ad90a2618d4ba719"
+    },
+    "build_id": "9WeI9zkvHd20Y0lBTDX5C",
+    "dist_dir": "build/ui-next-20261111",
+    "expected_files": 161,
+    "matched_files": 161,
+    "manifest_sha256": "8520fb671c2349ed0459374ab4caf5b7afca6632839977d1ce7b2b762b31a3d3",
+    "byte_for_byte_identical_to_accepted_UI": true
+  },
+  "source_roles": {
+    "IN06": "parser_regression; extraction_model_unseen",
+    "IN07": "independent_first_structure_check_failed_before_model; now parser_regression; extraction_model_unseen"
+  },
+  "S6_complete_acceptance_claimed": false,
+  "medical_quality_approved": false,
+  "ordinary_30141_or_shared_next_modified": false,
+  "next_owner": "Backend owner completes ordinary deployment evidence. All experimental allowances remain closed; no further paid verification. Users may start a new ordinary run under the configured per-run limits.",
+  "temporary_final_context_cleaned": true,
+  "finished_at": "2026-11-11T11:18:14.153100+00:00",
+  "parent_tested_report_bytes_unchanged": true,
+  "prior_stack_report_bytes_unchanged": true,
+  "delivery_scope": "Cached image construction and ordinary read-only UI availability only. Live AGICTO recovery after the retry patch and the full S7 real-model gate are not claimed."
+}

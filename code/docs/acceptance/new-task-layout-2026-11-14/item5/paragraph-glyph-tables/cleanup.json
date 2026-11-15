@@ -1,0 +1,41 @@
+{
+  "completed_at_utc": "2026-11-15T07:26:36.435966+00:00",
+  "removed": [
+    {
+      "path": "apps/pi-web/build/paragraph-glyph-tables-delivery-validated-20261115",
+      "BUILD_ID": "VKcZ2_iPjCtun417wnzwM"
+    },
+    {
+      "path": "apps/pi-web/build/paragraph-glyph-tables-delivery-validated-20261115-final",
+      "BUILD_ID": "8zznt5i627P-53J2eEZ6M"
+    },
+    {
+      "path": "apps/pi-web/build/paragraph-glyph-tables-delivery-validated-20261115-ready",
+      "BUILD_ID": "O4nDXsMCo_1Ec0qdP0d2A"
+    },
+    {
+      "path": "docs/acceptance/new-task-layout-2026-11-14/item5/paragraph-glyph-tables/browser-failed-same_record_table_desktop.png",
+      "sha256": "9cf5d41f61e6a9c723baf0c5e5530660138ebfe99a1866637b8939de1e2b4893"
+    },
+    {
+      "path": "docs/acceptance/new-task-layout-2026-11-14/item5/paragraph-glyph-tables/browser-failed-same_record_table_mobile.png",
+      "sha256": "7e29fff24c72ecb6f300ef08294e04eccf72b6e3669823c88a192420ae118241"
+    },
+    {
+      "path": "runtime-data/agent-notes/item5-paragraph-glyph-tables-deploy.py",
+      "sha256": "50626d84f4a713457a5b53aa010e05b68a6d7c880ea2b71a6a532bb8db6967ba"
+    },
+    {
+      "path": "runtime-data/agent-notes/item5-paragraph-glyph-tables-1115-baseline",
+      "original_manifest_preserved": "runtime-data/rollbacks/paragraph-glyph-tables-20261115-before/baseline-manifest.json"
+    }
+  ],
+  "retained": [
+    "current TTsFAMBKuqGe6oPPX7LuB build",
+    "previous E23zPq5epmvmz7hXKRFiM rollback build",
+    "consistent pre-cutover SQLite backup",
+    "rollback original source snapshot and manifest",
+    "permanent original note/report and necessary diagnostics/screenshots/test logs"
+  ],
+  "scope": "own temporary artifacts only; no product data or earlier acceptance evidence removed"
+}

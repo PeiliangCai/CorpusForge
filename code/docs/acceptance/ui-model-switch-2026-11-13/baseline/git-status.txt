@@ -1,0 +1,90 @@
+ M code/.dockerignore
+ M code/Dockerfile
+ M code/README.md
+ M code/apps/pi-web/.dockerignore
+ M code/apps/pi-web/app/api/t1/[...path]/route.ts
+ M code/apps/pi-web/e2e/t1-workflow.mjs
+ M code/apps/pi-web/t1/EvidenceSource.tsx
+ D code/apps/pi-web/t1/FigureVerification.tsx
+ D code/apps/pi-web/t1/RecordReview.tsx
+ M code/apps/pi-web/t1/SameSourceMembers.tsx
+ M code/apps/pi-web/t1/SourceEditor.tsx
+ M code/apps/pi-web/t1/T1Workbench.tsx
+ M code/apps/pi-web/t1/gateway-policy.ts
+ M code/apps/pi-web/t1/messages.mjs
+ M code/apps/pi-web/t1/workbench.css
+ M code/apps/server/src/app.ts
+ M code/apps/server/src/model-policy.ts
+ M code/apps/server/src/workbench.ts
+ M code/apps/server/src/workflow.ts
+ M code/apps/server/test/workflow.test.ts
+ M code/config/two-method-comparison.json
+ M code/deploy/README.md
+ M code/deploy/browser-run.mjs
+ M code/deploy/one-run-allowance.test.ts
+ M code/deploy/one-run-allowance.ts
+ M code/deploy/run-real-verification.mjs
+ M code/deploy/t2-evidence-contract.json
+ M code/evaluation/manifests/independent-intake.json
+ M code/packages/agent/src/evidence-delivery.ts
+ M code/packages/agent/src/extraction-pi.ts
+ M code/packages/agent/src/source-selection.ts
+ M code/packages/contracts/src/workbench.ts
+ M code/scripts/compare-extraction-methods.ts
+ M code/services/pdf-parser/figure_assets.py
+ M code/services/pdf-parser/tests/test_figure_assets.py
+ M code/tests/extraction/fixtures/runtime-responses.ts
+ M code/tests/extraction/source-selection.test.ts
+ M code/tests/extraction/summary-metadata-recovery.test.ts
+ M code/tests/extraction/two-method-transition.test.ts
+ M 方案/子任务T1/T1开发执行说明.docx
+ M 方案/子任务T1/T1智能体开发计划.docx
+ M 方案/子任务T1/开发任务清单.csv
+ M 方案/子任务T1/开发计划.json
+ M 方案/子任务T1/开发阶段与验收.csv
+ M 方案/子任务T1/开源项目调研.csv
+ M 方案/子任务T1/当前版本.json
+ M 方案/子任务T1/待讨论实现决策.csv
+ M 方案/子任务T1/抽取结果字段规范.csv
+ M 方案/子任务T1/材料检查结果.json
+ M 方案/子任务T1/质量与性能验收契约.json
+ M 方案/子任务T1/资料来源.json
+ M 方案/子任务T1/验收清单.csv
+ M 方案/当前版本.json
+?? code/apps/pi-web/e2e/batch-submission.mjs
+?? code/apps/pi-web/e2e/folder-task-types.mjs
+?? code/apps/pi-web/e2e/legacy-review-guard.mjs
+?? code/apps/pi-web/e2e/legacy-review-guard.test.mjs
+?? code/apps/pi-web/e2e/results-presentation.mjs
+?? code/apps/pi-web/e2e/retention-readonly.mjs
+?? code/apps/pi-web/e2e/retention-workflow.mjs
+?? code/apps/pi-web/e2e/workspace-refresh.mjs
+?? code/apps/pi-web/t1/BatchSubmission.tsx
+?? code/apps/pi-web/t1/RecordRetention.tsx
+?? code/apps/pi-web/t1/ResultIndex.tsx
+?? code/apps/pi-web/t1/TaskKindBadge.tsx
+?? code/apps/pi-web/t1/WorkbenchNotes.tsx
+?? code/apps/pi-web/t1/gateway-submission.test.ts
+?? code/apps/pi-web/t1/result-navigation.test.ts
+?? code/apps/pi-web/t1/result-navigation.ts
+?? code/apps/server/src/reading-passages.ts
+?? code/apps/server/test/batch-ui-fixture.ts
+?? code/apps/server/test/folder-task-types-fixture.ts
+?? code/apps/server/test/model-policy.test.ts
+?? code/apps/server/test/reading-passages.test.ts
+?? code/apps/server/test/retention-guards.test.ts
+?? code/apps/server/test/retention.test.ts
+?? code/apps/server/test/workflow-submission.test.ts
+?? code/config/workbench-response-model-policy.json
+?? code/deploy/run-real-verification.test.mjs
+?? code/docs/acceptance/batch-submission-2026-11-13/
+?? code/docs/acceptance/folder-task-types-2026-11-13/
+?? code/docs/acceptance/linear-ui-2026-11-12/
+?? code/docs/acceptance/resume-2026-11-11/
+?? code/docs/acceptance/retention-workflow-2026-11-11/
+?? code/evaluation/corpus/independent-sealed/IN06.pdf
+?? code/evaluation/corpus/independent-sealed/IN07.pdf
+?? code/packages/agent/src/extraction-high-load-retry.ts
+?? code/packages/agent/src/extraction-sdk-diagnostic.ts
+?? code/tests/extraction/high-load-retry.test.ts
+?? code/tests/extraction/sdk-error-diagnostics.test.ts

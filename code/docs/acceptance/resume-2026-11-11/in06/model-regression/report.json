@@ -1,0 +1,135 @@
+{
+  "schema_version": "t1-IN06-final-stack-model-regression-report-1",
+  "reported_at_utc": "2026-11-11T10:52:22.386365+00:00",
+  "status": "failed_first_provider_HTTP200_SDK_error_closed_without_retry",
+  "source_id": "IN06",
+  "source_role": "Previously exposed parser regression; extraction-model full-pipeline independent acceptance not claimed.",
+  "plan": {
+    "path": "plan.json",
+    "sha256": "4d3a774bacdc0c9542956b25207798205d76d310f443b907109a780feea2e007"
+  },
+  "dispatch": "dispatch.json",
+  "image_id": "sha256:bc08b00b2dd818e8fd2c0fca68912bf828f78eb43be0be63ccb516769a437b68",
+  "final_UI_BUILD_ID": "9WeI9zkvHd20Y0lBTDX5C",
+  "source_code_freeze": "code/docs/acceptance/resume-2026-11-11/execution-source-freeze.json",
+  "ordinary_response_model_policy_assembled": true,
+  "trial_alias_override": false,
+  "HTTP_admission_at": "2026-11-11T10:38:49.845Z",
+  "first_physical_provider_request_at": "2026-11-11T10:39:01.595Z",
+  "closed_at": "2026-11-11T10:39:08.575Z",
+  "run_id": "run-e0b1c399-7efb-4fc9-8267-43fe9d51f028",
+  "usage": {
+    "physical_requests": 1,
+    "provider_reported_input_tokens": null,
+    "provider_reported_output_tokens": null,
+    "budget_accounted_input_tokens": 32768,
+    "budget_accounted_output_tokens": 8192,
+    "missing_usage_requests": 1,
+    "actual_currency_cost": null,
+    "currency_cost_status": "unknown_gateway_billing",
+    "provider_usage_status": "missing; reservation is not actual confirmed cost",
+    "unused_requests_closed": 23,
+    "all_unused_allowance_closed": true,
+    "current_effective_API_allowance": 0,
+    "current_paid_requests_running": false
+  },
+  "failure": {
+    "application_error": "model_response_failed",
+    "SDK_stop_reason": "error",
+    "SDK_classification": "unclassified_sdk_error",
+    "SDK_error_message_characters": 48,
+    "SDK_error_message_sha256": "c1c604bb7e48326f82d2c9cc9e842fcbcd895ef6cbc2ea75f45d84f9b2b9ac6e",
+    "message_and_stack_retention": "Prior version retained only hash/length; original cannot be recovered.",
+    "HTTP_status": 200,
+    "provider_stream_events_observed": 0,
+    "returned_model": "unknown",
+    "classification": "Not enough evidence to attribute to capacity,transport,identity,or a specific response contract.",
+    "new_diagnostics_fix": "code/docs/acceptance/resume-2026-11-11/sdk-diagnostics-report.json",
+    "diagnostics_fix_is_not_provider_failure_resolution": true
+  },
+  "workflow": {
+    "fresh_container_browser_upload_and_start": true,
+    "original_PDF_SHA_matches": true,
+    "current_records": 0,
+    "processable_scope_completed": false,
+    "same_run_summary_complete": false,
+    "browser_original_page_and_three_export_buttons_passed": true,
+    "downloads": [
+      {
+        "kind": "candidate_jsonl",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "kind": "candidate_csv",
+        "bytes": 108,
+        "sha256": "fda0b6b60b31aa2378e11e03f6d304064b6d3b8b0b22f96ab25e2f8c291605d8"
+      },
+      {
+        "kind": "candidate_package",
+        "bytes": 6105,
+        "sha256": "61429034639216454d9e3a9f026c17a0878c7cf11a294f2b16c47fbb32627078"
+      }
+    ],
+    "actual_paid_model_success_proven": false,
+    "no_full_run_retry": true
+  },
+  "coverage": {
+    "raw_source_blocks": 262,
+    "bibliography_excluded_blocks": 39,
+    "model_authorized_blocks": 223,
+    "completed_source_blocks": 0,
+    "whole_document_summary_complete": false,
+    "task_processing_complete": false,
+    "source_glyph_quarantine": 0,
+    "partial_native_author_units": 1,
+    "image_text_unverified_pages": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "pipeline_current_Figure_caption_lines": [
+      4,
+      4,
+      4
+    ],
+    "source_captions_original_IR_range_audit_passed": true,
+    "export_final_engine_coverage_fields_equal": true,
+    "export_adds_only_workbench_metadata": [
+      "run_id",
+      "state",
+      "controlled_fixture",
+      "result_ready",
+      "medical_quality_approved",
+      "automatic_resume"
+    ]
+  },
+  "review": {
+    "pack": "review-pack.json",
+    "random_count": 0,
+    "random_denominator": null,
+    "zero_is_not_recall_or_no_eligible_evidence_proof": true,
+    "actual_human_reviewed_count": 0,
+    "source_Figure_assets": "source-figures",
+    "pages": "code/docs/acceptance/resume-2026-11-11/in06/original-pages.json",
+    "new_page_renders_for_review": 0
+  },
+  "isolation_and_cleanup": {
+    "container_stopped": true,
+    "private_key_copy_removed": true,
+    "ordinary_preserved": true,
+    "isolated_review_rows": 0,
+    "isolated_annotation_rows": 0,
+    "unused_allowance_closed": true,
+    "all12_frozen_host_evidence_byte_bindings_still_equal": true
+  },
+  "complete_independent_S6_passed": false,
+  "full_S7_gate_passed": false,
+  "medical_quality_approved": false,
+  "business_approvals_added": 0,
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3,
+  "current_effective_API_allowance": 0
+}

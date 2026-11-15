@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, relative, isAbsolute } from 'node:path';
 import { ContractError, type RunInput, type Scope } from '@t1/contracts';
-import { ExtractionBudget, S4_LIMITS, type ModelConfig, type ExtractionBudgetLimits } from '@t1/agent';
+import { ExtractionBudget, S4_LIMITS, type ModelConfig, type ExtractionBudgetLimits, type ResponseModelAliasPolicy } from '@t1/agent';
 import { workbenchModelPolicy } from '../apps/server/src/model-policy.js';
 
 export interface ContainerRunPlan {
@@ -11,6 +11,12 @@ export interface ContainerRunPlan {
   input: { document_id: string; sha256: string };
   model: { provider: 'agicto'; endpoint: 'https://api.agicto.cn/v1'; model_id: 'gpt-6-luna'; reasoning_effort: 'medium' };
   limits: ExtractionBudgetLimits; scope: Scope; code_sha256: Record<string, string>; hard_stop_utc: string; latest_admission_utc?: string;
+  trial_response_model_alias?: {
+    basis: 'user_accepted_for_this_trial_only'; recorded_at: string;
+    authority_path: string; authority_sha256: string;
+    requested_model: 'gpt-6-luna'; response_model: 'data-zone-standard-gpt-6-luna';
+    supplier_confirmed: false; weight_identity_verified: false;
+  };
 }
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 export function assertContainerPlan(value: ContainerRunPlan) {
@@ -28,6 +34,27 @@ export function assertContainerPlan(value: ContainerRunPlan) {
     if (!Number.isSafeInteger(limit) || limit < (key === 'transient_retries' ? 0 : 1) || limit > S4_LIMITS[key]) throw new ContractError('invalid_container_verification_limit');
   }
   if (value.scope.cancers.mode !== 'all' || value.scope.cancers.ids.length || value.scope.image_types.mode !== 'all' || value.scope.image_types.ids.length || value.scope.features.mode !== 'all' || value.scope.features.binding_ids.length || !Object.keys(value.code_sha256).length) throw new ContractError('invalid_container_verification_scope_or_pins');
+  const alias = value.trial_response_model_alias;
+  if (alias && (alias.basis !== 'user_accepted_for_this_trial_only' || !Number.isFinite(Date.parse(alias.recorded_at)) ||
+    !/^docs\/acceptance\/[a-zA-Z0-9_./-]+\.json$/u.test(alias.authority_path) || alias.authority_path.split('/').includes('..') ||
+    !/^[a-f0-9]{64}$/u.test(alias.authority_sha256) || alias.requested_model !== 'gpt-6-luna' ||
+    alias.response_model !== 'data-zone-standard-gpt-6-luna' || alias.supplier_confirmed !== false || alias.weight_identity_verified !== false))
+    throw new ContractError('invalid_container_trial_response_alias');
+}
+
+/** This operator plan may accept one additional exact returned label for one run.
+ * The ledger's existing confirmed_alias enum means policy acceptance here, not
+ * supplier confirmation or verification of the underlying model weights. */
+export function containerResponseModelAliasPolicy(plan: ContainerRunPlan, config: ModelConfig): ResponseModelAliasPolicy | undefined {
+  assertContainerPlan(plan);
+  if (config.provider !== plan.model.provider || config.baseUrl !== plan.model.endpoint || config.modelId !== plan.model.model_id)
+    throw new ContractError('container_config_differs_from_plan');
+  const existing = workbenchModelPolicy(config).responseModelAliasPolicy, alias = plan.trial_response_model_alias;
+  if (!alias) return existing;
+  return { policy_id: plan.plan_id + ':user-trial-exact-return-name', source: 'code/' + alias.authority_path,
+    recorded_at: alias.recorded_at, exact_pairs: [...(existing?.exact_pairs ?? []),
+      ...(existing?.exact_pairs.some(pair => pair.requested_model === alias.requested_model && pair.response_model === alias.response_model)
+        ? [] : [{ requested_model: alias.requested_model, response_model: alias.response_model }])] };
 }
 
 /** Operator-only one-run admission, using the same production budget and B0 executor.
@@ -66,7 +93,7 @@ export class ContainerOneRunAllowance {
       override begin(...args: Parameters<ExtractionBudget['begin']>) { allowance.assertPins(allowance.plan.code_sha256); allowance.assertPins(allowance.runtimePins); return super.begin(...args); }
     }
     this.budget = new PinnedBudget(resolve(directory, 'request-ledger.json'), this.config.baseUrl, this.now, {
-      limits: effectiveLimits, responseModelAliasPolicy: workbenchModelPolicy(this.config).responseModelAliasPolicy,
+      limits: effectiveLimits, responseModelAliasPolicy: containerResponseModelAliasPolicy(this.plan, this.config),
       authorization: { id: this.planSha, source: 'S7_new_one_container_verification_allowance', recorded_at: started } });
     this.budget.ledger.experiment_started_at = started; this.budget.persist();
     this.timer = setTimeout(() => this.close('container_verification_deadline'), seconds * 1000); this.timer.unref();

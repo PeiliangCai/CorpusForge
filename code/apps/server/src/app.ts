@@ -2,9 +2,9 @@ import Fastify from 'fastify';
 import { catalog, RunStore } from '@t1/agent';
 import { ContractError } from '@t1/contracts';
 import { WorkbenchSources, WORKBENCH_CAPABILITIES } from './workbench.js';
-import { MAX_PDF_BYTES, WorkbenchWorkflow, WorkflowConflict, WorkflowCatalogConflict } from './workflow.js';
+import { MAX_PDF_BYTES, WorkbenchWorkflow, WorkflowConflict, WorkflowCatalogConflict, WorkflowRetentionConflict, WorkflowRunCleanupPending, WorkflowBatchCleanupPending } from './workflow.js';
 import type { Scope } from '@t1/contracts';
-import type { WorkbenchExportKind, WorkbenchRevisionInput, WorkbenchReviewInput, WorkbenchFigureCheckInput } from '../../../packages/contracts/src/workbench.js';
+import type { WorkbenchExportKind, WorkbenchRevisionInput, WorkbenchReviewInput, WorkbenchFigureCheckInput, WorkbenchRetentionInput, WorkbenchSubmission } from '../../../packages/contracts/src/workbench.js';
 
 export function buildApp(store: RunStore, sources = new WorkbenchSources(), workflow?: WorkbenchWorkflow) {
   const app = Fastify({ logger: false, bodyLimit: 32768, forceCloseConnections: true });
@@ -12,9 +12,20 @@ export function buildApp(store: RunStore, sources = new WorkbenchSources(), work
   app.addHook('preClose', async () => { for (const close of streams) close(); await workflow?.close(); });
   app.setErrorHandler((error, _request, reply) => {
     const code = error instanceof ContractError ? error.code : 'request_failed';
+    if (error instanceof WorkflowRunCleanupPending) return reply.code(503).send({ error: code, deleted: true, cleanup_pending: true, run_id: error.run_id, paper_id: error.paper_id });
+    if (error instanceof WorkflowBatchCleanupPending) return reply.code(503).send({ error: code, deleted: true, cleanup_pending: true, batch_id: error.batch_id, run_ids: error.run_ids });
     if (error instanceof WorkflowConflict) return reply.code(409).send({ error: code, message: 'This record has a newer saved version. Reload before applying your changes.', current_version: error.current_version });
+    if (error instanceof WorkflowRetentionConflict) return reply.code(409).send({ error: code, message: 'The saved keep/exclude choice changed. Reload before applying your choice.', current_version: error.current_version, current_retention_revision: error.current_retention_revision });
     if (error instanceof WorkflowCatalogConflict) return reply.code(409).send({ error: code, message: 'The Figure catalog has a newer version. Reload before confirming.', current_catalog_sha256: error.current_catalog_sha256 });
     if ((error as { statusCode?: number }).statusCode === 413 || code === 'pdf_size_out_of_bounds') return reply.code(413).send({ error: 'pdf_size_out_of_bounds' });
+    if (code === 'submission_payload_conflict') return reply.code(409).send({ error: code });
+    if (code.split(',').includes('catalog_version_mismatch')) return reply.code(409).send({ error: code, message: 'The extraction scope choices changed. Refresh the workbench before starting.' });
+    if (['batch_scope_frozen', 'batch_model_frozen', 'batch_task_title_frozen'].includes(code)) return reply.code(409).send({ error: code });
+    if (code === 'submission_result_deleted') return reply.code(410).send({ error: code });
+    if (code === 'submission_busy') return reply.code(429).send({ error: code });
+    if (['storage_preview_stale', 'storage_busy', 'storage_selection_conflict', 'storage_scope_unavailable', 'storage_reference_unavailable'].includes(code)) return reply.code(409).send({ error: code });
+    if (code === 'storage_preview_expired') return reply.code(410).send({ error: code });
+    if (['cancel_active_runs_before_deleting_paper', 'paper_deletion_in_progress', 'paper_busy_before_deleting_run', 'batch_task_deletion_required'].includes(code)) return reply.code(409).send({ error: code });
     return reply.code(code === 'run_not_found' || code.endsWith('_not_found') || code === 'workbench_figure_not_available' ? 404 : 400).send({ error: code });
   });
   app.get('/health', async () => workflow ? { status: 'ok', service: 't1-workbench', runtime_mode: 'workflow', backend_pi_sdk: '1.4.0',
@@ -22,6 +33,7 @@ export function buildApp(store: RunStore, sources = new WorkbenchSources(), work
     : ({ status: 'ok', service: 't1-workbench', runtime_mode: 'legacy_fixture', backend_pi_sdk: '1.4.0', fixture_only: true, extraction_available: false }));
   app.get('/api/catalog', async () => catalog);
   app.get('/api/workbench/capabilities', async () => workflow?.capabilities() ?? WORKBENCH_CAPABILITIES);
+  app.get('/api/workbench/models', async () => workflow?.models() ?? { provider: '', default_profile_id: null, profiles: [] });
   app.get('/api/workbench/papers', async () => ({ papers: await (workflow ?? sources).papers() }));
   app.get('/api/workbench/runs', async () => workflow ? { runs: await workflow.runs() } : ({ runs: store.db.prepare('SELECT id FROM runs ORDER BY rowid DESC LIMIT 100').all().map(row => {
     const value = store.snapshot(row.id as string);
@@ -37,20 +49,33 @@ export function buildApp(store: RunStore, sources = new WorkbenchSources(), work
     app.addHook('onReady', () => workflow.initialize());
     app.addContentTypeParser('application/pdf', { parseAs: 'buffer', bodyLimit: MAX_PDF_BYTES }, (_request, body, done) => done(null, body));
     app.get('/api/workbench/catalog', async () => workflow.scopeCatalog());
+    app.get('/api/workbench/storage', async () => workflow.storageSummary());
+    app.post('/api/workbench/storage/preview', async request => workflow.storagePreview(request.body));
+    app.post('/api/workbench/storage/cleanup', { bodyLimit: 1024 * 1024 }, async request => workflow.storageCleanupSelection(request.body));
+    app.post('/api/workbench/models', async request => workflow.addModel(request.body));
     const decoded = (value: string | string[] | undefined) => { if (typeof value !== 'string') return undefined; try { return decodeURIComponent(value); } catch { throw new ContractError('invalid_upload_header'); } };
+    const requestId = (value: string | string[] | undefined) => { if (value === undefined) return undefined;
+      if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{8,120}$/u.test(value)) throw new ContractError('invalid_submission_request_id'); return value; };
     app.post('/api/workbench/papers', { bodyLimit: MAX_PDF_BYTES }, async (request, reply) => {
       if (!Buffer.isBuffer(request.body)) throw new ContractError('application_pdf_required');
-      return reply.code(201).send(await workflow.upload(request.body, decoded(request.headers['x-t1-filename']) ?? 'paper.pdf', decoded(request.headers['x-t1-title'])));
+      const result = await workflow.upload(request.body, decoded(request.headers['x-t1-filename']) ?? 'paper.pdf', decoded(request.headers['x-t1-title']), requestId(request.headers['x-t1-request-id']));
+      return reply.code(result.reused ? 200 : 201).send(result);
     });
     app.put<{ Params: { paperId: string } }>('/api/workbench/papers/:paperId/pdf', { bodyLimit: MAX_PDF_BYTES }, async request => {
       if (!Buffer.isBuffer(request.body)) throw new ContractError('application_pdf_required'); return workflow.restorePdf(request.params.paperId, request.body);
     });
     app.delete<{ Params: { paperId: string } }>('/api/workbench/papers/:paperId', async request => workflow.deletePaper(request.params.paperId));
-    app.post<{ Params: { paperId: string }; Body: { scope: Scope } }>('/api/workbench/papers/:paperId/runs', async (request, reply) => {
-      if (!request.body || Object.keys(request.body).some(k => k !== 'scope')) throw new ContractError('immutable_server_run_configuration');
-      return reply.code(202).send(await workflow.start(request.params.paperId, request.body.scope));
+    app.post<{ Params: { paperId: string }; Body: { scope: Scope; submission?: WorkbenchSubmission; model_profile_id?: string; task_title?: string; original_filename?: string } }>('/api/workbench/papers/:paperId/runs', async (request, reply) => {
+      if (!request.body || typeof request.body !== 'object' || Array.isArray(request.body) || Object.keys(request.body).some(k => !['scope', 'submission', 'model_profile_id', 'task_title', 'original_filename'].includes(k))) throw new ContractError('immutable_server_run_configuration');
+      return reply.code(202).send(await workflow.start(request.params.paperId, request.body.scope, requestId(request.headers['x-t1-request-id']), request.body.submission, request.body.model_profile_id, request.body.task_title, request.body.original_filename));
     });
     app.get<{ Params: { runId: string } }>('/api/workbench/runs/:runId', async request => workflow.runDetail(request.params.runId));
+    app.delete<{ Params: { runId: string } }>('/api/workbench/runs/:runId', async request => workflow.deleteTaskRun(request.params.runId));
+    app.delete<{ Params: { batchId: string } }>('/api/workbench/batches/:batchId', async request => workflow.deleteBatch(request.params.batchId));
+    app.post<{ Params: { batchId: string } }>('/api/workbench/batches/:batchId/cancel', async request => workflow.cancelBatch(request.params.batchId));
+    app.get<{ Params: { batchId: string } }>('/api/workbench/batches/:batchId/exports/retained_package', async (request, reply) => {
+      const output = await workflow.exportBatch(request.params.batchId); return reply.type(output.type).header('content-disposition', `attachment; filename="${output.filename}"`).header('x-content-type-options', 'nosniff').send(output.bytes);
+    });
     app.get<{ Params: { runId: string; assetId: string } }>('/api/workbench/runs/:runId/figures/:assetId', async (request, reply) =>
       reply.type('image/png').header('x-content-type-options', 'nosniff').send(await workflow.runFigure(request.params.runId, request.params.assetId)));
     app.post<{ Params: { runId: string; figureId: string }; Body: WorkbenchFigureCheckInput }>('/api/workbench/runs/:runId/figures/:figureId/verify', async request =>
@@ -60,6 +85,7 @@ export function buildApp(store: RunStore, sources = new WorkbenchSources(), work
     app.patch<{ Params: { runId: string; recordId: string }; Body: WorkbenchRevisionInput }>('/api/workbench/runs/:runId/records/:recordId', async request => workflow.revise(request.params.runId, request.params.recordId, request.body));
     app.delete<{ Params: { runId: string; recordId: string }; Body: WorkbenchRevisionInput }>('/api/workbench/runs/:runId/records/:recordId', async request => workflow.deleteRecord(request.params.runId, request.params.recordId, request.body));
     app.post<{ Params: { runId: string; recordId: string }; Body: WorkbenchReviewInput }>('/api/workbench/runs/:runId/records/:recordId/review', async request => workflow.reviewRecord(request.params.runId, request.params.recordId, request.body));
+    app.post<{ Params: { runId: string; recordId: string }; Body: WorkbenchRetentionInput }>('/api/workbench/runs/:runId/records/:recordId/retention', async request => workflow.retainRecord(request.params.runId, request.params.recordId, request.body));
     app.get<{ Params: { runId: string; kind: WorkbenchExportKind } }>('/api/workbench/runs/:runId/exports/:kind', async (request, reply) => {
       const output = await workflow.export(request.params.runId, request.params.kind); return reply.type(output.type).header('content-disposition', `attachment; filename="${output.filename}"`).header('x-content-type-options', 'nosniff').send(output.bytes);
     });

@@ -1,0 +1,44 @@
+{
+  "status": "passed",
+  "observed_at_utc": "2026-11-15T11:26:43.649Z",
+  "run_id": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6",
+  "raw_state": "partial",
+  "projection": {
+    "schema_version": "t1-workbench-progress-1",
+    "stage": "partial",
+    "updated_at": "2026-11-15T11:22:31.129Z",
+    "stage_started_at": "2026-11-15T11:22:26.558Z",
+    "elapsed_ms": 1171483,
+    "execution_elapsed_ms": 1171456,
+    "queue_wait_ms": 27,
+    "completed": 304,
+    "unit": "content_units",
+    "total": 547,
+    "unit_counts": {
+      "source_fragment": 94,
+      "text_item": 3,
+      "heading": 49,
+      "list_item": 3,
+      "paragraph": 394,
+      "caption": 4
+    },
+    "completed_unit_counts": {
+      "source_fragment": 66,
+      "text_item": 0,
+      "heading": 45,
+      "list_item": 0,
+      "paragraph": 190,
+      "caption": 3
+    },
+    "completed_batches": 19,
+    "total_batches": 24,
+    "failed_batches": 2,
+    "candidate_records": 20,
+    "source_gap_blocks": 0,
+    "summary_completed": false,
+    "telemetry": "events"
+  },
+  "note": "Actual already-ended old event stream replayed through new pure projector with read-only SQLite; no historical events/ledger/result changed, no request start inferred.",
+  "production_business_writes": 0,
+  "paid_calls": 0
+}

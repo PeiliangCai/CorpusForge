@@ -47,14 +47,92 @@
     "text_fingerprint",
     "delivery_fingerprint"
   ],
-  "authoritative_text": "original_fragments, exact original fragments and their separate page/bbox/text anchors; CSV is one row per fragment",
+  "authoritative_text": "original_fragments and exact source fragments with separate page/bbox/text anchors; CSV remains one row per fragment. Derived passages only describe source-backed reading continuity and never replace authoritative fragments.",
   "figure_semantics": "Whole figure assets/captions and explicit pairing remain distinct from pending/proposed pairing. Never infer image approval from text approval.",
-  "approval_rule": "Only current version and fingerprint-bound human confirmation is approved. Candidate, background, model assessment and source fidelity are not medical approval.",
-  "source_guard": "Missing/changed PDF or IR prevents new extraction and approved exports. A changed/unavailable figure invalidates image confirmation while unchanged approved text may remain exportable without that image.",
-  "group_rule": "Same-source review groups are read-only hints. Keep every member/version; no automatic merge or approval propagation.",
-  "consumer_rule": "Read manifest/coverage/reviews first; preserve origin, fixture and scope completeness. Only approved text can become confirmed evidence; only separately approved figure relations can constrain visual use. Do not fill gaps or paraphrase source text.",
+  "approval_rule": "Legacy approved endpoints still require explicit current-version/fingerprint-bound confirmation. Default kept/retained state is independent and never grants medical approval or rewrites legacy review history.",
+  "source_guard": "Missing/changed PDF or IR prevents new extraction and retained/legacy approved exports. Figure availability/pairing remains separate; valid text may be retained/exported while unavailable/pending images stay explicit.",
+  "group_rule": "Same-source groups remain read-only hints. Keep each member/version, role and individual retention; no automatic merge, retention or approval propagation.",
+  "consumer_rule": "Read manifest, coverage, retention/selection and legacy reviews first; preserve origin/fixture/source/version/fingerprints and scope completeness. Retained means the user has not excluded it; it is not confirmed medical knowledge or an approved visual-generation constraint. Keep background separate from primary. Only genuine separately bound historical approvals retain their original confirmation scope. Never fill gaps, paraphrase original text or infer image approval from text retention.",
   "full_recall_claimed": false,
   "medical_quality_approved": false,
-  "source_glyph_rule": "New runs require the source glyph check; quarantined blocks are neither delivered nor counted complete. Read source_glyph_check and coverage. Legacy unchecked IR remains viewable but approved export is conservative; no automatic approval migration.",
-  "finalization_rule": "Only result_ready final snapshots/coverage describe terminal processing. A downloadable partial candidate package is not completed extraction or medical approval."
+  "source_glyph_rule": "New runs require the source glyph check; quarantined blocks are neither delivered nor counted complete. Read source_glyph_check and coverage. Legacy unchecked IR remains viewable; retained and legacy approved exports both use the conservative local glyph audit/source guard, with no automatic approval migration.",
+  "finalization_rule": "Only result_ready final snapshots/coverage describe terminal processing. A downloadable candidate or retained result is not proof of complete processing, full recall or medical approval.",
+  "retained_kinds": [
+    "retained_jsonl",
+    "retained_csv",
+    "retained_package"
+  ],
+  "ordinary_export_policy": "直接导出本次运行当前未排除的内容，称“保留结果”，无需逐条确认或整篇统一确认；排除项不进入保留结果，主目标与背景仍分别保存。",
+  "retained_export_contract": {
+    "delivery_schema": "verbatim-figure-delivery-1",
+    "package_schema": "verbatim-figure-export-1",
+    "mode": "retained",
+    "record_level_human_confirmation": false,
+    "retained_records_are_medically_unconfirmed": true,
+    "retention_selection_schema": "workbench-retention-snapshot-1",
+    "retention_snapshot": "retention.json",
+    "manifest_selection_fields": [
+      "selection_at",
+      "selection_run_event_seq",
+      "current_record_count",
+      "excluded_record_count"
+    ],
+    "JSONL": {
+      "export_review_status": "retained_unconfirmed",
+      "human_confirmation": null,
+      "medical_quality_approved": false,
+      "retention_selection": {
+        "fields": [
+          "record_id",
+          "record_version",
+          "status",
+          "revision",
+          "origin",
+          "decision_record_version"
+        ],
+        "status": "kept"
+      }
+    },
+    "CSV": {
+      "existing_candidate_approved_columns_unchanged": true,
+      "retained_columns_after_existing_9": [
+        "retention_status",
+        "medical_quality_approved"
+      ],
+      "values": {
+        "retention_status": "kept",
+        "medical_quality_approved": "false"
+      },
+      "one_row_per_original_fragment": true
+    },
+    "retention_json": [
+      "schema_version",
+      "selected_at",
+      "run_event_seq",
+      "records"
+    ],
+    "primary_and_background_separate": true,
+    "retained_is_confirmed_evidence": false,
+    "export_fragments_offsets_fingerprints_unchanged": true,
+    "source_guards": [
+      "PDF/IR SHA and identity match",
+      "legacy local source-glyph audit"
+    ],
+    "figures": "Pending/unavailable figures do not block valid text; no image approval is inherited from retention.",
+    "reading_passages_in_export": false,
+    "retention_json_records": "All visible current records with kept/excluded state, current record version, revision, origin and decision_record_version; exported source-record-versions/human annotations contain only selected records.",
+    "empty_selection": "no_retained_records; legacy candidate empty exports remain compatible."
+  },
+  "retention_rule": "日常结果默认保留，用户主要排除不符合需求的内容，也可恢复；保留取舍独立于开发抽样核验、医学目录核验和旧文字/图文评价。日常保留、排除和恢复无需填写审核人或理由，也不要求真实性/相关性/图文批准表单；可选人工修订另行记录修订人和版本归属。默认保留不表示医学正确、人工批准或下游生成约束已确认。 保留选择按run和record持久化并跨记录修订延续，独立于EvidenceRecord和DeliveryReview；旧有效显式reject继续排除，后续显式pending/approve或新的恢复操作可解除，单纯记录修订不自动恢复。无新选择行时只读派生最新旧评价；已有选择行时，旧客户端后续真实reject/pending/approve同步更新选择并推进revision，避免较新拒绝被较早保留遮盖。旧approve/pending及历史评价原样保留，不伪造批准或重写历史；同源组不传播成员取舍。",
+  "reading_passages": {
+    "fields": [
+      "record.passages",
+      "record.context_passages",
+      "figure.caption_passages"
+    ],
+    "authority": "derived fragment indices and continuity joins only; original fragments/offsets/versions/fingerprints unchanged",
+    "scope": "Workbench API and page only; these layout fields do not enter retained JSONL or evidence packages."
+  },
+  "retained_empty_selection": "no_retained_records; legacy empty candidate export behavior remains compatible.",
+  "retained_review_history": "Retained exports use human_confirmation=null and reviews.json=[]; they do not promise a complete DeliveryReview history. Genuine legacy reviews remain in storage and legacy approved APIs. Original source-record-version review_status/review_events fields are preserved as stored, without automatic approval migration."
 }

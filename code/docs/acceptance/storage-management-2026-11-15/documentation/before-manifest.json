@@ -1,0 +1,88 @@
+{
+  "scope": "F02 current fields and DOCX targeted incremental synchronization",
+  "formal_review_count_at_assignment": 0,
+  "old_five_items_formal_reviews": "3/3 retained, separate scope",
+  "files": [
+    {
+      "path": "方案/子任务T1/当前版本.json",
+      "sha256": "072fd00e281c94da0aee0429d5192bd245b314ad17da9fee9b0b492b6e9adb71",
+      "bytes": 299817
+    },
+    {
+      "path": "方案/子任务T1/开发计划.json",
+      "sha256": "9767357add9e06c58bda45899bfced70053a10a846a0dfbdff7a0aa7c16184c1",
+      "bytes": 533334
+    },
+    {
+      "path": "方案/子任务T1/质量与性能验收契约.json",
+      "sha256": "bbd9b55684bc85c96bf32243bb7e223fa69626965fe26257921745da8a4300db",
+      "bytes": 268058
+    },
+    {
+      "path": "方案/子任务T1/开发任务清单.csv",
+      "sha256": "64792f093cb30560cedac59ae520f1ac70a3150bc188af6789291654bc2f2e2f",
+      "bytes": 65022
+    },
+    {
+      "path": "方案/子任务T1/开发阶段与验收.csv",
+      "sha256": "45716f80aca754ade1f5069158a0e3a46585afc19d6bf823829b653b15fb8fdf",
+      "bytes": 19924
+    },
+    {
+      "path": "方案/子任务T1/验收清单.csv",
+      "sha256": "32ed6de592442d3f7541e463c10c00962e8535034df8f424f5777b788a980be2",
+      "bytes": 60463
+    },
+    {
+      "path": "方案/子任务T1/待讨论实现决策.csv",
+      "sha256": "ac6211ca4b9b313c705804d89377aef4190286fbcd1287f78f821142b8c9578e",
+      "bytes": 35738
+    },
+    {
+      "path": "方案/子任务T1/T1智能体开发计划.docx",
+      "sha256": "30a47b4e16a66a02d2c9b0c9005811dbd72dccb60ba6c8716a2d71dbca4744d9",
+      "bytes": 39188,
+      "zip_parts": {
+        "[Content_Types].xml": "78d88672cf21b856b542ce5fdad7adf92f15d66c5ba1bd58f198561af8ae276c",
+        "_rels/.rels": "c6bab4bd55e95630b507ea5c0f1aeb46124705d793a14f15de67eca266b21ca4",
+        "word/document.xml": "1f8c45d3bc4b0bb42ed0207a377951c0a4dbdb92dfc9d4525a9c6bef4e539fb9",
+        "word/_rels/document.xml.rels": "df356b375f1720ca2ce166141e4f5c9ca855e90bc845596afea4998563e71c1f",
+        "word/fontTable.xml": "c3307d2369db9367041be4673240b0d1279dc1095e21275e5392cbcbe9d424d2",
+        "word/theme/theme1.xml": "bea0a0590dea0ed9e97fa4391c1b7980640249387153014388eaaa628837b32c",
+        "word/footer1.xml": "4f0d71e466360100f778f75716cb6c200a64d9545713751ef0139002c3a6991b",
+        "word/endnotes.xml": "0bb3317d3770f08a4713efc1ec7e2cd753cfbe7b8d4e5eebfd957501cd005ec9",
+        "word/footnotes.xml": "039847818af79bf365ec28fd22bf9827496d4b90471be23a3105810e4a269a8d",
+        "word/settings.xml": "5d9ce2c8b38b28f660ce02dd9167f964c5cc24146af543786f2a9444df4d07b2",
+        "word/styles.xml": "934f03be14218fab79e92d82fe01e80ac835195c853e0b114de04dfea2221127",
+        "word/header1.xml": "8419b250f6e24873e322675bb651b5cabe1a0e6e38fcd9ee9444660da369564a",
+        "docProps/core.xml": "a83028f6184aef173eac4c57cd056810d4196b9876a148644c32dcafff771e50",
+        "docProps/app.xml": "2ad5d2fe1b605714272aac152767e4202a5d3d4bd8c9baa42371d738c703121a",
+        "docProps/custom.xml": "097702cd32e9190c977c9e71aa8232fb49edb7b64c7455f2ab9df11f91591018"
+      },
+      "paragraph_count": 108
+    },
+    {
+      "path": "方案/子任务T1/T1开发执行说明.docx",
+      "sha256": "2f068261cd875684f537aa99f797ef7eb18337308054d4d73c71397b723055a2",
+      "bytes": 40646,
+      "zip_parts": {
+        "[Content_Types].xml": "78d88672cf21b856b542ce5fdad7adf92f15d66c5ba1bd58f198561af8ae276c",
+        "_rels/.rels": "c6bab4bd55e95630b507ea5c0f1aeb46124705d793a14f15de67eca266b21ca4",
+        "word/document.xml": "0ea55795761e3ec14c0abd3c0a2b0682ecc5eb0d4a48b53c57a59e32e86bd05b",
+        "word/_rels/document.xml.rels": "7e0d7796fa15f008170ea62dd4d7929705358e393a5c5cecceea8c21b4ef5a97",
+        "word/fontTable.xml": "2a645181a18a3fe21242f8d54a6545ad101d5ad2de35f45acf00930895e39a9c",
+        "word/theme/theme1.xml": "bea0a0590dea0ed9e97fa4391c1b7980640249387153014388eaaa628837b32c",
+        "word/footer1.xml": "5782f0aaabac5b3052adac50eb25f0b1f27c5f05046664532ece653dbc2eb47f",
+        "word/header1.xml": "0bddea9ff7a7d4f0c5f70c77d211a14bb1d91f38669675dbe7a1f32426fd1201",
+        "word/endnotes.xml": "0bb3317d3770f08a4713efc1ec7e2cd753cfbe7b8d4e5eebfd957501cd005ec9",
+        "word/footnotes.xml": "039847818af79bf365ec28fd22bf9827496d4b90471be23a3105810e4a269a8d",
+        "word/settings.xml": "855d3fb7d86c92d540d664d65489f0075d76695d0829a9f81eed041897020490",
+        "word/styles.xml": "b5ac9cf4e9d41a756eaae87f9fa88ddcd229ef2e294879ca44a950d7a73938a3",
+        "docProps/core.xml": "0911723a18beec38f8994d735fc7c6850f842816e86e097cd043490a920657df",
+        "docProps/app.xml": "b49eed1424d4c902d974eaeefd1ec4f3f19328d17264750fe8c9da673e196517",
+        "docProps/custom.xml": "6e8dfd9f94d1a2f3024a6df11888235e6dbe8bc275308e852703ec564bbd4e9c"
+      },
+      "paragraph_count": 127
+    }
+  ]
+}

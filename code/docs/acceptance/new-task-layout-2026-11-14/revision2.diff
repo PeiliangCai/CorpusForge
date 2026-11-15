@@ -1,0 +1,314 @@
+--- before/apps/pi-web/t1/T1Workbench.tsx
++++ after/apps/pi-web/t1/T1Workbench.tsx
+@@ -56,6 +56,7 @@
+   const modelInitialized = useRef(false);
+   const selectedModel = models?.profiles.find(profile => profile.profile_id === modelProfileId) ?? null;
+   const invalidModel = Boolean(capabilities?.model_selection && !selectedModel);
++  const modelRuntime = invalidModel ? undefined : capabilities?.model_runtime && selectedModel ? { ...capabilities.model_runtime, model_id: selectedModel.model_id, provider: selectedModel.provider, reasoning_effort: selectedModel.reasoning_effort === "none" ? t("t1.noReasoningParameter") : selectedModel.reasoning_effort } : capabilities?.model_runtime;
+   const [paperId, setPaperId] = useState(""), [runId, setRunId] = useState<string | null>(null), [historyId, setHistoryId] = useState(""), [recordId, setRecordId] = useState("");
+   const [detail, setDetail] = useState<WorkbenchPaperDetail | null>(null), [runDetail, setRunDetail] = useState<RunDetail | null>(null);
+   const [page, setPage] = useState(1), [revision, setRevision] = useState(0), [recordQuery, setRecordQuery] = useState("");
+@@ -441,7 +442,11 @@
+           {!activeTab && <div className="t1-empty">{["newTask", "records", "figures", "tasks"].map(id => <button key={id} onClick={() => openTab(id)}>{t(`t1.${id}`)}</button>)}</div>}
+           <section className="t1-new-task-panel" hidden={activeTab !== "newTask"}><div className="t1-heading"><h1>{t("t1.newTask")}</h1><span className="t1-badge">B0</span></div>
+             <BatchSubmission scope={scope} catalog={catalog} onScopeChange={setScope} canUpload={Boolean(capabilities?.paper_upload)} canStart={Boolean(capabilities?.extraction_start)} runs={runs} modelProfile={selectedModel} modelRequired={Boolean(capabilities?.model_selection)} errorText={errorText}
+-              modelSelection={capabilities?.model_selection && models ? <ModelSelection models={models} value={modelProfileId} onChange={chooseModel} onModelsChange={setModels} errorText={errorText} /> : undefined}
++              modelSelection={(capabilities?.model_selection && models || modelRuntime) ? <section className="t1-task-card t1-model-configuration" aria-label={t("t1.modelConfiguration")}>
++                <h2 className="t1-task-card-title">{t("t1.modelConfiguration")}</h2>
++                {capabilities?.model_selection && models && <ModelSelection models={models} value={modelProfileId} onChange={chooseModel} onModelsChange={setModels} errorText={errorText} />}
++                <ModelRuntimeNotice runtime={modelRuntime} maxConcurrent={capabilities?.max_concurrent_runs} showModel={!capabilities?.model_selection} />
++              </section> : undefined}
+               onUploaded={paper => { setPapers(current => [paper, ...current.filter(item => item.id !== paper.id)]); }}
+               onStarted={run => setRuns(current => [run, ...current.filter(item => item.run_id !== run.run_id)])} onView={selectRun} />
+             <details className="t1-reuse-paper" open={reuseOpen} onToggle={event => setReuseOpen(event.currentTarget.open)}><summary>{t("t1.reusePaper")}</summary><p className="t1-footnote">{t("t1.reusePaperHelp")}</p>
+@@ -452,7 +457,6 @@
+               <button className="t1-primary t1-start" disabled={starting || !reusePaperId || !papers.some(paper => paper.id === reusePaperId) || !scope || !catalog || invalidModel || !capabilities?.extraction_start || scopeProblems(scope, catalog).length > 0} onClick={() => void startRun()}>{t(starting ? "t1.starting" : "t1.startReuse")}</button>
+             </details>
+             {!capabilities?.extraction_start && <p className="t1-notice">{t("t1.extractionUnavailable")}{capabilities?.extraction_unavailable_reason && capabilities.extraction_unavailable_reason !== "server_model_not_enabled" && <small>{capabilities.extraction_unavailable_reason}</small>}</p>}
+-            <ModelRuntimeNotice runtime={invalidModel ? undefined : capabilities?.model_runtime && selectedModel ? { ...capabilities.model_runtime, model_id: selectedModel.model_id, provider: selectedModel.provider, reasoning_effort: selectedModel.reasoning_effort === "none" ? t("t1.noReasoningParameter") : selectedModel.reasoning_effort } : capabilities?.model_runtime} maxConcurrent={capabilities?.max_concurrent_runs} />
+           </section>
+           {activeTab === "records" && <>
+             <div className="t1-heading t1-results-heading"><h1>{t("t1.extractionResults")}</h1>
+--- before/apps/pi-web/t1/BatchSubmission.tsx
++++ after/apps/pi-web/t1/BatchSubmission.tsx
+@@ -116,7 +116,8 @@
+           </div>
+           {notice && <p className="t1-notice" role="status">{notice}</p>}
+           <p className="t1-batch-counts" role="status">{t("t1.batchCounts", { total: members.length, uploaded, submitted })}</p>
+-          {!!members.length && <ul className="t1-batch-members">{members.map(member => {
++          <div className="t1-file-list" role="region" aria-label={t("t1.selectedPapers")} tabIndex={0}>
++            {members.length ? <ul className="t1-batch-members">{members.map(member => {
+         const run = runs.find(run => run.run_id === member.run?.run_id) ?? member.run;
+         return <li key={member.id} data-batch-member={member.id} data-upload-state={member.status}>
+           <div className="t1-batch-file"><strong title={member.displayName}>{member.displayName}</strong><small>{(member.file.size / 1024 / 1024).toFixed(1)} MiB</small></div>
+@@ -127,8 +128,9 @@
+             {run ? <button className="t1-button" onClick={() => onView(run)}>{t("t1.viewTask")}</button> : <button className="t1-button" disabled={busy} onClick={() => setMembers(current => current.filter(item => item.id !== member.id))}>{t("t1.removeFile")}</button>}
+           </div>{member.error && <p className="t1-batch-error" role="alert">{member.error}{member.status !== "invalid" && ` ${t("t1.batchRetrySafe")}`}</p>}
+         </li>;
+-          })}</ul>}
+-          {!!members.length && <div className="t1-file-upload-actions"><button className="t1-button" disabled={busy || !uploadable.length || !canUpload} onClick={() => void upload()}>{t(phase === "upload" ? "t1.uploading" : "t1.uploadBatch", { count: uploadable.length })}</button></div>}
++            })}</ul> : <p className="t1-file-list-empty">{t("t1.noSelectedPapers")}</p>}
++          </div>
++          <div className="t1-file-upload-actions"><button className="t1-button" disabled={busy || !uploadable.length || !canUpload} onClick={() => void upload()}>{t(phase === "upload" ? "t1.uploading" : "t1.uploadBatch", { count: uploadable.length })}</button></div>
+         </div>
+       </section>
+       <div className="t1-task-settings">
+@@ -136,13 +138,13 @@
+         {modelSelection}
+       </div>
+     </div>
+-    {!!members.length && <div className="t1-draft-footer">
++    <div className="t1-draft-footer">
+       <div className="t1-batch-actions">
+         <button className="t1-primary" disabled={busy || !startable.length || !canStart || invalidScope || invalidModel} onClick={() => void start()}>{t(phase === "start" ? "t1.starting" : taskKind === "single" ? "t1.startSingle" : "t1.startBatch", { count: startable.length })}</button>
+-        <button className="t1-button" disabled={busy} onClick={() => { setMembers([]); setAdmission(null); setNotice(""); }}>{t("t1.clearBatch")}</button></div>
++        <button className="t1-button" disabled={busy || !members.length} onClick={() => { setMembers([]); setAdmission(null); setNotice(""); }}>{t("t1.clearBatch")}</button></div>
+       <p className="t1-footnote t1-clear-help">{t("t1.clearSelectionHelp")}</p>
+       {savedScope && <div className="t1-batch-scope"><strong>{t("t1.batchSavedScope")}</strong><ScopeSummary scope={savedScope} snapshot={admission?.catalog.catalog} />{admission?.model && <p data-batch-model={admission.model.profile_id}>{t("t1.savedBatchModel")}: {admission.model.model_id}</p>}<p className="t1-footnote">{t("t1.batchScopeHelp")}</p></div>}
+       <p className="t1-footnote">{t("t1.batchIndependent")}</p>
+-    </div>}
++    </div>
+   </section>;
+ }
+--- before/apps/pi-web/t1/ModelSelection.tsx
++++ after/apps/pi-web/t1/ModelSelection.tsx
+@@ -25,8 +25,8 @@
+       onModelsChange(saved); onChange(saved.profile.profile_id); setModelId("");
+     } catch (cause) { setError(errorText(cause)); } finally { setSaving(false); }
+   }
+-  return <section className="t1-model-selection" aria-label={t("t1.extractionModel")}>
+-    <div className="t1-model-choice"><strong>{t("t1.extractionModel")}</strong><ModelSelector
++  return <div className="t1-model-selection">
++    <div className="t1-model-choice"><ModelSelector
+       options={models.profiles.map(profile => ({ provider: profile.provider, providerName: profile.provider, modelId: profile.profile_id, name: `${profile.model_id} · ${description(profile)}` }))}
+       value={selected ? { provider: selected.provider, modelId: selected.profile_id } : null} selectedLabel={selected?.model_id}
+       onChange={(_provider, id) => onChange(id)} ariaLabel={t("t1.extractionModel")} emptyLabel={t("t1.chooseModel")} variant="field" placement="auto" />
+@@ -49,5 +49,5 @@
+         <button className="t1-button" type="submit" disabled={saving || !modelId.trim()}>{t(saving ? "t1.modelSaving" : "t1.saveModel")}</button>
+       </form>
+     </details>
+-  </section>;
++  </div>;
+ }
+--- before/apps/pi-web/t1/ModelRuntimeNotice.tsx
++++ after/apps/pi-web/t1/ModelRuntimeNotice.tsx
+@@ -2,13 +2,13 @@
+ import { useI18n } from "@/hooks/useI18n";
+ import type { WorkbenchModelRuntime } from "../../../packages/contracts/src/workbench";
+ 
+-export function ModelRuntimeNotice({ runtime, maxConcurrent }: { runtime?: WorkbenchModelRuntime; maxConcurrent?: number }) {
++export function ModelRuntimeNotice({ runtime, maxConcurrent, showModel = true }: { runtime?: WorkbenchModelRuntime; maxConcurrent?: number; showModel?: boolean }) {
+   const { t, locale } = useI18n();
+   if (!runtime) return null;
+   const number = (value: number) => new Intl.NumberFormat(locale).format(value);
+   const seconds = runtime.limits.execution_seconds;
+   return <aside className="t1-model-runtime" role="note">
+-    <p><strong>{t("t1.configuredModel")}: {runtime.model_id} · {runtime.reasoning_effort}</strong></p>
++    {showModel && <p><strong>{runtime.model_id} · {runtime.reasoning_effort}</strong></p>}
+     <p>{t("t1.paidStartOnly")}</p>
+     <details><summary>{t("t1.runBudget")}</summary><dl>
+       <dt>{t("t1.requestLimit")}</dt><dd>{number(runtime.limits.requests)}</dd>
+--- before/apps/pi-web/t1/workbench.css
++++ after/apps/pi-web/t1/workbench.css
+@@ -124,8 +124,8 @@
+ .t1-new-task-panel { container: t1-new-task / inline-size; }
+ .t1-new-task-panel > .t1-batch { padding: 0; margin: 0; border: 0; }
+ .t1-new-task-panel .t1-draft-layout, .t1-new-task-panel .t1-task-settings { display: grid; align-items: start; gap: 18px; min-width: 0; }
+-.t1-new-task-panel .t1-task-card, .t1-new-task-panel .t1-model-selection { min-width: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--t1-surface); }
+-.t1-new-task-panel .t1-task-card-title, .t1-new-task-panel .t1-scope-editor > h2, .t1-new-task-panel .t1-model-choice > strong { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0; padding: 15px 18px; border-bottom: 1px solid var(--border); border-radius: 9px 9px 0 0; background: var(--t1-inset); font-size: 14px; font-weight: 600; }
++.t1-new-task-panel .t1-task-card { min-width: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--t1-surface); }
++.t1-new-task-panel .t1-task-card-title, .t1-new-task-panel .t1-scope-editor > h2 { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0; padding: 15px 18px; border-bottom: 1px solid var(--border); border-radius: 9px 9px 0 0; background: var(--t1-inset); font-size: 14px; font-weight: 600; }
+ .t1-new-task-panel .t1-task-card-title .t1-badge { font-weight: 400; background: var(--t1-surface); }
+ .t1-new-task-panel .t1-files-body { padding: 18px; }
+ .t1-new-task-panel .t1-file-picker { padding: 18px; border: 1px solid var(--border); border-radius: 7px; background: var(--t1-inset); }
+@@ -134,8 +134,11 @@
+ .t1-new-task-panel .t1-file-choices > button { min-height: 36px; padding: 7px 14px; }
+ .t1-new-task-panel .t1-file-picker .t1-footnote { margin: 0; }
+ .t1-new-task-panel .t1-batch-counts { margin: 16px 0 0; font-variant-numeric: tabular-nums; }
+-.t1-new-task-panel .t1-batch-members { gap: 10px; margin: 12px 0 0; }
+-.t1-new-task-panel .t1-batch-members > li { padding: 14px; background: var(--t1-inset); }
++.t1-new-task-panel .t1-file-list { height: 256px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; margin-top: 12px; padding: 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--t1-inset); scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
++.t1-new-task-panel .t1-file-list:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
++.t1-new-task-panel .t1-file-list-empty { display: grid; align-content: center; margin: 0; min-height: 100%; color: var(--text-muted); font-size: 12px; text-align: center; }
++.t1-new-task-panel .t1-batch-members { gap: 10px; margin: 0; }
++.t1-new-task-panel .t1-batch-members > li { padding: 14px; background: var(--t1-surface); }
+ .t1-new-task-panel .t1-batch-file { gap: 6px 12px; }
+ .t1-new-task-panel .t1-batch-file strong { font-size: 13px; font-weight: 500; }
+ .t1-new-task-panel .t1-file-upload-actions { display: flex; margin-top: 16px; }
+@@ -150,14 +153,17 @@
+ .t1-new-task-panel .t1-scope-preview { padding: 12px; }
+ .t1-new-task-panel .t1-scope-summary { margin: 8px 0 0; gap: 10px; }
+ .t1-new-task-panel .t1-scope-summary dt { margin-bottom: 2px; font-size: 11px; }
+-.t1-new-task-panel .t1-model-selection { margin: 0; padding: 0 18px 16px; }
++.t1-new-task-panel .t1-model-selection { margin: 0; padding: 16px 18px; border: 0; border-radius: 0; background: transparent; }
+ .t1-new-task-panel .t1-model-choice { display: block; }
+-.t1-new-task-panel .t1-model-choice > strong { margin: 0 -18px 16px; }
+ .t1-new-task-panel .t1-model-choice .model-selector > button { min-height: 38px; }
+ .t1-new-task-panel .t1-model-selection > .t1-footnote { margin: 8px 0; }
+ .t1-new-task-panel .t1-model-add { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+ .t1-new-task-panel .t1-model-add > summary { color: var(--text); }
+ .t1-new-task-panel .t1-model-advanced { grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr)); gap: 0 12px; }
++.t1-new-task-panel .t1-model-configuration .t1-model-runtime { margin: 0; padding: 12px 18px 16px; }
++.t1-new-task-panel .t1-model-selection + .t1-model-runtime { border-top: 1px solid var(--border); }
++.t1-new-task-panel .t1-model-runtime > p { margin: 0 0 8px; font-size: 11px; }
++.t1-new-task-panel .t1-model-runtime dl { grid-template-columns: minmax(0, 1fr) auto; }
+ .t1-new-task-panel .t1-draft-footer { margin-top: 18px; padding: 18px; border: 1px solid var(--border); border-radius: 10px; background: var(--t1-inset); }
+ .t1-new-task-panel .t1-batch-actions { gap: 10px; }
+ .t1-new-task-panel .t1-batch-actions > button { min-height: 36px; }
+@@ -171,6 +177,7 @@
+   .t1-new-task-panel .t1-draft-layout, .t1-new-task-panel .t1-task-settings { gap: 14px; }
+   .t1-new-task-panel .t1-files-body, .t1-new-task-panel .t1-file-picker, .t1-new-task-panel .t1-draft-footer { padding: 14px; }
+   .t1-new-task-panel .t1-scope-layers { grid-template-columns: 1fr; }
++  .t1-new-task-panel .t1-file-list { height: 240px; }
+   .t1-new-task-panel .t1-file-choices > button, .t1-new-task-panel .t1-batch-actions > button { flex: 1; }
+ }
+ 
+--- before/apps/pi-web/t1/messages.mjs
++++ after/apps/pi-web/t1/messages.mjs
+@@ -38,6 +38,7 @@
+   cancelFailed: ["Cancellation not confirmed: {reason}", "取消未确认：{reason}", "取消未確認：{reason}"],
+   cancelRefreshFailed: ["Some status reads failed; refresh to check the latest state.", "部分状态读取失败，请刷新核对最新状态。", "部分狀態讀取失敗，請重新整理核對最新狀態。"],
+   extractionModel: ["Extraction model", "抽取模型", "擷取模型"],
++  modelConfiguration: ["Model configuration", "模型配置", "模型設定"],
+   chooseModel: ["Choose a model", "选择模型", "選擇模型"],
+   addModel: ["Add model", "添加模型", "新增模型"],
+   modelId: ["Model ID", "模型 ID", "模型 ID"],
+@@ -61,6 +62,8 @@
+   refreshDone: ["Paper list, task status and current results updated.", "已更新论文列表、任务状态与当前结果。", "已更新論文清單、任務狀態與目前結果。"],
+   refreshFailed: ["Refresh incomplete: {reason}. Your current selection is kept; try again.", "刷新未完成：{reason}。当前选择已保留，可重试。", "重新整理未完成：{reason}。目前選擇已保留，可重試。"],
+   batchTitle: ["PDF submission", "PDF 批量提交", "PDF 批次提交"],
++  selectedPapers: ["Selected papers", "已选论文", "已選論文"],
++  noSelectedPapers: ["No papers selected", "尚未选择论文", "尚未選擇論文"],
+   batchHelp: ["Choose PDFs or a folder, up to 20 papers per selection and 50 MiB per file. Upload first, then start extraction according to the selected scope.", "可选择 PDF 文件或文件夹，每批最多 20 篇、每篇不超过 50 MiB。先上传，再根据所选范围开始抽取。", "可選擇 PDF 檔案或資料夾，每批最多 20 篇、每篇不超過 50 MiB。先上傳，再根據所選範圍開始擷取。"],
+   batchLimitReached: ["This selection has {count} files, but only {remaining} places remain (20 per batch). None were added; your current list is kept. Choose a smaller subfolder or use Choose files to add PDFs in smaller groups.", "本次选择 {count} 个文件，当前还可加入 {remaining} 篇（每批最多 20 篇）。本次未加入，原清单已保留；请选择更小的子文件夹，或用“选择文件”分批加入。", "本次選擇 {count} 個檔案，目前還可加入 {remaining} 篇（每批最多 20 篇）。本次未加入，原清單已保留；請選擇較小的子資料夾，或用「選擇檔案」分批加入。"],
+   chooseFiles: ["Choose files", "选择文件", "選擇檔案"],
+@@ -261,7 +264,7 @@
+   title: ["Paper evidence workbench", "论文原文工作台", "論文原文工作台"],
+   basedOn: ["Based on Pi Web", "基于 Pi Web", "基於 Pi Web"],
+   papers: ["Papers", "论文", "論文"],
+-  newTask: ["New task", "新任务", "新任務"],
++  newTask: ["Create task", "创建任务", "建立任務"],
+   records: ["Extraction results", "抽取结果", "擷取結果"],
+   figures: ["Source Figures", "原 Figure 目录", "原 Figure 目錄"],
+   tasks: ["Tasks and history", "任务与历史", "任務與歷史"],
+--- before/README.md
++++ after/README.md
+@@ -2,11 +2,11 @@
+ 
+ 从文本型PDF提取肿瘤影像外观原文，保留出处、必要语境、整幅Figure和原图注，供逐篇核对与导出。正式主流程为B0；F仅保留实验实现与历史对照。
+ 
+-当前普通工作台为 **http://127.0.0.1:30141/**，后端为 **http://127.0.0.1:3210**；已验构建为`apps/pi-web/build/new-task-layout-validated-20261114`，BUILD_ID `4lXAqFBrIgE0xgn-3CNUn`。新任务按“上传论文 PDF”“本次抽取范围”“抽取模型”分为独立卡片，宽屏并列、窄屏单列；本地PDF仍先上传后开始。复用入口默认不选论文，同一PDF的重复上传记录合并显示，历史任务保留。任务进度使用后台真实阶段与计数，未知总量不显示假百分比；部分结果、来源字形缺口和未完成汇总不会显示成全部完成。明确配对的整幅Figure和原图注直接显示在描述下，未明确配对的记录保留文字与状态提示。
++当前普通工作台为 **http://127.0.0.1:30141/**，后端为 **http://127.0.0.1:3210**；已验构建为`apps/pi-web/build/new-task-layout-revision2-validated-20261114`，BUILD_ID `ovM3vKLb0Xxo7qHwZ-RIx`。创建任务页面按“上传论文 PDF”“本次抽取范围”“模型配置”分为独立卡片，宽屏并列、窄屏单列；论文清单固定高度并内部滚动，模型调用提示与每任务额度并入模型配置。本地PDF仍先上传后开始。复用入口默认不选论文，同一PDF的重复上传记录合并显示，历史任务保留。任务进度使用后台真实阶段与计数，未知总量不显示假百分比；部分结果、来源字形缺口和未完成汇总不会显示成全部完成。明确配对的整幅Figure和原图注直接显示在描述下，未明确配对的记录保留文字与状态提示。
+ 
+-[新任务布局记录](docs/acceptance/new-task-layout-2026-11-14/report.json)仅完成用户五项反馈中的第1项工程实现与前端上线，等待用户审核；第2–5项尚未开始。后端未重启，生产业务写入与额外付费模型调用均为0。
++[创建任务布局记录](docs/acceptance/new-task-layout-2026-11-14/report.json)仅完成用户五项反馈中的第1项二次修改与前端上线，等待用户审核；第2–5项尚未开始。后端未重启，生产业务写入与额外付费模型调用均为0。
+ 
+-[本轮工程报告](docs/acceptance/workbench-experience-2026-11-14/report.json)记录正式审查3/3、71项后端与346项抽取回归、14项界面单测、16组同构建隔离浏览器与5组真实只读核验。新增任务用相同授权原文投影预载，免去重复索取输入的模型往返；SSE仅查询游标后的新事件。本地SDK与查询基准通过，尚未新增付费任务验证真实总耗时收益。原用户任务自然结束为partial，13条候选和唯一明确配对Figure5保留；上线核验时为17表、8run、8篇论文记录、1模型配置，逻辑数据、两份env与手工目录均保持。代理生产业务写入与额外付费模型调用均为0。
++[前轮工作台体验报告](docs/acceptance/workbench-experience-2026-11-14/report.json)记录正式审查3/3、71项后端与346项抽取回归、14项界面单测、16组同构建隔离浏览器与5组真实只读核验。新增任务用相同授权原文投影预载，免去重复索取输入的模型往返；SSE仅查询游标后的新事件。本地SDK与查询基准通过，尚未新增付费任务验证真实总耗时收益。原用户任务自然结束为partial，13条候选和唯一明确配对Figure5保留；上线核验时为17表、8run、8篇论文记录、1模型配置，逻辑数据、两份env与手工目录均保持。代理生产业务写入与额外付费模型调用均为0。
+ 
+ 范围仍仅保留**癌种→图像模态**两层，由[`config/scope-catalog.json`](config/scope-catalog.json)手工维护，保存后刷新即更新；已提交/排队/运行与同批重试使用原目录快照。[上一轮两层目录报告](docs/acceptance/two-layer-catalog-2026-11-14/report.json)保留当时81项自动检查、5组隔离与4组线上只读核验及用户删除两条记录的事实。S2按调整后的准备/配置工程范围已通过，医学质量未核，S6/S7未升级。
+ 
+@@ -38,7 +38,7 @@
+ 复用本次已验证构建并重启前端时，先确认原前端进程已停止，然后在`code/`运行（普通重新构建流程仍使用上方`build:web`）：
+ 
+ ```bash
+-T1_NEXT_DIST_DIR=build/new-task-layout-validated-20261114 bash scripts/with-node.sh npm run start:web
++T1_NEXT_DIST_DIR=build/new-task-layout-revision2-validated-20261114 bash scripts/with-node.sh npm run start:web
+ ```
+ 
+ 开发时可用`bash scripts/with-node.sh npm run dev:web`替代生产前端，默认仍30141。`npm run dev:server`不自动载入工作台开关/限额；不要仅改`.env`就假定这些已生效。首次依赖/CPU模型准备及Docker启动按[部署说明](deploy/README.md)执行，不运行上游通用pi-web入口或另建前端。
+--- before/apps/pi-web/e2e/t1-workflow.mjs
++++ after/apps/pi-web/e2e/t1-workflow.mjs
+@@ -25,7 +25,7 @@
+ async function check(name, work) { if (skipping && name !== resumeFrom) { const previous = prior.checks.find(check => check.name === name && check.status === 'passed'); assert.ok(previous, 'resumed check must have passed: ' + name); checks.push({ ...previous, executed_in: 'attempt-4-results.json' }); await persist(); return; } skipping = false; const start = Date.now(); try { const detail = await work(); checks.push({ name, status: 'passed', elapsed_ms: Date.now() - start, detail }); console.log(`passed: ${name}`); } catch (e) { checks.push({ name, status: 'failed', elapsed_ms: Date.now() - start, error: e.stack ?? String(e) }); console.error(`failed: ${name}: ${e.message}`); throw e; } finally { await persist(); } }
+ async function json(path) { const response = await context.request.get(origin + '/api/t1/' + path); assert.equal(response.status(), 200, path); return response.json(); }
+ async function current(id = runB.run_id) { return json(`workbench/runs/${encodeURIComponent(id)}`); }
+-async function newTask() { await page.getByRole('tab', { name: '新任务', exact: true }).click(); await page.locator('.t1-scope-editor').waitFor(); }
++async function newTask() { await page.getByRole('tab', { name: '创建任务', exact: true }).click(); await page.locator('.t1-scope-editor').waitFor(); }
+ async function upload(path, title) { await newTask(); await page.getByLabel('选择 PDF', { exact: true }).setInputFiles(path); await page.getByLabel('论文标题（可选）', { exact: true }).fill(title); const response = page.waitForResponse(response => response.url().endsWith('/api/t1/workbench/papers') && response.request().method() === 'POST'); await page.getByRole('button', { name: '上传论文', exact: true }).click(); const saved = await response; assert.equal(saved.status(), 201); const value = (await json("workbench/papers")).papers.find(paper => paper.title === title); assert.ok(value); await page.getByLabel('本次任务论文', { exact: true }).selectOption(value.id); return value; }
+ async function start() { const previous = new Set((await json('workbench/runs')).runs.map(run => run.run_id)); const response = page.waitForResponse(response => response.url().endsWith('/runs') && response.request().method() === 'POST'); await page.getByRole('button', { name: '开始抽取', exact: true }).click(); const saved = await response; assert.equal(saved.status(), 202); const run = (await json('workbench/runs')).runs.find(run => !previous.has(run.run_id)); assert.ok(run); return run; }
+ async function selectRecord(id, target = page) { await target.getByLabel('原文记录', { exact: true }).selectOption(id); await target.locator(`article[data-record-id="${id}"]`).waitFor(); }
+--- before/apps/pi-web/e2e/folder-task-types.mjs
++++ after/apps/pi-web/e2e/folder-task-types.mjs
+@@ -58,7 +58,7 @@
+ const pdf = name => ({ name, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n% LOCAL ' + name + '\n%%EOF\n') });
+ async function idle() { await page.locator('.t1-batch[aria-busy="false"]').waitFor(); }
+ async function clear() { await batch().getByRole('button', { name: '清空本次选择', exact: true }).click(); }
+-async function newTask() { await page.getByRole('tab', { name: '新任务', exact: true }).click(); await batch().waitFor(); }
++async function newTask() { await page.getByRole('tab', { name: '创建任务', exact: true }).click(); await batch().waitFor(); }
+ async function check(name, work) { await work(); report.checks.push(name); await writeFile(join(code, 'runtime-data/agent-notes/folder-task-types-browser.json'), JSON.stringify(report, null, 2) + '\n'); }
+ let restarted;
+ try {
+--- before/apps/pi-web/e2e/workspace-refresh.mjs
++++ after/apps/pi-web/e2e/workspace-refresh.mjs
+@@ -92,7 +92,7 @@
+   assert.equal(await page.locator('.t1-batch input[type="file"][multiple]:not([webkitdirectory])').count(), 1);
+   assert.deepEqual(await page.locator('.t1-quote-frame [data-fragment-index]').allTextContents(), record.fragments.map(fragment => fragment.exact_quote));
+   // A local draft exercises component continuity without any upload request.
+-  await page.getByRole('tab', { name: '新任务', exact: true }).click();
++  await page.getByRole('tab', { name: '创建任务', exact: true }).click();
+   await page.getByLabel('选择 PDF', { exact: true }).setInputFiles({ name: 'unsubmitted-refresh-draft.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n%%EOF\n') });
+   await page.locator('.t1-batch input[type="text"], .t1-batch .t1-field input:not([type="file"])').fill('刷新前草稿');
+   const draftId = await page.locator('[data-batch-member]').getAttribute('data-batch-member');
+@@ -122,7 +122,7 @@
+     const before = await geometry(); assert.ok(before.scroll['.t1-reader-scroll'].top > 0); await busy(before);
+   });
+   await check('scrolled_new_task_keeps_file_title_and_scope_during_refresh', async () => {
+-    await page.getByRole('tab', { name: '新任务', exact: true }).click(); await page.locator('.t1-content').evaluate(element => { element.scrollTop = 180; });
++    await page.getByRole('tab', { name: '创建任务', exact: true }).click(); await page.locator('.t1-content').evaluate(element => { element.scrollTop = 180; });
+     const before = await geometry(); assert.ok(before.scroll['.t1-content'].top > 0); await busy(before);
+     assert.equal(await page.locator('[data-batch-member]').getAttribute('data-batch-member'), draftId);
+     assert.equal(await page.locator('.t1-batch .t1-field input:not([type="file"])').inputValue(), '刷新前草稿');
+--- before/apps/pi-web/e2e/task-records.mjs
++++ after/apps/pi-web/e2e/task-records.mjs
+@@ -117,7 +117,7 @@
+     await page.locator('.t1-exports > summary').click();
+     const download = page.waitForEvent('download'); await page.getByRole('button', { name: '保留结果 JSONL', exact: true }).click();
+     const saved = await download, text = await readFile(await saved.path(), 'utf8'); assert.equal(text.trim().split('\n').length, 2);
+-    await page.getByRole('tab', { name: '新任务', exact: true }).click(); await page.locator('.t1-model-selection').waitFor(); assert.equal(await page.getByRole('button', { name: '选择文件', exact: true }).count(), 1); assert.equal(await page.getByRole('button', { name: '选择文件夹', exact: true }).count(), 1);
++    await page.getByRole('tab', { name: '创建任务', exact: true }).click(); await page.locator('.t1-model-selection').waitFor(); assert.equal(await page.getByRole('button', { name: '选择文件', exact: true }).count(), 1); assert.equal(await page.getByRole('button', { name: '选择文件夹', exact: true }).count(), 1);
+     assert.ok((await page.locator('.t1-model-selection').textContent()).includes('gpt-6-luna')); await page.getByRole('tab', { name: '抽取结果', exact: true }).click();
+   });
+   await check('last_run_delete_opens_empty_new_task_and_explicit_pdf_reuse_creates_an_independent_run', async () => {
+--- before/apps/pi-web/e2e/batch-submission.mjs
++++ after/apps/pi-web/e2e/batch-submission.mjs
+@@ -52,7 +52,7 @@
+ const batch = () => page.locator('.t1-batch'), rows = () => page.locator('[data-batch-member]');
+ const member = name => rows().filter({ has: page.locator('.t1-batch-file strong', { hasText: new RegExp('^' + name.replace('.', '\\.') + '$') }) });
+ async function idle() { await page.locator('.t1-batch[aria-busy="false"]').waitFor(); }
+-async function newTask() { await page.getByRole('tab', { name: '新任务', exact: true }).click(); await batch().waitFor(); }
++async function newTask() { await page.getByRole('tab', { name: '创建任务', exact: true }).click(); await batch().waitFor(); }
+ async function check(name, work) { try { await work(); report.checks.push({ name, status: 'passed' }); } catch (error) { report.checks.push({ name, status: 'failed', error: error.stack ?? String(error) }); throw error; } finally { await writeFile(join(evidence, 'batch-browser.json'), JSON.stringify(report, null, 2) + '\n'); } }
+ 
+ try {
+--- before/apps/pi-web/e2e/two-layer-catalog.mjs
++++ after/apps/pi-web/e2e/two-layer-catalog.mjs
+@@ -109,7 +109,7 @@
+     assert.ok(await page.locator('[data-submission-list="sidebar"] [data-run-id]').count() >= 4); assert.equal(await scopeEditor().count(), 0);
+     assert.equal(await page.locator('.t1-start').isDisabled(), true);
+     await page.goto(origin + '/?' + new URLSearchParams({ paper: runtime.paper, run: runtime.run, view: 'records' })); await page.locator('.t1-evidence-card').waitFor();
+-    await edit(original); await refresh(); await page.getByRole('tab', { name: '新任务', exact: true }).click(); await scopeEditor().waitFor();
++    await edit(original); await refresh(); await page.getByRole('tab', { name: '创建任务', exact: true }).click(); await scopeEditor().waitFor();
+     assert.equal(await scopeEditor().locator('fieldset').count(), 2);
+   });
+   assert.deepEqual(result.errors, []); assert.deepEqual(result.blocked, []);
+--- before/deploy/README.md
++++ after/deploy/README.md
+@@ -2,14 +2,14 @@
+ 
+ ## 当前宿主工作台（2026-11-14）
+ 
+-普通入口为`http://127.0.0.1:30141/`，后端为`http://127.0.0.1:3210`。当前已验构建为`apps/pi-web/build/workbench-experience-validated-20261114`、BUILD_ID `AvEqqRvnH42IteI6npju-`；上线时前端Next65790（launcher65769）、后端65746，后续PID以监听和[本轮唯一报告](../docs/acceptance/workbench-experience-2026-11-14/report.json)为准。新任务入口统一、真实进度、明确整幅Figure/图注直显与新任务同投影预载均已上线；B0、两层范围快照、两FIFO槽及每run额度保持。
++普通入口为`http://127.0.0.1:30141/`，后端为`http://127.0.0.1:3210`。当前已验构建为`apps/pi-web/build/new-task-layout-revision2-validated-20261114`、BUILD_ID `ovM3vKLb0Xxo7qHwZ-RIx`；前端Next97431（wrapper97424）、后端65746，后续PID以监听和[创建任务布局报告](../docs/acceptance/new-task-layout-2026-11-14/report.json)为准。创建任务的论文清单固定高度并内部滚动，模型配置合并选择、调用提示与每任务额度；第1项二次修改等待用户审核，第2–5项未开始。B0、两层范围快照、两FIFO槽及每run额度保持，后端未重启。
+ 
+-正式审查3/3继续；71项后端、346项抽取回归、14项界面单测、16组同构建隔离与5组真实只读核验通过。切换前3次确认无活动任务，原任务先已自然partial；17表/8run/8篇论文记录的逻辑行与hash、两份env及手工目录前后相同，integrity正常、外键错误0。SQLite一致备份为`runtime-data/backups/workbench-experience-20261114-before/t1.sqlite`，旧已验构建`build/two-layer-catalog-validated-20261114`保留回退。本轮没有新增付费模型请求、业务测试写入或任务中断；本地请求数/查询耗时改善不等于真实总抽取速度已验证。原13条候选、唯一明确配对Figure5、41处字形缺口与未完成汇总保持。S2准备/配置工程结论沿用，医学与S6/S7未升级。
++前轮[工作台体验验收](../docs/acceptance/workbench-experience-2026-11-14/report.json)记录：正式审查3/3；71项后端、346项抽取回归、14项界面单测、16组同构建隔离与5组真实只读核验通过。切换前3次确认无活动任务，原任务先已自然partial；17表/8run/8篇论文记录的逻辑行与hash、两份env及手工目录前后相同，integrity正常、外键错误0。SQLite一致备份为`runtime-data/backups/workbench-experience-20261114-before/t1.sqlite`，旧已验构建`build/two-layer-catalog-validated-20261114`保留回退。本轮没有新增付费模型请求、业务测试写入或任务中断；本地请求数/查询耗时改善不等于真实总抽取速度已验证。原13条候选、唯一明确配对Figure5、41处字形缺口与未完成汇总保持。S2准备/配置工程结论沿用，医学与S6/S7未升级。
+ 
+ 需复用当前构建启动前端时，先确认原前端监听已经关闭，从`code/`执行：
+ 
+ ```bash
+-T1_NEXT_DIST_DIR=build/workbench-experience-validated-20261114 bash scripts/with-node.sh npm run start:web
++T1_NEXT_DIST_DIR=build/new-task-layout-revision2-validated-20261114 bash scripts/with-node.sh npm run start:web
+ ```
+ 
+ 后续历史段中的构建、PID、数据计数和命令只对应各交付时点；当前宿主状态以本节与本轮报告为准。Docker30142使用下述独立部署，不承载现有30141数据。

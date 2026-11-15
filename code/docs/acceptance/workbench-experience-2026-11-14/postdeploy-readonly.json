@@ -1,0 +1,169 @@
+{
+  "schema_version": "workbench-experience-postdeploy-readonly-1",
+  "checked_at": "2026-11-14T09:05:19.517887+00:00",
+  "status": "passed",
+  "methods": [
+    "GET",
+    "HEAD"
+  ],
+  "checks": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3210/health",
+      "status": 200,
+      "elapsed_ms": 16.729,
+      "bytes": 146
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3210/api/workbench/runs",
+      "status": 200,
+      "elapsed_ms": 25.826,
+      "bytes": 8950
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3210/api/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca",
+      "status": 200,
+      "elapsed_ms": 140.773,
+      "bytes": 2398253
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:30141/api/t1/workbench/runs",
+      "status": 200,
+      "elapsed_ms": 28.77,
+      "bytes": 8950
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:30141/api/t1/workbench/papers",
+      "status": 200,
+      "elapsed_ms": 63.143,
+      "bytes": 3700
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:30141/api/t1/workbench/capabilities",
+      "status": 200,
+      "elapsed_ms": 2.962,
+      "bytes": 517
+    }
+  ],
+  "database_logical_tables_unchanged": true,
+  "tables": {
+    "events": {
+      "rows": 5,
+      "sha256": "0cce36023a57a5d15170afecc3948a61f8f6e060ca0370d92295d93c088976a4"
+    },
+    "records": {
+      "rows": 1,
+      "sha256": "f76d61870bf7a125fce7418afc751fa4603d923dc1cffe6305dd35b5d5e6e89a"
+    },
+    "runs": {
+      "rows": 1,
+      "sha256": "d9b9fdf5eff6120aae042947b77a3f01d4df2c4111cf9090b344a6631a18bbc4"
+    },
+    "s4_batches": {
+      "rows": 23,
+      "sha256": "70f3a229922cd466b25259d57177b5c872c50a3f08b3ba6971282f5bc49ede92"
+    },
+    "s4_events": {
+      "rows": 251,
+      "sha256": "48c517519f2cf2ff570f4ee4c0184ff13b9f5914d7221d875a9565a011a69906"
+    },
+    "s4_runs": {
+      "rows": 8,
+      "sha256": "c46227b149fca5bc4599c5c0af95309bd84f055c1ded0a0067bfe6d2c98366f4"
+    },
+    "s4_versions": {
+      "rows": 291,
+      "sha256": "c110f57ca8c92998ace2525b7c5f7a50ffbb370d85d535003acc0880ff731c6f"
+    },
+    "workbench_annotations": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_deleted_runs": {
+      "rows": 2,
+      "sha256": "f064f733a448f79f2682066b591ccdf0b3e17eb24afa383574219418d122f5f2"
+    },
+    "workbench_deleted_sources": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_exports": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_model_profiles": {
+      "rows": 1,
+      "sha256": "a125b996c6cdd75bf3a7a6b306e56df669cff6c683630308b27054575ff130cd"
+    },
+    "workbench_papers": {
+      "rows": 8,
+      "sha256": "491adf741bc63295b16b04418441d7a769352a33dbf9073a4253dae22549239b"
+    },
+    "workbench_requests": {
+      "rows": 3,
+      "sha256": "d3b173007c600b2da8063355d3ea412a85217c19b628c72d298acaedaaeec2fe"
+    },
+    "workbench_retentions": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_reviews": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_runs": {
+      "rows": 8,
+      "sha256": "b04d40728d4e16289e119fd7715df2cfec5e7aa1fea08bcd757fb3276a820d6c"
+    }
+  },
+  "table_count": 17,
+  "run_count": 8,
+  "paper_count": 8,
+  "active_runs": [],
+  "integrity": "ok",
+  "foreign_key_errors": 0,
+  "environment_sha256_unchanged": true,
+  "environment_sha256": {
+    ".env": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+    "deploy/local/workbench.env": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea"
+  },
+  "scope_catalog_sha256_unchanged": true,
+  "scope_catalog_sha256": "cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+  "target_run": {
+    "run_id": "run-f5dc6144-9308-4875-ac96-269a645b10ca",
+    "state": "partial",
+    "candidate_count": 13,
+    "model_id": "gpt-6-luna",
+    "progress": {
+      "schema_version": "t1-workbench-progress-1",
+      "stage": "partial",
+      "updated_at": "2026-11-14T08:33:46.128Z",
+      "stage_started_at": "2026-11-14T08:33:43.429Z",
+      "elapsed_ms": 1007881,
+      "execution_elapsed_ms": 1007874,
+      "queue_wait_ms": 7,
+      "completed": 2929,
+      "unit": "source_blocks",
+      "total": 2929,
+      "completed_batches": 23,
+      "candidate_records": 13,
+      "source_gap_blocks": 41,
+      "summary_completed": false,
+      "telemetry": "events"
+    },
+    "paired_count": 1,
+    "paired_figure_ids": [
+      "figure-150c651a804ac08bd1027463"
+    ]
+  },
+  "business_mutation_requests_by_engineering": 0,
+  "extra_paid_model_calls_by_engineering": 0,
+  "previous_user_run_replayed": false,
+  "interrupted_user_tasks": 0,
+  "new_prefill_tested_on_real_paid_run": false
+}

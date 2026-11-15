@@ -269,7 +269,7 @@
       "archived": null,
       "layer": "用户已选正式前端源码基座",
       "borrow": "完整Next.js工程结构、React布局/导航/标签页/整图查看等真实源码",
-      "candidate_role": "唯一Next正式前端源码基座，只读基础已交付，完整S5待接通",
+      "candidate_role": "唯一Next正式前端源码基座，S5功能/UI工程已接受；集中抽取结果界面已交付",
       "limitations": "上游通用coding会话/文件/终端不等同T1论文任务或业务权限；源码/构建不证明完整S5或医学质量",
       "license_note": "MIT，保留原LICENSE与必要修改记录；第三方依赖分别核对",
       "readme_url": "https://github.com/agegr/pi-web/blob/f130910abf662b506b2ef2f475fc21a2fe57badc/README.md",
@@ -278,10 +278,13 @@
       "source_manifest": "code/third_party/pi-web/UPSTREAM.json",
       "implementation_benchmarked": true,
       "selected_for_implementation": true,
-      "current_evidence": "code/docs/acceptance/pi-web-frontend-2026-11-04/current-handoff.json",
+      "current_evidence": "code/docs/acceptance/resume-2026-11-11/ui/report.json",
       "source_archive": "code/third_party/pi-web/pi-web-f130910abf662b506b2ef2f475fc21a2fe57badc.tar.gz",
       "source_layout": "完整1209文件在固定tar；upstream仅保留LICENSE、README.md和package.json；不维护常驻停用通用API副本。",
-      "snapshot_scope": "checked_at/release/star仅为所列日期调研事实，非本次联网更新。"
+      "snapshot_scope": "checked_at/release/star仅为所列日期调研事实，非本次联网更新。",
+      "historical_candidate_role_at_original_check": "唯一Next正式前端源码基座，只读基础已交付，完整S5待接通",
+      "historical_implementation_evidence_at_original_check": "code/docs/acceptance/pi-web-frontend-2026-11-04/current-handoff.json",
+      "implementation_status_updated_at": "2026-11-11"
     }
   ],
   "previous_medical_sources": [
@@ -412,7 +415,7 @@
     "research/pi_review/snapshot.json",
     "research/pi_review/source_evidence_manifest.json"
   ],
-  "plan_version": "0.7",
+  "plan_version": "0.8",
   "pi_sources": [
     {
       "id": "PI01",
@@ -954,7 +957,7 @@
     "source_modifications": "code/docs/acceptance/pi-web-frontend-2026-11-04/source-changes.json",
     "scope": "read_only_T1_frontend_basis_not_complete_S5_or_medical_acceptance"
   },
-  "current_plan_sync_date": "2026-11-04",
+  "current_plan_sync_date": "2026-11-13",
   "current_selection": {
     "parser": {
       "name": "Docling",
@@ -987,93 +990,16 @@
       "source_layout": "完整1209文件在固定tar；upstream仅保留LICENSE、README.md和package.json；不维护常驻停用通用API副本。"
     },
     "model": {
-      "new_paid_calls_authorized": false,
-      "new_paid_call_budget": null,
-      "formal_model_selected": false,
-      "previous_development_model": "gpt-6-luna",
-      "previous_development_reasoning": "medium",
-      "previous_development_selection_is_not_new_run_authorization": true,
-      "current_experiment_authorization": {
-        "status": "closed_one_authorized_round_failed_delivery_no_more_calls",
-        "authorization_id": "t1-s0-s4-recheck-2026-11-08-call_e48854f7c2104007a354793fa32f5ed3",
-        "record": "code/docs/acceptance/s0-s4-recheck-2026-11-08/comparison/authorization.json",
-        "record_sha256": "456ffe4d498f55bfecea7ab6601211ff16c32e35f9b1bea513e1854e53b133db",
-        "user_confirmation_record": "code/docs/acceptance/s0-s4-recheck-2026-11-08/comparison/user-confirmation.json",
-        "user_confirmation_sha256": "e0251934cc0b07458a8dc753bb92ed0250b97ca812f4b8e4b83ceb52e8a7c52e",
-        "confirmation_call_id": "call_e48854f7c2104007a354793fa32f5ed3",
-        "user_confirmation_quote": "批准上述模型、范围与上限（推荐）",
-        "user_approved": true,
-        "approval_time_basis": "first_persisted_confirmation_record_not_user_click_time",
-        "first_persisted_confirmation_record": "2026-11-08T03:25:40.274777Z",
-        "original_user_event_timestamp": null,
-        "prepared_plan": "code/docs/acceptance/s0-s4-recheck-2026-11-08/comparison/plan.json",
-        "prepared_plan_sha256": "b634daf4d3803f37224e6c4b6ac6d8c8c8410dba13f5b030c2b4166b0f975616",
-        "provider": "agicto",
-        "model_id": "gpt-6-luna",
-        "reasoning_effort": "medium",
-        "papers": [
-          "L01",
-          "L05",
-          "L07"
-        ],
-        "methods": [
-          "B0",
-          "F"
-        ],
-        "logical_groups": 6,
-        "physical_groups_with_equivalent_reuse": 5,
-        "shared_limits": {
-          "requests": 128,
-          "input_tokens": 3000000,
-          "output_tokens": 240000,
-          "seconds": 3600,
-          "request_seconds": 120,
-          "document_seconds": 1800,
-          "transient_retries": 2,
-          "response_output_tokens": 8192,
-          "batch_responses": 16
-        },
-        "new_paid_calls_authorized": false,
-        "new_paid_request_limit": 0,
-        "same_scope_source_repair_requires_reapproval": false,
-        "execution_handoff_received": true,
-        "second_root_confirmation_required": false,
-        "current_paid_requests_running": false,
-        "execution_started_at": "2026-11-08T03:34:17.571Z",
-        "deadline_utc": "2026-11-08T04:34:17.571Z",
-        "execution_clock_started": true,
-        "shared_ledger": "code/runtime-data/s4-budget-owners/6b7c06e4a0436006dbba085bb498b32a3950e7a39d1b4b756837a642cd6311ad/call-ledger.json",
-        "usage_final": true,
-        "actual_model_requests": 116,
-        "actual_paid_requests": 116,
-        "one_round_then_output_sampling_stop": true,
-        "no_automatic_optimization": true,
-        "old_189_216_41_budgets_closed_not_reused": true,
-        "final_audit_confirmation_pending": false,
-        "actual_input_tokens": 1580750,
-        "actual_output_tokens": 74179,
-        "actual_elapsed_seconds": 1472.808,
-        "actual_cost": null,
-        "cost_status": "unknown_gateway_billing",
-        "execution_exit_code": 1,
-        "stop_error": "delivery_visual_statement_policy_failed",
-        "hard_cap_triggered": false,
-        "ledger_halted": null,
-        "remaining_request_capacity_not_authorization": 12,
-        "approved_limits_retained_as_history": true,
-        "approved_round_finished_and_no_additional_calls_allowed": true,
-        "post_failure_fix_paid_retest_performed": false,
-        "runtime_source_snapshot_remains_original": true,
-        "final_source_currentness_and_preflight_passed_at_execution": true,
-        "settled_requests": 116,
-        "provider_usage_reported_requests": 116,
-        "ledger_final_sha256": "d4ffcab66a45d88be75401c5b8650b631f6933ff40334a50a4c2e3be5bc3006b",
-        "main_report_and_UI_final_hash_binding_pending": false,
-        "engineering_report": "code/docs/acceptance/s0-s4-recheck-2026-11-08/report.json",
-        "engineering_report_sha256": "c4772957742869d3232529b9b33be9216f54bb3f0c555d3e6da3267f43999965"
-      },
-      "next_run_model_reasoning_scope_and_limits": "本轮116次后因guard失败停止，剩12不续用；当前新增调用许可0，仅作输出人核与后续规划，正式模型未选。",
-      "new_paid_request_limit": 0
+      "formal_model_selected": true,
+      "provider": "agicto",
+      "model_id": "gpt-6-luna",
+      "reasoning_effort": "medium",
+      "api": "openai-responses",
+      "workbench_model_enabled": true,
+      "current_execution_state": "方案/子任务T1/当前版本.json#/model_execution",
+      "selection_is_not_new_run_authorization": true,
+      "medical_quality_approved": false,
+      "response_model_policy": "方案/子任务T1/当前版本.json#/model_execution/response_model_policy"
     },
     "strategy_comparison": "开发计划.json#/strategy_comparison"
   },
@@ -1084,132 +1010,13 @@
     "user_approved_plan_member_prefix": "authorized-plan-2026-11-04/",
     "scope": "旧确认原话、长阶段历史和先前版本保留为历史，不再作为现行有效指令。",
     "evidence_time_rule": "旧S0—S4/前端handoff中的当时金标、未开工或付费预算只记录历史；当前状态以当前版本.json为准，旧预算不续用。",
-    "shared_summary": "code/docs/project-simplify-2026-11-04.json"
+    "shared_summary": "code/docs/project-simplify-2026-11-04.json",
+    "retention_change": "本次用户日常取舍变更只更新当前合同；旧审核、抽查、失败、报告/账本及来源身份原件保留，不改成新日常结果医学批准。"
   },
-  "last_status_update_Asia_Shanghai": "2026-11-08",
-  "current_stage_audit": {
-    "index": "code/docs/acceptance/s0-s4-recheck-2026-11-08/report.json",
-    "audit_date_Asia_Shanghai": "2026-11-08",
-    "status": "authorized_round_stopped_delivery_failure_offline_fix_verified_human_review_pending",
-    "ordered_audit_completed": true,
-    "all_stages_passed": false,
-    "stage_passed": {
-      "S0": true,
-      "S1": true,
-      "S2": false,
-      "S3": false,
-      "S4": false
-    },
-    "stage_engineering_status": {
-      "S0": "passed_current_recheck",
-      "S1": "passed_current_recheck",
-      "S2": "preparation_and_guards_passed",
-      "S3": "passed_scoped_pre_model_checks_for_L01_L05_L07",
-      "S4": "input_and_guard_engineering_verified_post_failure_patch_offline_only"
-    },
-    "facts_and_logs": "单一report分列源前置、原live失败、离线最小修复、未人核输出及S6未来条件；本轮116后已停止，不续用剩12。",
-    "current_live_ledger": "code/runtime-data/s4-budget-owners/6b7c06e4a0436006dbba085bb498b32a3950e7a39d1b4b756837a642cd6311ad/call-ledger.json",
-    "index_sha256": "c4772957742869d3232529b9b33be9216f54bb3f0c555d3e6da3267f43999965"
-  },
-  "current_evidence": {
-    "ordered_S0_S4_audit": "code/docs/acceptance/s0-s4-recheck-2026-11-08/report.json"
-  },
-  "current_experiment_authorization": {
-    "status": "closed_one_authorized_round_failed_delivery_no_more_calls",
-    "authorization_id": "t1-s0-s4-recheck-2026-11-08-call_e48854f7c2104007a354793fa32f5ed3",
-    "record": "code/docs/acceptance/s0-s4-recheck-2026-11-08/comparison/authorization.json",
-    "record_sha256": "456ffe4d498f55bfecea7ab6601211ff16c32e35f9b1bea513e1854e53b133db",
-    "user_confirmation_record": "code/docs/acceptance/s0-s4-recheck-2026-11-08/comparison/user-confirmation.json",
-    "user_confirmation_sha256": "e0251934cc0b07458a8dc753bb92ed0250b97ca812f4b8e4b83ceb52e8a7c52e",
-    "confirmation_call_id": "call_e48854f7c2104007a354793fa32f5ed3",
-    "user_confirmation_quote": "批准上述模型、范围与上限（推荐）",
-    "user_approved": true,
-    "approval_time_basis": "first_persisted_confirmation_record_not_user_click_time",
-    "first_persisted_confirmation_record": "2026-11-08T03:25:40.274777Z",
-    "original_user_event_timestamp": null,
-    "prepared_plan": "code/docs/acceptance/s0-s4-recheck-2026-11-08/comparison/plan.json",
-    "prepared_plan_sha256": "b634daf4d3803f37224e6c4b6ac6d8c8c8410dba13f5b030c2b4166b0f975616",
-    "provider": "agicto",
-    "model_id": "gpt-6-luna",
-    "reasoning_effort": "medium",
-    "papers": [
-      "L01",
-      "L05",
-      "L07"
-    ],
-    "methods": [
-      "B0",
-      "F"
-    ],
-    "logical_groups": 6,
-    "physical_groups_with_equivalent_reuse": 5,
-    "shared_limits": {
-      "requests": 128,
-      "input_tokens": 3000000,
-      "output_tokens": 240000,
-      "seconds": 3600,
-      "request_seconds": 120,
-      "document_seconds": 1800,
-      "transient_retries": 2,
-      "response_output_tokens": 8192,
-      "batch_responses": 16
-    },
-    "new_paid_calls_authorized": false,
-    "new_paid_request_limit": 0,
-    "same_scope_source_repair_requires_reapproval": false,
-    "execution_handoff_received": true,
-    "second_root_confirmation_required": false,
-    "current_paid_requests_running": false,
-    "execution_started_at": "2026-11-08T03:34:17.571Z",
-    "deadline_utc": "2026-11-08T04:34:17.571Z",
-    "execution_clock_started": true,
-    "shared_ledger": "code/runtime-data/s4-budget-owners/6b7c06e4a0436006dbba085bb498b32a3950e7a39d1b4b756837a642cd6311ad/call-ledger.json",
-    "usage_final": true,
-    "actual_model_requests": 116,
-    "actual_paid_requests": 116,
-    "one_round_then_output_sampling_stop": true,
-    "no_automatic_optimization": true,
-    "old_189_216_41_budgets_closed_not_reused": true,
-    "final_audit_confirmation_pending": false,
-    "actual_input_tokens": 1580750,
-    "actual_output_tokens": 74179,
-    "actual_elapsed_seconds": 1472.808,
-    "actual_cost": null,
-    "cost_status": "unknown_gateway_billing",
-    "execution_exit_code": 1,
-    "stop_error": "delivery_visual_statement_policy_failed",
-    "hard_cap_triggered": false,
-    "ledger_halted": null,
-    "remaining_request_capacity_not_authorization": 12,
-    "approved_limits_retained_as_history": true,
-    "approved_round_finished_and_no_additional_calls_allowed": true,
-    "post_failure_fix_paid_retest_performed": false,
-    "runtime_source_snapshot_remains_original": true,
-    "final_source_currentness_and_preflight_passed_at_execution": true,
-    "settled_requests": 116,
-    "provider_usage_reported_requests": 116,
-    "ledger_final_sha256": "d4ffcab66a45d88be75401c5b8650b631f6933ff40334a50a4c2e3be5bc3006b",
-    "main_report_and_UI_final_hash_binding_pending": false,
-    "engineering_report": "code/docs/acceptance/s0-s4-recheck-2026-11-08/report.json",
-    "engineering_report_sha256": "c4772957742869d3232529b9b33be9216f54bb3f0c555d3e6da3267f43999965"
-  },
-  "current_implementation_evidence": "code/docs/acceptance/s0-s4-current-2026-11-04/index.json",
-  "current_comparison_results_record": "code/docs/acceptance/s0-s4-recheck-2026-11-08/report.json",
+  "last_status_update_Asia_Shanghai": "2026-11-13T10:28:53.149094+08:00",
   "original_plan_version": "0.6",
-  "current_plan_revision": "pdf-first-two-method-2026-11-07",
-  "current_improvement_record": "code/docs/acceptance/pdf-input-quality-2026-11-07/improvement-register.json",
+  "current_plan_revision": "batch-submission-and-refresh-2026-11-13",
   "source_snapshot_time_scope": "既有资料和三方法实测按当时记录保留；本轮仅更新现行计划指针，没有重新检索或重评历史。",
-  "current_PDF_structure_review": {
-    "directory": "code/docs/acceptance/pdf-structure-review-2026-11-07/",
-    "status": "targeted_PDF_repairs_engineering_checked_review_page_delivered_user_feedback_pending",
-    "scope": "实际修复已知表格/续段/整图并交用户解析/定位审核；不新增模型提取",
-    "review_record": "当前版本.json#/current_PDF_structure_review",
-    "final_reports": [
-      "code/docs/acceptance/pdf-structure-review-2026-11-07/table-continuation-report.json",
-      "code/docs/acceptance/pdf-structure-review-2026-11-07/figure-review-report.json"
-    ],
-    "source_unit_version": "literal-source-sentences-4"
-  },
   "previous_round_local_engineering_reports": [
     "code/docs/acceptance/pdf-input-quality-2026-11-07/parser-quality-report.json",
     "code/docs/acceptance/pdf-input-quality-2026-11-07/pipeline-contract-repair.json"
@@ -1325,5 +1132,297 @@
       "pause_record": "code/docs/acceptance/s0-s4-current-2026-11-04/user-pause-2026-11-05.json"
     },
     "current_results_record": "方案/子任务T1/当前版本.json#/current_comparison_results"
+  },
+  "historical_source_state_before_resume_2026_11_11": {
+    "time_scope": "dated_historical_checkpoint_not_current_execution_permission",
+    "snapshot": {
+      "current_stage_audit": {
+        "index": "code/docs/acceptance/s0-s4-recheck-2026-11-08/report.json",
+        "audit_date_Asia_Shanghai": "2026-11-08",
+        "status": "authorized_round_stopped_delivery_failure_offline_fix_verified_human_review_pending",
+        "ordered_audit_completed": true,
+        "all_stages_passed": false,
+        "stage_passed": {
+          "S0": true,
+          "S1": true,
+          "S2": false,
+          "S3": false,
+          "S4": false
+        },
+        "stage_engineering_status": {
+          "S0": "passed_current_recheck",
+          "S1": "passed_current_recheck",
+          "S2": "preparation_and_guards_passed",
+          "S3": "passed_scoped_pre_model_checks_for_L01_L05_L07",
+          "S4": "input_and_guard_engineering_verified_post_failure_patch_offline_only"
+        },
+        "facts_and_logs": "单一report分列源前置、原live失败、离线最小修复、未人核输出及S6未来条件；本轮116后已停止，不续用剩12。",
+        "current_live_ledger": "code/runtime-data/s4-budget-owners/6b7c06e4a0436006dbba085bb498b32a3950e7a39d1b4b756837a642cd6311ad/call-ledger.json",
+        "index_sha256": "c4772957742869d3232529b9b33be9216f54bb3f0c555d3e6da3267f43999965"
+      },
+      "current_evidence": {
+        "ordered_S0_S4_audit": "code/docs/acceptance/s0-s4-recheck-2026-11-08/report.json"
+      },
+      "current_experiment_authorization": {
+        "status": "closed_one_authorized_round_failed_delivery_no_more_calls",
+        "authorization_id": "t1-s0-s4-recheck-2026-11-08-call_e48854f7c2104007a354793fa32f5ed3",
+        "record": "code/docs/acceptance/s0-s4-recheck-2026-11-08/comparison/authorization.json",
+        "record_sha256": "456ffe4d498f55bfecea7ab6601211ff16c32e35f9b1bea513e1854e53b133db",
+        "user_confirmation_record": "code/docs/acceptance/s0-s4-recheck-2026-11-08/comparison/user-confirmation.json",
+        "user_confirmation_sha256": "e0251934cc0b07458a8dc753bb92ed0250b97ca812f4b8e4b83ceb52e8a7c52e",
+        "confirmation_call_id": "call_e48854f7c2104007a354793fa32f5ed3",
+        "user_confirmation_quote": "批准上述模型、范围与上限（推荐）",
+        "user_approved": true,
+        "approval_time_basis": "first_persisted_confirmation_record_not_user_click_time",
+        "first_persisted_confirmation_record": "2026-11-08T03:25:40.274777Z",
+        "original_user_event_timestamp": null,
+        "prepared_plan": "code/docs/acceptance/s0-s4-recheck-2026-11-08/comparison/plan.json",
+        "prepared_plan_sha256": "b634daf4d3803f37224e6c4b6ac6d8c8c8410dba13f5b030c2b4166b0f975616",
+        "provider": "agicto",
+        "model_id": "gpt-6-luna",
+        "reasoning_effort": "medium",
+        "papers": [
+          "L01",
+          "L05",
+          "L07"
+        ],
+        "methods": [
+          "B0",
+          "F"
+        ],
+        "logical_groups": 6,
+        "physical_groups_with_equivalent_reuse": 5,
+        "shared_limits": {
+          "requests": 128,
+          "input_tokens": 3000000,
+          "output_tokens": 240000,
+          "seconds": 3600,
+          "request_seconds": 120,
+          "document_seconds": 1800,
+          "transient_retries": 2,
+          "response_output_tokens": 8192,
+          "batch_responses": 16
+        },
+        "new_paid_calls_authorized": false,
+        "new_paid_request_limit": 0,
+        "same_scope_source_repair_requires_reapproval": false,
+        "execution_handoff_received": true,
+        "second_root_confirmation_required": false,
+        "current_paid_requests_running": false,
+        "execution_started_at": "2026-11-08T03:34:17.571Z",
+        "deadline_utc": "2026-11-08T04:34:17.571Z",
+        "execution_clock_started": true,
+        "shared_ledger": "code/runtime-data/s4-budget-owners/6b7c06e4a0436006dbba085bb498b32a3950e7a39d1b4b756837a642cd6311ad/call-ledger.json",
+        "usage_final": true,
+        "actual_model_requests": 116,
+        "actual_paid_requests": 116,
+        "one_round_then_output_sampling_stop": true,
+        "no_automatic_optimization": true,
+        "old_189_216_41_budgets_closed_not_reused": true,
+        "final_audit_confirmation_pending": false,
+        "actual_input_tokens": 1580750,
+        "actual_output_tokens": 74179,
+        "actual_elapsed_seconds": 1472.808,
+        "actual_cost": null,
+        "cost_status": "unknown_gateway_billing",
+        "execution_exit_code": 1,
+        "stop_error": "delivery_visual_statement_policy_failed",
+        "hard_cap_triggered": false,
+        "ledger_halted": null,
+        "remaining_request_capacity_not_authorization": 12,
+        "approved_limits_retained_as_history": true,
+        "approved_round_finished_and_no_additional_calls_allowed": true,
+        "post_failure_fix_paid_retest_performed": false,
+        "runtime_source_snapshot_remains_original": true,
+        "final_source_currentness_and_preflight_passed_at_execution": true,
+        "settled_requests": 116,
+        "provider_usage_reported_requests": 116,
+        "ledger_final_sha256": "d4ffcab66a45d88be75401c5b8650b631f6933ff40334a50a4c2e3be5bc3006b",
+        "main_report_and_UI_final_hash_binding_pending": false,
+        "engineering_report": "code/docs/acceptance/s0-s4-recheck-2026-11-08/report.json",
+        "engineering_report_sha256": "c4772957742869d3232529b9b33be9216f54bb3f0c555d3e6da3267f43999965"
+      },
+      "current_implementation_evidence": "code/docs/acceptance/s0-s4-current-2026-11-04/index.json",
+      "current_comparison_results_record": "code/docs/acceptance/s0-s4-recheck-2026-11-08/report.json",
+      "current_improvement_record": "code/docs/acceptance/pdf-input-quality-2026-11-07/improvement-register.json",
+      "current_PDF_structure_review": {
+        "directory": "code/docs/acceptance/pdf-structure-review-2026-11-07/",
+        "status": "targeted_PDF_repairs_engineering_checked_review_page_delivered_user_feedback_pending",
+        "scope": "实际修复已知表格/续段/整图并交用户解析/定位审核；不新增模型提取",
+        "review_record": "当前版本.json#/historical_checkpoint_records",
+        "final_reports": [
+          "code/docs/acceptance/pdf-structure-review-2026-11-07/table-continuation-report.json",
+          "code/docs/acceptance/pdf-structure-review-2026-11-07/figure-review-report.json"
+        ],
+        "source_unit_version": "literal-source-sentences-4"
+      },
+      "model_selection": {
+        "new_paid_calls_authorized": false,
+        "new_paid_call_budget": null,
+        "formal_model_selected": false,
+        "previous_development_model": "gpt-6-luna",
+        "previous_development_reasoning": "medium",
+        "previous_development_selection_is_not_new_run_authorization": true,
+        "current_experiment_authorization": {
+          "status": "closed_one_authorized_round_failed_delivery_no_more_calls",
+          "authorization_id": "t1-s0-s4-recheck-2026-11-08-call_e48854f7c2104007a354793fa32f5ed3",
+          "record": "code/docs/acceptance/s0-s4-recheck-2026-11-08/comparison/authorization.json",
+          "record_sha256": "456ffe4d498f55bfecea7ab6601211ff16c32e35f9b1bea513e1854e53b133db",
+          "user_confirmation_record": "code/docs/acceptance/s0-s4-recheck-2026-11-08/comparison/user-confirmation.json",
+          "user_confirmation_sha256": "e0251934cc0b07458a8dc753bb92ed0250b97ca812f4b8e4b83ceb52e8a7c52e",
+          "confirmation_call_id": "call_e48854f7c2104007a354793fa32f5ed3",
+          "user_confirmation_quote": "批准上述模型、范围与上限（推荐）",
+          "user_approved": true,
+          "approval_time_basis": "first_persisted_confirmation_record_not_user_click_time",
+          "first_persisted_confirmation_record": "2026-11-08T03:25:40.274777Z",
+          "original_user_event_timestamp": null,
+          "prepared_plan": "code/docs/acceptance/s0-s4-recheck-2026-11-08/comparison/plan.json",
+          "prepared_plan_sha256": "b634daf4d3803f37224e6c4b6ac6d8c8c8410dba13f5b030c2b4166b0f975616",
+          "provider": "agicto",
+          "model_id": "gpt-6-luna",
+          "reasoning_effort": "medium",
+          "papers": [
+            "L01",
+            "L05",
+            "L07"
+          ],
+          "methods": [
+            "B0",
+            "F"
+          ],
+          "logical_groups": 6,
+          "physical_groups_with_equivalent_reuse": 5,
+          "shared_limits": {
+            "requests": 128,
+            "input_tokens": 3000000,
+            "output_tokens": 240000,
+            "seconds": 3600,
+            "request_seconds": 120,
+            "document_seconds": 1800,
+            "transient_retries": 2,
+            "response_output_tokens": 8192,
+            "batch_responses": 16
+          },
+          "new_paid_calls_authorized": false,
+          "new_paid_request_limit": 0,
+          "same_scope_source_repair_requires_reapproval": false,
+          "execution_handoff_received": true,
+          "second_root_confirmation_required": false,
+          "current_paid_requests_running": false,
+          "execution_started_at": "2026-11-08T03:34:17.571Z",
+          "deadline_utc": "2026-11-08T04:34:17.571Z",
+          "execution_clock_started": true,
+          "shared_ledger": "code/runtime-data/s4-budget-owners/6b7c06e4a0436006dbba085bb498b32a3950e7a39d1b4b756837a642cd6311ad/call-ledger.json",
+          "usage_final": true,
+          "actual_model_requests": 116,
+          "actual_paid_requests": 116,
+          "one_round_then_output_sampling_stop": true,
+          "no_automatic_optimization": true,
+          "old_189_216_41_budgets_closed_not_reused": true,
+          "final_audit_confirmation_pending": false,
+          "actual_input_tokens": 1580750,
+          "actual_output_tokens": 74179,
+          "actual_elapsed_seconds": 1472.808,
+          "actual_cost": null,
+          "cost_status": "unknown_gateway_billing",
+          "execution_exit_code": 1,
+          "stop_error": "delivery_visual_statement_policy_failed",
+          "hard_cap_triggered": false,
+          "ledger_halted": null,
+          "remaining_request_capacity_not_authorization": 12,
+          "approved_limits_retained_as_history": true,
+          "approved_round_finished_and_no_additional_calls_allowed": true,
+          "post_failure_fix_paid_retest_performed": false,
+          "runtime_source_snapshot_remains_original": true,
+          "final_source_currentness_and_preflight_passed_at_execution": true,
+          "settled_requests": 116,
+          "provider_usage_reported_requests": 116,
+          "ledger_final_sha256": "d4ffcab66a45d88be75401c5b8650b631f6933ff40334a50a4c2e3be5bc3006b",
+          "main_report_and_UI_final_hash_binding_pending": false,
+          "engineering_report": "code/docs/acceptance/s0-s4-recheck-2026-11-08/report.json",
+          "engineering_report_sha256": "c4772957742869d3232529b9b33be9216f54bb3f0c555d3e6da3267f43999965"
+        },
+        "next_run_model_reasoning_scope_and_limits": "本轮116次后因guard失败停止，剩12不续用；当前新增调用许可0，仅作输出人核与后续规划，正式模型未选。",
+        "new_paid_request_limit": 0
+      }
+    }
+  },
+  "current_stage_audit": {
+    "record": "code/docs/acceptance/resume-2026-11-11/report.json",
+    "stage_passed": {
+      "S0": true,
+      "S1": true,
+      "S2": false,
+      "S3": true,
+      "S4": true,
+      "S5": true,
+      "S6": false,
+      "S7": false
+    },
+    "actual_human_medical_review_count": 0,
+    "medical_quality_approved": false,
+    "formal_reviews_used": 3,
+    "formal_review_limit": 3,
+    "delegated_source_review_is_not_human_medical_review": true,
+    "current_source_review": {
+      "record": "code/docs/acceptance/resume-2026-11-11/source-review.json",
+      "current_IN04_records_checked": 8,
+      "reviewer_kind": "delegated_ai_operator",
+      "new_independent_successful_sources": 0,
+      "actual_human_medical_review_count": 0,
+      "medical_or_business_approval_added": false,
+      "IN06_IN07_new_candidates": 0
+    }
+  },
+  "current_evidence": {
+    "record": "code/docs/acceptance/batch-submission-2026-11-13/report.json",
+    "previous_retention_engineering_report": "code/docs/acceptance/retention-workflow-2026-11-11/report.json",
+    "previous_UI_report": "code/docs/acceptance/linear-ui-2026-11-12/report.json",
+    "previous_real_execution_report": "code/docs/acceptance/resume-2026-11-11/report.json",
+    "baseline_stage_matrix": "code/docs/acceptance/finalization-2026-11-09/stage-matrix.json",
+    "scope": "既有S0/S1、S3限定工程、S4开发迭代和S5接受保留；本轮批量提交/刷新按离线/fixture及线上只读工程证据验证并部署，0新增付费调用。真实医学目录、完整独立S6及S7完整真实门槛仍未通过；未做20篇真实长期负载，不将批量上限、默认保留或导出当医学批准。"
+  },
+  "current_experiment_authorization": {
+    "record": "方案/子任务T1/当前版本.json#/current_experiment_authorization"
+  },
+  "current_implementation_evidence": "code/docs/acceptance/batch-submission-2026-11-13/report.json",
+  "current_improvement_record": "方案/子任务T1/当前版本.json#/current_improvement",
+  "current_UI_refinement": {
+    "record": "方案/子任务T1/当前版本.json#/current_UI_refinement"
+  },
+  "historical_pi_web_research_row_2026_11_04": {
+    "仓库": "agegr/pi-web",
+    "官方链接": "https://github.com/agegr/pi-web",
+    "查询时Star": "未查询，不作选型证明",
+    "查询时间UTC": "2026-11-04",
+    "所在层": "用户已选正式前端源码基座",
+    "可借鉴内容": "完整Next.js工程结构、React布局/导航/标签页/整图查看等真实源码",
+    "角色": "唯一Next正式前端源码基座，只读基础已交付，完整S5待接通",
+    "局限": "完整原始来源在固定tar，upstream仅留3精选文件；不开放通用coding接口；只读工程不代表完整S5或医学验收。",
+    "许可记录": "MIT；固定提交f130910abf662b506b2ef2f475fc21a2fe57badc，包0.15.0；code/third_party/pi-web/UPSTREAM.json与upstream/LICENSE",
+    "已实测": "有历史工程实测，详见资料来源.json的current_evidence；不代表医学质量或完整S5通过。",
+    "已选定": "是"
+  },
+  "historical_checkpoint_records": {
+    "time_scope": "historical_references_only_not_current_state_or_authorization",
+    "legacy_record_fields": {
+      "current_comparison_results_record": "code/docs/acceptance/output-feedback-2026-11-08/comparison/terminal-audit.json",
+      "current_PDF_structure_review_record": "方案/子任务T1/当前版本.json#/historical_checkpoint_records"
+    }
+  },
+  "current_retention_workflow": {
+    "record": "方案/子任务T1/当前版本.json#/current_retention_workflow"
+  },
+  "current_reading_passages": {
+    "record": "方案/子任务T1/当前版本.json#/current_reading_passages"
+  },
+  "current_requirement_formal_reviews": {
+    "record": "方案/子任务T1/当前版本.json#/current_requirement_formal_reviews"
+  },
+  "current_retention_runtime": {
+    "record": "方案/子任务T1/当前版本.json#/current_retention_runtime"
+  },
+  "current_batch_submission": {
+    "record": "方案/子任务T1/当前版本.json#/current_batch_submission"
   }
 }

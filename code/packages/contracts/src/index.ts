@@ -6,6 +6,7 @@ import { StructuredDocumentIRSchema } from './document-ir-v3.js';
 export * from './document-ir-v3.js';
 export * from './extraction-evidence.js';
 export * from './figure-evidence.js';
+export * from './scope-catalog.js';
 
 const closed = { additionalProperties: false } as const;
 const id = Type.String({ minLength: 1, maxLength: 160 });

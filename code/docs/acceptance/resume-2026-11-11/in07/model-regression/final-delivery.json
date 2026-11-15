@@ -1,0 +1,436 @@
+{
+  "schema_version": "verbatim-figure-delivery-1",
+  "output_policy": "verbatim-fragments-1",
+  "document_id": "paper-8e2775d9-4fe2-4e05-a50b-9ee7274a50dc",
+  "file_sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+  "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+  "fixture": false,
+  "scope_snapshots": [],
+  "records": [],
+  "figures": [
+    {
+      "figure_id": "figure-b4f84b31eed6ce83bf3e831c",
+      "figure_number": "1",
+      "caption_segments": [
+        {
+          "block_id": "5a20caa13c3853c1f302-p0002-l000000",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 67,
+          "exact_quote": "FIGURE 1: CT imaging demonstrating two suspicious pulmonary lesions",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            174.34210895691467,
+            521.3054234489331,
+            185.07010163790585
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0002-l000001",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 105,
+          "exact_quote": "Panel A: CT showing a spiculated lateral subpleural right upper lobe nodule measuring 11 × 12 mm (arrow),",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            192.0628726682695,
+            503.1696392740925,
+            199.43836763645095
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0002-l000002",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 54,
+          "exact_quote": "confirmed as moderately differentiated adenocarcinoma.",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            200.46521659376947,
+            355.06894997116666,
+            207.8407115619509
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0002-l000003",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 111,
+          "exact_quote": "Panel B: CT showing a juxta-cardiac left lower lobe nodule measuring 10 × 16 mm (arrow), confirmed as a typical",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            220.87090898426948,
+            520.4767422792806,
+            228.24640395245092
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0002-l000004",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 16,
+          "exact_quote": "carcinoid tumor.",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            229.27325290976944,
+            236.8359675909167,
+            236.64874787795088
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0002-l000005",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 23,
+          "exact_quote": "CT, computed tomography",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            249.67894530026945,
+            267.97790497408016,
+            257.0544402684509
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "panel_labels": [],
+      "native_picture_ids": [
+        "1098ebe3a59e5b7a-u-d979464646c855f5"
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Literal caption continuation inside one original PDF filled rectangle retained; relation and completeness require original-page review. Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      },
+      "regions": [
+        {
+          "asset_id": "figure-b4f84b31eed6ce83bf3e831c-0",
+          "path": "runtime-data/workbench/runs/run-137e8f96-47f8-43e9-ac7f-98f41bd6a79f/figure-assets/figure-b4f84b31eed6ce83bf3e831c-p2-0.png",
+          "sha256": "0a51f5004e3524120735fa47d75c3966aa81935ef9ed94f35c9020029126b0c4",
+          "mime_type": "image/png",
+          "physical_page": 2,
+          "bbox": [
+            182.19862365722656,
+            56.7641487121582,
+            530.5045776367188,
+            162.625
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 698,
+          "height_px": 213,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+          "visual_modification": "none"
+        }
+      ]
+    },
+    {
+      "figure_id": "figure-252f9cda9195dbb27f9463a0",
+      "figure_number": "2",
+      "caption_segments": [
+        {
+          "block_id": "5a20caa13c3853c1f302-p0002-l000006",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 61,
+          "exact_quote": "FIGURE 2: PET/CT imaging demonstrating two FDG-avid pulmonary",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            395.2037207129147,
+            499.4555781962378,
+            405.93171339390574
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0002-l000007",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 7,
+          "exact_quote": "lesions",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            409.6077388709148,
+            223.5661158210034,
+            420.33573155190584
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0002-l000008",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 111,
+          "exact_quote": "Panel A: Axial PET/CT showing a spiculated lateral subpleural right upper lobe nodule measuring 11 × 12 mm with",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            427.3285025822695,
+            522.3497147653882,
+            434.7039975504508
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0002-l000009",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 96,
+          "exact_quote": "intense FDG uptake (SUV max 8.2) (arrow), confirmed as moderately differentiated adenocarcinoma.",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            435.73084650776946,
+            485.12710611263935,
+            443.106341475951
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0002-l000010",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 107,
+          "exact_quote": "Panel B: Axial PET/CT showing a juxta-cardiac left lower lobe nodule measuring 10 × 16 mm with moderate FDG",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            456.13653889826946,
+            519.497794191032,
+            463.512033866451
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0002-l000011",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 69,
+          "exact_quote": "uptake (SUV max 3.5) (arrow), confirmed as a typical carcinoid tumor.",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            464.5388828237694,
+            393.63908453096747,
+            471.914377791951
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0002-l000012",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 103,
+          "exact_quote": "PET/CT, positron emission tomography/computed tomography; FDG, fluorodeoxyglucose; SUV, standard uptake",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            484.94457521426943,
+            518.0360114107787,
+            492.320070182451
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0002-l000013",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 5,
+          "exact_quote": "value",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            493.3469191397694,
+            206.28654549635684,
+            500.72241410795095
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "panel_labels": [],
+      "native_picture_ids": [
+        "1098ebe3a59e5b7a-u-6b09bd1511e2a8e5"
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Literal caption continuation inside one original PDF filled rectangle retained; relation and completeness require original-page review. Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      },
+      "regions": [
+        {
+          "asset_id": "figure-252f9cda9195dbb27f9463a0-0",
+          "path": "runtime-data/workbench/runs/run-137e8f96-47f8-43e9-ac7f-98f41bd6a79f/figure-assets/figure-252f9cda9195dbb27f9463a0-p2-0.png",
+          "sha256": "aad8a2028add54299f1bca5cc0d91a46d4c899d4850fda46bf52b9ee958c8bab",
+          "mime_type": "image/png",
+          "physical_page": 2,
+          "bbox": [
+            182.5463104248047,
+            288.36187744140625,
+            530.4596557617188,
+            383.5
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 696,
+          "height_px": 191,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+          "visual_modification": "none"
+        }
+      ]
+    },
+    {
+      "figure_id": "figure-0d62a3ea00eaafea3f5ac3d9",
+      "figure_number": "3",
+      "caption_segments": [
+        {
+          "block_id": "5a20caa13c3853c1f302-p0003-l000000",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 31,
+          "exact_quote": "FIGURE 3: Histopathology slides",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            190.5452042775,
+            185.1451271661649,
+            340.06423924342135,
+            195.87311984715598
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0003-l000001",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 70,
+          "exact_quote": "Hematoxylin and eosin (H&E) stained sections of lung biopsy specimens.",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            190.5452042775,
+            202.86589087751986,
+            403.8231754942409,
+            210.24138584570096
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0003-l000002",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 76,
+          "exact_quote": "Panel A: Right upper lobe lesion demonstrating adenocarcinoma (400×, arrow).",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            190.5452042775,
+            223.27158326801987,
+            421.34056216035026,
+            230.64707823620097
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "5a20caa13c3853c1f302-p0003-l000003",
+          "text_version": "s3v3-b3aba4b881bd68368d1106af12b9e607",
+          "start": 0,
+          "end": 72,
+          "exact_quote": "Panel B: Left lower lobe specimen showing carcinoid tumor (400×, arrow).",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            190.5452042775,
+            243.67727565851987,
+            406.16757949131124,
+            251.05277062670098
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "panel_labels": [],
+      "native_picture_ids": [
+        "1098ebe3a59e5b7a-u-fae1d8e12507de07"
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Literal caption continuation inside one original PDF filled rectangle retained; relation and completeness require original-page review. Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      },
+      "regions": [
+        {
+          "asset_id": "figure-0d62a3ea00eaafea3f5ac3d9-0",
+          "path": "runtime-data/workbench/runs/run-137e8f96-47f8-43e9-ac7f-98f41bd6a79f/figure-assets/figure-0d62a3ea00eaafea3f5ac3d9-p3-0.png",
+          "sha256": "2bf26fafa596d745afa98f9f4b07181832638c87eac8dabc4ace5bc0904d1964",
+          "mime_type": "image/png",
+          "physical_page": 3,
+          "bbox": [
+            182.33563232421875,
+            56.429176330566406,
+            530.8933715820312,
+            173.4375
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 698,
+          "height_px": 235,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+          "visual_modification": "none"
+        }
+      ]
+    }
+  ],
+  "full_recall_claimed": false,
+  "medical_quality_approved": false,
+  "source_glyph_check": {
+    "status": "checked_no_detected_gaps",
+    "detects_all_font_encoding_errors": false,
+    "source_page_review_still_required": true
+  },
+  "strict_source_groups": [],
+  "source_grouping_policy_version": "strict-source-groups-1",
+  "unique_source_group_count": 0
+}

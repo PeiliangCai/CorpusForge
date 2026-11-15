@@ -1,0 +1,1081 @@
+--- before/packages/agent/src/extraction-run.ts
++++ after/packages/agent/src/extraction-run.ts
+@@ -19,6 +19,7 @@
+ import { BoundedToolRecovery } from './extraction-tool-recovery.js';
+ import { FEATURE_NAME_RAW_RULE, STATEMENT_SELECTOR_RULE, STRUCTURE_HINT_RULE, TABLE_SUPPORT_RULE, SOURCE_UNIT_BOUNDARY_RULE, statementIndexRule } from './extraction-protocol.js';
+ import { PRIMARY_ASSESSMENT_POLICY_VERSION, PRIMARY_ASSESSMENT_RULE, PRIMARY_SCOPE_RULE, DIAGNOSTIC_VISUAL_SCOPE_RULE_VERSION, NORMAL_ANATOMIC_SCOPE_RULE_VERSION } from './primary-evidence-assessment.js';
++import { TASK_COMPLETION_RULE_VERSION } from '../../contracts/src/workbench.js';
+ 
+ export interface ExtractionRunOptions {
+   input: RunInput; document: ExtractionDocument; catalog: EvidenceCatalog; metadata: EvidenceValidationContext['metadata'];
+@@ -101,6 +102,7 @@
+     if (scopeIssues.length) throw new ContractError(scopeIssues.join(','));
+     assertSemanticAuditCases({ input, document, catalog, metadata }, article, options.semanticAuditCases ?? []);
+     if (signal.aborted) throw new ContractError('run_cancelled');
++    if (!selection.kept_block_ids.length) throw new ContractError('reliable_source_input_unavailable');
+     store.transition(input.run_id, 'extracting');
+     store.event(input.run_id, 'coverage_inventory', { all_source_blocks: document.blocks.length,
+       assigned_blocks: article.included_block_ids.length, quarantined_blocks: article.quarantined_block_ids.length,
+@@ -263,8 +265,10 @@
+   const taskUnprocessed = taskScopeIds.filter(id => !completed.has(id) && !failed.has(id));
+   const taskFailed = taskScopeIds.filter(id => failed.has(id));
+   const taskBlockers = [...(!selectedComplete ? ['selected_input_processing_incomplete'] : []),
+-    ...(glyphQuarantine.length ? ['source_glyph_quarantine_unresolved'] : []),
+-    ...(!summaryCompleted ? ['summary_incomplete'] : []), ...(document.parser.status === 'unsupported' ? ['source_unsupported'] : []),
++    ...(!selection.kept_block_ids.length ? ['reliable_source_input_unavailable'] : []),
++    ...(!summaryCompleted ? ['summary_incomplete'] : []),
++    ...(['unsupported', 'failed'].includes(document.parser.status) ? ['source_unsupported'] : []),
++    ...(!delivery || deliveryError ? ['delivery_validation_incomplete'] : []),
+     ...(error ? [error.code] : [])];
+   const taskProcessingComplete = taskBlockers.length === 0;
+   const result = { schema_version: 's4-extraction-run-1', run_id: input.run_id, document_id: input.document_id,
+@@ -295,6 +299,8 @@
+     first_candidate_seconds: firstCandidate, total_seconds: (performance.now() - started) / 1000,
+     timing_scope: 'cached_real_DocumentIR_to_Pi_candidates_and_summary_not_fresh_PDF_end_to_end',
+     coverage: { physical_pages: document.pages.length, parser_status: document.parser.status,
++      task_completion_rule_version: TASK_COMPLETION_RULE_VERSION,
++      delivery_validation_status: delivery && !deliveryError ? 'passed' : 'rejected',
+       all_source_blocks: document.blocks.length, assigned_source_blocks: article.included_block_ids.length,
+       bibliography_scope_rule_version: BIBLIOGRAPHY_SCOPE_RULE_VERSION, task_scope_source_blocks: taskScopeIds.length,
+       model_authorized_source_blocks: taskAllowed.length,
+--- before/packages/contracts/src/workbench.ts
++++ after/packages/contracts/src/workbench.ts
+@@ -1,4 +1,13 @@
+ /** T1 web views. No provider credentials or filesystem paths cross this contract. */
++export const TASK_COMPLETION_RULE_VERSION = 'task-flow-completion-2';
++export interface WorkbenchTaskCompletion {
++  rule_version: string; rule_origin: 'persisted' | 'legacy_evidence_projection'; processing_complete: boolean;
++  source_gap_blocks: number; original_task_processing_complete?: boolean; original_rule_version?: string;
++}
++export interface WorkbenchSourceGap {
++  block_id: string; physical_page: number; text_version: string; original_text: string;
++  uncertain_spans: Array<{ start: number; end: number; code: string }>;
++}
+ export interface WorkbenchFragment {
+   block_id: string; text_version: string; start: number; end: number; exact_quote: string;
+   occurrence: number; physical_page: number; bbox: number[]; location_precision: string;
+@@ -40,6 +49,8 @@
+   fixture?: boolean; coverage?: unknown; error?: string; scope?: import('./index.js').Scope;
+   scope_catalog?: import('./extraction-evidence.js').EvidenceCatalog;
+   result_ready?: boolean;
++  task_completion?: WorkbenchTaskCompletion;
++  source_gaps?: WorkbenchSourceGap[];
+   summary?: string; summary_is_diagnostic?: true;
+   same_source_review_index?: WorkbenchSameSourceReviewIndex;
+ }
+@@ -65,6 +76,8 @@
+   result_ready?: boolean; finished_at?: string;
+   /** Persisted task-scope completion only. Absent means completion is unknown. */
+   task_processing_complete?: boolean;
++  /** Versioned process result; a legacy projection never overwrites the persisted flag above. */
++  task_completion?: WorkbenchTaskCompletion;
+   submission?: WorkbenchSubmission;
+   /** Independent submission name; batch members share the frozen group title. */
+   task_title?: string;
+--- before/apps/server/src/workflow.ts
++++ after/apps/server/src/workflow.ts
+@@ -17,6 +17,8 @@
+ import { readingPassages } from './reading-passages.js';
+ import { WorkbenchModelsStore } from './workbench-models.js';
+ import { workbenchRunProgress, type ProgressCoverage } from './workbench-progress.js';
++import { TASK_COMPLETION_RULE_VERSION, type WorkbenchTaskCompletion } from '../../../packages/contracts/src/workbench.js';
++import { LegacyCompletionProjection, type LegacyCompletionMetadata } from './workflow-completion.js';
+ 
+ const CODE = fileURLToPath(new URL('../../../', import.meta.url));
+ export const MAX_PDF_BYTES = 50 * 1024 * 1024;
+@@ -115,9 +117,11 @@
+   private readonly progressEventsCache = new Map<string, { seq: number; events: WorkbenchEvent[] }>();
+   private readonly requests = new Map<string, { hash: string; promise: Promise<unknown> }>();
+   private readonly batchAdmissions = new Map<string, Promise<unknown>>();
++  private readonly legacyCompletion: LegacyCompletionProjection;
+   private readonly modelProfiles?: WorkbenchModelsStore;
+   constructor(readonly store: ExtractionStore, readonly options: WorkflowOptions = {}) {
+     this.codeRoot = resolve(options.codeRoot ?? CODE); this.directory = resolve(this.codeRoot, options.directory ?? 'runtime-data/workbench');
++    this.legacyCompletion = new LegacyCompletionProjection(this.codeRoot);
+     if (relative(this.codeRoot, this.directory).startsWith('..') || this.directory === this.codeRoot) throw new ContractError('workflow_directory_outside_code');
+     this.catalog = structuredClone(options.catalog ?? unavailableMedicalCatalog);
+     if (!Number.isSafeInteger(options.runTimeoutMs ?? 1800_000) || (options.runTimeoutMs ?? 1800_000) < 1 || (options.runTimeoutMs ?? 1800_000) > 1800_000) throw new ContractError('invalid_workflow_run_timeout');
+@@ -231,12 +235,13 @@
+     this.progressEventsCache.set(id, { seq, events }); return events;
+   }
+   async runs(filterId?: string): Promise<WorkbenchRun[]> { await this.initialize();
+-    return this.store.db.prepare(`SELECT w.id,w.paper_id,s.state,s.input_json,json_extract(w.payload_json,'$.origin','$.created_at','$.controlled','$.error','$.execution_started_at','$.queue_wait_ms','$.runtime_deadline','$.finished_at','$.submission','$.model_profile','$.scope_catalog','$.task_title','$.original_filename',
+-      '$.coverage.explicitly_completed_source_blocks','$.coverage.dispatched_source_blocks','$.coverage.whole_document_summary_complete','$.coverage.task_processing_complete') info,
++    return Promise.all(this.store.db.prepare(`SELECT w.id,w.paper_id,s.state,s.input_json,json_extract(w.payload_json,'$.origin','$.created_at','$.controlled','$.error','$.execution_started_at','$.queue_wait_ms','$.runtime_deadline','$.finished_at','$.submission','$.model_profile','$.scope_catalog','$.task_title','$.original_filename',
++      '$.coverage.explicitly_completed_source_blocks','$.coverage.dispatched_source_blocks','$.coverage.whole_document_summary_complete','$.coverage.task_processing_complete',
++      '$.coverage.task_completion_rule_version','$.coverage.delivery_validation_status') info,
+       json_array_length(json_extract(w.payload_json,'$.coverage.source_glyph_quarantined_block_ids')) source_gap_blocks
+-      FROM workbench_runs w JOIN s4_runs s ON w.id=s.id ${filterId ? 'WHERE w.id=?' : ''} ORDER BY w.rowid DESC`).all(...(filterId ? [filterId] : [])).map(row => {
++      FROM workbench_runs w JOIN s4_runs s ON w.id=s.id ${filterId ? 'WHERE w.id=?' : ''} ORDER BY w.rowid DESC`).all(...(filterId ? [filterId] : [])).map(async row => {
+       const [origin, created_at, controlled, error, execution_started_at, queue_wait_ms, runtime_deadline, finished_at, submission, model_profile, scope_catalog, task_title, original_filename,
+-        completed, total, summary_completed, task_processing_complete] = JSON.parse(row.info as string), input = JSON.parse(row.input_json as string) as RunInput;
++        completed, total, summary_completed, task_processing_complete, completionRule, deliveryStatus] = JSON.parse(row.info as string), input = JSON.parse(row.input_json as string) as RunInput;
+       const count = this.store.db.prepare(`SELECT COUNT(*) n FROM s4_versions v JOIN
+         (SELECT record_id,MAX(version) version FROM s4_versions WHERE run_id=? AND COALESCE(json_extract(envelope_json,'$.status'),'active')<>'proposed' GROUP BY record_id) current
+         ON v.record_id=current.record_id AND v.version=current.version
+@@ -251,8 +256,34 @@
+       const coverage: ProgressCoverage = { ...(typeof completed === 'number' ? { completed } : {}), ...(typeof total === 'number' ? { total } : {}),
+         ...(typeof summary_completed === 'boolean' || summary_completed === 0 || summary_completed === 1 ? { summary_completed: Boolean(summary_completed) } : {}),
+         ...(typeof row.source_gap_blocks === 'number' ? { source_gap_blocks: row.source_gap_blocks } : {}) };
+-      return { ...run, progress: workbenchRunProgress(run, this.progressEvents(run.run_id), coverage) };
+-    });
++      const taskCompletion = await this.completionProjection(run, input, completionRule, deliveryStatus, coverage.source_gap_blocks ?? 0);
++      return { ...run, ...(taskCompletion ? { task_completion: taskCompletion } : {}), progress: workbenchRunProgress(run, this.progressEvents(run.run_id), coverage) };
++    }));
++  }
++  private async completionProjection(run: WorkbenchRun, input: RunInput, rule: unknown, delivery: unknown, sourceGaps: number): Promise<WorkbenchTaskCompletion | undefined> {
++    if (rule === TASK_COMPLETION_RULE_VERSION && typeof run.task_processing_complete === 'boolean') return {
++      rule_version: rule, rule_origin: 'persisted', processing_complete: run.task_processing_complete && delivery === 'passed' && run.result_ready === true &&
++        Boolean(run.finished_at) && ['completed', 'partial'].includes(run.state) && !run.error && Boolean(this.store.db.prepare(`SELECT 1 FROM s4_events
++          WHERE run_id=? AND json_extract(payload_json,'$.type')='run_result_saved' AND json_extract(payload_json,'$.detail.finalization_complete')=1
++          AND json_extract(payload_json,'$.detail.coverage_saved')=1 LIMIT 1`).get(run.run_id)), source_gap_blocks: sourceGaps,
++      original_task_processing_complete: run.task_processing_complete,
++    };
++    if (rule || run.task_processing_complete !== false || run.result_ready !== true || !run.finished_at || run.error || !['completed', 'partial'].includes(run.state) || !sourceGaps) return undefined;
++    // Small metadata only. The full legacy row/IR/result is decoded solely on a
++    // cache miss after its evidence files have been identified.
++    const row = this.store.db.prepare(`SELECT json_extract(w.payload_json,'$.directory','$.source.ir','$.source.document.document_id',
++      '$.source.document.file_sha256','$.source.document.text_version','$.coverage.task_processing_blockers') info,
++      json_extract(p.payload_json,'$.pdf') pdf FROM workbench_runs w JOIN workbench_papers p ON p.id=w.paper_id WHERE w.id=?`).get(run.run_id);
++    if (!row) return undefined;
++    const [directory, ir, document_id, file_sha256, text_version, blockers] = JSON.parse(row.info as string);
++    if (file_sha256 !== input.file_sha256) return undefined;
++    const proof = this.store.db.prepare(`SELECT MAX(seq) event_seq,
++      SUM(CASE WHEN json_extract(payload_json,'$.type')='run_result_saved' AND json_extract(payload_json,'$.detail.finalization_complete')=1 AND json_extract(payload_json,'$.detail.coverage_saved')=1 THEN 1 ELSE 0 END) saved,
++      SUM(CASE WHEN json_extract(payload_json,'$.type') IN ('extraction_error','source_invalidated','delivery_validation_rejected','workflow_error','run_deadline','interruption') THEN 1 ELSE 0 END) unsafe
++      FROM s4_events WHERE run_id=?`).get(run.run_id)!;
++    const metadata: LegacyCompletionMetadata = { directory, ir, document_id, file_sha256, text_version, blockers,
++      pdf: JSON.parse(row.pdf as string), event_seq: Number(proof.event_seq), result_saved: Number(proof.saved) > 0, unsafe_events: Number(proof.unsafe) };
++    return this.legacyCompletion.project(run, metadata, () => this.run(run.run_id).coverage);
+   }
+   private async readPinned(artifact: Artifact) {
+     const root = await realpath(this.codeRoot), path = await realpath(resolve(root, artifact.path)).catch(() => { throw new ContractError('source_file_missing'); });
+@@ -455,6 +486,10 @@
+       result_ready: terminals.has(currentState) && ready,
+       ...(row.summary ? { summary: row.summary, summary_is_diagnostic: true as const } : {}),
+       full_recall_claimed: false, medical_quality_approved: false, coverage: row.coverage, same_source_review_index: buildSameSourceReviewIndex(versions), ...(row.error ? { error: row.error } : {}) };
++    const gapIds = new Set((row.coverage as { source_glyph_quarantined_block_ids?: string[] } | undefined)?.source_glyph_quarantined_block_ids ?? []);
++    value.source_gaps = source.document.blocks.filter(block => gapIds.has(block.block_id)).map(block => ({ block_id: block.block_id,
++      physical_page: block.page, text_version: block.text_version, original_text: block.text,
++      uncertain_spans: (block.source_glyph_issues ?? []).map(issue => ({ start: issue.start, end: issue.end, code: issue.code })) }));
+     this.outputCache.set(row.id, { key: cacheKey, value }); return value;
+   }
+   async detail(id: string): Promise<WorkbenchPaperDetail> {
+@@ -465,10 +500,11 @@
+       read_only: false, source_units: source ? this.units(source.document) : [],
+       figures: (catalog?.figures ?? []).map(f => ({ id: f.figure_id, number: f.figure_number, verification: f.verification.status, caption: f.caption_segments, caption_passages: readingPassages(source!.document, f.caption_segments, this.units(source!.document)), human_approved: false,
+         assets: f.regions.map(a => ({ id: a.asset_id, url: `/api/t1/workbench/papers/${id}/figures/${a.asset_id}`, sha256: a.sha256, page: a.physical_page, width: a.width_px, height: a.height_px })) })),
+-      outputs: await Promise.all(this.runRows().filter(r => r.paper_id === id).map(r => this.output(r))) };
++      outputs: await Promise.all(this.runRows().filter(r => r.paper_id === id).map(async r => ({ ...await this.output(r), task_completion: (await this.runs(r.id))[0]?.task_completion }))) };
+   }
+   async runDetail(id: string) { await this.initialize(); const row = this.run(id), paper = this.paper(row.paper_id), source = row.source, issues = await this.sourceIssues(paper, source), catalog = source ? await this.availableCatalog(source) : undefined;
+-    const output = await this.output(row), currentRun = (await this.runs(id))[0]!;
++    const rawOutput = await this.output(row), currentRun = (await this.runs(id))[0]!;
++    const output = { ...rawOutput, task_completion: currentRun.task_completion };
+     return { run: { ...currentRun, state: output.state, candidate_count: output.records.length, result_ready: output.result_ready }, output, source_units: source ? this.units(source.document) : [], source_issues: issues,
+       figures: (catalog?.figures ?? []).map(f => ({ id: f.figure_id, number: f.figure_number, verification: f.verification.status, caption: f.caption_segments,
+         caption_passages: readingPassages(source!.document, f.caption_segments, this.units(source!.document)), human_approved: false as const,
+--- before/apps/server/src/workflow-completion.ts
++++ after/apps/server/src/workflow-completion.ts
+@@ -0,0 +1,99 @@
++import { createHash } from 'node:crypto';
++import { readFile, realpath, stat } from 'node:fs/promises';
++import { isAbsolute, relative, resolve } from 'node:path';
++import { isDeepStrictEqual } from 'node:util';
++import { TASK_COMPLETION_RULE_VERSION, type WorkbenchRun, type WorkbenchTaskCompletion } from '../../../packages/contracts/src/workbench.js';
++
++const object = (value: unknown): Record<string, any> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {};
++const array = (value: unknown): any[] => Array.isArray(value) ? value : [];
++const sha = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
++const sameIds = (a: unknown, b: unknown) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && new Set(a).size === a.length &&
++  a.every(id => typeof id === 'string' && b.includes(id));
++export interface LegacyCompletionMetadata {
++  directory: string; pdf: { path: string; sha256: string }; ir: { path: string; sha256: string };
++  document_id: string; file_sha256: string; text_version: string; blockers: unknown; event_seq: number;
++  result_saved: boolean; unsafe_events: number;
++}
++
++/** Only the audited legacy sole-glyph contract is eligible. Large immutable
++ * evidence is read once per file identity; polling otherwise reads file stats.
++ * Every result is a response projection, never a database or artifact write. */
++export class LegacyCompletionProjection {
++  private readonly cache = new Map<string, { key: string; value?: WorkbenchTaskCompletion }>();
++  private readonly flights = new Map<string, { key: string; promise: Promise<WorkbenchTaskCompletion | undefined> }>();
++  private auditQueue: Promise<unknown> = Promise.resolve();
++  constructor(readonly codeRoot: string) {}
++  async project(run: WorkbenchRun, metadata: LegacyCompletionMetadata, savedCoverage: () => unknown) {
++    if (!['partial', 'completed'].includes(run.state) || run.result_ready !== true || !run.finished_at || run.error ||
++      run.task_processing_complete !== false || !sameIds(metadata.blockers, ['source_glyph_quarantine_unresolved']) ||
++      !metadata.result_saved || metadata.unsafe_events || metadata.document_id !== run.document_id || metadata.pdf?.sha256 !== metadata.file_sha256 ||
++      !metadata.directory || !metadata.ir?.sha256 || !metadata.text_version) return undefined;
++    const flightKey = JSON.stringify([metadata, run.finished_at]), flight = this.flights.get(run.run_id);
++    if (flight?.key === flightKey) return flight.promise;
++    // Serialize cold evidence reads so a long history cannot load many large
++    // results and IRs concurrently. Hot checks only inspect file identities.
++    const promise = this.auditQueue.then(() => this.audit(run, metadata, savedCoverage)).catch(() => undefined);
++    this.auditQueue = promise;
++    this.flights.set(run.run_id, { key: flightKey, promise });
++    try { return await promise; } finally { if (this.flights.get(run.run_id)?.promise === promise) this.flights.delete(run.run_id); }
++  }
++  private async audit(run: WorkbenchRun, metadata: LegacyCompletionMetadata, savedCoverage: () => unknown) {
++    const root = await realpath(this.codeRoot);
++    const paths = await Promise.all(['result.json', 'delivery.json', 'request-ledger.json'].map(name => resolve(metadata.directory, name))
++      .concat([resolve(root, metadata.pdf.path), resolve(root, metadata.ir.path)]).map(async value => {
++        const path = await realpath(value), rel = relative(root, path);
++        if (!rel || rel.startsWith('..') || isAbsolute(rel)) throw new Error('completion_evidence_outside_code');
++        return path;
++      }));
++    const identities = async () => Promise.all(paths.map(async path => {
++      const s = await stat(path, { bigint: true });
++      if (!s.isFile()) throw new Error('completion_evidence_not_file');
++      return [path, s.dev, s.ino, s.size, s.mtimeNs, s.ctimeNs].map(String);
++    }));
++    const before = await identities(), key = JSON.stringify([metadata, run.finished_at, before]);
++    const cached = this.cache.get(run.run_id); if (cached?.key === key) return cached.value;
++    let value: WorkbenchTaskCompletion | undefined;
++    const [resultBytes, deliveryBytes, ledgerBytes, pdfBytes, irBytes] = await Promise.all(paths.map(path => readFile(path)));
++    const result = object(JSON.parse(resultBytes!.toString())), delivery = object(JSON.parse(deliveryBytes!.toString())), ledger = object(JSON.parse(ledgerBytes!.toString()));
++    const ir = object(JSON.parse(irBytes!.toString())), coverage = object(result.coverage), persisted = object(savedCoverage());
++    const gaps = array(coverage.source_glyph_quarantined_block_ids), events = array(result.events), batches = new Map<string, Record<string, any>>();
++    for (const event of events) if (event.type === 'batch' && typeof event.detail?.batch_id === 'string') batches.set(event.detail.batch_id, event.detail);
++    const inventory = events.filter(e => e.type === 'coverage_inventory').at(-1)?.detail;
++    const summary = events.filter(e => e.type === 'document_summary').at(-1)?.detail;
++    const completedIds = [...batches.values()].flatMap(batch => array(batch.assigned_block_ids));
++    const delivered = [...array(delivery.records), ...array(delivery.background_records)];
++    const resultRecords = array(result.records);
++    const sourceValid = sha(pdfBytes!) === metadata.pdf.sha256 && sha(irBytes!) === metadata.ir.sha256 &&
++      ir.document_id === run.document_id && ir.file_sha256 === metadata.file_sha256 && ir.text_version === metadata.text_version;
++    if (sourceValid && result.schema_version === 's4-extraction-run-1' && result.source_selection_condition === 'B0' &&
++      result.run_id === run.run_id && result.document_id === run.document_id && result.state === run.state && !result.error &&
++      result.task_processing_complete === false && result.delivery_validation?.status === 'passed' && !result.delivery_validation.error &&
++      result.delivery_validation.rejected_delivery_written === false && isDeepStrictEqual(coverage, persisted) &&
++      coverage.legacy_run_state_is_not_task_scope_completion === true && !coverage.task_completion_rule_version &&
++      sameIds(coverage.task_processing_blockers, ['source_glyph_quarantine_unresolved']) &&
++      ['parsed', 'partial'].includes(coverage.parser_status) && coverage.selected_source_block_processing_complete === true &&
++      coverage.whole_document_summary_complete === true && coverage.dispatched_source_blocks > 0 && gaps.length > 0 &&
++      coverage.explicitly_completed_source_blocks === coverage.dispatched_source_blocks &&
++      sameIds(coverage.completed_source_block_ids, [...new Set(completedIds)]) && new Set(completedIds).size === coverage.dispatched_source_blocks &&
++      sameIds(coverage.task_scope_unprocessed_source_block_ids, gaps) &&
++      ['failed_source_block_ids', 'task_scope_failed_source_block_ids', 'quarantined_source_block_ids'].every(k => Array.isArray(coverage[k]) && coverage[k].length === 0) &&
++      batches.size > 0 && inventory?.total_batches === batches.size && inventory.dispatched_blocks === coverage.dispatched_source_blocks &&
++      [...batches.values()].every(batch => batch.status === 'completed' && batch.explicit_completion_received === true && !batch.result?.error) &&
++      summary?.complete === true && Array.isArray(summary.completion_blockers) && summary.completion_blockers.length === 0 &&
++      events.every(e => !['extraction_error', 'source_invalidated', 'delivery_validation_rejected', 'workflow_error', 'run_deadline'].includes(e.type)) &&
++      array(result.summary_attempts).at(-1)?.status === 'completed' && !array(result.summary_attempts).at(-1)?.error &&
++      !ledger.halted && Array.isArray(ledger.requests) && ledger.requests.length > 0 && ledger.requests.length === result.ledger_totals?.requests &&
++      delivery.schema_version === 'verbatim-figure-delivery-1' && delivery.document_id === run.document_id &&
++      delivery.file_sha256 === metadata.file_sha256 && delivery.text_version === metadata.text_version &&
++      Array.isArray(delivery.records) && (delivery.background_records === undefined || Array.isArray(delivery.background_records)) && delivered.length === result.candidate_count &&
++      resultRecords.length === result.candidate_count && delivered.every(record => record.run_id === run.run_id && record.document_id === run.document_id &&
++        resultRecords.some(v => v.record?.record_id === record.record_id && v.version === record.record_version && v.record.extraction_trace?.run_id === run.run_id) &&
++        [...array(record.original_fragments), ...array(record.context_fragments)].every(fragment => fragment.text_version === metadata.text_version && !gaps.includes(fragment.block_id)))) {
++      value = { rule_version: TASK_COMPLETION_RULE_VERSION, rule_origin: 'legacy_evidence_projection', processing_complete: true,
++        source_gap_blocks: gaps.length, original_task_processing_complete: false, original_rule_version: 'legacy-task-completion-1' };
++    }
++    if (JSON.stringify(await identities()) !== JSON.stringify(before)) return undefined;
++    if (this.cache.size >= 100) this.cache.delete(this.cache.keys().next().value!);
++    this.cache.set(run.run_id, { key, value }); return value;
++  }
++}
+--- before/apps/server/test/workflow-completion.test.ts
++++ after/apps/server/test/workflow-completion.test.ts
+@@ -0,0 +1,93 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
++import { resolve, relative } from 'node:path';
++import { createHash } from 'node:crypto';
++import { LegacyCompletionProjection, type LegacyCompletionMetadata } from '../src/workflow-completion.js';
++import type { WorkbenchRun } from '../../../packages/contracts/src/workbench.js';
++import { makeEvidenceFixture } from '../../../tests/extraction/fixtures/evidence-fixtures.js';
++
++const sha = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
++async function fixture() {
++  const directory = await mkdtemp(resolve('runtime-data/item5-legacy-test-')), f = makeEvidenceFixture(['Reliable source.', 'Uncertain glyph.']);
++  const pdf = Buffer.from('SYNTHETIC SOURCE IDENTITY ONLY; no parser or medical quality claim.');
++  f.document.file_sha256 = sha(pdf); f.document.source.file_reference = resolve(directory, 'source.pdf');
++  const ir = Buffer.from(JSON.stringify(f.document)), assigned = f.document.blocks[0]!.block_id, gap = f.document.blocks[1]!.block_id;
++  const coverage = { task_processing_complete: false, task_processing_blockers: ['source_glyph_quarantine_unresolved'], legacy_run_state_is_not_task_scope_completion: true,
++    parser_status: 'partial', selected_source_block_processing_complete: true, whole_document_summary_complete: true, dispatched_source_blocks: 1,
++    explicitly_completed_source_blocks: 1, completed_source_block_ids: [assigned], source_glyph_quarantined_block_ids: [gap], task_scope_unprocessed_source_block_ids: [gap],
++    failed_source_block_ids: [], task_scope_failed_source_block_ids: [], quarantined_source_block_ids: [] };
++  const result = { schema_version: 's4-extraction-run-1', source_selection_condition: 'B0', run_id: f.input.run_id, document_id: f.document.document_id,
++    state: 'partial', task_processing_complete: false, delivery_validation: { status: 'passed', rejected_delivery_written: false }, coverage,
++    candidate_count: 0, records: [], summary_attempts: [{ status: 'completed' }], ledger_totals: { requests: 1 }, events: [
++      { type: 'coverage_inventory', detail: { total_batches: 1, dispatched_blocks: 1 } },
++      { type: 'batch', detail: { batch_id: 'one', status: 'completed', explicit_completion_received: true, assigned_block_ids: [assigned], result: {} } },
++      { type: 'document_summary', detail: { complete: true, completion_blockers: [] } },
++    ] };
++  const delivery = { schema_version: 'verbatim-figure-delivery-1', document_id: f.document.document_id, file_sha256: f.document.file_sha256, text_version: f.document.text_version, records: [] };
++  const ledger = { halted: null, requests: [{}] };
++  const save = async () => Promise.all([writeFile(resolve(directory, 'source.pdf'), pdf), writeFile(resolve(directory, 'source-ir.json'), ir),
++    writeFile(resolve(directory, 'result.json'), JSON.stringify(result)), writeFile(resolve(directory, 'delivery.json'), JSON.stringify(delivery)), writeFile(resolve(directory, 'request-ledger.json'), JSON.stringify(ledger))]);
++  await save();
++  const run: WorkbenchRun = { run_id: f.input.run_id, document_id: f.document.document_id, state: 'partial', fixture: true, candidate_count: 0,
++    task_processing_complete: false, result_ready: true, finished_at: '2026-11-15T00:00:00Z' };
++  const metadata: LegacyCompletionMetadata = { directory, pdf: { path: relative(process.cwd(), resolve(directory, 'source.pdf')), sha256: sha(pdf) },
++    ir: { path: relative(process.cwd(), resolve(directory, 'source-ir.json')), sha256: sha(ir) }, document_id: run.document_id, file_sha256: f.document.file_sha256,
++    text_version: f.document.text_version, blockers: coverage.task_processing_blockers, result_saved: true, unsafe_events: 0, event_seq: 3 };
++  return { directory, result, delivery, ledger, coverage, metadata, run, save, close: () => rm(directory, { recursive: true, force: true }) };
++}
++
++test('verified legacy zero-candidate flow derives completion without changing its original false or writing artifacts', async () => {
++  const f = await fixture(), audit = new LegacyCompletionProjection(process.cwd()); let reads = 0;
++  try {
++    const before = await readFile(resolve(f.directory, 'result.json'));
++    const load = () => { reads++; return f.coverage; };
++    const [first, overlapping] = await Promise.all([audit.project(f.run, f.metadata, load), audit.project(f.run, f.metadata, load)]);
++    assert.equal(first?.processing_complete, true); assert.deepEqual(overlapping, first);
++    assert.equal(first?.rule_origin, 'legacy_evidence_projection'); assert.equal(first?.original_task_processing_complete, false);
++    assert.deepEqual(await audit.project(f.run, f.metadata, load), first); assert.equal(reads, 1, 'same-run flight and hot cache avoid full evidence decodes');
++    assert.equal(f.coverage.task_processing_complete, false); assert.deepEqual(await readFile(resolve(f.directory, 'result.json')), before);
++  } finally { await f.close(); }
++});
++
++test('changed or missing saved delivery/PDF evidence immediately invalidates the legacy projection cache', async () => {
++  const f = await fixture(), audit = new LegacyCompletionProjection(process.cwd());
++  try {
++    assert.ok(await audit.project(f.run, f.metadata, () => f.coverage));
++    f.delivery.document_id = 'another-paper'; await f.save();
++    assert.equal(await audit.project(f.run, f.metadata, () => f.coverage), undefined);
++    f.delivery.document_id = f.run.document_id; await f.save(); assert.ok(await audit.project(f.run, f.metadata, () => f.coverage));
++    await writeFile(resolve(f.directory, 'source.pdf'), 'changed source');
++    assert.equal(await audit.project(f.run, f.metadata, () => f.coverage), undefined);
++    await f.save(); await rm(resolve(f.directory, 'delivery.json'));
++    assert.equal(await audit.project(f.run, f.metadata, () => f.coverage), undefined);
++  } finally { await f.close(); }
++});
++
++test('summary-only, budget failure, empty reliable input and source-binding mismatch cannot promote legacy completion', async () => {
++  const f = await fixture(), audit = new LegacyCompletionProjection(process.cwd());
++  try {
++    for (const change of ['summary', 'budget', 'empty', 'binding']) {
++      const original = structuredClone({ result: f.result, ledger: f.ledger });
++      if (change === 'summary') f.result.events = f.result.events.filter(event => event.type !== 'batch');
++      if (change === 'budget') f.ledger.halted = 'experiment_request_limit' as never;
++      if (change === 'empty') f.result.coverage.dispatched_source_blocks = 0;
++      if (change === 'binding') f.result.run_id = 'other-run';
++      await f.save(); assert.equal(await audit.project(f.run, f.metadata, () => f.coverage), undefined, change);
++      Object.assign(f.result, original.result); Object.assign(f.coverage, original.result.coverage); f.result.coverage = f.coverage; Object.assign(f.ledger, original.ledger);
++    }
++  } finally { await f.close(); }
++});
++
++test('cancelled, unsupported, finalizing, unknown or errored legacy runs preserve their original status', async () => {
++  const f = await fixture(), audit = new LegacyCompletionProjection(process.cwd());
++  try {
++    for (const changed of [{ state: 'cancelled' }, { state: 'failed' }, { result_ready: false }, { finished_at: undefined },
++      { task_processing_complete: undefined }, { error: 'document_time_limit' }]) {
++      assert.equal(await audit.project({ ...f.run, ...changed }, f.metadata, () => f.coverage), undefined);
++    }
++    for (const changed of [{ result_saved: false }, { unsafe_events: 1 }, { blockers: ['source_glyph_quarantine_unresolved', 'summary_incomplete'] }]) {
++      assert.equal(await audit.project(f.run, { ...f.metadata, ...changed }, () => f.coverage), undefined);
++    }
++  } finally { await f.close(); }
++});
+--- before/apps/server/test/workflow-completion-api.test.ts
++++ after/apps/server/test/workflow-completion-api.test.ts
+@@ -0,0 +1,52 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { mkdtemp, readFile, rm } from 'node:fs/promises';
++import { resolve } from 'node:path';
++import { ExtractionStore } from '@t1/agent';
++import { WorkbenchWorkflow } from '../src/workflow.js';
++import { TASK_COMPLETION_RULE_VERSION } from '../../../packages/contracts/src/workbench.js';
++import { controlledFixture } from './controlled-fixture.js';
++
++async function setup() {
++  const directory = await mkdtemp(resolve('runtime-data/item5-completion-api-')), store = new ExtractionStore(resolve(directory, 'fixture.sqlite'));
++  const replay = await controlledFixture({ delayMs: 1 }); let release!: () => void, entered!: () => void;
++  const gate = new Promise<void>(resolve => { release = resolve; }), reconciling = new Promise<void>(resolve => { entered = resolve; });
++  const workflow = new WorkbenchWorkflow(store, { directory, sources: false, ...replay, runner: {
++    controlled: true, provider: 'no-model', model_id: 'no-model', execute: async context => {
++      context.store.transition(context.input.run_id, 'extracting'); context.store.transition(context.input.run_id, 'reconciling'); context.store.transition(context.input.run_id, 'partial'); entered(); await gate;
++      return { coverage: { task_completion_rule_version: TASK_COMPLETION_RULE_VERSION, task_processing_complete: true,
++        whole_document_summary_complete: true, delivery_validation_status: 'passed', source_glyph_quarantined_block_ids: [context.document.blocks[0]!.block_id] } };
++    },
++  } });
++  const paper = (await workflow.upload(await readFile('evaluation/corpus/development-candidates/L05.pdf'), 'synthetic-api.pdf')).paper;
++  return { workflow, store, paper, release, reconciling, close: async () => { release(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); } };
++}
++
++test('list/detail share saved versioned completion and exact gap locations, while terminal finalization remains incomplete', async () => {
++  const x = await setup();
++  try {
++    const id = (await x.workflow.start(x.paper.id, x.workflow.scopeCatalog().default_scope)).run.run_id; await x.reconciling;
++    const early = (await x.workflow.runs(id))[0]!;
++    assert.equal(early.state, 'reconciling'); assert.equal(early.result_ready, false); assert.equal(early.task_completion, undefined);
++    x.release(); await x.workflow.waitForIdle();
++    const listed = (await x.workflow.runs(id))[0]!, detail = await x.workflow.runDetail(id);
++    assert.equal(listed.state, 'partial'); assert.equal(listed.task_processing_complete, true); assert.equal(listed.result_ready, true);
++    assert.equal(listed.task_completion?.processing_complete, true); assert.equal(listed.task_completion?.source_gap_blocks, 1);
++    assert.deepEqual(detail.run.task_completion, listed.task_completion); assert.deepEqual(detail.output.task_completion, listed.task_completion);
++    assert.equal(detail.output.source_gaps?.length, 1); assert.ok(detail.output.source_gaps![0]!.physical_page > 0); assert.ok(detail.output.source_gaps![0]!.text_version);
++    x.store.db.prepare("DELETE FROM s4_events WHERE run_id=? AND json_extract(payload_json,'$.type')='run_result_saved'").run(id);
++    assert.equal((await x.workflow.runs(id))[0]!.task_completion?.processing_complete, false, 'missing final-save evidence cannot certify success');
++  } finally { await x.close(); }
++});
++
++test('a failure writing the final saved marker cannot advertise a completed new flow', async () => {
++  const x = await setup(), save = x.workflow['saveRun'].bind(x.workflow);
++  x.workflow['saveRun'] = row => { if (row.finished_at) throw new Error('synthetic_final_save_failure'); save(row); };
++  try {
++    const id = (await x.workflow.start(x.paper.id, x.workflow.scopeCatalog().default_scope)).run.run_id; await x.reconciling;
++    x.release(); await assert.rejects(x.workflow.waitForIdle(), /synthetic_final_save_failure/);
++    const listed = (await x.workflow.runs(id))[0]!;
++    assert.equal(listed.task_processing_complete, true, 'the earlier coverage write is not itself finalization');
++    assert.equal(listed.finished_at, undefined); assert.equal(listed.task_completion?.processing_complete, false);
++  } finally { await x.close(); }
++});
+--- before/tests/extraction/task-processing-coverage.test.ts
++++ after/tests/extraction/task-processing-coverage.test.ts
+@@ -9,6 +9,7 @@
+ import { runExtractionDocument } from '../../packages/agent/src/extraction-run.js';
+ import { makeEvidenceFixture } from './fixtures/evidence-fixtures.js';
+ import { createRuntimeResponsesFixture } from './fixtures/runtime-responses.js';
++import { TASK_COMPLETION_RULE_VERSION } from '../../packages/contracts/src/workbench.js';
+ 
+ test('completed selected text and summary remain separate from bibliography, bitmap OCR and legacy full-PDF status', async () => {
+   const f = makeEvidenceFixture(['CT shows spiculation.', 'References', '1. Smith A. CT. J Med. 2024;2:1-8.']);
+@@ -41,3 +42,33 @@
+     assert.equal(JSON.stringify(server.requests).includes('Smith'), false);
+   } finally { store.close(); await server.close(); await rm(directory, { recursive: true, force: true }); }
+ });
++
++for (const allUnreliable of [false, true]) test(allUnreliable ? 'no reliable input cannot succeed through empty batches and summary' : 'reliable input and automatic summary complete independently of isolated glyph gaps, including zero candidates', async () => {
++  const f = makeEvidenceFixture(allUnreliable ? ['Unreliable source.'] : ['A reliable source statement.', 'Unreliable source.']);
++  const unsafe = f.document.blocks.at(-1)!;
++  unsafe.source_glyph_issues = [{ code: 'sparse_embedded_font_without_unicode_mapping', start: 0, end: 1,
++    font_name: 'Synthetic', font_program_sha256: 'a'.repeat(64), pdf_character_code: 1, precision: 'glyph_offset' }];
++  f.document.parser.status = 'partial';
++  const directory = await mkdtemp(join(tmpdir(), 'task-glyph-flow-'));
++  const server = await createRuntimeResponsesFixture(allUnreliable ? [] : [
++    { calls: [{ name: 'read_document_blocks', arguments: {} }] },
++    { calls: [{ name: 'submit_candidate_records', arguments: { records: [], batch_complete: true } }] },
++    { calls: [{ name: 'get_document_context', arguments: {} }] },
++    { calls: [{ name: 'submit_candidate_records', arguments: { summary: 'Synthetic zero candidate completion.', reviews: [], links: [], updates: [], summary_complete: true } }] },
++  ]), store = new ExtractionStore(':memory:');
++  try {
++    const result = await runExtractionDocument({ input: f.input, document: f.document, catalog: f.catalog, metadata: f.context.metadata,
++      config: server.config, profile: developmentProfile(server.config.modelId), budget: new ExtractionBudget(join(directory, 'ledger.json'), server.endpoint),
++      store, directory: join(directory, 'run'), strategy: 'baseline' });
++    assert.equal(result.coverage.task_completion_rule_version, TASK_COMPLETION_RULE_VERSION);
++    assert.equal(result.task_processing_complete, !allUnreliable); assert.equal(result.candidate_count, 0);
++    assert.equal(result.coverage.whole_document_summary_complete, !allUnreliable);
++    assert.deepEqual(result.coverage.source_glyph_quarantined_block_ids, [unsafe.block_id]);
++    assert.deepEqual(result.coverage.task_scope_unprocessed_source_block_ids, [unsafe.block_id]);
++    assert.equal(result.coverage.task_scope_source_block_processing_complete, false);
++    assert.equal(result.coverage.full_document_extraction_completed, false);
++    assert.equal(JSON.stringify(server.requests).includes('Unreliable source'), false, 'isolated source stays outside all model requests');
++    if (allUnreliable) { assert.equal(server.requests.length, 0); assert.ok(result.coverage.task_processing_blockers.includes('reliable_source_input_unavailable')); }
++    else { assert.equal(result.error, undefined); assert.equal(result.coverage.delivery_validation_status, 'passed'); assert.equal(result.state, 'partial'); }
++  } finally { store.close(); await server.close(); await rm(directory, { recursive: true, force: true }); }
++});
+--- before/apps/pi-web/t1/run-presentation.ts
++++ after/apps/pi-web/t1/run-presentation.ts
+@@ -1,14 +1,22 @@
++import { TASK_COMPLETION_RULE_VERSION, type WorkbenchTaskCompletion } from "../../../packages/contracts/src/workbench";
++
+ /** Display persisted task-scope completion separately from the unchanged legacy run state. */
+-export function runPresentation(state: string | undefined, coverage: unknown) {
++export function runPresentation(state: string | undefined, coverage: unknown, resultReady?: boolean, taskCompletion?: WorkbenchTaskCompletion) {
+   const value = coverage && typeof coverage === "object" && !Array.isArray(coverage) ? coverage as Record<string, unknown> : {};
++  const completion = taskCompletion ?? value.task_completion as WorkbenchTaskCompletion | undefined;
++  const versioned = completion?.rule_version === TASK_COMPLETION_RULE_VERSION && ["persisted", "legacy_evidence_projection"].includes(completion.rule_origin);
+   const ended = ["completed", "partial", "failed", "cancelled", "interrupted"].includes(state ?? "");
+   const unsuccessful = ["failed", "cancelled", "interrupted"].includes(state ?? "");
+-  const taskComplete = ended && !unsuccessful && value.task_processing_complete === true;
+-  const completionKnownFalse = value.task_processing_complete === false;
+-  const statusKey = taskComplete ? "completed"
++  const finalizing = ended && (resultReady ?? value.result_ready) === false;
++  const taskComplete = ended && !unsuccessful && !finalizing && (versioned ? completion.processing_complete === true : value.task_processing_complete === true);
++  const glyphs = Array.isArray(value.source_glyph_quarantined_block_ids) ? value.source_glyph_quarantined_block_ids.length : 0;
++  const telemetryGaps = (value.progress as { source_gap_blocks?: number } | undefined)?.source_gap_blocks ?? 0;
++  const sourceGaps = versioned ? completion.source_gap_blocks : glyphs || telemetryGaps;
++  const completionKnownFalse = versioned ? completion.processing_complete === false : value.task_processing_complete === false;
++  const statusKey = finalizing ? "taskFinalizing" : taskComplete ? sourceGaps > 0 ? "completedWithSourceGaps" : "completed"
+     : state === "completed" || state === "partial" ? completionKnownFalse ? "taskEndedIncomplete" : "taskEndedUnknown"
+     : state ?? "noSelectedTask";
+-  const hintKey = taskComplete ? "completedHint"
++  const hintKey = finalizing ? "taskFinalizingHint" : taskComplete ? "completedHint"
+     : unsuccessful ? "cancelledHint"
+     : ended ? completionKnownFalse ? "taskIncompleteHint" : "taskUnknownHint"
+     : "runningHint";
+@@ -17,6 +25,6 @@
+   const structureLimited = structure !== null && typeof structure === "object" && Object.values(structure).some(hasItems);
+   const sourceLimited = value.parser_status === "partial" || value.parser_status === "failed"
+     || value.source_text_layer_decode_complete === false || hasItems(value.parser_failed_pages)
+-    || hasItems(value.image_text_unverified_pages) || structureLimited;
+-  return { statusKey, hintKey, taskComplete, ended, sourceLimited };
++    || hasItems(value.image_text_unverified_pages) || sourceGaps > 0 || structureLimited;
++  return { statusKey, hintKey, taskComplete, ended, finalizing, sourceLimited };
+ }
+--- before/apps/pi-web/t1/run-progress.ts
++++ after/apps/pi-web/t1/run-progress.ts
+@@ -27,16 +27,16 @@
+ /** Counts are source work completed by the host. A summary reread is never completion. */
+ export function runProgress(run: WorkbenchRun | undefined, state: string | undefined, coverage: unknown, events: readonly ProgressEvent[]) {
+   const saved = object(coverage), telemetry = run?.progress;
+-  const persisted = runPresentation(state, coverage);
+-  const ended = persisted.ended;
++  const persisted = runPresentation(state, coverage, run?.result_ready, run?.task_completion);
++  const ended = persisted.ended && !persisted.finalizing;
+   // The saved run wins over a replayed terminal/state event. New live events can
+   // advance an active task while its detail request is still in flight.
+   const latestState = [...events].reverse().find(event => activeStage(event.detail?.state ?? event.stage) && (event.detail?.state ?? event.stage) !== "completed");
+   const observed = latestState?.detail?.state ?? latestState?.stage;
+   const base = activeStage(telemetry?.stage) && telemetry?.stage !== "completed" ? telemetry.stage : activeStage(state) && state !== "completed" ? state : "queued";
+-  const stage = ended ? state! : activeStage(observed) && progressStages.indexOf(observed) > progressStages.indexOf(base) ? observed : base;
++  const stage = persisted.finalizing ? "reconciling" : ended ? state! : activeStage(observed) && progressStages.indexOf(observed) > progressStages.indexOf(base) ? observed : base;
+   const lastActive = [...events].reverse().map(event => event.detail?.state ?? event.stage).find(value => activeStage(value) && value !== "completed");
+-  const success = state === "completed" && persisted.taskComplete;
++  const success = persisted.taskComplete;
+   const phase = activeStage(stage) ? stage : activeStage(lastActive) ? lastActive : undefined;
+   const stageIndex = success ? 4 : phase && phase !== "completed" ? progressStages.indexOf(phase) : -1;
+ 
+@@ -61,7 +61,7 @@
+   const percent = !ended && stage === "extracting" && counted ? Math.floor(completed! / total! * 100) : undefined;
+   const gap = count(telemetry?.source_gap_blocks) ?? (Array.isArray(saved.source_glyph_quarantined_block_ids) ? saved.source_glyph_quarantined_block_ids.length : undefined);
+   const updatedAt = telemetry?.updated_at ?? events.at(-1)?.timestamp;
+-  return { stage, phase, stageIndex, ended, success, completed: counted ? completed : undefined, total: counted ? total : undefined,
++  return { stage, phase, stageIndex, ended, success, finalizing: persisted.finalizing, completed: counted ? completed : undefined, total: counted ? total : undefined,
+     percent, gap, updatedAt, activity: telemetry?.activity, candidateRecords: count(telemetry?.candidate_records) ?? count(run?.candidate_count) ?? 0,
+     completedBatches: count(telemetry?.completed_batches), totalBatches: count(telemetry?.total_batches),
+     executionElapsedMs: count(telemetry?.execution_elapsed_ms), queueWaitMs: count(telemetry?.queue_wait_ms ?? run?.queue_wait_ms) };
+--- before/apps/pi-web/t1/RunProgress.tsx
++++ after/apps/pi-web/t1/RunProgress.tsx
+@@ -9,7 +9,7 @@
+ /** The clock only updates elapsed time. Percentages change with persisted work. */
+ export function RunProgress({ run, state, coverage, events, onDetails }: { run?: WorkbenchRun; state?: string; coverage: unknown; events: readonly ProgressEvent[]; onDetails(): void }) {
+   const { t, locale } = useI18n();
+-  const progress = runProgress(run, state, coverage, events), presentation = runPresentation(state, coverage);
++  const progress = runProgress(run, state, coverage, events), presentation = runPresentation(state, coverage, run?.result_ready, run?.task_completion);
+   const [now, setNow] = useState<number | null>(null);
+   useEffect(() => {
+     if (progress.ended) return;
+@@ -24,7 +24,7 @@
+   const queuedAt = run?.created_at ? Date.parse(run.created_at) : NaN;
+   const queueMs = progress.stage === "queued" && now !== null && Number.isFinite(queuedAt) ? Math.max(0, now - queuedAt) : progress.queueWaitMs;
+   const active = !progress.ended, determinate = progress.percent !== undefined;
+-  const stageLabel = t(`t1.${progress.ended ? state === "partial" ? "partial" : presentation.statusKey : `progress_${progress.stage}`}`);
++  const stageLabel = t(`t1.${progress.ended || progress.finalizing ? presentation.statusKey : `progress_${progress.stage}`}`);
+   return <section className="t1-run-progress" data-progress-stage={progress.stage} data-progress-outcome={progress.success ? "complete" : progress.ended ? "incomplete" : "active"} aria-label={t("t1.extractionProgress")}>
+     <div className="t1-progress-heading"><button className="t1-progress-title" onClick={onDetails}><span className="t1-status-dot" />{stageLabel}</button>
+       <div className="t1-progress-metrics">{executionMs !== undefined ? <span>{t("t1.progressElapsed", { time: progressDuration(executionMs) })}</span> : progress.ended && <span>{t("t1.progressElapsedUnrecorded")}</span>}{progress.stage === "queued" && queueMs !== undefined && <span>{t("t1.progressQueueElapsed", { time: progressDuration(queueMs) })}</span>}<span>{t("t1.progressCandidates", { count: progress.candidateRecords })}</span></div>
+@@ -33,7 +33,7 @@
+     <div className={`t1-progress-track${active && !determinate ? " is-indeterminate" : ""}`} role="progressbar" aria-label={t(determinate ? "t1.progressSourceStage" : "t1.extractionProgress")} aria-valuemin={determinate || progress.success ? 0 : undefined} aria-valuemax={determinate || progress.success ? 100 : undefined} aria-valuenow={progress.success ? 100 : progress.percent} aria-valuetext={determinate ? t("t1.progressSourcePercent", { completed: progress.completed!, total: progress.total!, percent: progress.percent! }) : stageLabel}>
+       <span style={determinate ? { width: `${progress.percent}%` } : progress.success ? { width: "100%" } : undefined} />
+     </div>
+-    <div className="t1-progress-detail" aria-live="polite"><span>{progress.percent !== undefined ? t("t1.progressSourcePercent", { completed: progress.completed!, total: progress.total!, percent: progress.percent }) : progress.completed !== undefined ? t("t1.progressSourceCount", { completed: progress.completed, total: progress.total! }) : t(active ? "t1.progressUnknownTotal" : "t1.progressNoCount")}</span>{active && progress.stage === "reconciling" && <span>{t("t1.progressSummaryHelp")}</span>}{active && progress.activity === "figure_discovery" && <span>{t("t1.progressFiguresActivity")}</span>}{progress.totalBatches !== undefined && <span>{t("t1.progressBatchCount", { completed: progress.completedBatches ?? 0, total: progress.totalBatches })}</span>}</div>
++    <div className="t1-progress-detail" aria-live="polite"><span>{progress.percent !== undefined ? t("t1.progressSourcePercent", { completed: progress.completed!, total: progress.total!, percent: progress.percent }) : progress.completed !== undefined ? t("t1.progressSourceCount", { completed: progress.completed, total: progress.total! }) : t(active ? "t1.progressUnknownTotal" : "t1.progressNoCount")}</span>{active && progress.stage === "reconciling" && <span>{t(progress.finalizing ? "t1.taskFinalizingHint" : "t1.progressSummaryHelp")}</span>}{active && progress.activity === "figure_discovery" && <span>{t("t1.progressFiguresActivity")}</span>}{progress.totalBatches !== undefined && <span>{t("t1.progressBatchCount", { completed: progress.completedBatches ?? 0, total: progress.totalBatches })}</span>}</div>
+     {Boolean(progress.gap) && <p className="t1-progress-gap">{t("t1.progressSourceGap", { count: progress.gap! })}</p>}
+     {Number.isFinite(observedAt) && <time className="t1-progress-updated" dateTime={progress.updatedAt}>{t("t1.progressLastUpdate", { time: new Date(observedAt).toLocaleTimeString(locale, { hour12: false }) })}</time>}
+   </section>;
+--- before/apps/pi-web/t1/T1Workbench.tsx
++++ after/apps/pi-web/t1/T1Workbench.tsx
+@@ -39,6 +39,7 @@
+ import { GlobalToasts } from "./GlobalToasts";
+ import { canCancelRun, cancellationResult, runDeletionBlocked } from "./task-actions";
+ import { runPresentation } from "./run-presentation";
++import { TaskCompletionNotes } from "./TaskCompletionNotes";
+ import { initialWorkbenchSelection, resultRunForPaper } from "./result-navigation";
+ import type { Scope } from "../../../packages/contracts/src/index";
+ import type { WorkbenchCapabilities, WorkbenchExportKind, WorkbenchPaper, WorkbenchPaperDetail, WorkbenchRun, WorkbenchRunDetail, WorkbenchScopeCatalog, WorkbenchModels } from "../../../packages/contracts/src/workbench";
+@@ -410,7 +411,7 @@
+   }
+   const state = batchId ? displayedRun?.state : currentRun?.run.state ?? selectedRun?.state ?? output?.state;
+   const taskCoverage = batchId ? displayedRun : output?.coverage ?? selectedRun;
+-  const rawPresentation = runPresentation(state, taskCoverage);
++  const rawPresentation = runPresentation(state, taskCoverage, displayedRun?.result_ready, displayedRun?.task_completion);
+   const presentation = { ...rawPresentation, statusKey: batchId && state && canCancelRun({ state }) ? "batchProcessing" : rawPresentation.statusKey };
+   function runLabel(run: WorkbenchRun) {
+     if (run.run_id.startsWith("batch:") && canCancelRun(run)) return t("t1.batchProcessing");
+@@ -512,6 +513,7 @@
+           {record && <><h4>{t("t1.figureRelationship")}</h4><p>{t(record.association === "paired" ? "t1.pairedFigureCount" : record.association === "pending" ? "t1.pendingPair" : record.association === "not_checked" ? "t1.notChecked" : "t1.noPair", { count: record.figure_ids.length })}</p></>}
+           {record?.labels?.comment && <aside className="t1-reviewer-comment"><strong>{t("t1.comment")}</strong><p>{record.labels.comment}</p></aside>}
+         </section>
++        {runId && <TaskCompletionNotes entries={batchId && selectedGroup ? selectedGroup.runs.map(run => ({ run: batchResults.details[run.run_id]?.run ?? run, coverage: batchResults.details[run.run_id]?.output.coverage, label: originalRunFilename(run, papers.find(paper => paper.id === run.document_id)), gaps: batchResults.details[run.run_id]?.output.source_gaps, pdfUrl: batchResults.details[run.run_id]?.pdf_url })) : displayedRun ? [{ run: displayedRun, coverage: output?.coverage, gaps: output?.source_gaps, pdfUrl }] : []} />}
+         {runId && <details className="t1-technical-details"><summary>{t("t1.currentTaskEvents")}</summary><p className="t1-stream-status">{t(`t1.${connection}`)}</p>{events.length ? <ol className="t1-events">{events.map(event => <li key={event.seq}><span>#{event.seq} · {event.type}</span><p>{event.summary}</p><time>{event.timestamp}</time></li>)}</ol> : <p>{t("t1.noEvents")}</p>}</details>}
+         <section className="t1-notes-section"><h3>{t("t1.sourceInformation")}</h3>{displayedRun?.model_id && <p data-run-model={displayedRun.model_id}>{t("t1.extractionModel")}: {displayedRun.model_id}{displayedRun.model_profile && ` · ${displayedRun.model_profile.api} · ${displayedRun.model_profile.reasoning_effort === "none" ? t("t1.noReasoningParameter") : displayedRun.model_profile.reasoning_effort}`}</p>}<p>{t("t1.fragmentsSeparate")}</p>{output?.scope && <details className="t1-note-disclosure"><summary>{t("t1.runScope")}</summary><ScopeSummary scope={output.scope} snapshot={output.scope_catalog} historical /></details>}
+           {record && <SameSourceMembers index={output?.same_source_review_index} record={record} records={recordDetail?.output.records ?? records} onSelect={id => { const member = records.find(item => item.id === id && item.run_id === record.run_id); setRecordQuery(""); setRecordRole("all"); setRetentionView(member ? retainedStatus(member) : "kept"); setRecordId(member ? resultRecordKey(member) : id); setShowNotes(false); }} />}
+--- before/apps/pi-web/t1/TaskCompletionNotes.tsx
++++ after/apps/pi-web/t1/TaskCompletionNotes.tsx
+@@ -0,0 +1,27 @@
++"use client";
++
++import type { WorkbenchRun, WorkbenchSourceGap } from "../../../packages/contracts/src/workbench";
++import { useI18n } from "@/hooks/useI18n";
++import { runPresentation } from "./run-presentation";
++import { taskCompletionDetails } from "./task-completion";
++
++export function TaskCompletionNotes({ entries }: { entries: readonly { run: WorkbenchRun; coverage: unknown; label?: string; gaps?: WorkbenchSourceGap[]; pdfUrl?: string }[] }) {
++  const { t } = useI18n();
++  return <section className="t1-notes-section" data-task-completion-notes>
++    <h3>{t("t1.completionDetails")}</h3><p>{t("t1.completionAutomaticHelp")}</p>
++    {entries.map(({ run, coverage, label, gaps, pdfUrl }) => {
++      const presentation = runPresentation(run.state, coverage ?? run, run.result_ready, run.task_completion), details = taskCompletionDetails(run, coverage);
++      return <div key={run.run_id} data-completion-run={run.run_id}>
++        {label && <h4>{label}</h4>}<p>{t(`t1.${presentation.statusKey}`)}</p>
++        <p>{t(`t1.${details.summaryComplete === true ? "completionSummaryDone" : details.summaryComplete === false ? "completionSummaryPending" : "completionSummaryUnknown"}`)}</p>
++        {run.task_completion?.rule_origin === "legacy_evidence_projection" && <p>{t("t1.completionLegacyProjection")}</p>}
++        {presentation.finalizing && <p>{t("t1.taskFinalizingHint")}</p>}
++        {details.reasonKeys.length > 0 && <ul>{details.reasonKeys.map(key => <li key={key}>{t(`t1.${key}`)}</li>)}</ul>}
++        {Boolean(gaps?.length) && <details className="t1-note-disclosure" data-source-gaps={run.run_id}><summary>{t("t1.completionSourceGaps", { count: gaps!.length })}</summary><p>{t("t1.completionSourceGapsHelp")}</p><ul>{gaps!.map(gap => <li key={gap.block_id}>
++          {pdfUrl ? <a href={`${pdfUrl}#page=${gap.physical_page}`} target="_blank" rel="noreferrer">{t("t1.physicalPage", { page: gap.physical_page })}</a> : <span>{t("t1.physicalPage", { page: gap.physical_page })}</span>}
++          <p>{Array.from(gap.original_text).slice(0, 160).join("")}{Array.from(gap.original_text).length > 160 ? "…" : ""}</p>
++        </li>)}</ul></details>}
++      </div>;
++    })}
++  </section>;
++}
+--- before/apps/pi-web/t1/task-completion.ts
++++ after/apps/pi-web/t1/task-completion.ts
+@@ -0,0 +1,26 @@
++import { TASK_COMPLETION_RULE_VERSION, type WorkbenchRun } from "../../../packages/contracts/src/workbench";
++
++const object = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
++
++/** Explain saved receipts only. Neither an explanation nor a summary receipt
++ * supplies the persisted task completion flag. */
++export function taskCompletionDetails(run: WorkbenchRun, coverage: unknown) {
++  const saved = object(coverage);
++  const summaryComplete = typeof saved.whole_document_summary_complete === "boolean" ? saved.whole_document_summary_complete
++    : typeof run.progress?.summary_completed === "boolean" ? run.progress.summary_completed : undefined;
++  const historicalProjection = run.task_completion?.rule_version === TASK_COMPLETION_RULE_VERSION && run.task_completion.rule_origin === "legacy_evidence_projection" && run.task_completion.processing_complete;
++  const blockers = Array.isArray(saved.task_processing_blockers) ? saved.task_processing_blockers.filter((value): value is string => typeof value === "string" && !(historicalProjection && value === "source_glyph_quarantine_unresolved")) : [];
++  if (run.error) blockers.push(run.error);
++  const reasonKeys = [...new Set(blockers.map(code => {
++    if (code === "source_glyph_quarantine_unresolved") return "completionGlyphBlocker";
++    if (code === "selected_input_processing_incomplete") return "completionSourceBlocker";
++    if (["summary_incomplete", "whole_document_summary_incomplete"].includes(code)) return "completionSummaryBlocker";
++    if (["source_unsupported", "reliable_source_input_unavailable"].includes(code)) return "completionUnsupportedBlocker";
++    if (["experiment_request_limit", "experiment_input_token_limit", "experiment_output_token_limit", "batch_response_limit"].includes(code)) return "completionBudgetBlocker";
++    if (["experiment_time_limit", "document_time_limit"].includes(code)) return "completionTimeBlocker";
++    if (["run_cancelled", "parser_aborted"].includes(code)) return "completionCancelledBlocker";
++    if (code.startsWith("delivery_")) return "completionDeliveryBlocker";
++    return "completionOtherBlocker";
++  }))];
++  return { summaryComplete, reasonKeys };
++}
+--- before/apps/pi-web/t1/task-completion.test.ts
++++ after/apps/pi-web/t1/task-completion.test.ts
+@@ -0,0 +1,51 @@
++import assert from "node:assert/strict";
++import test from "node:test";
++import { TASK_COMPLETION_RULE_VERSION, type WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import { runPresentation } from "./run-presentation";
++import { taskCompletionDetails } from "./task-completion";
++
++const run = (state: string, props: Partial<WorkbenchRun> = {}) => ({ run_id: "current-run", state, candidate_count: 0, result_ready: true, ...props } as WorkbenchRun);
++
++test("saved source gaps explain an ended task separately from successful automatic summary and retention", () => {
++  const coverage = { task_processing_complete: false, whole_document_summary_complete: true, parser_status: "parsed",
++    source_glyph_quarantined_block_ids: ["gap"], task_processing_blockers: ["source_glyph_quarantine_unresolved"] };
++  const before = JSON.stringify(coverage), current = run("partial");
++  assert.deepEqual(taskCompletionDetails(current, coverage), { summaryComplete: true, reasonKeys: ["completionGlyphBlocker"] });
++  assert.equal(runPresentation(current.state, coverage).sourceLimited, true);
++  assert.equal(runPresentation(current.state, coverage).statusKey, "taskEndedIncomplete");
++  assert.equal(JSON.stringify(coverage), before);
++});
++
++test("only an explicit server-verified legacy projection can separate flow completion from its unchanged false", () => {
++  const current = run("partial", { task_processing_complete: false, task_completion: {
++    rule_version: TASK_COMPLETION_RULE_VERSION, rule_origin: "legacy_evidence_projection", processing_complete: true,
++    source_gap_blocks: 1, original_task_processing_complete: false, original_rule_version: "legacy-task-completion-1",
++  } });
++  const coverage = { task_processing_complete: false, whole_document_summary_complete: true, task_processing_blockers: ["source_glyph_quarantine_unresolved"] };
++  const shown = runPresentation(current.state, coverage, current.result_ready, current.task_completion);
++  assert.equal(shown.statusKey, "completedWithSourceGaps"); assert.equal(shown.taskComplete, true); assert.equal(shown.sourceLimited, true);
++  assert.deepEqual(taskCompletionDetails(current, coverage), { summaryComplete: true, reasonKeys: [] });
++  assert.equal(coverage.task_processing_complete, false); assert.equal(current.task_processing_complete, false);
++  assert.equal(runPresentation(current.state, coverage).taskComplete, false, "summary and old false alone are insufficient");
++  assert.equal(runPresentation(current.state, coverage, false, current.task_completion).taskComplete, false);
++  assert.equal(runPresentation("cancelled", coverage, true, current.task_completion).taskComplete, false);
++});
++
++test("known false and missing receipts remain distinct and never use another task's completion", () => {
++  const first = run("partial", { task_processing_complete: true }), second = run("partial", { task_processing_complete: false });
++  assert.equal(runPresentation(first.state, first).statusKey, "completed");
++  assert.equal(runPresentation(second.state, second).statusKey, "taskEndedIncomplete");
++  assert.equal(runPresentation(second.state, { whole_document_summary_complete: true }).statusKey, "taskEndedUnknown");
++  assert.deepEqual(taskCompletionDetails(second, undefined), { summaryComplete: undefined, reasonKeys: [] });
++  assert.equal(runPresentation(first.state, first, false).statusKey, "taskFinalizing");
++  assert.equal(runPresentation(first.state, { ...first, result_ready: false }).taskComplete, false);
++});
++
++test("budget, summary and save failures disclose actual causes without inventing a completion flag", () => {
++  const current = run("partial", { error: "experiment_request_limit" });
++  const details = taskCompletionDetails(current, { whole_document_summary_complete: false,
++    task_processing_blockers: ["summary_incomplete", "whole_document_summary_incomplete", "delivery_validation_failed"] });
++  assert.deepEqual(details, { summaryComplete: false, reasonKeys: ["completionSummaryBlocker", "completionDeliveryBlocker", "completionBudgetBlocker"] });
++  assert.equal(runPresentation(current.state, {}).taskComplete, false);
++  assert.deepEqual(taskCompletionDetails(run("cancelled", { error: "parser_aborted" }), undefined).reasonKeys, ["completionCancelledBlocker"]);
++});
+--- before/apps/pi-web/t1/run-progress.test.ts
++++ after/apps/pi-web/t1/run-progress.test.ts
+@@ -26,8 +26,25 @@
+   assert.equal(current.completed, 2929); assert.equal(current.total, 2929); assert.equal(current.gap, 41);
+   assert.equal(current.percent, undefined); assert.equal(current.success, false); assert.equal(current.stageIndex, 3);
+   for (const state of ["partial", "failed", "cancelled", "interrupted"]) {
+-    const ended = runProgress(run(state, { ...progress, stage: state as "partial" }), state, { task_processing_complete: true }, []);
++    const ended = runProgress(run(state, { ...progress, stage: state as "partial" }), state, { task_processing_complete: false }, []);
+     assert.equal(ended.ended, true); assert.equal(ended.percent, undefined); assert.equal(ended.success, false);
++  }
++});
++
++test("task completion and source limitations agree across status and progress after final saving", () => {
++  for (const state of ["completed", "partial"]) {
++    const current = { ...run(state), result_ready: true };
++    const coverage = { task_processing_complete: true, whole_document_summary_complete: true, parser_status: "partial", image_text_unverified_pages: [1] };
++    const progress = runProgress(current, state, coverage, [event("state", { state: "reconciling" })]);
++    assert.equal(progress.success, true); assert.equal(progress.ended, true); assert.equal(progress.stageIndex, 4);
++    assert.equal(progress.stage, state, "preserve the engine state and source limitations");
++    for (const saved of [{ task_processing_complete: false, whole_document_summary_complete: true }, { whole_document_summary_complete: true },
++      { task_processing_complete: false, whole_document_summary_complete: false }]) {
++      assert.equal(runProgress(current, state, saved, []).success, false);
++    }
++    const finalizing = runProgress({ ...current, result_ready: false }, state, coverage, []);
++    assert.equal(finalizing.success, false); assert.equal(finalizing.finalizing, true); assert.equal(finalizing.ended, false);
++    assert.equal(finalizing.stage, "reconciling"); assert.equal(finalizing.stageIndex, 3); assert.equal(finalizing.percent, undefined);
+   }
+ });
+ 
+--- before/apps/pi-web/t1/messages.mjs
++++ after/apps/pi-web/t1/messages.mjs
+@@ -181,7 +181,7 @@
+   progressBatchCount: ["{completed} / {total} extraction windows", "抽取窗口 {completed} / {total}", "擷取視窗 {completed} / {total}"],
+   progressUnknownTotal: ["The current stage has no known total yet.", "当前阶段总工作量尚不确定。", "目前階段總工作量尚不確定。"],
+   progressNoCount: ["Processing counts were not recorded.", "处理数量未记录。", "處理數量未記錄。"],
+-  progressSummaryHelp: ["Reconciling the full paper; source extraction counts do not mean the task is finished.", "正在整篇汇总核验，原文抽取进度不代表任务已完成。", "正在整篇彙整核驗，原文擷取進度不代表任務已完成。"],
++  progressSummaryHelp: ["The system reconciles automatically and ends the run after completion checks and saving. No per-record confirmation is required.", "系统自动汇总核验，完成检查并保存后自动结束，无需逐条确认保留。", "系統自動彙整核驗，完成檢查並儲存後自動結束，無需逐條確認保留。"],
+   progressFiguresActivity: ["Finding original Figures.", "正在提取论文原图。", "正在擷取論文原圖。"],
+   progressSourceGap: ["{count} source blocks have reading gaps; the counts above cover dispatched text only.", "另有 {count} 块原文存在读取缺口；上方数量仅统计已派发原文。", "另有 {count} 塊原文存在讀取缺口；上方數量僅統計已派發原文。"],
+   progressLastUpdate: ["Last activity {time}", "最近活动 {time}", "最近活動 {time}"],
+@@ -246,7 +246,27 @@
+ 
+   "taskEndedIncomplete": ["Run ended · task processing incomplete", "运行已结束 · 任务处理未完成", "執行已結束 · 任務處理未完成"],
+   "taskEndedUnknown": ["Run ended · task completion needs checking", "运行已结束 · 处理完成情况待核", "執行已結束 · 處理完成情況待核"],
+-  completedHint: ["The saved task scope is processed. Keep/exclude choices do not certify full recall or medical correctness.", "本次任务范围已处理完成；保留／排除不代表全文召回或医学正确性已核验。", "本次任務範圍已處理完成；保留／排除不代表全文召回或醫學正確性已核驗。"],
++  taskFinalizing: ["Saving task results", "正在保存任务结果", "正在儲存任務結果"],
++  completedWithSourceGaps: ["Completed · source text gaps", "已完成·有原文缺口", "已完成·有原文缺口"],
++  completionLegacyProjection: ["The process is complete under the current rule; the original run record is retained.", "按现行规则核验，流程已完成；原始运行记录保留。", "按現行規則核驗，流程已完成；原始執行記錄保留。"],
++  completionSourceGaps: ["Uncertain source text · {count} locations", "原文识别存疑 · {count}处", "原文識別存疑 · {count}處"],
++  completionSourceGapsHelp: ["Some characters in these excerpts cannot be reliably decoded. Click the page number to view the original PDF.", "这些片段的部分字符无法可靠识别，可点击页码查看原 PDF。", "這些片段的部分字元無法可靠識別，可點擊頁碼查看原 PDF。"],
++  taskFinalizingHint: ["The system is saving the final results. Completion appears after saving finishes.", "系统正在保存最终结果，保存结束后显示本次任务的完成情况。", "系統正在儲存最終結果，儲存結束後顯示本次任務的完成情況。"],
++  completionDetails: ["Completion details", "完成情况", "完成情況"],
++  completionAutomaticHelp: ["Reconciliation, completion checks and result saving run automatically. Keeping or excluding records does not control task completion.", "汇总核验、完成检查和结果保存均由系统自动执行；保留或排除记录不控制任务完成。", "彙整核驗、完成檢查和結果儲存均由系統自動執行；保留或排除記錄不控制任務完成。"],
++  completionSummaryDone: ["Automatic reconciliation completed.", "自动汇总核验已完成。", "自動彙整核驗已完成。"],
++  completionSummaryPending: ["Automatic reconciliation has not completed successfully.", "自动汇总核验尚未成功完成。", "自動彙整核驗尚未成功完成。"],
++  completionSummaryUnknown: ["No reconciliation completion receipt is available.", "尚无汇总核验完成记录。", "尚無彙整核驗完成記錄。"],
++  completionGlyphBlocker: ["Some source glyphs cannot be reliably decoded. Affected source statements are isolated, and this run's completion requirements remain unmet.", "部分原文字形无法可靠识别，受影响原句已隔离，尚未满足本次运行的完成条件。", "部分原文字形無法可靠識別，受影響原句已隔離，尚未滿足本次執行的完成條件。"],
++  completionSourceBlocker: ["Some dispatched source text was not fully processed.", "部分已派发原文尚未处理完成。", "部分已派發原文尚未處理完成。"],
++  completionSummaryBlocker: ["Automatic reconciliation did not finish all required checks.", "自动汇总核验未完成全部必要检查。", "自動彙整核驗未完成全部必要檢查。"],
++  completionUnsupportedBlocker: ["The source is unsupported or contains no reliable text available for processing.", "当前来源不受支持，或没有可可靠读取并处理的原文。", "目前來源不受支援，或沒有可可靠讀取並處理的原文。"],
++  completionBudgetBlocker: ["The request or token allowance was reached before processing finished.", "处理完成前已达到本次请求或词元额度。", "處理完成前已達到本次請求或詞元額度。"],
++  completionTimeBlocker: ["The execution time limit was reached before processing finished.", "处理完成前已达到本次运行时限。", "處理完成前已達到本次執行時限。"],
++  completionCancelledBlocker: ["This run was cancelled; saved results remain available.", "本次运行已取消，已保存结果仍保留。", "本次執行已取消，已儲存結果仍保留。"],
++  completionDeliveryBlocker: ["Result validation failed. The saved evidence remains available for checking.", "结果交付校验未通过，已保存证据仍可核对。", "結果交付校驗未通過，已儲存證據仍可核對。"],
++  completionOtherBlocker: ["Processing stopped because of an execution error. Details are recorded in this task's events.", "运行发生错误而停止，具体原因保留在本任务事件中。", "執行發生錯誤而停止，具體原因保留在本任務事件中。"],
++  completedHint: ["Reliable authorized input was processed, automatically reconciled and saved. Source gaps remain separately disclosed; keeping/excluding records does not certify full recall or medical correctness.", "本次可靠授权输入已抽取、自动汇总并保存；原文缺口另行披露，保留／排除不代表全文召回或医学正确性已核验。", "本次可靠授權輸入已擷取、自動彙整並儲存；原文缺口另行披露，保留／排除不代表全文召回或醫學正確性已核驗。"],
+   "taskIncompleteHint": ["Task-scope processing is incomplete. Saved candidates and reviews remain available.", "本次任务范围尚有未完成处理；已保存候选与审核仍保留。", "本次任務範圍尚有未完成處理；已儲存候選與審核仍保留。"],
+   "taskUnknownHint": ["No explicit completion record is available for this task scope. Saved evidence remains available for review.", "尚未取得本次任务范围处理完成的明确记录；已保存成果仍可核对。", "尚未取得本次任務範圍處理完成的明確記錄；已儲存成果仍可核對。"],
+   "sourceLimitsTitle": ["Source parsing limitations", "解析来源仍有限制", "解析來源仍有限制"],
+--- before/apps/pi-web/t1/submission-groups.ts
++++ after/apps/pi-web/t1/submission-groups.ts
+@@ -23,9 +23,12 @@
+   const state = active.length ? ["queued", "parsing", "extracting", "reconciling"].find(stage => active.some(run => run.state === stage)) ?? "reconciling"
+     : complete ? "completed" : endedStates.every(state => state === "cancelled") ? "cancelled"
+     : endedStates.every(state => state === "failed") ? "failed" : endedStates.every(state => state === "interrupted") ? "interrupted" : "partial";
+-  const sum = (key: "completed" | "total" | "completed_batches" | "total_batches" | "source_gap_blocks") => group.runs.every(run => typeof run.progress?.[key] === "number") ? group.runs.reduce((n, run) => n + run.progress![key]!, 0) : undefined;
++  const sum = (key: "completed" | "total" | "completed_batches" | "total_batches" | "source_gap_blocks") => {
++    const counts = group.runs.map(run => key === "source_gap_blocks" ? run.task_completion?.source_gap_blocks ?? run.progress?.[key] : run.progress?.[key]);
++    return counts.every((count): count is number => typeof count === "number") ? counts.reduce((n, count) => n + count, 0) : undefined;
++  };
+   return { ...first, run_id: group.id, state, candidate_count: group.runs.reduce((count, run) => count + run.candidate_count, 0),
+-    task_processing_complete: complete ? true : incomplete ? false : undefined, result_ready: group.runs.every(run => run.result_ready !== false),
++    task_processing_complete: complete ? true : incomplete ? false : undefined, task_completion: undefined, result_ready: group.runs.every(run => run.result_ready !== false),
+     progress: { schema_version: "t1-workbench-progress-1", stage: state as NonNullable<WorkbenchRun["progress"]>["stage"], candidate_records: group.runs.reduce((n, run) => n + run.candidate_count, 0),
+       completed: sum("completed"), total: sum("total"), completed_batches: sum("completed_batches"), total_batches: sum("total_batches"), source_gap_blocks: sum("source_gap_blocks"),
+       summary_completed: group.runs.every(run => run.progress?.summary_completed === true), telemetry: group.runs.every(run => run.progress?.telemetry === "events") ? "events" : "unavailable" },
+--- before/apps/pi-web/t1/submission-groups.test.ts
++++ after/apps/pi-web/t1/submission-groups.test.ts
+@@ -1,6 +1,6 @@
+ import test from "node:test";
+ import assert from "node:assert/strict";
+-import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import { TASK_COMPLETION_RULE_VERSION, type WorkbenchRun } from "../../../packages/contracts/src/workbench";
+ import { groupSubmittedRuns, resultRecordKey, submissionRun } from "./submission-groups";
+ import { runPresentation } from "./run-presentation";
+ 
+@@ -29,6 +29,19 @@
+   assert.equal(runPresentation("partial", { progress: { summary_completed: true } }).statusKey, "taskEndedUnknown");
+ });
+ 
++test("a first member's legacy projection never replaces the whole batch's outcome", () => {
++  const first: WorkbenchRun = { run_id: "a", document_id: "p", state: "partial", fixture: true, candidate_count: 0, result_ready: true,
++    task_processing_complete: false, submission: { kind: "batch", batch_id: "b" }, task_completion: { rule_version: TASK_COMPLETION_RULE_VERSION,
++      rule_origin: "legacy_evidence_projection", processing_complete: true, source_gap_blocks: 1, original_task_processing_complete: false } };
++  const group = (complete: boolean) => groupSubmittedRuns([first, { ...first, run_id: "b", task_completion: { ...first.task_completion!, processing_complete: complete } }])[0]!;
++  const incomplete = submissionRun(group(false));
++  assert.equal(incomplete.task_completion, undefined); assert.equal(incomplete.task_processing_complete, false);
++  assert.equal(runPresentation(incomplete.state, incomplete).taskComplete, false);
++  const completed = submissionRun(group(true));
++  assert.equal(runPresentation(completed.state, completed).statusKey, "completedWithSourceGaps");
++  assert.equal(completed.progress?.source_gap_blocks, 2); assert.equal(first.task_processing_complete, false);
++});
++
+ test("batch outcome considers every submitted member and composite record identity avoids cross-run collisions", () => {
+   const base: WorkbenchRun = { run_id: "a", document_id: "p", state: "completed", fixture: true, candidate_count: 2, task_processing_complete: true, submission: { kind: "batch", batch_id: "b" } };
+   const group = (other: Partial<WorkbenchRun>) => groupSubmittedRuns([base, { ...base, run_id: "b", document_id: "q", ...other }])[0]!;
+--- before/apps/pi-web/t1/batch-progress.test.ts
++++ after/apps/pi-web/t1/batch-progress.test.ts
+@@ -1,6 +1,6 @@
+ import test from "node:test";
+ import assert from "node:assert/strict";
+-import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import { TASK_COMPLETION_RULE_VERSION, type WorkbenchRun } from "../../../packages/contracts/src/workbench";
+ import { batchProgress } from "./batch-progress";
+ 
+ const run = (state: string, completion?: boolean, ready = true): WorkbenchRun => ({ run_id: state, document_id: state, state, fixture: true, candidate_count: 0,
+@@ -10,6 +10,16 @@
+   const progress = batchProgress([run("queued", undefined, false), run("parsing", undefined, false), run("extracting", undefined, false), run("reconciling", undefined, false), run("partial", false), run("completed", true, false), run("future", undefined, false)]);
+   assert.deepEqual(progress.stages.map(stage => stage.count), [1, 1, 1, 1, 1]);
+   assert.equal(progress.finishing, 1); assert.equal(progress.unknownState, 1); assert.equal(progress.ended, 1); assert.equal(progress.percent, 14); assert.equal(progress.allComplete, false);
++});
++
++test("batch flow completion uses each member's verified result while preserving historical false and gap status", () => {
++  const projected: WorkbenchRun = { ...run("partial", false), task_completion: { rule_version: TASK_COMPLETION_RULE_VERSION,
++    rule_origin: "legacy_evidence_projection", processing_complete: true, source_gap_blocks: 1, original_task_processing_complete: false } };
++  const all = batchProgress([projected, run("completed", true)]);
++  assert.equal(all.allComplete, true); assert.equal(all.percent, 100); assert.equal(all.outcomes[0].status, "completedWithSourceGaps");
++  assert.equal(batchProgress([projected, run("partial", false)]).allComplete, false);
++  assert.equal(batchProgress([projected, run("partial")]).allComplete, false);
++  assert.equal(projected.task_processing_complete, false);
+ });
+ 
+ test("100% ended includes failures/cancellation/unknown completion and never certifies task success", () => {
+--- before/apps/pi-web/e2e/summary-completion.mjs
++++ after/apps/pi-web/e2e/summary-completion.mjs
+@@ -0,0 +1,103 @@
++/** Validated-build UI with browser-fulfilled APIs only. No real model or business writes. */
++import assert from 'node:assert/strict';
++import { readFile, writeFile } from 'node:fs/promises';
++import { dirname, join, resolve } from 'node:path';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..'), origin = 'http://127.0.0.1:30157';
++const evidence = join(code, 'docs/acceptance/new-task-layout-2026-11-14/item5');
++const dist = 'apps/pi-web/build/summary-completion-delivery-validated-20261115', BUILD_ID = (await readFile(join(code, dist, 'BUILD_ID'), 'utf8')).trim();
++const result = { status: 'running', BUILD_ID, dist, checks: [], errors: [], blocked: [], production_business_writes: 0, paid_calls: 0 };
++process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
++process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
++const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
++const browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
++const rule = 'task-flow-completion-2', batchId = '11111111-1111-4111-8111-111111111111';
++const scope = { scope_version: '1', catalog_version: 'completion-fixture', matching_policy_version: 'fixture', cancers: { mode: 'all', ids: [] }, image_types: { mode: 'all', ids: [] }, features: { mode: 'all', binding_ids: [] } };
++const catalog = { catalog_version: scope.catalog_version, cancers: [], image_types: [], features: [], bindings: [], default_scope: scope, restricted_available: false, development_only: false };
++const pdf = await readFile(join(code, 'evaluation/corpus/development-candidates/L01.pdf'));
++const projected = (origin = 'persisted', gaps = 1, complete = true) => ({ rule_version: rule, rule_origin: origin, processing_complete: complete, source_gap_blocks: gaps, original_task_processing_complete: origin === 'persisted' ? complete : false, ...(origin === 'legacy_evidence_projection' ? { original_rule_version: 'legacy-task-completion-1' } : {}) });
++async function scenario(name, specs, work, mobile = false) {
++  const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 }, locale: 'zh-CN', reducedMotion: 'reduce' });
++  await context.addInitScript(expected => { if (location.origin === expected) { localStorage.setItem('pi-locale', 'zh-CN'); localStorage.setItem('pi-theme', 'light'); } }, origin);
++  const batch = specs.length > 1;
++  const runs = specs.map((spec, i) => ({ run_id: 'run-' + i, document_id: 'paper-' + i, state: 'partial', fixture: true, candidate_count: 0,
++    created_at: '2026-11-15T00:00:00Z', finished_at: '2026-11-15T00:00:05Z', result_ready: true, task_title: '流程核验示例', original_filename: `来源${i}.pdf`,
++    model_id: 'local-only', scope, submission: batch ? { kind: 'batch', batch_id: batchId } : { kind: 'single' }, ...spec,
++    progress: { schema_version: 't1-workbench-progress-1', stage: spec.state ?? 'partial', completed: 10, total: 10, completed_batches: 1, total_batches: 1, candidate_records: 0,
++      source_gap_blocks: spec.task_completion?.source_gap_blocks ?? (spec.gaps ?? 0), summary_completed: spec.summary ?? true, telemetry: 'events' } }));
++  const papers = runs.map(run => ({ id: run.document_id, title: run.original_filename, filename: run.original_filename, sha256: 'a'.repeat(64), uploaded: true, language: 'en', pages: 29, note: '', output_ids: [run.run_id] }));
++  const detail = run => ({ run, paper: papers.find(paper => paper.id === run.document_id), output: { id: run.run_id, strategy: 'B0', origin: 'controlled_fixture', state: run.state, records: [], scope, result_ready: run.result_ready, task_completion: run.task_completion,
++    coverage: { ...(run.task_processing_complete === undefined ? {} : { task_processing_complete: run.task_processing_complete }), whole_document_summary_complete: run.summary ?? true,
++      source_glyph_quarantined_block_ids: Array.from({ length: run.task_completion?.source_gap_blocks ?? run.gaps ?? 0 }, (_, i) => run.run_id + '-gap-' + i), task_processing_blockers: run.blockers ?? [] },
++    source_gaps: Array.from({ length: run.task_completion?.source_gap_blocks ?? run.gaps ?? 0 }, (_, i) => ({ block_id: run.run_id + '-gap-' + i, text_version: run.run_id + '-text', original_text: 'Isolated original source ' + i, physical_page: i % 29 + 1, uncertain_spans: [{ start: 0, end: 1, code: 'sparse_embedded_font_without_unicode_mapping' }] })) },
++    source_units: [], figures: [], source_issues: [], source_status: 'valid', text_version: run.run_id + '-text', pdf_url: '/api/t1/workbench/papers/' + run.document_id + '/pdf' });
++  await context.route('**/*', async route => {
++    const req = route.request(), url = new URL(req.url()), path = url.pathname, method = req.method(), base = '/api/t1/workbench';
++    const json = value => route.fulfill({ contentType: 'application/json', body: JSON.stringify(value) });
++    if (url.origin !== origin || (path.startsWith('/api/') && method !== 'GET')) { result.blocked.push({ name, method, path }); return route.abort('blockedbyclient'); }
++    if (!path.startsWith('/api/')) return route.continue();
++    if (path === base + '/capabilities') return json({ schema_version: 't1-workbench-capabilities-1', read_only: false, paper_upload: true, extraction_start: true, persisted_retention: true, retained_export: true, model_selection: false, max_concurrent_runs: 2 });
++    if (path === base + '/catalog') return json(catalog);
++    if (path === base + '/models') return json({ provider: 'fixture', default_profile_id: null, profiles: [] });
++    if (path === base + '/runs') return json({ runs });
++    if (path === base + '/papers') return json({ papers });
++    if (path.endsWith('/events')) return route.fulfill({ contentType: 'text/event-stream', body: ': offline fixture\n\n' });
++    if (path.endsWith('/pdf')) return route.fulfill({ contentType: 'application/pdf', body: pdf });
++    const run = runs.find(item => path === base + '/runs/' + item.run_id);
++    if (run) return json(detail(run));
++    const paper = papers.find(item => path === base + '/papers/' + item.id);
++    if (paper) return json({ paper, outputs: runs.filter(run => run.document_id === paper.id).map(run => detail(run).output), source_units: [], figures: [], source_status: 'not_parsed' });
++    result.blocked.push({ name, method, path }); return route.abort('blockedbyclient');
++  });
++  const page = await context.newPage(); page.setDefaultTimeout(12000); page.on('pageerror', error => result.errors.push({ name, error: String(error) }));
++  const go = async () => { await page.goto(origin + '/?paper=paper-0&run=run-0&view=records'); await page.locator(batch ? '[data-batch-results]' : '.t1-run-progress').waitFor(); if (mobile && await page.locator('.t1-sidebar').isVisible()) await page.getByRole('button', { name: '切换导航', exact: true }).click(); };
++  const notes = async () => { await page.getByRole('button', { name: '说明', exact: true }).click(); return page.getByRole('dialog', { name: '说明', exact: true }); };
++  try { await go(); await work({ page, notes, runs, batch }); result.checks.push({ name, status: 'passed' }); console.log('PASS ' + name); }
++  catch (error) { result.checks.push({ name, status: 'failed', error: String(error) }); await page.screenshot({ path: join(evidence, 'browser-failed-' + name + '.png') }); console.log('FAIL ' + name + ' ' + error); }
++  finally { await context.close(); }
++}
++const status = async (page, expected, outcome) => { assert.equal(await page.locator('.t1-task-progress').getAttribute('data-status'), expected); assert.equal(await page.locator('.t1-run-progress').getAttribute('data-progress-outcome'), outcome); };
++try {
++  await scenario('healthy_flow', [{ state: 'completed', task_processing_complete: true, task_completion: projected('persisted', 0) }], async ({ page }) => { await status(page, 'completed', 'complete'); assert.equal(await page.getByRole('progressbar').getAttribute('aria-valuenow'), '100'); });
++  for (const origin of ['persisted', 'legacy_evidence_projection']) await scenario(origin + '_source_gaps', [{ task_processing_complete: origin === 'persisted', task_completion: projected(origin, 41), blockers: origin === 'persisted' ? [] : ['source_glyph_quarantine_unresolved'] }], async ({ page, notes }) => {
++    await status(page, 'completedWithSourceGaps', 'complete'); assert.equal(await page.locator('.t1-progress-stages [data-step="done"]').count(), 5);
++    assert.match(await page.locator('[data-submission-list="sidebar"]').innerText(), /已完成·有原文缺口/);
++    const rect = () => page.locator('.t1-results-panel').boundingBox(), before = await rect(), dialog = await notes();
++    assert.match(await dialog.innerText(), /系统自动执行/); assert.match(await dialog.innerText(), /自动汇总核验已完成/);
++    if (origin === 'legacy_evidence_projection') assert.match(await dialog.innerText(), /原始运行记录保留/);
++    await dialog.locator('[data-source-gaps] summary').click(); assert.equal(await dialog.locator('[data-source-gaps] li').count(), 41);
++    assert.equal(await dialog.locator('[data-source-gaps] a').first().getAttribute('href'), '/api/t1/workbench/papers/paper-0/pdf#page=1');
++    assert.doesNotMatch(await dialog.innerText(), /task-flow-completion-2|run-0-gap|run-0-text|0–1|码点/); assert.deepEqual(await rect(), before);
++    assert.equal(await dialog.locator('.t1-notes-content').evaluate(e => e.scrollHeight > e.clientHeight), true);
++    await page.screenshot({ path: join(evidence, origin + '-desktop.png') }); await page.keyboard.press('Escape');
++    await page.getByRole('button', { name: '任务与历史', exact: true }).click(); assert.match(await page.locator('[data-submission-list="history"]').innerText(), /已完成·有原文缺口/);
++  });
++  for (const [name, spec, expected] of [
++    ['legacy_incomplete', { task_processing_complete: false, gaps: 1, blockers: ['source_glyph_quarantine_unresolved'] }, 'taskEndedIncomplete'],
++    ['unknown_completion', {}, 'taskEndedUnknown'],
++    ['incomplete_summary_budget', { task_processing_complete: false, summary: false, error: 'experiment_request_limit', blockers: ['summary_incomplete', 'experiment_request_limit'] }, 'taskEndedIncomplete'],
++    ['finalizing', { task_processing_complete: true, result_ready: false, task_completion: projected('persisted', 0, false) }, 'taskFinalizing'],
++  ]) await scenario(name, [spec], async ({ page, notes }) => {
++    await status(page, expected, name === 'finalizing' ? 'active' : 'incomplete'); assert.notEqual(await page.getByRole('progressbar').getAttribute('aria-valuenow'), '100');
++    const dialog = await notes(); assert.match(await dialog.innerText(), /保留或排除记录不控制任务完成/);
++    if (name === 'legacy_incomplete') { assert.match(await dialog.innerText(), /自动汇总核验已完成/); assert.match(await dialog.innerText(), /部分原文字形无法可靠识别/); }
++    if (name === 'incomplete_summary_budget') assert.match(await dialog.innerText(), /达到本次请求或词元额度/);
++    if (name === 'finalizing') assert.match(await dialog.innerText(), /正在保存/);
++  });
++  for (const allComplete of [false, true]) await scenario('batch_' + allComplete, [
++    { task_processing_complete: false, task_completion: projected('legacy_evidence_projection') },
++    { task_processing_complete: allComplete, ...(allComplete ? { task_completion: projected('persisted') } : { gaps: 1 }) },
++  ], async ({ page, notes }) => {
++    await status(page, allComplete ? 'completedWithSourceGaps' : 'taskEndedIncomplete', allComplete ? 'complete' : 'incomplete');
++    assert.equal(await page.getByRole('progressbar', { name: '已结束论文', exact: true }).getAttribute('aria-valuenow'), '100');
++    const dialog = await notes(); assert.equal(await dialog.locator('[data-completion-run]').count(), 2); assert.match(await dialog.innerText(), /来源0.pdf/); assert.match(await dialog.innerText(), /来源1.pdf/);
++  });
++  await scenario('mobile_gap_overlay', [{ task_processing_complete: false, task_completion: projected('legacy_evidence_projection', 41), blockers: ['source_glyph_quarantine_unresolved'] }], async ({ page, notes }) => {
++    const before = await page.locator('.t1-results-panel').boundingBox(), dialog = await notes(); await dialog.locator('[data-source-gaps] summary').click();
++    assert.deepEqual(await page.locator('.t1-results-panel').boundingBox(), before); assert.ok((await dialog.boundingBox()).height <= 844);
++    await dialog.locator('[data-source-gaps] li').last().scrollIntoViewIfNeeded(); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
++    await page.screenshot({ path: join(evidence, 'source-gaps-mobile.png') });
++  }, true);
++  result.status = result.checks.every(check => check.status === 'passed') && !result.errors.length && !result.blocked.length ? 'passed' : 'failed';
++} finally { await browser.close(); await writeFile(join(evidence, 'browser.json'), JSON.stringify(result, null, 2) + '\n'); console.log(JSON.stringify(result)); }
++if (result.status !== 'passed') process.exitCode = 1;
+--- before/apps/pi-web/e2e/summary-completion-readonly.mjs
++++ after/apps/pi-web/e2e/summary-completion-readonly.mjs
+@@ -0,0 +1,67 @@
++/** Production GET/HEAD only. Never start, rerun, retain, export, cancel or delete. */
++import assert from 'node:assert/strict';
++import { createHash } from 'node:crypto';
++import { readFile, writeFile } from 'node:fs/promises';
++import { dirname, join, resolve } from 'node:path';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..'), origin = 'http://127.0.0.1:30141';
++const evidence = join(code, 'docs/acceptance/new-task-layout-2026-11-14/item5'), deployment = JSON.parse(await readFile(join(evidence, 'deployment.json'), 'utf8'));
++const result = { status: 'running', BUILD_ID: deployment.BUILD_ID, checks: [], errors: [], blocked: [], production_business_writes: 0, paid_calls: 0, exports_requested: 0 };
++const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
++const snapshots = async () => Object.fromEntries(await Promise.all(['runs', 'papers', 'models'].map(async name => [name, await fetch(origin + '/api/t1/workbench/' + name).then(response => response.json())])));
++const before = await snapshots(); result.api_sha256_before = Object.fromEntries(Object.entries(before).map(([key, value]) => [key, hash(value)]));
++process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
++process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
++const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
++const browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
++const singles = before.runs.runs.filter(run => run.submission?.kind === 'single' && run.task_completion?.processing_complete), members = before.runs.runs.filter(run => run.task_title === '测试2');
++try {
++  assert.equal((await fetch(origin, { method: 'HEAD' })).status, 200); assert.equal((await fetch('http://127.0.0.1:3210/health').then(r => r.json())).status, 'ok');
++  assert.equal((await readFile(join(code, deployment.dist, 'BUILD_ID'), 'utf8')).trim(), result.BUILD_ID);
++  result.checks.push('same_validated_build_and_backend_health');
++  assert.equal(members.length, 2); assert.ok(members.every(run => run.task_processing_complete === false && run.task_completion?.rule_origin === 'legacy_evidence_projection' && run.task_completion.processing_complete));
++  assert.equal(singles.length, 1); assert.equal(singles[0].task_processing_complete, false);
++  const cancelled = before.runs.runs.filter(run => run.state === 'cancelled'); assert.ok(cancelled.length > 0 && cancelled.every(run => !run.task_completion?.processing_complete));
++  result.checks.push('real_single_batch_projections_preserve_original_false_and_cancelled_status');
++  for (const mobile of [false, true]) {
++    const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 }, locale: 'zh-CN', reducedMotion: 'reduce' });
++    await context.addInitScript(expected => { if (location.origin === expected) { localStorage.setItem('pi-locale', 'zh-CN'); localStorage.setItem('pi-theme', 'light'); } }, origin);
++    await context.route('**/*', route => { const req = route.request(), url = new URL(req.url());
++      if (url.origin !== origin || !['GET', 'HEAD'].includes(req.method()) || /\/exports\//.test(url.pathname)) { result.blocked.push({ method: req.method(), path: url.pathname }); return route.abort('blockedbyclient'); }
++      return route.continue(); });
++    const page = await context.newPage(); page.setDefaultTimeout(15000); page.on('pageerror', error => result.errors.push(String(error)));
++    const target = members[0]; await page.goto(`${origin}/?paper=${target.document_id}&run=${target.run_id}&view=records`);
++    await page.locator('[data-batch-results]').waitFor();
++    await page.waitForFunction(count => [...document.querySelectorAll('[data-retention-count]')].reduce((sum, element) => sum + Number(element.textContent), 0) === count, members.reduce((sum, run) => sum + run.candidate_count, 0));
++    assert.equal(await page.locator('.t1-task-progress').getAttribute('data-status'), 'completedWithSourceGaps');
++    assert.equal(await page.locator('[data-batch-results]').getAttribute('data-progress-outcome'), 'complete');
++    assert.equal(await page.getByRole('progressbar', { name: '已结束论文', exact: true }).getAttribute('aria-valuenow'), '100');
++    if (mobile && await page.locator('.t1-sidebar').isVisible()) await page.getByRole('button', { name: '切换导航', exact: true }).click();
++    if (!mobile) await page.screenshot({ path: join(evidence, 'live-desktop.png') });
++    const beforeRect = await page.locator('.t1-results-panel').boundingBox(); await page.getByRole('button', { name: '说明', exact: true }).click();
++    const dialog = page.getByRole('dialog', { name: '说明', exact: true }); await dialog.locator('[data-source-gaps]').first().waitFor();
++    assert.equal(await dialog.locator('[data-completion-run]').count(), 2); assert.match(await dialog.innerText(), /原始运行记录保留/);
++    await dialog.locator('[data-source-gaps] summary').first().click(); assert.match(await dialog.innerText(), /原文识别存疑/);
++    assert.doesNotMatch(await dialog.innerText(), /task-flow-completion-2|码点位置|5c8a80474c756be4422e/);
++    assert.deepEqual(await page.locator('.t1-results-panel').boundingBox(), beforeRect);
++    assert.ok((await dialog.boundingBox()).height <= (mobile ? 844 : 1000));
++    await page.screenshot({ path: join(evidence, mobile ? 'live-source-gaps-mobile.png' : 'live-source-gaps-desktop.png') });
++    await page.keyboard.press('Escape');
++    if (!mobile) {
++      const single = singles[0]; await page.goto(`${origin}/?paper=${single.document_id}&run=${single.run_id}&view=records`);
++      await page.locator('.t1-run-progress[data-progress-outcome="complete"]').waitFor(); assert.equal(await page.locator('.t1-task-progress').getAttribute('data-status'), 'completedWithSourceGaps');
++    }
++    await context.close();
++  }
++  for (const member of members) {
++    const detail = await fetch(`${origin}/api/t1/workbench/runs/${member.run_id}`).then(response => response.json());
++    assert.deepEqual(detail.run.task_completion, detail.output.task_completion); assert.equal(detail.output.source_gaps.length, member.task_completion.source_gap_blocks);
++    assert.ok(detail.output.source_gaps.some(gap => gap.uncertain_spans.some(span => Number.isInteger(span.start) && span.end > span.start)));
++  }
++  result.checks.push('real_desktop_mobile_saved_status_gap_pages_offsets_and_bounded_notes');
++  const after = await snapshots(); result.api_sha256_after = Object.fromEntries(Object.entries(after).map(([key, value]) => [key, hash(value)]));
++  assert.deepEqual(result.api_sha256_after, result.api_sha256_before); result.checks.push('all_task_paper_model_lists_preserved_by_GET_HEAD_checks');
++  result.status = result.errors.length || result.blocked.length ? 'failed' : 'passed'; result.run_count = before.runs.runs.length; result.paper_count = before.papers.papers.length;
++} catch (error) { result.errors.push(String(error)); result.status = 'failed'; }
++finally { await browser.close(); result.completed_at_utc = new Date().toISOString(); await writeFile(join(evidence, 'live-readonly.json'), JSON.stringify(result, null, 2) + '\n'); console.log(JSON.stringify(result)); }
++if (result.status !== 'passed') process.exitCode = 1;
+--- before/README.md
++++ after/README.md
+@@ -2,9 +2,9 @@
+ 
+ 从文本型PDF提取肿瘤影像外观原文，保留出处、必要语境、整幅Figure和原图注，供逐篇核对与导出。正式主流程为B0；F仅保留实验实现与历史对照。
+ 
+-当前普通工作台为 **http://127.0.0.1:30141/**，后端为 **http://127.0.0.1:3210**；当前构建为`apps/pi-web/build/batch-followup-delivery-validated-20261115`，BUILD_ID `tsHeQQNyzce-sz30XK1yw`。创建任务按上传论文、抽取范围和模型分卡展示；选择文件或文件夹后自动串行上传，确认后点击开始才创建抽取。每次提交在侧栏与历史作为一个任务，批量显示“批量”并统一展示已提交成员结果；每条结果保留所属论文、原页、整图与子run来源。任务完成状态依据各自持久记录区分完成、未完成与待核，不随当前选择漂移。顶部悬浮提示带进出动画，成功4秒、错误6秒自动退场；处理中保持。
++当前普通工作台为 **http://127.0.0.1:30141/**，后端为 **http://127.0.0.1:3210**；当前构建为`apps/pi-web/build/summary-completion-delivery-validated-20261115`，BUILD_ID `E23zPq5epmvmz7hXKRFiM`。创建任务按上传论文、抽取范围和模型分卡展示；选择文件或文件夹后自动串行上传，确认后点击开始才创建抽取。每次提交在侧栏与历史作为一个任务，批量显示“批量”并统一展示已提交成员结果；每条结果保留所属论文、原页、整图与子run来源。任务完成依据各自版本化流程记录或充分证据的只读旧任务投影，区分完成、未完成与待核；原文字形缺口单列为“已完成·有原文缺口”，不随当前选择漂移。顶部悬浮提示带进出动画，成功4秒、错误6秒自动退场；处理中保持。
+ 
+-[本轮记录](docs/acceptance/new-task-layout-2026-11-14/report.json)中的原第1、2、3项已获用户审核通过，原第4项及新增反馈等待用户统一审核；原第5项尚未开始，正式审查仍共用3/3。最新节点 `item4.followup_batch_delete_progress_layout_20261115` 修复同论文独立活动任务阻止已结束任务删除的问题，补齐整批进度和稳定展开浮层；27项相关后端检查、14项界面单测、6组同构建隔离浏览器通过。后端52821、前端52852/wrapper52845；安全切换和真实只读核验见该节点。真实“测试2”仅核对显示及删除确认框，未确认删除。生产业务测试写入、生产导出及额外付费调用均为0，医学与完整S6/S7结论不升级。
++[本轮记录](docs/acceptance/new-task-layout-2026-11-14/report.json)中的原第1—4项及第4项新增反馈均获用户审核通过。原第5项按用户选择“流程完成与原文缺口分开显示”完成工程实现与安全上线，等待本项审核；正式审查仍共用3/3。新规则`task-flow-completion-2`要求非空可靠授权输入显式处理、自动汇总核验、交付校验与最终保存均完成；正常0候选可以完成，输入完全不可读、预算/抽取/汇总/交付/保存失败或取消均不升级。旧任务的原false与结果文件不改，只在既有完整证据通过核验时只读派生现行流程状态，说明中保留原判定来源；字形存疑原句继续隔离，页码及简短片段集中在说明浮层。18项界面单测、33项主后端/SDK回归、同4项缓存修正复验（非37独立场景）、10组最终同构建隔离浏览器及4组线上GET/HEAD通过。当前后端71706、前端71742/wrapper71735；真实3个旧run只读投影验证通过，未新增真实模型调用，医学与完整S6/S7结论不升级。安全切换保全18表、9篇论文/6run、164产物与配置，生产业务测试写入、生产导出及额外付费均0。
+ 
+ [前轮工作台体验报告](docs/acceptance/workbench-experience-2026-11-14/report.json)记录正式审查3/3、71项后端与346项抽取回归、14项界面单测、16组同构建隔离浏览器与5组真实只读核验。新增任务用相同授权原文投影预载，免去重复索取输入的模型往返；SSE仅查询游标后的新事件。本地SDK与查询基准通过，尚未新增付费任务验证真实总耗时收益。原用户任务自然结束为partial，13条候选和唯一明确配对Figure5保留；上线核验时为17表、8run、8篇论文记录、1模型配置，逻辑数据、两份env与手工目录均保持。代理生产业务写入与额外付费模型调用均为0。
+ 
+@@ -38,7 +38,7 @@
+ 复用本次已验证构建并重启前端时，先确认原前端进程已停止，然后在`code/`运行（普通重新构建流程仍使用上方`build:web`）：
+ 
+ ```bash
+-T1_NEXT_DIST_DIR=build/batch-followup-delivery-validated-20261115 bash scripts/with-node.sh npm run start:web
++T1_NEXT_DIST_DIR=build/summary-completion-delivery-validated-20261115 bash scripts/with-node.sh npm run start:web
+ ```
+ 
+ 开发时可用`bash scripts/with-node.sh npm run dev:web`替代生产前端，默认仍30141。`npm run dev:server`不自动载入工作台开关/限额；不要仅改`.env`就假定这些已生效。首次依赖/CPU模型准备及Docker启动按[部署说明](deploy/README.md)执行，不运行上游通用pi-web入口或另建前端。
+@@ -47,7 +47,7 @@
+ 
+ 1. 创建任务先选择本地PDF。本地入口可“选择文件”多选PDF，或“选择文件夹”递归筛选用户电脑文件夹及子文件夹中的PDF（扩展名不区分大小写）；其它文件不上传。当前文件清单按完整PDF字节SHA去重后计数，异名同内容保留一份并提示，同名异内容保持独立；服务端再次核对并复用已有论文/文件，已有重复历史记录不迁并或删除。每批最多20份不同内容、50MiB/篇；超过上限时整次不加入并保留原清单，按提示分批。选择后自动逐文件串行上传，独立显示成败，可重试失败项或移除未提交项；上传不调用模型。文件与文件夹入口共用癌种→图像模态两层范围和模型设置，默认不限且均可多选；由手工JSON配置可选关联，空选/失效明确提示并阻止开始，不自动放宽。浏览器不支持目录选择时仍可使用多选文件。上传后的PDF保存在服务器；后续存储处理已登记为T1-F02，尚未实现，本轮不清理既有文件。
+ 2. 点击开始后，每篇保留独立子run、2个FIFO槽与原每run预算，用户层按提交任务展示。首次开始按有效未移除成员数固定单篇或批量，标题、范围、模型与batch_id一起冻结；部分创建失败保留草稿与幂等key可继续重试，仅全部有效成员受理成功后清空一次性表单、显示成功提示并打开统一结果，保留范围和模型偏好。单篇留空标题使用原文件名；批量留空使用批量默认名。标题不改论文来源。同论文不同提交始终分开，缺少提交metadata的旧记录不猜组；侧栏/历史数量按提交任务统计。整页重载不恢复未提交草稿，后台已受理任务继续运行。
+-3. 在“抽取结果”阅读连续原文和明确配图，使用“排除此条”或“恢复保留”取舍。每条描述下显示对应配图状态；明确配对时直接展示整幅Figure和完整原图注，不明确时保留文字，不用独立图片猜配。单篇任务进度显示排队、解析、原文处理和汇总核验；批量进度显示各阶段篇数及“已结束论文/实际已提交论文”比例，结束包含失败、取消和中断，100%结束不代表全批处理完成。只有每篇持久完成为true且结果落盘时，整批才显示完成；单篇块数或SSE不代替整批进度。同源成员、来源版本与高级操作集中在“说明”，原片段/指纹和主目标/背景语义保持。
++3. 在“抽取结果”阅读连续原文和明确配图，使用“排除此条”或“恢复保留”取舍。每条描述下显示对应配图状态；明确配对时直接展示整幅Figure和完整原图注，不明确时保留文字，不用独立图片猜配。单篇任务进度显示排队、解析、原文处理和汇总核验；批量进度显示各阶段篇数及“已结束论文/实际已提交论文”比例，结束包含失败、取消和中断，100%结束不代表全批处理完成。只有每篇自身版本化流程结果完成（或旧任务充分证据的只读投影）且结果落盘时，整批才显示完成；单篇块数或SSE不代替整批进度。系统自动完成汇总核验、交付检查与保存，无需逐条确认保留。局部原文字形缺口继续隔离并另行标记，可从说明浮层按原页核对；不因来源限制掩盖真正的处理失败。同源成员、来源版本与高级操作集中在“说明”，原片段/指纹和主目标/背景语义保持。
+ 4. 结果默认保留；排除可恢复，旧有效拒绝延续，修改内容不会悄悄恢复。可选来源/标签修订从“说明”进入并记录修订人；日常取舍无需审核人或理由。开发抽样、医学核验与旧评价独立，默认保留不表示医学批准，保留背景仍是背景。
+ 5. 单篇可下载当前未排除结果的JSONL、CSV或证据包；批量下载一个统一证据包，内含逐成员原包和完整成员manifest，保留run/paper/原页/图像隔离。0保留成员明确列出，不把空成员藏起；任一有内容成员来源阻塞会标明成员并使整包失败。默认保留不表示医学批准；来源缺失或SHA不符的既有导出校验保持。
+ 
+--- before/deploy/README.md
++++ after/deploy/README.md
+@@ -2,9 +2,11 @@
+ 
+ ## 当前宿主工作台（2026-11-15）
+ 
+-普通入口为`http://127.0.0.1:30141/`，后端为`http://127.0.0.1:3210`。当前构建`apps/pi-web/build/batch-followup-delivery-validated-20261115`、BUILD_ID `tsHeQQNyzce-sz30XK1yw`；Next52852（wrapper52845）、后端52821。本轮3项追加反馈已实现上线，等待用户统一审核；原第5项未开始，正式审查共用3/3。已结束任务删除只预检目标run/整批自身活动和写入，同论文独立任务活动时延后既有物理清理并返回逻辑删除成功；共享PDF/来源引用保护保持。批量进度按已结束论文/实际提交篇数统计，100%结束不代表全部处理完成；成员和主页面详情使用有界内部滚动浮层。27项相关后端、14项界面单测、6组同构建隔离和4项真实GET/HEAD核验通过，详见[原报告新增节点](../docs/acceptance/new-task-layout-2026-11-14/report.json) `item4.followup_batch_delete_progress_layout_20261115`。
++普通入口为`http://127.0.0.1:30141/`，后端为`http://127.0.0.1:3210`。当前构建`apps/pi-web/build/summary-completion-delivery-validated-20261115`、BUILD_ID `E23zPq5epmvmz7hXKRFiM`；Next71742（wrapper71735）、后端71706。原第1—4项及追加反馈用户已审核通过；原第5项按用户选择分开流程完成与原文缺口完成限定工程验收并上线，待用户审核。规则`task-flow-completion-2`对新run持久记录，旧sole-glyph未完成任务只在原批处理、汇总、交付、账本和源PDF/IR完整证据核验通过后只读派生；原false/原结果不改。取消、失败、缺证据及未最终落盘不升级，未知字形不猜改，原页入口集中在固定说明浮层。18项界面单测、33项主后端/SDK回归、同4项缓存修正复验（不合并成37独立场景）、10组最终隔离浏览器和4组线上GET/HEAD通过，详见[原报告第5项](../docs/acceptance/new-task-layout-2026-11-14/report.json) `item5`。
+ 
+-本次先关闭30141监听，重复确认5run均结束且result_ready=true、无后台解析/业务子进程，再一致备份并优雅切换空闲后端以结束旧SSE。18表逻辑hash、9篇论文/5run、255来源/产物和两env/config保持，integrity ok/外键0，模型仍gpt-6-luna/medium/Responses；未新增schema。本次helper在观察旧Next自然退出时遇到/proc读取竞态，随后直接续接已验新服务，未重复停服或备份；旧服务均优雅退出。SQLite备份`runtime-data/backups/batch-followup-20261115-before/t1.sqlite`、旧后端源码快照`runtime-data/rollbacks/batch-followup-20261115-before/apps/server/src`及前一构建`build/task-feedback-delivery-validated-20261115`保留。真实“测试2”仅查看11条结果、成员浮层及确认框按钮，保留关闭而未确认删除。生产业务写入/导出/额外付费调用0。
++本次先关闭30141监听阻止新提交，重复确认6run均为终态且result_ready=true、无准备/解析进程，一致备份后优雅关闭空闲后端以结束SSE，再恢复同一已验构建；无用户任务中断或活动等待。18表逻辑hash、9paper/6run、164个来源/产物、两env及配置/模型保持，integrity ok/外键错误0；模型仍gpt-6-luna/medium/Responses，无新增schema。正式备份`runtime-data/backups/summary-completion-20261115-before/t1.sqlite`、旧后端源码`runtime-data/rollbacks/summary-completion-20261115-before`及前一构建`build/batch-followup-delivery-validated-20261115`保留。旧Next因SSE尚未完全退场时，新入口在监听已释放后正常恢复；旧backend/Next/wrapper随后均优雅退出，未等旧SSE阻塞恢复。真实单篇及测试2两成员均仅GET核验足证旧流程投影，原false保持；3个取消run未升级。生产业务测试写入、生产导出及新增付费0；新规则真实模型语义尚未复验。
++
++前轮3项追加反馈保留当时27后端/14界面/6隔离/4真实只读检查、5run/9paper/255产物及后端52821/前端52852的历史事实；其备份`runtime-data/backups/batch-followup-20261115-before/t1.sqlite`及原报告 `item4.followup_batch_delete_progress_layout_20261115`保留。共享来源安全删除、整批已结束篇数进度及有界内部滚动浮层已获用户审核，不因第5项调整而变更。
+ 
+ 前轮`item4.feedback_20261115`的6run/9paper、191产物与新增空`workbench_deleted_batches`表等保全结论仅对应前次交付时点，原备份及证据保留。
+ 

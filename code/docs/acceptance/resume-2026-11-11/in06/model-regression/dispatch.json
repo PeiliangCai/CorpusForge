@@ -1,0 +1,20 @@
+{
+  "schema_version": "t1-main-session-round-dispatch-1",
+  "observed_at_utc": "2026-11-11T10:38:40.539376+00:00",
+  "decision_owner": "Main session GPT-6-Astra max under user3h autonomy",
+  "decision_quote": "明确派发第二轮：执行IN06 model-regression/plan.json SHA4d3a774bacdc0c9542956b25207798205d76d310f443b907109a780feea2e007，镜像bc08，原始PDF SHA1784b4…且all/all/all，Luna medium ordinary exact policy。仅1次，24请求/600000input/32000output/900s，重试计数，绝对12:10:01Z前停，失败不整轮重跑。全窗已有21/283335/10170，累计上限72/1800000/96000不变，当前开此一轮；第三轮仍待我派发。记录此主会话决定后直接开始，计划SHA不改，冻结准备状态可在单独dispatch记录解释。",
+  "plan_sha256": "4d3a774bacdc0c9542956b25207798205d76d310f443b907109a780feea2e007",
+  "authorized_round": "repaired-in06-20261111",
+  "authorized_runs": 1,
+  "limits": {
+    "requests": 24,
+    "input_tokens": 600000,
+    "output_tokens": 32000,
+    "seconds": 900
+  },
+  "prior_prepared_zero_allowance_snapshot_preserved": true,
+  "no_next_round_dispatch": true,
+  "business_approval_added": false,
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3
+}

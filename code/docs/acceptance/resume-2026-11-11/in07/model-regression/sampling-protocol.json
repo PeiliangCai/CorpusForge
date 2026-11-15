@@ -1,0 +1,40 @@
+{
+  "schema_version": "t1-fixed-regression-sampling-protocol-1",
+  "source_id": "IN07",
+  "frozen_at_utc": "2026-11-11T10:53:30.270884+00:00",
+  "source_role": "Exposed parser regression after independent first source-structure check failed; no complete-pipeline independent acceptance claim. Extraction API unseen before this proposed round.",
+  "original_preparse_protocol": {
+    "path": "code/docs/acceptance/resume-2026-11-11/in07/sampling-protocol.json",
+    "sha256": "6e6a9966c842b4dc1ccbe6499a285a81116061c694fd215cdf6757e50a3ffed2"
+  },
+  "original_first_independent_failure": "code/docs/acceptance/resume-2026-11-11/in07/baseline/freeze.json",
+  "seed": "t1-s6-20261109-v1",
+  "output_sample": {
+    "seed": "t1-s6-20261109-v1",
+    "method": "Fixed SHA256 ordering of every current primary and background record version and delivery fingerprint",
+    "count": "min(10,N); all current records if N<10",
+    "zero_output": "No denominator; not proof of no eligible evidence or recall",
+    "directed_risks": {
+      "maximum": 5,
+      "denominator": "separate, with overlap explicitly marked"
+    },
+    "sampling_across_output_roles": true
+  },
+  "source_review": {
+    "reviewer_kind": "delegated_ai_operator",
+    "actual_human_reviewed_count": 0,
+    "medical_quality_approved": false,
+    "production_record_approvals": 0,
+    "checks": [
+      "literal original quote/context and visible PDF source at physical page",
+      "same immutable source/version/bbox",
+      "whole Figure/complete source caption and panel rendering as source structure only",
+      "context/duplicate/semantic risks disclosed; no invented clinical approval"
+    ]
+  },
+  "new_independent_sample_count": 0,
+  "population_precision": null,
+  "population_recall": null,
+  "current_effective_API_allowance": 0,
+  "model_execution_dispatched": false
+}

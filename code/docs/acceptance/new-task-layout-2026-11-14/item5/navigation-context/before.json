@@ -1,0 +1,79 @@
+{
+  "status": "reproduced",
+  "baseline_BUILD_ID": "TTsFAMBKuqGe6oPPX7LuB",
+  "values": [
+    {
+      "view": "newTask",
+      "url": "http://127.0.0.1:30141/?paper=paper-87679b4c-12be-49c2-92ec-3df9f81610ff&view=newTask",
+      "title": "创建任务",
+      "tabs": [
+        "创建任务",
+        "抽取结果",
+        "原 Figure 目录",
+        "任务与历史"
+      ],
+      "original_button_count": 1,
+      "original_button_text": "查看原件"
+    },
+    {
+      "view": "records",
+      "url": "http://127.0.0.1:30141/?paper=paper-87679b4c-12be-49c2-92ec-3df9f81610ff&view=records",
+      "title": "例子2.pdf",
+      "tabs": [
+        "创建任务",
+        "抽取结果",
+        "原 Figure 目录",
+        "任务与历史"
+      ],
+      "original_button_count": 1,
+      "original_button_text": "查看原件"
+    },
+    {
+      "view": "figures",
+      "url": "http://127.0.0.1:30141/?paper=paper-87679b4c-12be-49c2-92ec-3df9f81610ff&view=figures",
+      "title": "例子2.pdf",
+      "tabs": [
+        "创建任务",
+        "抽取结果",
+        "原 Figure 目录",
+        "任务与历史"
+      ],
+      "original_button_count": 1,
+      "original_button_text": "查看原件"
+    },
+    {
+      "view": "tasks",
+      "url": "http://127.0.0.1:30141/?paper=paper-87679b4c-12be-49c2-92ec-3df9f81610ff&view=tasks",
+      "title": "例子2.pdf",
+      "tabs": [
+        "创建任务",
+        "抽取结果",
+        "原 Figure 目录",
+        "任务与历史"
+      ],
+      "original_button_count": 1,
+      "original_button_text": "查看原件"
+    }
+  ],
+  "blocked": [],
+  "production_business_writes": 0,
+  "paid_calls": 0,
+  "paper_detail_requests": [
+    {
+      "method": "GET",
+      "path": "/api/t1/workbench/papers/paper-87679b4c-12be-49c2-92ec-3df9f81610ff"
+    },
+    {
+      "method": "GET",
+      "path": "/api/t1/workbench/papers/paper-87679b4c-12be-49c2-92ec-3df9f81610ff"
+    },
+    {
+      "method": "GET",
+      "path": "/api/t1/workbench/papers/paper-87679b4c-12be-49c2-92ec-3df9f81610ff"
+    },
+    {
+      "method": "GET",
+      "path": "/api/t1/workbench/papers/paper-87679b4c-12be-49c2-92ec-3df9f81610ff"
+    }
+  ]
+}

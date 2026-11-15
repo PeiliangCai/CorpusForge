@@ -1,0 +1,261 @@
+{
+  "schema_version": "figure-asset-catalog-1",
+  "document_id": "paper-281379c7-3582-4f64-a6c4-9af96ea83e60",
+  "file_sha256": "50427f2871550116a3ef9530b09fe5a8591299f6352ab58af1aaa46273437a3b",
+  "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+  "figures": [
+    {
+      "figure_id": "figure-6f0c283fc60db961c220377d",
+      "figure_number": "1",
+      "caption_segments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000062",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 8,
+          "exact_quote": "FIGURE 1",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            60.8315,
+            745.348429,
+            84.72668445000001,
+            750.4085210000001
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000063",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 134,
+          "exact_quote": "Chest CT images [lung window (A)/mediastinal window (B)] demonstrate an 18×11 mm spiculated nodule in the left upper lobe (red arrow).",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            60.8315,
+            753.241071,
+            502.9332841699999,
+            759.680979
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "panel_labels": [
+        "(A)",
+        "(B)"
+      ],
+      "native_picture_ids": [
+        "dcb0bc03c894af51-u-d979464646c855f5"
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Standalone original label and adjoining same-style caption lines retained by source geometry; relation and completeness require original-page review. Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      },
+      "regions": [
+        {
+          "asset_id": "figure-6f0c283fc60db961c220377d-0",
+          "path": "runtime-data/workbench/runs/run-1cd86d00-1256-465a-8a9a-cddd2a8294ac/figure-assets/figure-6f0c283fc60db961c220377d-p2-0.png",
+          "sha256": "6824bc255b89b6aceaadf6e229945cf144d2a1c09286f39e21f11da6ee5aebd0",
+          "mime_type": "image/png",
+          "physical_page": 2,
+          "bbox": [
+            98.28714390130011,
+            537.4424630374139,
+            496.66651946355836,
+            736.8437633353843
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 798,
+          "height_px": 400,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "50427f2871550116a3ef9530b09fe5a8591299f6352ab58af1aaa46273437a3b",
+          "visual_modification": "none"
+        }
+      ]
+    },
+    {
+      "figure_id": "figure-585f21cde5ec4e495da3bc44",
+      "figure_number": "3",
+      "caption_segments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0004-l000062",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 8,
+          "exact_quote": "FIGURE 3",
+          "occurrence": 0,
+          "physical_page": 4,
+          "bbox": [
+            60.8315,
+            342.488729,
+            85.06769065,
+            347.548821
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0004-l000063",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 132,
+          "exact_quote": "Core biopsies showing the tumor with glandular architecture [H&E stain, power of magnification ×100 (A), ×200 (B, C), and ×400 (D)].",
+          "occurrence": 0,
+          "physical_page": 4,
+          "bbox": [
+            60.8315,
+            350.43807100000004,
+            487.11841010000006,
+            356.87797900000004
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "panel_labels": [
+        "(A)",
+        "(D)"
+      ],
+      "native_picture_ids": [
+        "dcb0bc03c894af51-u-c8f62683e6875b47"
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      },
+      "regions": [
+        {
+          "asset_id": "figure-585f21cde5ec4e495da3bc44-0",
+          "path": "runtime-data/workbench/runs/run-1cd86d00-1256-465a-8a9a-cddd2a8294ac/figure-assets/figure-585f21cde5ec4e495da3bc44-p4-0.png",
+          "sha256": "c33d71e300a7a7e6e2178e50a138e56109e7539526b2972c06935a9ae3eb40b0",
+          "mime_type": "image/png",
+          "physical_page": 4,
+          "bbox": [
+            84.16683829637822,
+            93.64265858009139,
+            511.0765363059844,
+            333.94767847045756
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 855,
+          "height_px": 482,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "50427f2871550116a3ef9530b09fe5a8591299f6352ab58af1aaa46273437a3b",
+          "visual_modification": "none"
+        }
+      ]
+    },
+    {
+      "figure_id": "figure-238cb9a0ed7333a79112612d",
+      "figure_number": "2",
+      "caption_segments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0003-l000038",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 8,
+          "exact_quote": "FIGURE 2",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            60.8315,
+            479.912329,
+            85.06769065,
+            484.972421
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0003-l000039",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 138,
+          "exact_quote": "Head + torso 18F-FDG PET/CT revealed a heterogeneous FDG uptake in the left upper lobe (SUVmax = 14.0), with no evidence of hypermetabolic",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            60.8315,
+            487.8539703,
+            526.6132458799999,
+            494.244879
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0003-l000040",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 153,
+          "exact_quote": "lesions in the gastrointestinal tract. (A) PET maximum intensity projection (MIP) image, (B) axial PET image, (C) axial CT image, (D) axial fusion image.",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            60.8315,
+            496.81944222000004,
+            531.9170701099998,
+            503.25935022000004
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "panel_labels": [
+        "F-F",
+        "(A)",
+        "(B)",
+        "(C)",
+        "(D)"
+      ],
+      "native_picture_ids": [
+        "dcb0bc03c894af51-u-6b09bd1511e2a8e5"
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Standalone original label and adjoining same-style caption lines retained by source geometry; relation and completeness require original-page review. Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      },
+      "regions": [
+        {
+          "asset_id": "figure-238cb9a0ed7333a79112612d-0",
+          "path": "runtime-data/workbench/runs/run-1cd86d00-1256-465a-8a9a-cddd2a8294ac/figure-assets/figure-238cb9a0ed7333a79112612d-p3-0.png",
+          "sha256": "44cc7d85f36622c53d91c360e67ea18d4555fafe4b7aa66c43a567d27c998d45",
+          "mime_type": "image/png",
+          "physical_page": 3,
+          "bbox": [
+            98.69626232490283,
+            94.05326077744394,
+            496.54640347115946,
+            471.49718769202155
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 797,
+          "height_px": 756,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "50427f2871550116a3ef9530b09fe5a8591299f6352ab58af1aaa46273437a3b",
+          "visual_modification": "none"
+        }
+      ]
+    }
+  ],
+  "inventory_complete": false,
+  "original_pdf_modified": false,
+  "generated_images_used": false
+}

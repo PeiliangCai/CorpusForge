@@ -1,0 +1,211 @@
+--- before/apps/pi-web/t1/T1Workbench.tsx
++++ after/apps/pi-web/t1/T1Workbench.tsx
+@@ -440,8 +440,8 @@
+           {capabilities?.controlled_fixture && <p className="t1-fixture-banner">{t("t1.fixture")}</p>}
+           {!activeTab && <div className="t1-empty">{["newTask", "records", "figures", "tasks"].map(id => <button key={id} onClick={() => openTab(id)}>{t(`t1.${id}`)}</button>)}</div>}
+           <section className="t1-new-task-panel" hidden={activeTab !== "newTask"}><div className="t1-heading"><h1>{t("t1.newTask")}</h1><span className="t1-badge">B0</span></div>
+-            {capabilities?.model_selection && models && <ModelSelection models={models} value={modelProfileId} onChange={chooseModel} onModelsChange={setModels} errorText={errorText} />}
+             <BatchSubmission scope={scope} catalog={catalog} onScopeChange={setScope} canUpload={Boolean(capabilities?.paper_upload)} canStart={Boolean(capabilities?.extraction_start)} runs={runs} modelProfile={selectedModel} modelRequired={Boolean(capabilities?.model_selection)} errorText={errorText}
++              modelSelection={capabilities?.model_selection && models ? <ModelSelection models={models} value={modelProfileId} onChange={chooseModel} onModelsChange={setModels} errorText={errorText} /> : undefined}
+               onUploaded={paper => { setPapers(current => [paper, ...current.filter(item => item.id !== paper.id)]); }}
+               onStarted={run => setRuns(current => [run, ...current.filter(item => item.run_id !== run.run_id)])} onView={selectRun} />
+             <details className="t1-reuse-paper" open={reuseOpen} onToggle={event => setReuseOpen(event.currentTarget.open)}><summary>{t("t1.reusePaper")}</summary><p className="t1-footnote">{t("t1.reusePaperHelp")}</p>
+--- before/apps/pi-web/t1/BatchSubmission.tsx
++++ after/apps/pi-web/t1/BatchSubmission.tsx
+@@ -1,6 +1,6 @@
+ "use client";
+ 
+-import { useRef, useState } from "react";
++import { useRef, useState, type ReactNode } from "react";
+ import { useI18n } from "@/hooks/useI18n";
+ import { api, jsonBody, WorkbenchError } from "./api";
+ import { ScopeEditor, ScopeSummary } from "./ScopeEditor";
+@@ -14,12 +14,13 @@
+ type Member = { id: string; file: File; displayName: string; title: string; status: Status; error?: string; paper?: WorkbenchPaper; run?: WorkbenchRun; uploadKey: string; startKey: string };
+ type Props = { scope: Scope | null; catalog: ScopeCatalog | null; canUpload: boolean; canStart: boolean; runs: WorkbenchRun[];
+   modelProfile: WorkbenchModelProfile | null; modelRequired: boolean;
++  modelSelection?: ReactNode;
+   onScopeChange: (scope: Scope) => void;
+   onUploaded: (paper: WorkbenchPaper) => void; onStarted: (run: WorkbenchRun) => void; onView: (run: WorkbenchRun) => void; errorText: (cause: unknown) => string };
+ 
+ /** One small in-memory selection. Uploads and admissions are sequential; the
+  * existing server queue owns execution. Committed members never re-enter either loop. */
+-export function BatchSubmission({ scope, catalog, onScopeChange, canUpload, canStart, runs, modelProfile, modelRequired, onUploaded, onStarted, onView, errorText }: Props) {
++export function BatchSubmission({ scope, catalog, onScopeChange, canUpload, canStart, runs, modelProfile, modelRequired, modelSelection, onUploaded, onStarted, onView, errorText }: Props) {
+   const { t } = useI18n();
+   const [members, setMembers] = useState<Member[]>([]), [phase, setPhase] = useState<"upload" | "start" | null>(null), [notice, setNotice] = useState("");
+   const busy = phase !== null;
+@@ -100,17 +101,22 @@
+   }
+ 
+   return <section className="t1-upload t1-batch" aria-label={t("t1.batchTitle")} aria-busy={busy}>
+-    <h2>{t("t1.uploadTitle")}</h2><p className="t1-lead">{t("t1.batchHelp")}</p>
+-    <div className="t1-file-choices">
+-      <button className="t1-button" disabled={busy || Boolean(savedScope) || members.length >= MAX_FILES} onClick={() => inputRef.current?.click()}>{t("t1.chooseFiles")}</button>
+-      <button className="t1-button" disabled={busy || Boolean(savedScope) || members.length >= MAX_FILES} onClick={chooseFolder}>{t("t1.chooseFolder")}</button>
+-      <input hidden aria-label={t("t1.choosePdf")} type="file" accept="application/pdf,.pdf" multiple ref={inputRef} disabled={busy || Boolean(savedScope)} onChange={event => choose(event.target.files)} />
+-      <input hidden aria-label={t("t1.chooseFolder")} type="file" multiple {...{ webkitdirectory: "" }} ref={folderRef} disabled={busy || Boolean(savedScope)} onChange={event => choose(event.target.files, true)} />
+-    </div><p className="t1-footnote">{t("t1.folderHelp")}</p>
+-    {notice && <p className="t1-notice" role="status">{notice}</p>}
+-    {!!members.length && <>
+-      <p className="t1-batch-counts" role="status">{t("t1.batchCounts", { total: members.length, uploaded, submitted })}</p>
+-      <ul className="t1-batch-members">{members.map(member => {
++    <div className="t1-draft-layout">
++      <section className="t1-task-card t1-files-card" aria-label={t("t1.uploadTitle")}>
++        <h2 className="t1-task-card-title">{t("t1.uploadTitle")}<span className="t1-badge">PDF</span></h2>
++        <div className="t1-files-body">
++          <div className="t1-file-picker">
++            <p className="t1-lead">{t("t1.batchHelp")}</p>
++            <div className="t1-file-choices">
++              <button className="t1-primary" disabled={busy || Boolean(savedScope) || members.length >= MAX_FILES} onClick={() => inputRef.current?.click()}>{t("t1.chooseFiles")}</button>
++              <button className="t1-button" disabled={busy || Boolean(savedScope) || members.length >= MAX_FILES} onClick={chooseFolder}>{t("t1.chooseFolder")}</button>
++              <input hidden aria-label={t("t1.choosePdf")} type="file" accept="application/pdf,.pdf" multiple ref={inputRef} disabled={busy || Boolean(savedScope)} onChange={event => choose(event.target.files)} />
++              <input hidden aria-label={t("t1.chooseFolder")} type="file" multiple {...{ webkitdirectory: "" }} ref={folderRef} disabled={busy || Boolean(savedScope)} onChange={event => choose(event.target.files, true)} />
++            </div><p className="t1-footnote">{t("t1.folderHelp")}</p>
++          </div>
++          {notice && <p className="t1-notice" role="status">{notice}</p>}
++          <p className="t1-batch-counts" role="status">{t("t1.batchCounts", { total: members.length, uploaded, submitted })}</p>
++          {!!members.length && <ul className="t1-batch-members">{members.map(member => {
+         const run = runs.find(run => run.run_id === member.run?.run_id) ?? member.run;
+         return <li key={member.id} data-batch-member={member.id} data-upload-state={member.status}>
+           <div className="t1-batch-file"><strong title={member.displayName}>{member.displayName}</strong><small>{(member.file.size / 1024 / 1024).toFixed(1)} MiB</small></div>
+@@ -121,17 +127,22 @@
+             {run ? <button className="t1-button" onClick={() => onView(run)}>{t("t1.viewTask")}</button> : <button className="t1-button" disabled={busy} onClick={() => setMembers(current => current.filter(item => item.id !== member.id))}>{t("t1.removeFile")}</button>}
+           </div>{member.error && <p className="t1-batch-error" role="alert">{member.error}{member.status !== "invalid" && ` ${t("t1.batchRetrySafe")}`}</p>}
+         </li>;
+-      })}</ul>
+-      <button className="t1-primary" disabled={busy || !uploadable.length || !canUpload} onClick={() => void upload()}>{t(phase === "upload" ? "t1.uploading" : "t1.uploadBatch", { count: uploadable.length })}</button>
+-    </>}
+-    {scope && catalog && <ScopeEditor scope={scope} data={catalog} onChange={onScopeChange} />}
+-    {!!members.length && <>
++          })}</ul>}
++          {!!members.length && <div className="t1-file-upload-actions"><button className="t1-button" disabled={busy || !uploadable.length || !canUpload} onClick={() => void upload()}>{t(phase === "upload" ? "t1.uploading" : "t1.uploadBatch", { count: uploadable.length })}</button></div>}
++        </div>
++      </section>
++      <div className="t1-task-settings">
++        {scope && catalog && <div className="t1-task-card t1-scope-card"><ScopeEditor scope={scope} data={catalog} onChange={onScopeChange} /></div>}
++        {modelSelection}
++      </div>
++    </div>
++    {!!members.length && <div className="t1-draft-footer">
+       <div className="t1-batch-actions">
+         <button className="t1-primary" disabled={busy || !startable.length || !canStart || invalidScope || invalidModel} onClick={() => void start()}>{t(phase === "start" ? "t1.starting" : taskKind === "single" ? "t1.startSingle" : "t1.startBatch", { count: startable.length })}</button>
+         <button className="t1-button" disabled={busy} onClick={() => { setMembers([]); setAdmission(null); setNotice(""); }}>{t("t1.clearBatch")}</button></div>
+       <p className="t1-footnote t1-clear-help">{t("t1.clearSelectionHelp")}</p>
+       {savedScope && <div className="t1-batch-scope"><strong>{t("t1.batchSavedScope")}</strong><ScopeSummary scope={savedScope} snapshot={admission?.catalog.catalog} />{admission?.model && <p data-batch-model={admission.model.profile_id}>{t("t1.savedBatchModel")}: {admission.model.model_id}</p>}<p className="t1-footnote">{t("t1.batchScopeHelp")}</p></div>}
+       <p className="t1-footnote">{t("t1.batchIndependent")}</p>
+-    </>}
++    </div>}
+   </section>;
+ }
+--- before/apps/pi-web/t1/workbench.css
++++ after/apps/pi-web/t1/workbench.css
+@@ -119,6 +119,60 @@
+ .t1-icon-button { padding: 5px; width: 32px; }
+ .t1-primary, .t1-exclude { border: 1px solid var(--t1-action-bg) !important; border-radius: 6px; padding: 7px 13px; background: var(--t1-action-bg) !important; color: var(--t1-action-text) !important; font-size: 12px !important; font-weight: 500; }
+ .t1-primary:hover:enabled, .t1-exclude:hover:enabled { background: var(--t1-action-hover) !important; border-color: var(--t1-action-hover) !important; }
++
++/* New-task cards share the page's available width, including a resized workspace. */
++.t1-new-task-panel { container: t1-new-task / inline-size; }
++.t1-new-task-panel > .t1-batch { padding: 0; margin: 0; border: 0; }
++.t1-new-task-panel .t1-draft-layout, .t1-new-task-panel .t1-task-settings { display: grid; align-items: start; gap: 18px; min-width: 0; }
++.t1-new-task-panel .t1-task-card, .t1-new-task-panel .t1-model-selection { min-width: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--t1-surface); }
++.t1-new-task-panel .t1-task-card-title, .t1-new-task-panel .t1-scope-editor > h2, .t1-new-task-panel .t1-model-choice > strong { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0; padding: 15px 18px; border-bottom: 1px solid var(--border); border-radius: 9px 9px 0 0; background: var(--t1-inset); font-size: 14px; font-weight: 600; }
++.t1-new-task-panel .t1-task-card-title .t1-badge { font-weight: 400; background: var(--t1-surface); }
++.t1-new-task-panel .t1-files-body { padding: 18px; }
++.t1-new-task-panel .t1-file-picker { padding: 18px; border: 1px solid var(--border); border-radius: 7px; background: var(--t1-inset); }
++.t1-new-task-panel .t1-file-picker .t1-lead { margin: 0; font-size: 12px; line-height: 1.9; }
++.t1-new-task-panel .t1-file-choices { margin: 18px 0 12px; }
++.t1-new-task-panel .t1-file-choices > button { min-height: 36px; padding: 7px 14px; }
++.t1-new-task-panel .t1-file-picker .t1-footnote { margin: 0; }
++.t1-new-task-panel .t1-batch-counts { margin: 16px 0 0; font-variant-numeric: tabular-nums; }
++.t1-new-task-panel .t1-batch-members { gap: 10px; margin: 12px 0 0; }
++.t1-new-task-panel .t1-batch-members > li { padding: 14px; background: var(--t1-inset); }
++.t1-new-task-panel .t1-batch-file { gap: 6px 12px; }
++.t1-new-task-panel .t1-batch-file strong { font-size: 13px; font-weight: 500; }
++.t1-new-task-panel .t1-file-upload-actions { display: flex; margin-top: 16px; }
++.t1-new-task-panel .t1-file-upload-actions > button { min-height: 36px; }
++.t1-new-task-panel .t1-scope-editor { margin: 0; padding: 0 18px 10px; }
++.t1-new-task-panel .t1-scope-editor > h2 { margin: 0 -18px; }
++.t1-new-task-panel .t1-scope-editor > .t1-notice { margin-top: 16px; }
++.t1-new-task-panel .t1-scope-layers { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
++.t1-new-task-panel .t1-scope-layers fieldset { padding: 10px; background: var(--t1-inset); }
++.t1-new-task-panel .t1-scope-options { max-height: 220px; }
++.t1-new-task-panel .t1-scope-options label { flex-wrap: nowrap; }
++.t1-new-task-panel .t1-scope-preview { padding: 12px; }
++.t1-new-task-panel .t1-scope-summary { margin: 8px 0 0; gap: 10px; }
++.t1-new-task-panel .t1-scope-summary dt { margin-bottom: 2px; font-size: 11px; }
++.t1-new-task-panel .t1-model-selection { margin: 0; padding: 0 18px 16px; }
++.t1-new-task-panel .t1-model-choice { display: block; }
++.t1-new-task-panel .t1-model-choice > strong { margin: 0 -18px 16px; }
++.t1-new-task-panel .t1-model-choice .model-selector > button { min-height: 38px; }
++.t1-new-task-panel .t1-model-selection > .t1-footnote { margin: 8px 0; }
++.t1-new-task-panel .t1-model-add { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
++.t1-new-task-panel .t1-model-add > summary { color: var(--text); }
++.t1-new-task-panel .t1-model-advanced { grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr)); gap: 0 12px; }
++.t1-new-task-panel .t1-draft-footer { margin-top: 18px; padding: 18px; border: 1px solid var(--border); border-radius: 10px; background: var(--t1-inset); }
++.t1-new-task-panel .t1-batch-actions { gap: 10px; }
++.t1-new-task-panel .t1-batch-actions > button { min-height: 36px; }
++.t1-new-task-panel .t1-draft-footer > .t1-footnote:last-child { margin-bottom: 0; }
++.t1-new-task-panel > .t1-reuse-paper { margin: 18px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--t1-surface); }
++.t1-new-task-panel > .t1-reuse-paper > summary { color: var(--text); }
++@container t1-new-task (min-width: 880px) {
++  .t1-new-task-panel .t1-draft-layout { grid-template-columns: minmax(0, 1.1fr) minmax(340px, .9fr); }
++}
++@container t1-new-task (max-width: 420px) {
++  .t1-new-task-panel .t1-draft-layout, .t1-new-task-panel .t1-task-settings { gap: 14px; }
++  .t1-new-task-panel .t1-files-body, .t1-new-task-panel .t1-file-picker, .t1-new-task-panel .t1-draft-footer { padding: 14px; }
++  .t1-new-task-panel .t1-scope-layers { grid-template-columns: 1fr; }
++  .t1-new-task-panel .t1-file-choices > button, .t1-new-task-panel .t1-batch-actions > button { flex: 1; }
++}
+ 
+ /* Compact Pi Web chrome; navigation and content are divided by single rules. */
+ .t1-topbar { height: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 18px; background: var(--bg-panel); border-bottom: 1px solid var(--border); }
+--- before/apps/pi-web/t1/messages.mjs
++++ after/apps/pi-web/t1/messages.mjs
+@@ -61,7 +61,7 @@
+   refreshDone: ["Paper list, task status and current results updated.", "已更新论文列表、任务状态与当前结果。", "已更新論文清單、任務狀態與目前結果。"],
+   refreshFailed: ["Refresh incomplete: {reason}. Your current selection is kept; try again.", "刷新未完成：{reason}。当前选择已保留，可重试。", "重新整理未完成：{reason}。目前選擇已保留，可重試。"],
+   batchTitle: ["PDF submission", "PDF 批量提交", "PDF 批次提交"],
+-  batchHelp: ["Choose PDFs or a folder, up to 20 papers per selection and 50 MiB per file. Upload first, then start extraction according to the scope below.", "可选择 PDF 文件或文件夹，每批最多 20 篇、每篇不超过 50 MiB。先上传，再根据下方范围开始抽取。", "可選擇 PDF 檔案或資料夾，每批最多 20 篇、每篇不超過 50 MiB。先上傳，再根據下方範圍開始擷取。"],
++  batchHelp: ["Choose PDFs or a folder, up to 20 papers per selection and 50 MiB per file. Upload first, then start extraction according to the selected scope.", "可选择 PDF 文件或文件夹，每批最多 20 篇、每篇不超过 50 MiB。先上传，再根据所选范围开始抽取。", "可選擇 PDF 檔案或資料夾，每批最多 20 篇、每篇不超過 50 MiB。先上傳，再根據所選範圍開始擷取。"],
+   batchLimitReached: ["This selection has {count} files, but only {remaining} places remain (20 per batch). None were added; your current list is kept. Choose a smaller subfolder or use Choose files to add PDFs in smaller groups.", "本次选择 {count} 个文件，当前还可加入 {remaining} 篇（每批最多 20 篇）。本次未加入，原清单已保留；请选择更小的子文件夹，或用“选择文件”分批加入。", "本次選擇 {count} 個檔案，目前還可加入 {remaining} 篇（每批最多 20 篇）。本次未加入，原清單已保留；請選擇較小的子資料夾，或用「選擇檔案」分批加入。"],
+   chooseFiles: ["Choose files", "选择文件", "選擇檔案"],
+   chooseFolder: ["Choose folder", "选择文件夹", "選擇資料夾"],
+--- before/README.md
++++ after/README.md
+@@ -2,7 +2,9 @@
+ 
+ 从文本型PDF提取肿瘤影像外观原文，保留出处、必要语境、整幅Figure和原图注，供逐篇核对与导出。正式主流程为B0；F仅保留实验实现与历史对照。
+ 
+-当前普通工作台为 **http://127.0.0.1:30141/**，后端为 **http://127.0.0.1:3210**；已验构建为`apps/pi-web/build/workbench-experience-validated-20261114`，BUILD_ID `AvEqqRvnH42IteI6npju-`。新任务先选择本地PDF或复用已有论文，再统一设置范围和模型；复用入口默认不选论文，同一PDF的重复上传记录合并显示，历史任务保留。任务进度使用后台真实阶段与计数，未知总量不显示假百分比；部分结果、来源字形缺口和未完成汇总不会显示成全部完成。明确配对的整幅Figure和原图注直接显示在描述下，未明确配对的记录保留文字与状态提示。
++当前普通工作台为 **http://127.0.0.1:30141/**，后端为 **http://127.0.0.1:3210**；已验构建为`apps/pi-web/build/new-task-layout-validated-20261114`，BUILD_ID `4lXAqFBrIgE0xgn-3CNUn`。新任务按“上传论文 PDF”“本次抽取范围”“抽取模型”分为独立卡片，宽屏并列、窄屏单列；本地PDF仍先上传后开始。复用入口默认不选论文，同一PDF的重复上传记录合并显示，历史任务保留。任务进度使用后台真实阶段与计数，未知总量不显示假百分比；部分结果、来源字形缺口和未完成汇总不会显示成全部完成。明确配对的整幅Figure和原图注直接显示在描述下，未明确配对的记录保留文字与状态提示。
++
++[新任务布局记录](docs/acceptance/new-task-layout-2026-11-14/report.json)仅完成用户五项反馈中的第1项工程实现与前端上线，等待用户审核；第2–5项尚未开始。后端未重启，生产业务写入与额外付费模型调用均为0。
+ 
+ [本轮工程报告](docs/acceptance/workbench-experience-2026-11-14/report.json)记录正式审查3/3、71项后端与346项抽取回归、14项界面单测、16组同构建隔离浏览器与5组真实只读核验。新增任务用相同授权原文投影预载，免去重复索取输入的模型往返；SSE仅查询游标后的新事件。本地SDK与查询基准通过，尚未新增付费任务验证真实总耗时收益。原用户任务自然结束为partial，13条候选和唯一明确配对Figure5保留；上线核验时为17表、8run、8篇论文记录、1模型配置，逻辑数据、两份env与手工目录均保持。代理生产业务写入与额外付费模型调用均为0。
+ 
+@@ -36,7 +38,7 @@
+ 复用本次已验证构建并重启前端时，先确认原前端进程已停止，然后在`code/`运行（普通重新构建流程仍使用上方`build:web`）：
+ 
+ ```bash
+-T1_NEXT_DIST_DIR=build/two-layer-catalog-validated-20261114 bash scripts/with-node.sh npm run start:web
++T1_NEXT_DIST_DIR=build/new-task-layout-validated-20261114 bash scripts/with-node.sh npm run start:web
+ ```
+ 
+ 开发时可用`bash scripts/with-node.sh npm run dev:web`替代生产前端，默认仍30141。`npm run dev:server`不自动载入工作台开关/限额；不要仅改`.env`就假定这些已生效。首次依赖/CPU模型准备及Docker启动按[部署说明](deploy/README.md)执行，不运行上游通用pi-web入口或另建前端。
+--- before/apps/pi-web/e2e/ui-model-switch.mjs
++++ after/apps/pi-web/e2e/ui-model-switch.mjs
+@@ -54,9 +54,9 @@
+   });
+   await newTask();
+   await check('upload_copy_is_precise_in_three_locales_and_preserves_batch_limits', async () => {
+-    const help = page.locator('.t1-batch .t1-lead'); assert.equal(await help.textContent(), '可选择 PDF 文件或文件夹，每批最多 20 篇、每篇不超过 50 MiB。先上传，再根据下方范围开始抽取。');
+-    await page.locator('.t1-top-actions select').selectOption('en'); assert.equal(await help.textContent(), 'Choose PDFs or a folder, up to 20 papers per selection and 50 MiB per file. Upload first, then start extraction according to the scope below.');
+-    await page.locator('.t1-top-actions select').selectOption('zh-TW'); assert.equal(await help.textContent(), '可選擇 PDF 檔案或資料夾，每批最多 20 篇、每篇不超過 50 MiB。先上傳，再根據下方範圍開始擷取。');
++    const help = page.locator('.t1-batch .t1-lead'); assert.equal(await help.textContent(), '可选择 PDF 文件或文件夹，每批最多 20 篇、每篇不超过 50 MiB。先上传，再根据所选范围开始抽取。');
++    await page.locator('.t1-top-actions select').selectOption('en'); assert.equal(await help.textContent(), 'Choose PDFs or a folder, up to 20 papers per selection and 50 MiB per file. Upload first, then start extraction according to the selected scope.');
++    await page.locator('.t1-top-actions select').selectOption('zh-TW'); assert.equal(await help.textContent(), '可選擇 PDF 檔案或資料夾，每批最多 20 篇、每篇不超過 50 MiB。先上傳，再根據所選範圍開始擷取。');
+     await page.locator('.t1-top-actions select').selectOption('zh-CN');
+   });
+   await check('adding_a_model_uses_saved_server_profiles_and_browser_choice_survives_reload', async () => {

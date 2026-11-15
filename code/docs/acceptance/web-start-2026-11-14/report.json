@@ -1,0 +1,358 @@
+{
+  "schema_version": "t1-web-start-check-1",
+  "started_at": "2026-11-14T05:54:17.293372+00:00",
+  "status": "started_and_readonly_verified",
+  "scope": "start_existing_host_workbench_and_readonly_check",
+  "previous_acceptance": "code/docs/acceptance/task-delete-entry-2026-11-13/report.json",
+  "initial_listeners": {
+    "frontend_30141": false,
+    "backend_3210": false
+  },
+  "validated_build": {
+    "dist": "apps/pi-web/build/task-records-validated-20261113",
+    "BUILD_ID": "zLRleMlhhhZ-kExpdh9-R"
+  },
+  "env_before_sha256": {
+    "code/.env": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+    "code/deploy/local/workbench.env": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea"
+  },
+  "database_before": {
+    "tables": {
+      "events": {
+        "rows": 5,
+        "sha256": "fbbff2d383b1d0e3ad542508893dbd9070c0d6336322bc2a5f4dd4afc759159e"
+      },
+      "records": {
+        "rows": 1,
+        "sha256": "901aab0c50914aa67d213ed68cc7bfb129ef75c8c95adbd931b7f99faa08578d"
+      },
+      "runs": {
+        "rows": 1,
+        "sha256": "6d5e665f0ded12e18f4b002df13980af91e4c03db095f17cb928def2fb74e9fb"
+      },
+      "s4_batches": {
+        "rows": 5,
+        "sha256": "914bf9665cf518936446287377b2d0826485ee632d81586c0aa9b61f76d83e30"
+      },
+      "s4_events": {
+        "rows": 67,
+        "sha256": "dca7fd9f2e8234d37b2fd98391b85b8c3a1e74d23eb69d2b9a78689ecb6db3e0"
+      },
+      "s4_runs": {
+        "rows": 9,
+        "sha256": "010a757fae4ed9699b4fb27bd09f55f1014c5f349c7fa0b4217077318b881c17"
+      },
+      "s4_versions": {
+        "rows": 262,
+        "sha256": "8f1d223c206ae84a09dbe584e7d491caaaa1899c14b9103704edff9f120a887c"
+      },
+      "workbench_annotations": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_deleted_runs": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_deleted_sources": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_exports": {
+        "rows": 3,
+        "sha256": "5b4ad81cc1d51a0c611c18a3d0fac84646821322d1eee4879f2091c735631401"
+      },
+      "workbench_model_profiles": {
+        "rows": 1,
+        "sha256": "c205b299c4cf5067e5b2b6a717178370e1311c04d961b477d0718bba71e03001"
+      },
+      "workbench_papers": {
+        "rows": 6,
+        "sha256": "f312e39f8fbe636c6928ab8597086959101da2dfe3270ae551fccc7c4411ac09"
+      },
+      "workbench_requests": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_retentions": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_reviews": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_runs": {
+        "rows": 9,
+        "sha256": "eac080c2642f3e5c5fb4f8e0bcdfe74737a94e2a1fe8bd8317f7df6abc71b59f"
+      }
+    },
+    "table_count": 17,
+    "integrity": "ok",
+    "foreign_key_errors": 0
+  },
+  "previous_changed_source_manifest": {
+    "count": 22,
+    "all_match": true,
+    "mismatches": []
+  },
+  "paid_model_calls": 0,
+  "business_mutation_requests": 0,
+  "stage_status_modified": false,
+  "new_formal_review_rounds": 0,
+  "checks": [
+    {
+      "name": "backend_health",
+      "method": "GET",
+      "url": "http://127.0.0.1:3210/health",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 146,
+      "public_response": {
+        "status": "ok",
+        "service": "t1-workbench",
+        "runtime_mode": "workflow",
+        "backend_pi_sdk": "1.4.0",
+        "controlled_fixture": false,
+        "extraction_available": true
+      }
+    },
+    {
+      "name": "frontend_home",
+      "method": "GET",
+      "url": "http://127.0.0.1:30141/",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 18640,
+      "title": "T1 · 论文原文工作台",
+      "contains_build_id": true
+    },
+    {
+      "name": "frontend_capabilities",
+      "method": "GET",
+      "url": "http://127.0.0.1:30141/api/t1/workbench/capabilities",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 517,
+      "public_response": {
+        "schema_version": "t1-workbench-capabilities-1",
+        "read_only": false,
+        "paper_upload": true,
+        "extraction_start": true,
+        "persisted_review": true,
+        "approved_export": true,
+        "persisted_retention": true,
+        "retained_export": true,
+        "backend_pi_sdk": "1.4.0",
+        "controlled_fixture": false,
+        "max_concurrent_runs": 2,
+        "model_selection": true,
+        "max_pdf_bytes": 52428800,
+        "model_runtime": {
+          "provider": "agicto",
+          "model_id": "gpt-6-luna",
+          "reasoning_effort": "medium",
+          "limits": {
+            "requests": 80,
+            "input_tokens": 2000000,
+            "output_tokens": 120000,
+            "execution_seconds": 1800
+          }
+        }
+      }
+    },
+    {
+      "name": "frontend_catalog",
+      "method": "GET",
+      "url": "http://127.0.0.1:30141/api/t1/workbench/catalog",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 494,
+      "public_response": {
+        "status": "unavailable",
+        "restricted_available": false
+      },
+      "top_level_keys": [
+        "catalog_version",
+        "status",
+        "fixture",
+        "cancers",
+        "image_types",
+        "features",
+        "bindings",
+        "default_scope",
+        "restricted_available",
+        "restricted_reason",
+        "development_only"
+      ]
+    }
+  ],
+  "backend": {
+    "pid": 5430,
+    "log": "runtime-data/logs/t1-backend-web-start-20261114.log",
+    "command": "sh deploy/start-host.sh",
+    "started_by_this_check": true,
+    "host": "127.0.0.1",
+    "port": 3210,
+    "cwd": "/home/ecs-user/projects/t1-agent/code"
+  },
+  "frontend": {
+    "launcher_pid": 5529,
+    "log": "runtime-data/logs/pi-web-web-start-20261114.log",
+    "command": "T1_NEXT_DIST_DIR=build/task-records-validated-20261113 bash scripts/with-node.sh npm run start:web",
+    "started_by_this_check": true,
+    "pid": 5551,
+    "host": "127.0.0.1",
+    "port": 30141,
+    "cwd": "/home/ecs-user/projects/t1-agent/code/apps/pi-web",
+    "actual_T1_NEXT_DIST_DIR": "build/task-records-validated-20261113"
+  },
+  "browser": {
+    "status": "passed",
+    "browser": "Chromium_headless",
+    "mode": "GET_HEAD_only_no_exports",
+    "page_errors": [],
+    "console_errors": [],
+    "http_errors": [],
+    "blocked_requests": [],
+    "title": "T1 · 论文原文工作台",
+    "new_task_scope_ready": true,
+    "scopes": [
+      {
+        "label": "癌种",
+        "value": "all",
+        "disabled": false
+      },
+      {
+        "label": "图像类型",
+        "value": "all",
+        "disabled": false
+      },
+      {
+        "label": "视觉特征",
+        "value": "all",
+        "disabled": false
+      }
+    ],
+    "sidebar_runs": 9,
+    "start_button_count": 1,
+    "build_manifest_http_status": 200,
+    "screenshot": "code/docs/acceptance/web-start-2026-11-14/homepage-desktop.png"
+  },
+  "database_after": {
+    "tables": {
+      "events": {
+        "rows": 5,
+        "sha256": "fbbff2d383b1d0e3ad542508893dbd9070c0d6336322bc2a5f4dd4afc759159e"
+      },
+      "records": {
+        "rows": 1,
+        "sha256": "901aab0c50914aa67d213ed68cc7bfb129ef75c8c95adbd931b7f99faa08578d"
+      },
+      "runs": {
+        "rows": 1,
+        "sha256": "6d5e665f0ded12e18f4b002df13980af91e4c03db095f17cb928def2fb74e9fb"
+      },
+      "s4_batches": {
+        "rows": 5,
+        "sha256": "914bf9665cf518936446287377b2d0826485ee632d81586c0aa9b61f76d83e30"
+      },
+      "s4_events": {
+        "rows": 67,
+        "sha256": "dca7fd9f2e8234d37b2fd98391b85b8c3a1e74d23eb69d2b9a78689ecb6db3e0"
+      },
+      "s4_runs": {
+        "rows": 9,
+        "sha256": "010a757fae4ed9699b4fb27bd09f55f1014c5f349c7fa0b4217077318b881c17"
+      },
+      "s4_versions": {
+        "rows": 262,
+        "sha256": "8f1d223c206ae84a09dbe584e7d491caaaa1899c14b9103704edff9f120a887c"
+      },
+      "workbench_annotations": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_deleted_runs": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_deleted_sources": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_exports": {
+        "rows": 3,
+        "sha256": "5b4ad81cc1d51a0c611c18a3d0fac84646821322d1eee4879f2091c735631401"
+      },
+      "workbench_model_profiles": {
+        "rows": 1,
+        "sha256": "c205b299c4cf5067e5b2b6a717178370e1311c04d961b477d0718bba71e03001"
+      },
+      "workbench_papers": {
+        "rows": 6,
+        "sha256": "f312e39f8fbe636c6928ab8597086959101da2dfe3270ae551fccc7c4411ac09"
+      },
+      "workbench_requests": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_retentions": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_reviews": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_runs": {
+        "rows": 9,
+        "sha256": "eac080c2642f3e5c5fb4f8e0bcdfe74737a94e2a1fe8bd8317f7df6abc71b59f"
+      }
+    },
+    "table_count": 17,
+    "integrity": "ok",
+    "foreign_key_errors": 0
+  },
+  "database_tables_rows_and_logical_hashes_unchanged": true,
+  "env_after_sha256": {
+    "code/.env": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+    "code/deploy/local/workbench.env": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea"
+  },
+  "env_bytes_unchanged": true,
+  "listener_evidence": [
+    "State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess                               ",
+    "LISTEN 0      511        127.0.0.1:3210       0.0.0.0:*    users:((\"MainThread\",pid=5430,fd=35))",
+    "LISTEN 0      511        127.0.0.1:30141      0.0.0.0:*    users:((\"next-server (v1\",pid=5551,fd=21))"
+  ],
+  "catalog_summary": {
+    "status": "unavailable",
+    "restricted_available": false,
+    "controlled_fixture": false,
+    "extraction_start": true,
+    "normal_extraction_scope": "all_only_no_trusted_catalog_restrictions"
+  },
+  "access": {
+    "url": "http://127.0.0.1:30141/",
+    "backend_health": "http://127.0.0.1:3210/health",
+    "binding": "loopback_only",
+    "ssh_forward_example": "ssh -N -L 30141:127.0.0.1:30141 <ssh-user>@<server-address>",
+    "external_browser_access_verified": false
+  },
+  "limitations": [
+    "No paid model request, parser run, upload, start, cancellation, deletion or export was tested.",
+    "Browser smoke used local headless Chromium and GET/HEAD only.",
+    "Public internet access, SSH connectivity and physical device behavior were not tested.",
+    "Existing S2 medical, complete independent S6 and full real S7 gates were not changed."
+  ],
+  "completed_at": "2026-11-14T05:56:28.709193+00:00",
+  "runtime_runs": {
+    "source": "GET /api/t1/workbench/runs",
+    "http_status": 200,
+    "count": 9,
+    "state_counts": {
+      "partial": 9
+    },
+    "active_runs": []
+  }
+}

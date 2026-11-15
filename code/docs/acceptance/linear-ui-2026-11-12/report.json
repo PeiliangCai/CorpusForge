@@ -1,0 +1,129 @@
+{
+  "schema_version": "t1-linear-ui-acceptance-1",
+  "updated_at": "2026-11-11T16:44:15.273287+00:00",
+  "status": "completed",
+  "objective": "Linear式简洁原文工作台、集中必要说明、明显且可恢复排除、简短导出",
+  "implementation": {
+    "task_baseline_changes": "implementation-changes.json",
+    "task_increment": "implementation-changes.patch",
+    "changed_application_and_e2e_files": 9,
+    "base": "Existing agegr/pi-web 0.15.0 / Next 16.4.4 / React 19; existing tabs/themes/resizing/PDF/ImagePreview reused",
+    "layout": "Compact paper navigation and source index, unboxed reading pane with fixed curation footer, one native Notes dialog",
+    "notes": [
+      "系统提醒",
+      "出处详情",
+      "更多操作",
+      "来源位置与版本 (collapsed)",
+      "原始字段 (nested, collapsed)"
+    ],
+    "retention_actions": [
+      "排除此条",
+      "恢复保留",
+      "下一条 (navigation only)"
+    ],
+    "export": "导出保留结果 → retained JSONL / CSV / evidence package",
+    "source_data_or_backend_logic_changed": false,
+    "new_note_inputs_or_storage": false,
+    "existing_source_editor_retained": true,
+    "patch_reverse_check": "passed: git apply --check --reverse (no mutation)"
+  },
+  "validation": {
+    "regression_tests": {
+      "passed": 16,
+      "log": "regression-tests.log"
+    },
+    "typecheck": {
+      "status": "passed",
+      "log": "typecheck.log"
+    },
+    "targeted_lint": {
+      "status": "passed",
+      "warnings": 0,
+      "log": "lint.log"
+    },
+    "independent_build": {
+      "status": "passed",
+      "dist": "apps/pi-web/build/linear-ui-final-next-20261112",
+      "BUILD_ID": "CZGDzqRNcIxnpa5kJ1sVe",
+      "log": "build.log"
+    },
+    "isolated_browser": {
+      "status": "passed",
+      "checks": 10,
+      "report": "browser/report.json",
+      "log": "browser-attempt-2.log",
+      "model_runner": false,
+      "ordinary_writes": 0,
+      "screenshots": [
+        "01-continuous-reading-light.png",
+        "02-consolidated-notes.png",
+        "05-continuous-reading-dark.png",
+        "07-mobile-light.png",
+        "08-explicit-figure.png"
+      ]
+    },
+    "final_build_browser_smoke": {
+      "status": "passed",
+      "checks": 4,
+      "report": "final-build-browser-smoke.json",
+      "log": "final-build-browser-smoke.log"
+    },
+    "frozen_source_artifacts_verified": 37,
+    "pre_switch_integrity": "pre-switch.json"
+  },
+  "test_fixture_failures": {
+    "browser_attempt_1": "One getByText selector also matched a hidden option; narrowed to status container. No product error. See browser-attempt-1.log",
+    "initial_typecheck_command": "Shell lacked node on PATH; rerun used pinned local Node and passed. See typecheck-initial.log"
+  },
+  "product_errors_reproduced": false,
+  "formal_reviews": {
+    "this_task_used": 2,
+    "limit": 3,
+    "round_1": "继续：不能藏真正来源错误、排除可恢复、保留pi-web与证据功能",
+    "previous_task_closed": 2,
+    "earlier_task_closed": 3,
+    "round_2": "判断：继续。风险：1.真异常入口；2.原文配图出处；3.上线保全数据后端。"
+  },
+  "deployment": {
+    "status": "passed",
+    "ordinary_frontend": "http://127.0.0.1:30141",
+    "ordinary_backend": "http://127.0.0.1:3210",
+    "backend_restart_required": false,
+    "old_frontend_rollback_dist": "apps/pi-web/build/retention-final-next-20261111",
+    "old_docker_image_updated": false,
+    "receipt": "ordinary-runtime.json",
+    "ordinary_readonly_browser": "ordinary-readonly-browser.json",
+    "ordinary_readonly_checks_passed": 3,
+    "backend_restarted": false,
+    "all_14_tables_env_and_37_frozen_artifacts_unchanged": true,
+    "active_tasks": 0,
+    "only_host_frontend_switched": true
+  },
+  "boundaries": {
+    "new_paid_model_calls": 0,
+    "real_Start_clicked": false,
+    "ordinary_POST_or_export_requests": 0,
+    "retention_is_medical_approval": false,
+    "medical_quality_approved": false,
+    "complete_S2_S6_S7_gates_passed": false,
+    "original_hard_hyphens_and_repeated_words_preserved": true,
+    "unknown_source_continuity_stays_separate": true,
+    "source_integrity_and_glyph_guards_changed": false
+  },
+  "no_commit_or_push": true,
+  "cleanup": {
+    "owned_preview_and_isolated_backend_stopped": {
+      "preview": 81104,
+      "isolated_backend": 76688
+    },
+    "isolated_database_removed": "runtime-data/linear-ui-browser-20261112",
+    "temporary_source_baselines_removed": true,
+    "temporary_agent_notes_removed": "runtime-data/agent-notes/linear-ui",
+    "intermediate_build_removed": "apps/pi-web/build/linear-ui-next-20261112",
+    "representative_screenshots_retained": 5,
+    "final_and_old_rollback_dist_retained": true,
+    "permanent_agent_rules_changed": false,
+    "downloaded_isolated_exports_removed_after_assertions": true,
+    "duplicate_initial_preview_removed": true
+  }
+}

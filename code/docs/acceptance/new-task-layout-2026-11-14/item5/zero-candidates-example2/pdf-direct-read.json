@@ -1,0 +1,31 @@
+{
+  "method": "independent direct PDFium read of bound original PDF, local only; keyword search supports representative reading, not recall certification",
+  "physical_pages": 10,
+  "keyword_observations": {
+    "radiology": [],
+    "imaging_microscopy": [],
+    "histological": [
+      {
+        "physical_page": 2,
+        "count": 1,
+        "contexts": [
+          "in luminal A\r\n(25 out of 27) tumours. CDH1 mutations were common (30 out of\r\n36) within the lobular histological subtype and corresponded with\r\nlower CDH1 mRNA (Supplementary Fig. 4) and protein expression.\r\nFinally, we identified 4 out of 8 somatic variants"
+        ]
+      }
+    ]
+  },
+  "sampled_pages": {
+    "1": {
+      "first_text": "ARTICLE\r\ndoi:10.1038/nature11412\r\nComprehensive molecular portraits of\r\nhuman breast tumours\r\nThe Cancer Genome Atlas Network*\r\nWe analysed primary breast cancers by genomic DNA copy number arrays, DNA methylation, exome sequencing,\r\nmessenger RNA arrays, microRNA sequencing and reverse-phase protein arrays. Our ability to integrate information\r\nacross platforms provided key insights into previously defined gene expression subtypes and demonstrated the existence\r\nof four main breast cancer classes when combining data from five platforms, each of which shows significant molecular\r\nheterogeneity. Somatic mutations in only three genes (TP53, PIK3CA and GATA3) occurred at .10% incidence across all\r\nbreast cancers; however, there were numerous subtype-associated and novel gene mutations including the enrichment\r\nof specific mutations in GATA3,",
+      "characters": 6183
+    },
+    "2": {
+      "first_text": "1 in-frame deletion, 1 nonsense, and 3 missense), suggesting a loss of\r\nfunction. Additionally, 2 mutations were found in TBX4 and 1 muta￾tion in TBX5, which are genes involved in Holt–Oram syndrome18.\r\nTwo other transcription factors, CTCF and FOXA1, were at or near\r\nsignificance harbouring 13 and 8 mutations, respectively. RUNX1 and\r\nCBFB, both rearranged in acute myeloid leukaemia and interfering\r\nwith haematopoietic differentiation, harboured 19 and 9 mutations,\r\nrespectively. PIK3R1 contained 14 mutations, most of which clustered\r\nin the PIK3CA interaction domain similar to previously identified\r\nmutations in glioma19 and endometrial cancer20. We also observed a\r\nstatistically significant exclusion pattern among PIK3R1, PIK3CA,\r\nPTEN and AKT1 mutations (P 5 0.025). Mutation of splicing factor\r\nSF3B1, previously described in myelodysp",
+      "characters": 6457
+    },
+    "5": {
+      "first_text": "were identified including amplifications of fibroblast growth factor\r\nreceptors (FGFRs) and IGFR1, as well as cyclin D1, CDK4 and CDK6.\r\nA summary of the general findings in luminal tumours and the other\r\nsubtypes is presented in Table 1.\r\nHER2-based classifications and summary analysis\r\nDNA amplification of HER2 was readily evident in this study\r\n(Supplementary Fig. 9) together with overexpression of multiple\r\nHER2-amplicon-associated genes that in part define the HER2E\r\nmRNA subtype (Supplementary Fig. 5). However, not all clinically\r\nHER21 tumours are of the HER2E mRNA subtype, and not all\r\ntumours in the HER2E mRNA subtype are clinically HER21.\r\nIntegrated analysis of the RPPA and mRNA data clearly identified a\r\nHER21 group (Supplementary Fig. 12). When the HER21 protein\r\nand HER2E mRNA subtypes overlapped, a strong signal of EGFR,\r\np",
+      "characters": 7362
+    }
+  }
+}

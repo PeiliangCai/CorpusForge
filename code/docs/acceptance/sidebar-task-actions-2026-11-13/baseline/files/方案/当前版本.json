@@ -1,0 +1,397 @@
+{
+  "version": "0.4",
+  "status": "T1_engineering_delivery_S2_S6_S7_gates_incomplete_other_tasks_pending",
+  "plan_document": "毕业设计实施方案_导师审核稿_v0.4.docx",
+  "plan_data": "实施计划.json",
+  "task_hierarchy": "任务分解.json",
+  "workflow_contract": "工作流与模块职责.json",
+  "child_plan_version": "0.8",
+  "child_plan_document": "子任务T1/T1智能体开发计划.docx",
+  "previous_version": "历史归档.zip",
+  "previous_version_member_prefix": "方案/历史版本/v0.3/",
+  "agent_base": "earendil-works/pi",
+  "implementation_started": true,
+  "stage_acceptances": [],
+  "t1_scope_authority": "子任务T1/T1智能体开发计划.docx",
+  "scope_correction": "T1允许用户选择癌种、图像类型及特征范围后开始提取；这是抽取范围选择。数据集生成需求的默认参数逐项告知与确认仍属于T2至T3的前置流程，T1不照搬该确认机制。",
+  "correction_record": "历史归档.zip",
+  "correction_record_member": "方案/子任务T1/参数边界修正记录.json",
+  "latest_t1_scope_revision": {
+    "document": "子任务T1/T1智能体开发计划.docx",
+    "version": "0.8",
+    "execution_guide": "子任务T1/T1开发执行说明.docx",
+    "execution_guide_version": "0.6",
+    "original_approved_plan_version": "0.6",
+    "approval_scope": "Existing approved business scope retained; current engineering choices and delegated acceptance are recorded separately",
+    "status": "engineering_delivery_with_S2_medical_S6_independent_S7_real_gate_incomplete",
+    "current_data": "子任务T1/当前版本.json",
+    "current_plan_sha256": "9c7c95afe010ad6aec39fae34aee3a92623cad111dfc9450497ceaabfeb166a7",
+    "current_execution_guide_sha256": "7348db9563bc81f99ed122accee0d56a50158697ffcccc7fbee225026dd05c56",
+    "current_document_validation": "code/docs/acceptance/ui-model-switch-2026-11-13/report.json#/documentation_sync",
+    "current_experiment_authorization": {
+      "record": "方案/子任务T1/当前版本.json#/current_experiment_authorization"
+    },
+    "new_paid_call_budget": {
+      "current_effective_API_allowance": 0,
+      "record": "方案/子任务T1/当前版本.json#/model_execution",
+      "aggregate_ceiling_is_not_open_allowance": true
+    },
+    "all_T1_stages_passed": false,
+    "current_stage_summary": "本轮上传文案、左栏类型与AGICTO内模型配置已完成限定工程核验并以同一构建上线30141/3210。18项后端/SDK、11项前端、额外Luna别名隔离、typecheck、生产构建及隔离Chromium7场景通过，线上桌面/手机只读检查通过。原15表内容与四份env字节保持，新增模型档案表仅1条服务器默认配置，共16表；原9run不变，0新run、0提交、0活动任务和0新增付费调用。默认Luna medium、2槽及原每run硬额度保持；新增模型供应商兼容性/容量和医学效果未实测，过小本地上下文可能中止抽取，浏览器仅覆盖Chromium；不升级医学或完整S2/S6/S7结论。",
+    "S5_accepted": true,
+    "engineering_selected_method": "B0",
+    "empirical_quality_superiority_proven": false,
+    "formal_model_selected": true,
+    "formal_model": "AGICTO gpt-6-luna medium/openai-responses",
+    "ordinary_model_enabled": true,
+    "historical_evidence_index": "code/docs/acceptance/finalization-2026-11-09/stage-matrix.json",
+    "ordinary_model_enabled_time_scope": "Current host instance only; clone/image safe default and all historical observations retain their own false/true state.",
+    "current_runtime_evidence": "code/docs/acceptance/ui-model-switch-2026-11-13/report.json#/production",
+    "current_retention_workflow": "子任务T1/当前版本.json#/current_retention_workflow",
+    "explicit_user_export_choice": {
+      "quote": "直接导出所有未排除的内容（推荐）",
+      "confirmed": true,
+      "label": "保留结果",
+      "whole_document_or_record_confirmation_required": false,
+      "medical_approval": false
+    },
+    "current_retention_increment_status": "accepted_current_retention_reading_and_export_engineering_deployed",
+    "current_requirement_formal_reviews": {
+      "record": "子任务T1/当前版本.json#/current_ui_model_switch/formal_reviews"
+    },
+    "current_UI_refinement": "子任务T1/当前版本.json#/current_UI_refinement",
+    "current_ui_model_switch": "子任务T1/当前版本.json#/current_ui_model_switch",
+    "historical_requirement_formal_reviews_before_ui_model_switch": {
+      "used": 2,
+      "limit": 3,
+      "remaining": 1,
+      "decision": "继续",
+      "record": "code/docs/acceptance/retention-workflow-2026-11-11/report.json#/formal_reviews",
+      "scope": "This explicit default-retention/reading requirement only; all previous task counters stay unchanged."
+    }
+  },
+  "historical_archive": "历史归档.zip",
+  "current_T1_document": "子任务T1/T1智能体开发计划.docx",
+  "implementation_started_scope": "T1已有工程；不代表T2—T5已实现或总系统已验收。",
+  "current_T1_improvement": {
+    "status": "UI_source_repairs_and_manual_workbench_delivered_complete_medical_independent_and_real_deployment_gates_unpassed",
+    "engineering_selected_method": "B0",
+    "F_role": "Experimental implementation and historical comparison only",
+    "empirical_quality_superiority_proven": false,
+    "formal_model_selected": true,
+    "formal_model": "AGICTO gpt-6-luna medium/openai-responses",
+    "stage_status_record": "code/docs/acceptance/resume-2026-11-11/report.json",
+    "new_paid_calls_authorized": false,
+    "new_paid_request_limit": 0,
+    "can_execute_now": false,
+    "current_paid_requests_running": false,
+    "ordinary_model_enabled": true,
+    "current_scope": "S0/S1通过、S3限定工程通过，S4与S5既有接受保留；集中结果UI与源图注修复工程已交付。IN04仅有来源缺口的流程成功，IN06/IN07最终栈实测失败；S2医学、完整独立S6和S7完整真实门槛均未通过。普通模型按用户手动使用开启；自主24请求与所有未用额度已关闭，不再自动调用。",
+    "current_next_steps": [
+      "在30141按本次范围手动开始；精确SDK繁忙提示沿用既有最多2次有限重试和每run限额，失败保留；补丁尚无新增付费实证。",
+      "核验真实医学目录及当前记录的文字/整图；AI来源核对与UI/解析工程不授予医学或逐条业务批准。",
+      "完整S6另需真正未参与修复的独立材料与事前冻结协议；本轮IN06及修后IN07仅为回归，原独立首检失败保留，不复用已关闭自主额度。"
+    ],
+    "formal_reviews_used": 3,
+    "formal_review_limit": 3
+  },
+  "historical_records": {
+    "comparison_results_record_before_current_recheck": "方案/子任务T1/当前版本.json#/current_comparison_results"
+  },
+  "historical_T1_output_feedback_delivery_snapshot": {
+    "current_improvement_fields": {
+      "status": "authorized_round_stopped_delivery_failure_offline_fix_verified_human_review_pending",
+      "paid_calls_authorized": true,
+      "new_paid_request_limit": 128,
+      "next": "S0–S4当前范围工程复核已完成；Table1完整统计值/colspan、F正向检索与任务覆盖分列已验证。用户批准的一轮三源B0/F真实比较正在执行，6逻辑5实际，当前用量以唯一新ledger为准；结束后输出抽查，不自动优化，医学/产品及正式赢家未批准。",
+      "current_next_steps": [
+        "以新核验页对当前实际输出作普通抽查；医学/产品和正式方法未通过",
+        "保留原失败、SQL/phase/ledger/源snapshot及两拒绝原版本；不补字或重写结果",
+        "逐条/小批提交和工具元数据仅记观察，沿用既定输入→工程/提示→一致性顺序，本轮无新增优化或API"
+      ]
+    },
+    "latest_t1_scope_revision_prior_authorization": {
+      "status": "all_authorized_model_runs_complete_human_quality_and_formal_selection_pending",
+      "record": "code/docs/acceptance/s0-s4-current-2026-11-04/three-method-proposal/authorization.json",
+      "authorization_id": "S4-Luna-medium-L01-L05-three-methods-20261105-bf50e6d968e1",
+      "date_Asia_Shanghai": "2026-11-05",
+      "provider": "agicto",
+      "model_id": "gpt-6-luna",
+      "reasoning_effort": "medium",
+      "shared_limits": {
+        "requests": 300,
+        "input_tokens_including_cache": 6000000,
+        "output_tokens_including_reasoning": 400000,
+        "seconds_from_first_request": 14400
+      },
+      "ledger": "code/runtime-data/s4-budget-owners/5f3071e1f8b9a5cd65f4b7be8c55ed8de5d1fa3841dc7a1d3460a7a80d35d0a1/call-ledger.json",
+      "experiment_started_at_utc": "2026-11-04T16:29:32.037Z",
+      "formal_model_finally_selected": false,
+      "winner": null,
+      "medical_quality_approved": false,
+      "current_paid_requests_running": false,
+      "original_deadline_Asia_Shanghai": "2026-11-05T04:29:32.037000+08:00",
+      "time_continuation": {
+        "status": "completed_authorized_scope_no_more_paid_requests",
+        "record": "code/docs/acceptance/s0-s4-current-2026-11-04/summary-time-resume-authorization.json",
+        "record_sha256": "400398df3ddb8bec94f1a77bfb549470c442f1246850237aabb7c50e7a01f4f6",
+        "original_deadline_Asia_Shanghai": "2026-11-05T04:29:32.037000+08:00",
+        "original_window_expired": true,
+        "authorized_remaining_window_seconds": 11520,
+        "granted": true,
+        "user_response_verbatim": "确认续行时间窗，沿用原剩余额度（推荐）",
+        "approved_at_utc": "2026-11-05T02:16:15Z",
+        "resume_at_utc": "2026-11-05T02:16:52.744Z",
+        "single_deadline_utc": "2026-11-05T05:28:52.744Z",
+        "single_deadline_Asia_Shanghai": "2026-11-05T13:28:52.744+08:00",
+        "new_paid_requests_allowed_now": false,
+        "scope": [
+          "L01-B0",
+          "L05-B0",
+          "L05-F",
+          "L05-R"
+        ],
+        "baseline_or_L01_F_rerun_allowed": false,
+        "request_or_token_caps_reset": false,
+        "pause_record": "code/docs/acceptance/s0-s4-current-2026-11-04/user-pause-2026-11-05.json"
+      },
+      "current_results_record": "方案/子任务T1/当前版本.json#/current_comparison_results"
+    }
+  },
+  "historical_before_authorized_output_feedback_retest": {
+    "time_scope": "before call_050 authorized 143-request comparison; offline 0API and closed116 observations preserved",
+    "current_state_snapshot": {
+      "status": "T1_ordered_audit_and_model_runs_complete_medical_quality_selection_pending_other_tasks_pending",
+      "current_T1_improvement": {
+        "record": "code/docs/acceptance/pdf-input-quality-2026-11-07/improvement-register.json",
+        "authority": "子任务T1/T1智能体开发计划.docx",
+        "status": "output_feedback_bound_confirmed_scope_assessment_offline_verified_real_model_pending",
+        "paid_calls_authorized": false,
+        "next": "已收到14案例×3点=42项真实普通输出意见并完整绑定：34看起来正确、3有问题、5无法判断；全部14项原文/语境核对为看起来正确。这些意见不批准医学或业务导出，也不解除两条原完整语境guard拒绝。 原116请求批次已关闭，当前新增API与付费许可0，剩12不复用。新角色/确认范围及交付一致性仅作离线工程验证，未作真实模型或付费复测；真实遵从、耗费及最终方法仍未定，S4不记完整通过，新旧协议输出不直接排名。 两范围已确认。",
+        "current_evidence_directory": "code/docs/acceptance/s0-s4-recheck-2026-11-08/",
+        "review_record": "子任务T1/当前版本.json#/current_PDF_structure_review",
+        "feedback_and_bibliography_scope_record": "code/docs/acceptance/bibliography-scope-2026-11-08/feedback-and-scope-report.json",
+        "feedback_and_bibliography_scope_report_sha256": "a7580f82ed8353c79f62ae82d4d72b3f49d37cae83b1df2149ff341c85d2146c",
+        "readonly_scope_correction_status": "offline_verified",
+        "current_engineering_report": "code/docs/acceptance/s0-s4-recheck-2026-11-08/report.json",
+        "bibliography_method_user_accepted": true,
+        "new_paid_request_limit": 0,
+        "authorization_record": "code/docs/acceptance/s0-s4-recheck-2026-11-08/comparison/authorization.json",
+        "can_execute_now": false,
+        "current_live_ledger": "code/runtime-data/s4-budget-owners/6b7c06e4a0436006dbba085bb498b32a3950e7a39d1b4b756837a642cd6311ad/call-ledger.json",
+        "execution_handoff_received": true,
+        "current_paid_requests_running": false,
+        "current_execution_preconditions": "原本轮源前置通过后真实执行，现已guard失败停止，局部修复仅离线验证；不得以旧前置或剩12发起续跑。",
+        "current_next_steps": [
+          "本轮42普通意见已绑定，两范围选择均已确认；保留旧意见和原失败，不作为医学/业务批准",
+          "后续B0/F共用新角色及范围规则，只有明确背景单列，mixed/uncertain不清空；来源guard不放宽",
+          "下一轮具体同版本计划已离线准备，224/400万/24万/1小时仅提案，须新的明确模型/额度批准才可执行"
+        ],
+        "latest_feedback_report": "code/docs/acceptance/output-feedback-2026-11-08/feedback-report.json",
+        "primary_assessment_policy_version": "model-primary-assessment-1",
+        "confirmed_scope_decisions_status": "both_confirmed",
+        "historical_approved_request_cap": 128,
+        "next_comparison_proposal": {
+          "status": "prepared_no_model_calls_pending_new_user_authorization",
+          "plan": "code/docs/acceptance/output-feedback-2026-11-08/comparison/plan.json",
+          "plan_sha256": "7b948130b139fe283284fe8e83dc19a0e32c69ece93cc1f47bc80802214f2b59",
+          "authorization_template": "code/docs/acceptance/output-feedback-2026-11-08/comparison/authorization-template.json",
+          "provider": "AGICTO",
+          "model": "gpt-6-luna",
+          "reasoning_effort": "medium",
+          "papers": [
+            "L01",
+            "L05",
+            "L07"
+          ],
+          "methods": [
+            "B0",
+            "F"
+          ],
+          "logical_jobs": 6,
+          "actual_unique_inputs_if_executed": 5,
+          "L01_equivalent_reuse": true,
+          "proposed_limits": {
+            "requests": 224,
+            "input_tokens": 4000000,
+            "output_tokens": 240000,
+            "seconds_from_execution_start": 3600
+          },
+          "retries_share_caps": true,
+          "one_round_then_output_review_stop": true,
+          "new_paid_calls_authorized": false,
+          "new_paid_request_limit": 0,
+          "execution_started": false,
+          "new_ledger_created": false
+        }
+      },
+      "current_comparison_results_record": "code/docs/acceptance/s0-s4-recheck-2026-11-08/report.json"
+    },
+    "additional_detail_snapshots": {
+      "latest_t1_scope_revision": {
+        "document": "子任务T1/T1智能体开发计划.docx",
+        "version": "0.7",
+        "execution_guide": "子任务T1/T1开发执行说明.docx",
+        "execution_guide_version": "0.5",
+        "approved": true,
+        "status": "output_feedback_bound_confirmed_scope_assessment_offline_verified_real_model_pending",
+        "current_data": "子任务T1/当前版本.json",
+        "mandatory_comparison": [
+          "单独智能体B0",
+          "正向规则预筛＋智能体F"
+        ],
+        "new_paid_call_budget": null,
+        "current_experiment_authorization": {
+          "record": "方案/子任务T1/当前版本.json#/current_experiment_authorization",
+          "status": "closed_failed_116_requests_no_more_calls",
+          "new_paid_calls_authorized": false,
+          "new_paid_request_limit": 0,
+          "actual_requests": 116
+        },
+        "ordered_S0_S4_audit_completed": true,
+        "all_T1_stages_passed": false,
+        "current_authority": "子任务T1/T1智能体开发计划.docx",
+        "current_improvement_record": "code/docs/acceptance/pdf-structure-review-2026-11-07/",
+        "R_status": "retired_historical_only",
+        "original_approved_plan_version": "0.6",
+        "revision": "pdf-first-two-method-2026-11-07",
+        "approval_scope": "用户最新方向同步；旧v0.6计划批准记录保留，不认定质量通过。",
+        "historical_paid_budget_record": "code/docs/acceptance/s0-s4-current-2026-11-04/three-method-proposal/authorization.json",
+        "current_output_feedback_report": "code/docs/acceptance/output-feedback-2026-11-08/feedback-report.json",
+        "current_plan_sha256": "d0634edacf50ca82e59284dc9b83a90ce2cf7963424bd47fbdcfde05dd035147",
+        "current_execution_guide_sha256": "102adb0a08a8293fc1a8a0467ade06574ccea371dd061cf3a3fa4c4cb04678c2"
+      }
+    }
+  },
+  "historical_before_B0_mainline_selection": {
+    "time_scope": "before user2h delegated engineering selection and69 current-pack opinions",
+    "snapshot": {
+      "status": "T1_ordered_audit_and_model_runs_complete_medical_quality_selection_pending_other_tasks_pending",
+      "current_T1_improvement": {
+        "revision": "output-feedback-authorized-retest-2026-11-08",
+        "status": "authorized_assessment_scope_comparison_completed_143_closed_new_output_review_pending",
+        "comparison_methods": [
+          "B0",
+          "F"
+        ],
+        "R_status": "retired_historical_read_only",
+        "paid_calls_authorized": false,
+        "paid_request_limit": 0,
+        "new_paid_request_limit": 0,
+        "can_execute_now": false,
+        "current_paid_requests_running": false,
+        "usage_final": true,
+        "actual_requests": 143,
+        "actual_input_tokens": 2313966,
+        "actual_output_tokens": 98374,
+        "actual_elapsed_seconds": 2880.11,
+        "actual_cost": null,
+        "cost_status": "unknown_gateway_billing",
+        "approved_shared_limits_retained_as_history": {
+          "requests": 224,
+          "input_tokens": 4000000,
+          "output_tokens": 240000,
+          "seconds": 3600,
+          "request_seconds": 120,
+          "document_seconds": 1800,
+          "transient_retries": 2,
+          "response_output_tokens": 8192,
+          "batch_responses": 16
+        },
+        "unused_81_not_permission": true,
+        "formal_reviews_used": 3,
+        "formal_review_limit": 3,
+        "new_formal_rounds": 0,
+        "new_comparison_started": true,
+        "new_comparison_finished": true,
+        "stage_passed": false,
+        "PDF_quality_accepted": false,
+        "current_scope": "新用户批准的同版本AGICTO gpt-6-luna medium比较已完成：L01/L05/L07×B0/F六逻辑、五实际运行，L01-F等价复用，不作独立样本或零成本优势。实际143请求、2,313,966输入（含cache读436,658）、98,374输出（含reasoning73,619）、2880.110秒；五实际运行任务处理及同次summary角色覆盖均完成，68条当前记录=57主待核+11背景建议、0当前交付拒绝。供应商货币费用未知，当前新增调用许可0，未用81不构成续跑许可。 68是版本化记录数，不是独立原文片段数或有效医学描述数。原始parser.partial、图中文字/图文对应及PDF完整覆盖限制保留；S0/S1通过，S2医学目录、S3完整PDF/医学及S4正式模型/方法选择仍待完成。新输出普通核验尚待用户进行，旧14×3意见不继承为新版本业务批准，新旧协议不直接排名。",
+        "current_next_steps": [
+          "下一步仅核验新问卷v2页面及完整68条主/背景索引：code/docs/acceptance/output-feedback-2026-11-08/output-review/index.html；普通意见、模型角色建议均不替代真实逐条业务或医学批准；不自动追加模型轮。",
+          "待核风险包括AAH直接尺寸句及彗星尾同句跨B0/F角色分歧、两条含具体外观的L07-B0背景建议和L07-F同一完整条件句重复/归因差异；保留原文、分组和所有版本，不按主候选数较少宣称更准。",
+          "后续任何真实新调用须另有用户明确授权；本轮不自动优化后重跑。"
+        ],
+        "current_evidence_directory": "code/docs/acceptance/output-feedback-2026-11-08/",
+        "current_review_entry": "code/docs/acceptance/output-feedback-2026-11-08/output-review/index.html",
+        "review_entry_status": "ready_23_cases_69_questions_actual_HTTP_Chromium7_passed_user_feedback_pending",
+        "latest_feedback_report": "code/docs/acceptance/output-feedback-2026-11-08/feedback-report.json",
+        "documentation_validation": "code/docs/acceptance/output-feedback-2026-11-08/feedback-report.json#/terminal_documentation_sync",
+        "authorization_record": "code/docs/acceptance/output-feedback-2026-11-08/comparison/authorization.json",
+        "current_live_ledger": "code/runtime-data/s4-budget-owners/ad8834a7eea34a0e5cf57216fbe33fe67a77a97604ab42536e036a77e5c46cbd/call-ledger.json",
+        "current_execution_preconditions": "本轮已正常完成并关闭；不再依旧caps或未用81启动请求。",
+        "primary_assessment_policy_version": "model-primary-assessment-1",
+        "confirmed_scope_decisions_status": "both_confirmed",
+        "historical_details": "historical_before_authorized_output_feedback_retest",
+        "confirmed_scope_counterexamples": [
+          {
+            "type": "confirmed_scope_decision_not_followed",
+            "historical_case_id": "C14-483dd5716867",
+            "question_id": "target_visual_description",
+            "confirmation_call_id": "call_5076b411e1b2480084dee9df13237881",
+            "job_id": "L07-F",
+            "record_id": "ev-ea1e5ad8d157414ad03a30a8b446e8baefc0acf6",
+            "record_version": 3,
+            "actual_role": "primary_candidate",
+            "model_primary_assessment": "visual_evidence_suggested",
+            "model_issue_codes": [
+              "concrete_abutment_appearance_retained"
+            ],
+            "original_quote": " Rectal tumor abutting the peritoneum alone should not be\nconsidered peritoneal invasion.",
+            "confirmed_user_scope": "C14 standalone diagnostic conclusion only necessary background",
+            "observation": "Same full source sentence retained as main in F; user-confirmed C14 routing was not followed. Source-scope counterexample, not a medical verdict. Original result and grouping unchanged.",
+            "bound_evidence": "code/docs/acceptance/output-feedback-2026-11-08/comparison/terminal-audit.json#/historical_feedback_source_anchor_checks",
+            "no_new_API_or_post_run_fix": true
+          }
+        ],
+        "review_record": "code/docs/acceptance/output-feedback-2026-11-08/output-review/manifest.json",
+        "review_manifest_sha256": "dcd9a1b6db80ebdc9a87b5ee5499c82eea7619146134627c9326b73c790f6e47"
+      },
+      "latest_t1_scope_revision": {
+        "document": "子任务T1/T1智能体开发计划.docx",
+        "version": "0.7",
+        "execution_guide": "子任务T1/T1开发执行说明.docx",
+        "execution_guide_version": "0.5",
+        "approved": true,
+        "status": "authorized_assessment_scope_comparison_completed_143_closed_new_output_review_pending",
+        "current_data": "子任务T1/当前版本.json",
+        "mandatory_comparison": [
+          "单独智能体B0",
+          "正向规则预筛＋智能体F"
+        ],
+        "new_paid_call_budget": null,
+        "current_experiment_authorization": {
+          "record": "方案/子任务T1/当前版本.json#/current_experiment_authorization",
+          "status": "closed_completed_143_requests_no_more_calls",
+          "new_paid_calls_authorized": false,
+          "new_paid_request_limit": 0,
+          "actual_requests": 143
+        },
+        "ordered_S0_S4_audit_completed": true,
+        "all_T1_stages_passed": false,
+        "current_authority": "子任务T1/T1智能体开发计划.docx",
+        "current_improvement_record": "code/docs/acceptance/pdf-structure-review-2026-11-07/",
+        "R_status": "retired_historical_only",
+        "original_approved_plan_version": "0.6",
+        "revision": "pdf-first-two-method-2026-11-07",
+        "approval_scope": "用户最新方向同步；旧v0.6计划批准记录保留，不认定质量通过。",
+        "historical_paid_budget_record": "code/docs/acceptance/s0-s4-current-2026-11-04/three-method-proposal/authorization.json",
+        "current_output_feedback_report": "code/docs/acceptance/output-feedback-2026-11-08/feedback-report.json",
+        "current_plan_sha256": "f11145f2ff0f05b010686353c0f29348f91fa1cfd2bd7dd6451630ccc81881dc",
+        "current_execution_guide_sha256": "4326acd4bcc20a57c016700b6cbc757b107d99d797ebfc2e76c48a969104495e"
+      }
+    },
+    "exact_before_archive": "code/docs/acceptance/output-feedback-2026-11-08/b0-selection-before.zip"
+  },
+  "current_T1_method_selection": {
+    "status": "B0_engineering_choice_retained_default_model_selected",
+    "engineering_selected_method": "B0",
+    "F_role": "Experimental implementation and historical comparison only",
+    "empirical_quality_superiority_proven": false,
+    "formal_model_selected": true,
+    "formal_model": "AGICTO gpt-6-luna medium/openai-responses",
+    "original_B0_decision": "code/docs/acceptance/output-feedback-2026-11-08/feedback-report.json",
+    "current_evidence": "code/docs/acceptance/resume-2026-11-11/report.json"
+  },
+  "historical_T1_comparison_results_record": "code/docs/acceptance/output-feedback-2026-11-08/comparison/terminal-audit.json"
+}

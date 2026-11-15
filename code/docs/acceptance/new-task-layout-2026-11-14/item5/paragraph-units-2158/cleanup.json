@@ -1,0 +1,35 @@
+{
+  "status": "completed_own_temporaries_only",
+  "completed_at_utc": "2026-11-15T08:52:38.074929+00:00",
+  "removed_baseline": "runtime-data/agent-notes/item5-paragraph-units-2158-baseline",
+  "baseline_manifest_sha256": "5fbb558907b44fdc2b69cfeb579f00e258b50c437e689cd70f21d4eedd520ead",
+  "baseline_source_count": 17,
+  "all_baseline_originals_preserved_in_rollback": true,
+  "removed_helpers": [
+    {
+      "path": "runtime-data/agent-notes/item5-content-navigation-deploy.py",
+      "sha256": "27949def754702d78fc9655ec4e7efd352a0e31e1dff9fe37c3b031b45c4c83c"
+    },
+    {
+      "path": "runtime-data/agent-notes/item5-content-navigation-readonly.mjs",
+      "sha256": "0d6f08fe28c7c986f1ba8be0f9bd7c35228bbcec7d04d30e164737ca2a5f073b"
+    }
+  ],
+  "retained": [
+    "original permanent task note/report",
+    "all current and historical acceptance evidence",
+    "runtime-data/logs/item5-* relevant command logs",
+    "runtime-data/backups/content-units-navigation-20261115-before/t1.sqlite",
+    "runtime-data/rollbacks/content-units-navigation-20261115-before",
+    "apps/pi-web/build/navigation-content-delivery-final-validated-20261115",
+    "apps/pi-web/build/paragraph-glyph-table-values-validated-20261115"
+  ],
+  "production_or_other_owner_files_removed": false,
+  "no_temporary_database_copies_created_this_followup": true,
+  "isolated_test_directories": "SDK/API tests cleaned their own temporary DB/directories in finally; frontend owner independently cleaned its temporary servers/build candidate/baseline",
+  "old_processes_exited_at_cleanup": {
+    "109795": true,
+    "109824": true,
+    "109816": true
+  }
+}

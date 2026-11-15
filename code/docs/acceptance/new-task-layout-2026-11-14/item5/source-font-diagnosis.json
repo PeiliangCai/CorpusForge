@@ -1,0 +1,808 @@
+{
+  "recorded_at_utc": "2026-11-15T05:05:05.282726+00:00",
+  "scope": "read_only_original_PDF_fonts_and_existing_IR_no_reparse_or_model_calls",
+  "model_calls": 0,
+  "glyph_guard": "services/pdf-parser/source_font_fidelity.py",
+  "recovery_conclusion": "No general reliable Unicode recovery established. Keep affected sentences isolated; do not infer symbols from medical context or restore original task flags. No font/parser change in this item.",
+  "documents": [
+    {
+      "run_id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+      "filename": "例子.pdf",
+      "file_sha256": "84fd59338ea6600130b04e36cdc56051e586e4de48c273318143a9d62e6be05e",
+      "isolated_blocks": 41,
+      "direct_glyph_issue_blocks": 33,
+      "categories": {
+        "body_or_section_header": 12,
+        "copyright_page_footer": 29
+      },
+      "selection_counts": {
+        "kept": 2929,
+        "deferred": 41,
+        "excluded": 0
+      },
+      "fonts": [
+        {
+          "name": "/LAGGEC+AdvPSSym",
+          "first_and_last_character": 170,
+          "ToUnicode_present": false,
+          "Encoding": "/WinAnsiEncoding",
+          "embedded_font_subtype": "/Type1C",
+          "embedded_font_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9"
+        },
+        {
+          "name": "/LAHAFG+AdvP4C4E74",
+          "first_and_last_character": 1,
+          "ToUnicode_present": false,
+          "Encoding": "{'/Differences': [1, '/C24'], '/Type': '/Encoding'}",
+          "embedded_font_subtype": "/Type1C",
+          "embedded_font_sha256": "53b940145d1b099b651cdc766619337a8582303a42f897f20240808a0889740c"
+        },
+        {
+          "name": "/LAHALG+AdvPS3ECA66",
+          "first_and_last_character": 98,
+          "ToUnicode_present": false,
+          "Encoding": "/WinAnsiEncoding",
+          "embedded_font_subtype": "/Type1C",
+          "embedded_font_sha256": "ef8c47a814c6aa6d4473fee924ea9416dd9975fca6d70f823b97321b79fce15a"
+        }
+      ],
+      "affected_source": [
+        {
+          "block_id": "5c8a80474c756be4422e-p0001-l000080",
+          "physical_page": 1,
+          "original_text": "646 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0002-l000067",
+          "physical_page": 2,
+          "original_text": "usually triggered by activated growth factor receptors. Thus,",
+          "glyph_issues": [],
+          "category": "body_or_section_header",
+          "neighbor_context": [
+            "tumors that predict constitutive activation of signaling circuits",
+            "usually triggered by activated growth factor receptors. Thus,",
+            "we now know that \u001840% of human melanomas contain"
+          ]
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0002-l000068",
+          "physical_page": 2,
+          "original_text": "we now know that \u001840% of human melanomas contain",
+          "glyph_issues": [
+            {
+              "font_name": "/LAHAFG+AdvP4C4E74",
+              "font_program_sha256": "53b940145d1b099b651cdc766619337a8582303a42f897f20240808a0889740c",
+              "pdf_character_code": 1,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 17,
+              "end": 18,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "body_or_section_header",
+          "neighbor_context": [
+            "usually triggered by activated growth factor receptors. Thus,",
+            "we now know that \u001840% of human melanomas contain",
+            "activating mutations affecting the structure of the B-Raf protein,"
+          ]
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0002-l000069",
+          "physical_page": 2,
+          "original_text": "activating mutations affecting the structure of the B-Raf protein,",
+          "glyph_issues": [],
+          "category": "body_or_section_header",
+          "neighbor_context": [
+            "we now know that \u001840% of human melanomas contain",
+            "activating mutations affecting the structure of the B-Raf protein,",
+            "resulting in constitutive signaling through the Raf to mitogen-"
+          ]
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0002-l000070",
+          "physical_page": 2,
+          "original_text": "resulting in constitutive signaling through the Raf to mitogen-",
+          "glyph_issues": [],
+          "category": "body_or_section_header",
+          "neighbor_context": [
+            "activating mutations affecting the structure of the B-Raf protein,",
+            "resulting in constitutive signaling through the Raf to mitogen-",
+            "activated protein (MAP)-kinase pathway (Davies and Samuels"
+          ]
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0002-l000071",
+          "physical_page": 2,
+          "original_text": "activated protein (MAP)-kinase pathway (Davies and Samuels",
+          "glyph_issues": [],
+          "category": "body_or_section_header",
+          "neighbor_context": [
+            "resulting in constitutive signaling through the Raf to mitogen-",
+            "activated protein (MAP)-kinase pathway (Davies and Samuels",
+            "2010). Similarly, mutations in the catalytic subunit of phosphoi-"
+          ]
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0002-l000072",
+          "physical_page": 2,
+          "original_text": "2010). Similarly, mutations in the catalytic subunit of phosphoi-",
+          "glyph_issues": [],
+          "category": "body_or_section_header",
+          "neighbor_context": [
+            "activated protein (MAP)-kinase pathway (Davies and Samuels",
+            "2010). Similarly, mutations in the catalytic subunit of phosphoi-",
+            "nositide 3-kinase (PI3-kinase) isoforms are being detected in"
+          ]
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0002-l000094",
+          "physical_page": 2,
+          "original_text": "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 647",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 24,
+              "end": 25,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0003-l000116",
+          "physical_page": 3,
+          "original_text": "648 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0004-l000041",
+          "physical_page": 4,
+          "original_text": "Corruption of the TGF-b Pathway Promotes Malignancy",
+          "glyph_issues": [
+            {
+              "font_name": "/LAHALG+AdvPS3ECA66",
+              "font_program_sha256": "ef8c47a814c6aa6d4473fee924ea9416dd9975fca6d70f823b97321b79fce15a",
+              "pdf_character_code": 98,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 22,
+              "end": 23,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "body_or_section_header",
+          "neighbor_context": [
+            "ing inappropriate proliferative signals.",
+            "Corruption of the TGF-b Pathway Promotes Malignancy",
+            "TGF-b is best known for its antiproliferative effects, and evasion"
+          ]
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0004-l000115",
+          "physical_page": 4,
+          "original_text": "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 649",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 24,
+              "end": 25,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0005-l000116",
+          "physical_page": 5,
+          "original_text": "650 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0006-l000049",
+          "physical_page": 6,
+          "original_text": "significant levels in the vast majority (\u001890%) of spontaneously",
+          "glyph_issues": [
+            {
+              "font_name": "/LAHAFG+AdvP4C4E74",
+              "font_program_sha256": "53b940145d1b099b651cdc766619337a8582303a42f897f20240808a0889740c",
+              "pdf_character_code": 1,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 41,
+              "end": 42,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "body_or_section_header",
+          "neighbor_context": [
+            "absent in nonimmortalized cells but expressed at functionally",
+            "significant levels in the vast majority (\u001890%) of spontaneously",
+            "immortalized cells, including human cancer cells. By extending"
+          ]
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0006-l000115",
+          "physical_page": 6,
+          "original_text": "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 651",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 24,
+              "end": 25,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0007-l000115",
+          "physical_page": 7,
+          "original_text": "652 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0008-l000116",
+          "physical_page": 8,
+          "original_text": "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 653",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 24,
+              "end": 25,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0009-l000116",
+          "physical_page": 9,
+          "original_text": "654 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0010-l000116",
+          "physical_page": 10,
+          "original_text": "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 655",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 24,
+              "end": 25,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0011-l000115",
+          "physical_page": 11,
+          "original_text": "656 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0012-l000038",
+          "physical_page": 12,
+          "original_text": "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 657",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 24,
+              "end": 25,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0013-l000093",
+          "physical_page": 13,
+          "original_text": "658 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0014-l000114",
+          "physical_page": 14,
+          "original_text": "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 659",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 24,
+              "end": 25,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0015-l000000",
+          "physical_page": 15,
+          "original_text": "energy metabolism is seemingly counterintuitive, in that cancer",
+          "glyph_issues": [],
+          "category": "body_or_section_header",
+          "neighbor_context": [
+            "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 659",
+            "energy metabolism is seemingly counterintuitive, in that cancer",
+            "cells must compensate for the \u001818-fold lower efficiency of"
+          ]
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0015-l000001",
+          "physical_page": 15,
+          "original_text": "cells must compensate for the \u001818-fold lower efficiency of",
+          "glyph_issues": [
+            {
+              "font_name": "/LAHAFG+AdvP4C4E74",
+              "font_program_sha256": "53b940145d1b099b651cdc766619337a8582303a42f897f20240808a0889740c",
+              "pdf_character_code": 1,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 30,
+              "end": 31,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "body_or_section_header",
+          "neighbor_context": [
+            "energy metabolism is seemingly counterintuitive, in that cancer",
+            "cells must compensate for the \u001818-fold lower efficiency of",
+            "ATP production afforded by glycolysis relative to mitochondrial"
+          ]
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0015-l000002",
+          "physical_page": 15,
+          "original_text": "ATP production afforded by glycolysis relative to mitochondrial",
+          "glyph_issues": [],
+          "category": "body_or_section_header",
+          "neighbor_context": [
+            "cells must compensate for the \u001818-fold lower efficiency of",
+            "ATP production afforded by glycolysis relative to mitochondrial",
+            "oxidative phosphorylation. They do so in part by upregulating"
+          ]
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0015-l000003",
+          "physical_page": 15,
+          "original_text": "oxidative phosphorylation. They do so in part by upregulating",
+          "glyph_issues": [],
+          "category": "body_or_section_header",
+          "neighbor_context": [
+            "ATP production afforded by glycolysis relative to mitochondrial",
+            "oxidative phosphorylation. They do so in part by upregulating",
+            "glucose transporters, notably GLUT1, which substantially"
+          ]
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0015-l000115",
+          "physical_page": 15,
+          "original_text": "660 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0016-l000113",
+          "physical_page": 16,
+          "original_text": "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 661",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 24,
+              "end": 25,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0017-l000090",
+          "physical_page": 17,
+          "original_text": "662 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0018-l000115",
+          "physical_page": 18,
+          "original_text": "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 663",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 24,
+              "end": 25,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0019-l000114",
+          "physical_page": 19,
+          "original_text": "664 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0020-l000113",
+          "physical_page": 20,
+          "original_text": "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 665",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 24,
+              "end": 25,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0021-l000010",
+          "physical_page": 21,
+          "original_text": "666 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0022-l000114",
+          "physical_page": 22,
+          "original_text": "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 667",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 24,
+              "end": 25,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0023-l000039",
+          "physical_page": 23,
+          "original_text": "668 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0024-l000115",
+          "physical_page": 24,
+          "original_text": "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 669",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 24,
+              "end": 25,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0025-l000120",
+          "physical_page": 25,
+          "original_text": "670 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0026-l000123",
+          "physical_page": 26,
+          "original_text": "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 671",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 24,
+              "end": 25,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0027-l000122",
+          "physical_page": 27,
+          "original_text": "672 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0028-l000122",
+          "physical_page": 28,
+          "original_text": "Cell 144, March 4, 2011 ©2011 Elsevier Inc. 673",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 24,
+              "end": 25,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        },
+        {
+          "block_id": "5c8a80474c756be4422e-p0029-l000057",
+          "physical_page": 29,
+          "original_text": "674 Cell 144, March 4, 2011 ©2011 Elsevier Inc.",
+          "glyph_issues": [
+            {
+              "font_name": "/LAGGEC+AdvPSSym",
+              "font_program_sha256": "82a18711448aec4f0f8aea22435c2c48ce93f60f9fa26656b4c616610c81ceb9",
+              "pdf_character_code": 170,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 28,
+              "end": 29,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "copyright_page_footer",
+          "neighbor_context": []
+        }
+      ]
+    },
+    {
+      "run_id": "run-9b272402-f873-44e8-adeb-442da132410f",
+      "filename": "例子2.pdf",
+      "file_sha256": "1f37f00d6da38c52513a3aad11f0c639b25ec3a3979de3a6c1507080901c43bc",
+      "isolated_blocks": 1,
+      "direct_glyph_issue_blocks": 1,
+      "categories": {
+        "participant_affiliation_footnote": 1
+      },
+      "selection_counts": {
+        "kept": 1686,
+        "deferred": 1,
+        "excluded": 0
+      },
+      "fonts": [
+        {
+          "name": "/FJLGNG+AdvP497E2",
+          "first_and_last_character": 42,
+          "ToUnicode_present": false,
+          "Encoding": "/WinAnsiEncoding",
+          "embedded_font_subtype": "/Type1C",
+          "embedded_font_sha256": "8c396df5b442ff4d4b19700cb431c41d0da44058cd3dd030a1977965d2950079"
+        }
+      ],
+      "affected_source": [
+        {
+          "block_id": "4ec0ca364af44ead902b-p0001-l000085",
+          "physical_page": 1,
+          "original_text": "*A list of participants and their affiliations appears at the end of the paper.",
+          "glyph_issues": [
+            {
+              "font_name": "/FJLGNG+AdvP497E2",
+              "font_program_sha256": "8c396df5b442ff4d4b19700cb431c41d0da44058cd3dd030a1977965d2950079",
+              "pdf_character_code": 42,
+              "code": "sparse_embedded_font_without_unicode_mapping",
+              "start": 0,
+              "end": 1,
+              "precision": "glyph_offset"
+            }
+          ],
+          "category": "participant_affiliation_footnote",
+          "neighbor_context": [
+            "gland development 17 , harboured 13 mutations (8 frame-shift indels,",
+            "*A list of participants and their affiliations appears at the end of the paper.",
+            "4 O C T O B E R 2 0 1 2 | VO L 4 9 0 | N AT U R E | 6 1"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "production_business_writes": 0,
+  "paid_calls": 0,
+  "projection_only": true,
+  "cold_concurrency": 1,
+  "checks": [
+    {
+      "run_id": "run-2a789d39-5297-426e-a0b0-c2bd8117c66b",
+      "title": "例子.pdf",
+      "cold_ms": 47.196901,
+      "hot_ms": 0.19146299999999883,
+      "full_saved_row_reads": 1,
+      "cold": {
+        "rule_version": "task-flow-completion-2",
+        "rule_origin": "legacy_evidence_projection",
+        "processing_complete": true,
+        "source_gap_blocks": 41,
+        "original_task_processing_complete": false,
+        "original_rule_version": "legacy-task-completion-1"
+      },
+      "hot": {
+        "rule_version": "task-flow-completion-2",
+        "rule_origin": "legacy_evidence_projection",
+        "processing_complete": true,
+        "source_gap_blocks": 41,
+        "original_task_processing_complete": false,
+        "original_rule_version": "legacy-task-completion-1"
+      },
+      "persisted_flag_unchanged": true
+    },
+    {
+      "run_id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+      "title": "测试2",
+      "cold_ms": 43.25359900000001,
+      "hot_ms": 0.2501570000000015,
+      "full_saved_row_reads": 1,
+      "cold": {
+        "rule_version": "task-flow-completion-2",
+        "rule_origin": "legacy_evidence_projection",
+        "processing_complete": true,
+        "source_gap_blocks": 41,
+        "original_task_processing_complete": false,
+        "original_rule_version": "legacy-task-completion-1"
+      },
+      "hot": {
+        "rule_version": "task-flow-completion-2",
+        "rule_origin": "legacy_evidence_projection",
+        "processing_complete": true,
+        "source_gap_blocks": 41,
+        "original_task_processing_complete": false,
+        "original_rule_version": "legacy-task-completion-1"
+      },
+      "persisted_flag_unchanged": true
+    },
+    {
+      "run_id": "run-9b272402-f873-44e8-adeb-442da132410f",
+      "title": "测试2",
+      "cold_ms": 24.765737,
+      "hot_ms": 0.1567810000000236,
+      "full_saved_row_reads": 1,
+      "cold": {
+        "rule_version": "task-flow-completion-2",
+        "rule_origin": "legacy_evidence_projection",
+        "processing_complete": true,
+        "source_gap_blocks": 1,
+        "original_task_processing_complete": false,
+        "original_rule_version": "legacy-task-completion-1"
+      },
+      "hot": {
+        "rule_version": "task-flow-completion-2",
+        "rule_origin": "legacy_evidence_projection",
+        "processing_complete": true,
+        "source_gap_blocks": 1,
+        "original_task_processing_complete": false,
+        "original_rule_version": "legacy-task-completion-1"
+      },
+      "persisted_flag_unchanged": true
+    }
+  ],
+  "rss_before": 63664128,
+  "rss_after": 168792064
+}

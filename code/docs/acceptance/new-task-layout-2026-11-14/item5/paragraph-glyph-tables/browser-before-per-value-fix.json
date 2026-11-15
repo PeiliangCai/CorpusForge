@@ -1,0 +1,43 @@
+{
+  "status": "passed",
+  "BUILD_ID": "O4nDXsMCo_1Ec0qdP0d2A",
+  "dist": "apps/pi-web/build/paragraph-glyph-tables-delivery-validated-20261115-ready",
+  "checks": [
+    {
+      "name": "actual_paragraph_count",
+      "status": "passed"
+    },
+    {
+      "name": "legacy_line_count",
+      "status": "passed"
+    },
+    {
+      "name": "unfinished_parent_stays_incomplete",
+      "status": "passed"
+    },
+    {
+      "name": "glyph_background_persisted",
+      "status": "passed"
+    },
+    {
+      "name": "glyph_background_legacy_evidence_projection",
+      "status": "passed"
+    },
+    {
+      "name": "final_save_remains_pending",
+      "status": "passed"
+    },
+    {
+      "name": "same_record_table_desktop",
+      "status": "passed"
+    },
+    {
+      "name": "same_record_table_mobile",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "production_business_writes": 0,
+  "paid_calls": 0
+}

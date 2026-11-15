@@ -1,0 +1,596 @@
+--- before/README.md
++++ after/README.md
+@@ -2,9 +2,9 @@
+ 
+ 从文本型PDF提取肿瘤影像外观原文，保留出处、必要语境、整幅Figure和原图注，供逐篇核对与导出。正式主流程为B0；F仅保留实验实现与历史对照。
+ 
+-当前普通工作台为 **http://127.0.0.1:30141/**，后端为 **http://127.0.0.1:3210**；已验构建为`apps/pi-web/build/task-identity-dedup-validated-20261114`，BUILD_ID `cYfgrEAWO7KngOnOkePsg`。创建任务页面按“上传论文 PDF”“本次抽取范围”“模型配置”分为独立卡片，宽屏两列底边对齐、窄屏单列；论文清单固定高度并内部滚动。范围修改、添加模型/高级配置、每任务额度及复用通过弹窗展示，展开时保持背景布局；范围取消不提交草稿。本地PDF仍先上传后开始。复用入口默认不选论文，同一PDF的重复上传记录合并显示，历史任务保留。任务进度使用后台真实阶段与计数，未知总量不显示假百分比；部分结果、来源字形缺口和未完成汇总不会显示成全部完成。明确配对的整幅Figure和原图注直接显示在描述下，未明确配对的记录保留文字与状态提示。
++当前普通工作台为 **http://127.0.0.1:30141/**，后端为 **http://127.0.0.1:3210**；已验构建为`apps/pi-web/build/remove-explicit-reuse-validated-20261114`，BUILD_ID `7k-AKSqL1i6sLB7gjmNJi`。创建任务页面按“上传论文 PDF”“本次抽取范围”“模型配置”分为独立卡片，宽屏两列底边对齐、窄屏单列；论文清单固定高度并内部滚动。范围修改、添加模型/高级配置及每任务额度通过弹窗展示，展开时保持背景布局；范围取消不提交草稿。本地PDF仍先上传后开始。统一通过本地PDF文件或文件夹创建任务；相同内容仍自动复用服务器文件，历史任务保留。任务进度使用后台真实阶段与计数，未知总量不显示假百分比；部分结果、来源字形缺口和未完成汇总不会显示成全部完成。明确配对的整幅Figure和原图注直接显示在描述下，未明确配对的记录保留文字与状态提示。
+ 
+-[本轮记录](docs/acceptance/new-task-layout-2026-11-14/report.json)中的第1项已获用户审核通过；第2项已实现独立任务/批次标题及完整PDF内容去重，限定工程检查和安全上线完成，待用户审核；第3–5项尚未开始。原五项共用正式审查2/3。两次确认无执行/收尾任务并保留一致备份后有序更新前后端，17表逻辑行、配置及既有产物保持；生产业务测试写入与额外付费模型调用均为0。
++[本轮记录](docs/acceptance/new-task-layout-2026-11-14/report.json)中的第1、2项已获用户审核通过；第3项已移除“复用已上传论文”和菜单“再次抽取”入口，限定检查和仅前端上线完成，待用户审核；第4、5项尚未开始。后台完整内容SHA去重、独立任务标题及历史数据保留，后端148878未重启。原五项共用正式审查2/3；本项生产业务测试写入与额外付费模型调用均为0。
+ 
+ [前轮工作台体验报告](docs/acceptance/workbench-experience-2026-11-14/report.json)记录正式审查3/3、71项后端与346项抽取回归、14项界面单测、16组同构建隔离浏览器与5组真实只读核验。新增任务用相同授权原文投影预载，免去重复索取输入的模型往返；SSE仅查询游标后的新事件。本地SDK与查询基准通过，尚未新增付费任务验证真实总耗时收益。原用户任务自然结束为partial，13条候选和唯一明确配对Figure5保留；上线核验时为17表、8run、8篇论文记录、1模型配置，逻辑数据、两份env与手工目录均保持。代理生产业务写入与额外付费模型调用均为0。
+ 
+@@ -38,15 +38,15 @@
+ 复用本次已验证构建并重启前端时，先确认原前端进程已停止，然后在`code/`运行（普通重新构建流程仍使用上方`build:web`）：
+ 
+ ```bash
+-T1_NEXT_DIST_DIR=build/task-identity-dedup-validated-20261114 bash scripts/with-node.sh npm run start:web
++T1_NEXT_DIST_DIR=build/remove-explicit-reuse-validated-20261114 bash scripts/with-node.sh npm run start:web
+ ```
+ 
+ 开发时可用`bash scripts/with-node.sh npm run dev:web`替代生产前端，默认仍30141。`npm run dev:server`不自动载入工作台开关/限额；不要仅改`.env`就假定这些已生效。首次依赖/CPU模型准备及Docker启动按[部署说明](deploy/README.md)执行，不运行上游通用pi-web入口或另建前端。
+ 
+ ## 操作流程
+ 
+-1. 新任务先选择本地PDF或复用已有论文。本地入口可“选择文件”多选PDF，或“选择文件夹”递归筛选用户电脑文件夹及子文件夹中的PDF（扩展名不区分大小写）；其它文件不上传。复用入口为独立弹窗，默认不选论文，可命名并开始新的单篇任务。当前文件清单按完整PDF字节SHA去重后计数，异名同内容保留一份并提示，同名异内容保持独立；服务端再次核对并复用已有论文/文件，已有重复历史记录不迁并或删除。每批最多20份不同内容、50MiB/篇；超过上限时整次不加入并保留原清单，按提示分批。逐文件串行上传，独立显示成败，可重试失败项或移除未提交项；上传不调用模型。两种入口共用癌种→图像模态两层范围和模型设置，默认不限且均可多选；由手工JSON配置可选关联，空选/失效明确提示并阻止开始，不自动放宽。浏览器不支持目录选择时仍可使用多选文件。
+-2. 点击开始，每篇独立run，沿用2个FIFO槽和原每run预算。首次开始按有效未移除成员数固定“单篇”或“批量”，包含尚可重试的上传失败项；一次提交只有一个可选任务标题：单篇命名本次run，留空使用当次原文件名；批量命名整组，子项显示各自原文件名，留空使用自动批次名。标题独立保存，不修改论文来源标题；上传后至首次开始前仍可编辑。类型、标题、范围和模型配置一起固定，批量局部失败后仅剩1项重试仍显示批量，沿用原名称。历史无任务标题的记录保持既有显示回退，不推断或补写批次标题。统一入口只选1篇及明确复用PDF为单篇。左侧“抽取任务”与“任务与历史”按已提交的一次抽取记录显示：单篇每次一项，批量按原批次分组并可展开到每篇，同一论文重抽独立显示；旧记录未保存类型时标“类型未记录”，不猜测批次。工作台标签切换保留本批；关闭或整页重载不恢复未提交草稿，已上传论文和已提交任务仍持久保留，后台不因此取消。失败/中断保留成果，新建运行从头处理，不自动续跑。手动“刷新工作台”在抽取任务列表与当前内容原位显示灰罩，唯一等待箭头位于可视工作区正中心，忙时隐藏右上按钮图标；实际读取完成后用悬浮提示反馈成功或失败，不推挤布局或重置选择，原PDF和滚动位置保持。
++1. 创建任务先选择本地PDF。本地入口可“选择文件”多选PDF，或“选择文件夹”递归筛选用户电脑文件夹及子文件夹中的PDF（扩展名不区分大小写）；其它文件不上传。当前文件清单按完整PDF字节SHA去重后计数，异名同内容保留一份并提示，同名异内容保持独立；服务端再次核对并复用已有论文/文件，已有重复历史记录不迁并或删除。每批最多20份不同内容、50MiB/篇；超过上限时整次不加入并保留原清单，按提示分批。逐文件串行上传，独立显示成败，可重试失败项或移除未提交项；上传不调用模型。文件与文件夹入口共用癌种→图像模态两层范围和模型设置，默认不限且均可多选；由手工JSON配置可选关联，空选/失效明确提示并阻止开始，不自动放宽。浏览器不支持目录选择时仍可使用多选文件。上传后的PDF保存在服务器；后续存储处理已登记为T1-F02，尚未实现，本轮不清理既有文件。
++2. 点击开始，每篇独立run，沿用2个FIFO槽和原每run预算。首次开始按有效未移除成员数固定“单篇”或“批量”，包含尚可重试的上传失败项；一次提交只有一个可选任务标题：单篇命名本次run，留空使用当次原文件名；批量命名整组，子项显示各自原文件名，留空使用自动批次名。标题独立保存，不修改论文来源标题；上传后至首次开始前仍可编辑。类型、标题、范围和模型配置一起固定，批量局部失败后仅剩1项重试仍显示批量，沿用原名称。历史无任务标题的记录保持既有显示回退，不推断或补写批次标题。去重后仅有1篇有效PDF时为单篇。左侧“抽取任务”与“任务与历史”按已提交的一次抽取记录显示：单篇每次一项，批量按原批次分组并可展开到每篇，同一论文重抽独立显示；旧记录未保存类型时标“类型未记录”，不猜测批次。工作台标签切换保留本批；关闭或整页重载不恢复未提交草稿，已上传论文和已提交任务仍持久保留，后台不因此取消。失败/中断保留成果，新建运行从头处理，不自动续跑。手动“刷新工作台”在抽取任务列表与当前内容原位显示灰罩，唯一等待箭头位于可视工作区正中心，忙时隐藏右上按钮图标；实际读取完成后用悬浮提示反馈成功或失败，不推挤布局或重置选择，原PDF和滚动位置保持。
+ 3. 在“抽取结果”阅读连续原文和明确配图，使用“排除此条”或“恢复保留”取舍。每条描述下显示对应配图状态；明确配对时直接展示整幅Figure和完整原图注，不明确时保留文字，不用独立图片猜配。任务进度分别显示排队、解析、原文处理和汇总核验；已处理块数只代表该阶段，来源缺口和失败/取消/部分结果单独显示。同源成员、来源版本与高级操作集中在“说明”，原片段/指纹和主目标/背景语义保持。
+ 4. 结果默认保留；排除可恢复，旧有效拒绝延续，修改内容不会悄悄恢复。可选来源/标签修订从“说明”进入并记录修订人；日常取舍无需审核人或理由。开发抽样、医学核验与旧评价独立，默认保留不表示医学批准，保留背景仍是背景。
+ 5. 按篇下载“保留结果”JSONL、CSV或证据包，直接包含当前未排除内容，无逐条或整篇确认。常规导出提示保持简短；来源/字形和处理完整性按实际状态披露。PDF缺失或SHA不符仍阻止新抽取与保留结果导出；新任务重新解析原PDF，不因旧run的IR缺失而复用旧结果，已有run读/导出仍保留原来源完整性检查。待核图片不自动获批准。
+--- before/apps/pi-web/e2e/task-identity.mjs
++++ after/apps/pi-web/e2e/task-identity.mjs
+@@ -6,17 +6,18 @@
+ const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+ const origin = 'http://127.0.0.1:30157', backend = 'http://127.0.0.1:3216';
+ const evidence = join(code, 'docs/acceptance/new-task-layout-2026-11-14'), reportPath = join(evidence, 'report.json');
++const item = Number(process.env.T1_EVIDENCE_ITEM ?? '3'), prefix = item === 3 ? 'item3' : 'item2-correction';
+ const runtime = JSON.parse(await readFile(join(code, 'runtime-data/agent-notes/task-identity-ui-runtime.json'), 'utf8'));
+ const result = { status: 'running', origin, isolated_backend: backend, controlled: true, checks: [], errors: [], blocked: [], expected_response_losses: [], screenshots: [], paid_calls: 0, production_business_writes: 0 };
+ process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
+ process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
+ const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
+ const browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
+-const context = await browser.newContext({ locale: 'zh-CN', viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
++const context = await browser.newContext({ locale: 'zh-CN', viewport: { width: 1440, height: 1100 }, reducedMotion: 'reduce', hasTouch: true });
+ await context.addInitScript(expected => { if (location.origin === expected) { localStorage.setItem('pi-locale', 'zh-CN'); localStorage.setItem('pi-theme', 'light'); } }, origin);
+ const requests = [], lost = new Set();
+ async function json(path) { const response = await fetch(backend + '/api/' + path); assert.equal(response.status, 200, path); return response.json(); }
+-async function save() { const report = JSON.parse(await readFile(reportPath, 'utf8')); report.item2.correction.browser = result; await writeFile(reportPath, JSON.stringify(report, null, 2) + '\n'); }
++async function save() { const report = JSON.parse(await readFile(reportPath, 'utf8')); if (item === 3) report.item3.browser = result; else report.item2.correction.browser = result; await writeFile(reportPath, JSON.stringify(report, null, 2) + '\n'); }
+ async function check(name, work) { try { await work(); result.checks.push({ name, status: 'passed' }); console.log('PASS ' + name); } catch (error) { result.checks.push({ name, status: 'failed', error: String(error) }); throw error; } finally { await save(); } }
+ await context.route(/^https?:\/\//, async route => {
+   const request = route.request(), url = new URL(request.url()), path = url.pathname, method = request.method();
+@@ -34,7 +35,7 @@
+     headers: Object.fromEntries(['content-type', 'x-t1-filename', 'x-t1-request-id'].filter(key => headers[key]).map(key => [key, headers[key]])),
+     ...(!['GET', 'HEAD'].includes(method) ? { body: request.postDataBuffer() } : {}) });
+   const bytes = Buffer.from(await response.arrayBuffer());
+-  if (start && response.ok && ['整组任务名称', '复用第一次'].includes(body.task_title) && !lost.has(body.task_title)) {
++  if (start && response.ok && body.task_title === '整组任务名称' && !lost.has(body.task_title)) {
+     lost.add(body.task_title); result.expected_response_losses.push(body.task_title); return route.abort('failed');
+   }
+   return route.fulfill({ status: response.status, contentType: response.headers.get('content-type') ?? 'application/json', body: bytes });
+@@ -43,18 +44,25 @@
+ const page = await context.newPage();
+ const batch = () => page.locator('.t1-batch'), rows = () => page.locator('[data-batch-member]');
+ const title = () => batch().getByLabel('任务标题（可选）', { exact: true });
+-const dialog = () => page.getByRole('dialog', { name: '复用已上传论文', exact: true });
+ const pdf = (name, marker = 'A') => ({ name, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n% UI IDENTITY ' + marker + '\n%%EOF\n') });
+ async function idle() { await page.locator('.t1-batch[aria-busy="false"]').waitFor(); }
+ async function choose(files, count) { await page.getByLabel('选择 PDF', { exact: true }).setInputFiles(files); await page.waitForFunction(n => document.querySelectorAll('[data-batch-member]').length === n && document.querySelector('.t1-batch')?.getAttribute('aria-busy') === 'false', count); }
+ async function createTab() { await page.getByRole('tab', { name: '创建任务', exact: true }).click(); await batch().waitFor(); }
+-async function reuse() { await page.getByRole('button', { name: '复用已上传论文', exact: true }).click(); await dialog().waitFor(); }
+ async function history(query) { await page.getByRole('tab', { name: '任务与历史', exact: true }).click(); await page.getByLabel('搜索任务标题或文件名', { exact: true }).fill(query); }
+ async function menu(run) { await page.locator(`[data-submission-list="history"] [data-run-menu-id="${run.run_id}"]`).click(); await page.getByRole('menu', { name: '任务操作', exact: true }).waitFor(); }
+ try {
+   assert.equal((await json('workbench/capabilities')).controlled_fixture, true);
+   assert.equal((await json('workbench/runs')).runs.length, 0);
+   await page.goto(origin + '/?view=newTask'); await batch().waitFor();
++  assert.equal(await page.locator('.t1-reuse-paper').count(), 0);
++  for (const locale of ['en', 'zh-TW', 'zh-CN']) {
++    await page.locator('.t1-top-actions select').selectOption(locale);
++    assert.equal(await page.locator('.t1-reuse-paper').count(), 0);
++    assert.equal(await page.locator('.t1-task-title-field input').count(), 1);
++    assert.doesNotMatch(await page.locator('.t1-submission-empty').first().innerText(), /existing paper|选择已有论文|選擇既有論文/);
++  }
++  await page.locator('.t1-new-task-panel > .t1-heading').scrollIntoViewIfNeeded();
++  const desktopPath = `${prefix}-desktop.png`; await page.screenshot({ path: join(evidence, desktopPath), fullPage: true }); result.screenshots.push(desktopPath);
+   await check('content_dedup_precedes_quota_and_same_name_different_content_is_retained', async () => {
+     await choose([pdf('same.pdf'), pdf('same.pdf', 'B')], 2);
+     assert.match(await batch().innerText(), /已分别加入/);
+@@ -83,8 +91,6 @@
+     assert.equal(starts.length, 2); assert.equal(new Set(starts.map(request => request.key)).size, 1);
+     const papers = (await json('workbench/papers')).papers;
+     assert.ok(papers.every(paper => !paper.title.includes('整组任务') && !paper.title.includes('草稿')));
+-    await page.locator('.t1-new-task-panel > .t1-heading').scrollIntoViewIfNeeded();
+-    const path = 'item2-correction-desktop.png'; await page.screenshot({ path: join(evidence, path), fullPage: true }); result.screenshots.push(path);
+     await history('整组任务名称');
+     const group = page.locator('[data-submission-list="history"] [data-submission-kind="batch"]');
+     assert.equal(await group.count(), 1);
+@@ -102,38 +108,32 @@
+     assert.ok(single); assert.equal(single.original_filename, 'alias-for-new-task.pdf'); assert.equal(runs.length, 3);
+     assert.equal(single.document_id, runs.find(run => run.original_filename === 'paper-original.pdf').document_id);
+   });
+-  await check('reuse_unknown_response_keeps_retry_identity_then_two_successes_release_title_drafts', async () => {
+-    await reuse(); const field = dialog().getByLabel('任务标题（可选）', { exact: true });
+-    await dialog().getByLabel('选择复用的 PDF', { exact: true }).selectOption(runtime.seed_paper_id); await field.fill('复用第一次');
+-    await dialog().getByRole('button', { name: '为所选 PDF 开始抽取', exact: true }).click(); await dialog().getByRole('alert').waitFor();
+-    assert.equal(await field.isDisabled(), true); assert.equal(await field.inputValue(), '复用第一次');
+-    await page.keyboard.press('Escape'); await reuse(); assert.equal(await field.isDisabled(), true);
+-    const other = (await json('workbench/papers')).papers.find(paper => paper.id !== runtime.seed_paper_id);
+-    await dialog().getByLabel('选择复用的 PDF', { exact: true }).selectOption(other.id); assert.equal(await field.isEnabled(), true);
+-    await dialog().getByLabel('选择复用的 PDF', { exact: true }).selectOption(runtime.seed_paper_id);
+-    await dialog().getByRole('button', { name: '为所选 PDF 开始抽取', exact: true }).click(); await dialog().waitFor({ state: 'hidden' });
+-    await createTab(); await reuse(); assert.equal(await field.isEnabled(), true); assert.equal(await field.inputValue(), '');
+-    await field.fill('复用第二次'); await dialog().getByLabel('选择复用的 PDF', { exact: true }).selectOption(runtime.seed_paper_id);
+-    await dialog().getByRole('button', { name: '为所选 PDF 开始抽取', exact: true }).click(); await dialog().waitFor({ state: 'hidden' });
+-    const runs = (await json('workbench/runs')).runs.filter(run => run.document_id === runtime.seed_paper_id);
+-    assert.deepEqual(runs.map(run => run.task_title).sort(), ['复用第一次', '复用第二次']); assert.notEqual(runs[0].run_id, runs[1].run_id);
+-    const starts = requests.filter(request => request.operation === 'start' && request.title === '复用第一次'); assert.equal(starts.length, 2); assert.equal(new Set(starts.map(request => request.key)).size, 1);
+-    assert.equal((await json('workbench/papers')).papers.find(paper => paper.id === runtime.seed_paper_id).title, 'Source identity untouched');
+-  });
+   await check('task_navigation_search_picker_menu_cancel_and_delete_confirmation_use_task_identity_on_desktop_and_mobile', async () => {
+-    const run = (await json('workbench/runs')).runs.find(run => run.task_title === '复用第二次');
+-    assert.equal(await page.locator('.t1-workspace-bar > span').innerText(), '复用第二次');
+-    await page.locator('.t1-task-picker > summary').click(); assert.match(await page.getByLabel('任务', { exact: true }).innerText(), /复用第一次/); assert.match(await page.getByLabel('任务', { exact: true }).innerText(), /复用第二次/);
+-    await history('复用第二次'); assert.equal(await page.locator('[data-submission-list="history"] [data-run-row]').count(), 1);
+-    await menu(run); assert.match(await page.getByRole('menu', { name: '任务操作', exact: true }).innerText(), /复用第二次/);
+-    await page.getByRole('menuitem', { name: '取消此任务', exact: true }).click(); await page.locator('.t1-task-toast[aria-busy="false"]').waitFor(); assert.match(await page.locator('.t1-task-toast').innerText(), /复用第二次/);
++    const run = (await json('workbench/runs')).runs.find(run => run.task_title === '同文件新任务');
++    await batch().getByRole('button', { name: '查看任务／结果', exact: true }).click();
++    assert.equal(await page.locator('.t1-workspace-bar > span').innerText(), '同文件新任务');
++    await page.locator('.t1-task-picker > summary').click(); assert.match(await page.getByLabel('任务', { exact: true }).innerText(), /整组任务名称/); assert.match(await page.getByLabel('任务', { exact: true }).innerText(), /同文件新任务/);
++    await history('同文件新任务'); assert.equal(await page.locator('[data-submission-list="history"] [data-run-row]').count(), 1);
++    await menu(run); assert.match(await page.getByRole('menu', { name: '任务操作', exact: true }).innerText(), /同文件新任务/);
++    assert.equal(await page.getByRole('menuitem', { name: '再次抽取', exact: true }).count(), 0);
++    assert.equal(await page.getByRole('menuitem', { name: '查看这次抽取', exact: true }).count(), 1);
++    assert.equal(await page.getByRole('menuitem', { name: '删除这次抽取记录', exact: true }).count(), 1);
++    await page.getByRole('menuitem', { name: '取消此任务', exact: true }).click(); await page.locator('.t1-task-toast[aria-busy="false"]').waitFor(); assert.match(await page.locator('.t1-task-toast').innerText(), /同文件新任务/);
++    await page.locator('.t1-task-toast .t1-refresh-dismiss').click();
+     await menu(run); await page.getByRole('menuitem', { name: '删除这次抽取记录', exact: true }).click();
+-    const deletion = page.locator('.t1-delete-dialog[open]'); await deletion.waitFor(); assert.match(await deletion.locator('.t1-delete-target').innerText(), /复用第二次/); await page.keyboard.press('Escape');
+-    await page.setViewportSize({ width: 390, height: 844 }); await createTab(); await reuse();
+-    const field = dialog().getByLabel('任务标题（可选）', { exact: true }); assert.equal(await field.isEnabled(), true); await field.fill('手机任务草稿');
++    const deletion = page.locator('.t1-delete-dialog[open]'); await deletion.waitFor(); assert.match(await deletion.locator('.t1-delete-target').innerText(), /同文件新任务/); await page.keyboard.press('Escape');
++    await page.setViewportSize({ width: 390, height: 844 }); await createTab(); await batch().getByRole('button', { name: '清空本次选择', exact: true }).click();
++    assert.equal(await page.locator('.t1-reuse-paper').count(), 0);
++    const field = title(); assert.equal(await field.isEnabled(), true); await field.fill('手机任务草稿');
+     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+-    const path = 'item2-correction-mobile.png'; await page.screenshot({ path: join(evidence, path), fullPage: true }); result.screenshots.push(path);
+-    await page.keyboard.press('Escape'); assert.equal((await json('workbench/runs')).runs.length, 5); assert.equal((await json('workbench/papers')).papers.length, 3);
++    await history('同文件新任务');
++    await page.locator(`[data-submission-list="history"] [data-run-menu-id="${run.run_id}"]`).tap();
++    const mobileMenu = page.getByRole('dialog', { name: '任务操作', exact: true }); await mobileMenu.waitFor();
++    assert.equal(await page.getByRole('menuitem', { name: '再次抽取', exact: true }).count(), 0);
++    assert.equal(await page.getByRole('menuitem', { name: '查看这次抽取', exact: true }).count(), 1);
++    const path = `${prefix}-mobile.png`; await page.screenshot({ path: join(evidence, path), fullPage: true }); result.screenshots.push(path);
++    await page.keyboard.press('Escape');
++    assert.equal((await json('workbench/runs')).runs.length, 3); assert.equal((await json('workbench/papers')).papers.length, 3);
+   });
+   assert.deepEqual(result.errors, []); assert.deepEqual(result.blocked, []); result.status = 'passed'; result.request_counts = { uploads: requests.filter(request => request.operation === 'upload').length, starts: requests.filter(request => request.operation === 'start').length };
+ } catch (error) { result.status = 'failed'; result.failure = error.stack ?? String(error); throw error; }
+--- before/apps/pi-web/e2e/task-records.mjs
++++ after/apps/pi-web/e2e/task-records.mjs
+@@ -120,14 +120,11 @@
+     await page.getByRole('tab', { name: '创建任务', exact: true }).click(); await page.locator('.t1-model-selection').waitFor(); assert.equal(await page.getByRole('button', { name: '选择文件', exact: true }).count(), 1); assert.equal(await page.getByRole('button', { name: '选择文件夹', exact: true }).count(), 1);
+     assert.ok((await page.locator('.t1-model-selection').textContent()).includes('gpt-6-luna')); await page.getByRole('tab', { name: '抽取结果', exact: true }).click();
+   });
+-  await check('last_run_delete_opens_empty_new_task_and_explicit_pdf_reuse_creates_an_independent_run', async () => {
++  await check('last_run_delete_opens_new_task_with_only_local_file_creation', async () => {
+     await select(ids.last).click(); await page.waitForURL(url => url.searchParams.get('run') === ids.last); await confirmFor(ids.last); await dialog().getByRole('button', { name: '确认删除这次记录', exact: true }).click();
+     await page.waitForURL(url => url.searchParams.get('view') === 'newTask' && !url.searchParams.has('run'));
+-    const picker = page.getByRole('combobox', { name: '选择复用的 PDF', exact: true });
+-    assert.equal(await picker.inputValue(), ''); assert.equal(await page.locator('.t1-start').isDisabled(), true); assert.equal(await select(ids.last).count(), 0);
+-    await page.locator('.t1-reuse-paper > summary').click(); await picker.selectOption(runtime.papers.last);
+-    await page.locator('.t1-start').click(); await page.waitForURL(url => url.searchParams.get('run') && url.searchParams.get('run') !== ids.last); await page.locator('.t1-evidence-card').waitFor();
+-    const id = new URL(page.url()).searchParams.get('run'); assert.equal((await json('runs')).runs.find(run => run.run_id === id).submission.kind, 'single');
++    assert.equal(await page.locator('.t1-reuse-paper').count(), 0); assert.equal(await page.locator('.t1-batch-actions .t1-primary').isDisabled(), true); assert.equal(await select(ids.last).count(), 0);
++    assert.equal(await page.getByLabel('选择 PDF', { exact: true }).count(), 1);
+   });
+   await check('mobile_batch_expansion_exact_menu_confirmation_and_layout_are_usable', async () => {
+     await page.setViewportSize({ width: 390, height: 844 }); await page.locator('.t1-sidebar').waitFor({ state: 'detached' }); await page.getByRole('button', { name: '切换任务导航', exact: true }).click();
+--- before/apps/pi-web/e2e/two-layer-catalog.mjs
++++ after/apps/pi-web/e2e/two-layer-catalog.mjs
+@@ -107,7 +107,7 @@
+     assert.equal(await page.locator('.t1-refresh-toast[data-failed="true"]').count(), 1);
+     await page.goto(origin + '/?view=newTask'); await page.getByRole('alert').filter({ hasText: '范围配置' }).waitFor();
+     assert.ok(await page.locator('[data-submission-list="sidebar"] [data-run-id]').count() >= 4); assert.equal(await scopeEditor().count(), 0);
+-    assert.equal(await page.locator('.t1-start').isDisabled(), true);
++    assert.equal(await page.locator('.t1-batch-actions .t1-primary').isDisabled(), true);
+     await page.goto(origin + '/?' + new URLSearchParams({ paper: runtime.paper, run: runtime.run, view: 'records' })); await page.locator('.t1-evidence-card').waitFor();
+     await edit(original); await refresh(); await page.getByRole('tab', { name: '创建任务', exact: true }).click(); await scopeEditor().waitFor();
+     assert.equal(await scopeEditor().locator('fieldset').count(), 2);
+--- before/apps/pi-web/e2e/ui-model-switch.mjs
++++ after/apps/pi-web/e2e/ui-model-switch.mjs
+@@ -72,7 +72,7 @@
+   });
+   await check('batch_start_freezes_model_with_scope_and_submission_across_lost_response_and_switch', async () => {
+     await choose('gpt-6-luna');
+-    await page.locator('.t1-batch input[type="file"]').first().setInputFiles(['one.pdf', 'two.pdf'].map(name => ({ name, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n% MODEL UI ENGINEERING STUB\n%%EOF\n') })));
++    await page.locator('.t1-batch input[type="file"]').first().setInputFiles(['one.pdf', 'two.pdf'].map(name => ({ name, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n% MODEL UI ENGINEERING STUB ' + name + '\n%%EOF\n') })));
+     await page.getByRole('button', { name: '上传待处理 PDF（2 篇）', exact: true }).click(); await idle();
+     const added = (await json('workbench/papers')).papers.filter(paper => paper.uploaded);
+     for (const paper of added) assert.equal(await page.locator(`[data-paper-id="${paper.id}"] [data-task-kind]`).count(), 0);
+@@ -85,21 +85,10 @@
+     assert.equal(await page.locator('[data-batch-model]').getAttribute('data-batch-model'), initial.profile_id); await noScatteredBadges();
+     report.browser.batch_model_frozen = initial.profile_id;
+   });
+-  await check('single_start_keys_change_with_model_and_original_lost_submission_replays_once', async () => {
+-    await page.locator('.t1-reuse-paper > summary').click(); await page.getByLabel('选择复用的 PDF', { exact: true }).selectOption('L01'); const before = submissions.length;
+-    loseNextStart = true; await page.locator('.t1-start').click(); await page.locator('.t1-start:not([disabled])').waitFor();
+-    const lost = submissions[before]; assert.equal(lost.model_profile_id, custom.profile_id);
+-    await choose('gpt-6-luna'); await page.locator('.t1-start').click(); await page.locator('.t1-content[data-view="records"]').waitFor();
+-    const changed = submissions.at(-1); assert.notEqual(changed.key, lost.key); assert.equal(changed.model_profile_id, initial.profile_id);
+-    await newTask(); await choose('gpt-4.1-mini'); await page.locator('.t1-reuse-paper > summary').click(); await page.getByLabel('选择复用的 PDF', { exact: true }).selectOption('L01'); await page.locator('.t1-start').click(); await page.locator('.t1-content[data-view="records"]').waitFor();
+-    assert.equal(submissions.at(-1).key, lost.key); const run = (await json('workbench/runs')).runs.find(run => run.document_id === 'L01' && run.model_profile?.profile_id === custom.profile_id);
+-    assert.equal(await page.locator('.t1-task-picker select').inputValue(), 'run:' + run.run_id);
+-    await page.getByRole('button', { name: '说明', exact: true }).click(); await page.locator('.t1-notes [data-run-model="gpt-4.1-mini"]').waitFor(); await page.getByRole('button', { name: '关闭说明', exact: true }).click(); await noScatteredBadges();
+-  });
+   await check('unavailable_remembered_profile_requires_reselection_and_disables_start', async () => {
+     await page.evaluate(() => localStorage.setItem('t1:extraction-model-profile', 'model-' + 'f'.repeat(32))); await page.reload(); await newTask();
+-    await page.getByText('原选择的模型不可用，请重新选择后再开始新任务。', { exact: true }).waitFor(); assert.equal(await page.locator('.t1-start').isDisabled(), true);
+-    await choose('gpt-6-luna'); assert.equal(await page.locator('.t1-start').isDisabled(), true); await page.locator('.t1-reuse-paper > summary').click(); await page.getByLabel('选择复用的 PDF', { exact: true }).selectOption('L01'); assert.equal(await page.locator('.t1-start').isEnabled(), true);
++    await page.getByText('原选择的模型不可用，请重新选择后再开始新任务。', { exact: true }).waitFor(); assert.equal(await page.locator('.t1-batch-actions .t1-primary').isDisabled(), true);
++    await choose('gpt-6-luna'); assert.equal(await page.locator('.t1-batch-actions .t1-primary').isDisabled(), true); await page.locator('.t1-batch input[type="file"]').first().setInputFiles({ name: 'available-model.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n% AVAILABLE MODEL\n%%EOF\n') }); await page.locator('[data-batch-member]').waitFor(); await page.getByRole('button', { name: '上传待处理 PDF（1 篇）', exact: true }).click(); await idle(); assert.equal(await page.locator('.t1-batch-actions .t1-primary').isEnabled(), true);
+   });
+   await check('mobile_model_picker_and_advanced_form_fit_without_scattered_type_badges', async () => {
+     await page.setViewportSize({ width: 390, height: 844 }); await page.locator('.t1-model-selection').waitFor(); await page.getByRole('button', { name: '抽取模型', exact: true }).click();
+--- before/apps/pi-web/e2e/workbench-experience-readonly.mjs
++++ after/apps/pi-web/e2e/workbench-experience-readonly.mjs
+@@ -62,10 +62,10 @@
+     assert.equal(await page.getByRole('button', { name: /批准/ }).count(), 0); await shot('live-linked-figure-desktop.png');
+     await page.setViewportSize({ width: 390, height: 844 }); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true); await shot('live-linked-figure-mobile.png'); await page.setViewportSize({ width: 1440, height: 1000 });
+   });
+-  await check('real_new_task_has_empty_reuse_two_scope_layers_and_existing_model_controls', async () => {
++  await check('real_new_task_has_only_local_creation_two_scope_layers_and_existing_model_controls', async () => {
+     if (!(await page.locator('.t1-new-task').isVisible())) await page.getByRole('button', { name: '切换任务导航', exact: true }).click();
+     await page.locator('.t1-new-task').click(); await page.locator('.t1-scope-editor').waitFor(); assert.equal(await page.locator('.t1-scope-editor fieldset').count(), 2);
+-    assert.equal(await page.getByLabel('视觉特征', { exact: true }).count(), 0); assert.equal(await page.locator('.t1-reuse-paper').getAttribute('open'), null); assert.equal(await page.getByLabel('选择复用的 PDF', { exact: true }).inputValue(), ''); assert.equal(await page.locator('.t1-start').isDisabled(), true);
++    assert.equal(await page.getByLabel('视觉特征', { exact: true }).count(), 0); assert.equal(await page.locator('.t1-reuse-paper').count(), 0); assert.equal(await page.locator('.t1-batch-actions .t1-primary').isDisabled(), true);
+     assert.equal(await page.locator('.t1-model-selection').count(), 1); const models = await json('models'), configured = models.profiles.find(profile => profile.profile_id === models.default_profile_id); assert.ok(configured); assert.ok((await page.getByRole('button', { name: '抽取模型', exact: true }).innerText()).includes(configured.model_id));
+     assert.equal(await page.getByRole('button', { name: '选择文件', exact: true }).count(), 1); assert.equal(await page.getByRole('button', { name: '选择文件夹', exact: true }).count(), 1); await shot('live-new-task-desktop.png');
+     await page.setViewportSize({ width: 390, height: 844 }); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true); await shot('live-new-task-mobile.png');
+--- before/apps/pi-web/e2e/workbench-experience.mjs
++++ after/apps/pi-web/e2e/workbench-experience.mjs
+@@ -19,7 +19,7 @@
+ const browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
+ const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN', reducedMotion: 'reduce' });
+ await context.addInitScript(expected => { if (location.origin === expected) { localStorage.setItem('pi-locale', 'zh-CN'); localStorage.setItem('pi-theme', 'light'); } }, origin);
+-let projectedDetail = null, projectedEvents = [], duplicateChoices = false, loseNextStart = false;
++let projectedDetail = null, projectedEvents = [], loseNextStart = false;
+ const deleteAllowlist = new Set();
+ await context.route(/^https?:\/\//, async route => {
+   const request = route.request(), url = new URL(request.url()), method = request.method();
+@@ -40,10 +40,6 @@
+   }
+   if (method === 'GET' && projectedDetail && url.pathname.endsWith('/runs/' + runtime.run)) return route.fulfill({ json: projectedDetail });
+   if (method === 'GET' && projectedDetail && url.pathname.endsWith('/runs/' + runtime.run + '/events')) return route.fulfill({ contentType: 'text/event-stream', body: projectedEvents.map((event, index) => `data: ${JSON.stringify({ run_id: runtime.run, seq: index + 1, timestamp: new Date().toISOString(), ...event })}\n\n`).join('') });
+-  if (method === 'GET' && duplicateChoices && url.pathname.endsWith('/workbench/papers')) {
+-    const response = await route.fetch(), value = await response.json(), paper = value.papers.find(item => item.id === runtime.paper);
+-    return route.fulfill({ json: { papers: [...value.papers, { ...paper, id: 'engineering-same-bytes-alias', title: 'Engineering renamed duplicate' }, { ...paper, id: 'engineering-same-title-different-bytes', sha256: 'f'.repeat(64) }] } });
+-  }
+   return route.continue();
+ });
+ const page = await context.newPage(); page.setDefaultTimeout(20000); page.on('pageerror', error => result.errors.push(String(error)));
+@@ -51,8 +47,7 @@
+ const check = async (name, action) => { await action(); result.checks.push(name); console.log('PASS ' + name); };
+ const persist = () => writeFile(join(evidence, 'ui.json'), JSON.stringify(result, null, 2) + '\n');
+ const batch = () => page.locator('.t1-batch'), idle = () => page.locator('.t1-batch[aria-busy="false"]').waitFor();
+-const scope = () => page.locator('.t1-scope-editor'), reuse = () => page.locator('.t1-reuse-paper');
+-const picker = () => page.getByLabel('选择复用的 PDF', { exact: true });
++const scope = () => page.locator('.t1-scope-editor');
+ const sidebarRow = id => page.locator(`[data-submission-list="sidebar"] [data-run-id="${id}"]`);
+ const newTask = async () => { await page.goto(origin + '/?view=newTask'); await scope().waitFor(); };
+ const openRun = async id => { await page.goto(origin + '/?' + new URLSearchParams({ run: id, view: 'records' })); await page.locator('.t1-evidence-card').waitFor(); };
+@@ -78,18 +73,11 @@
+ }
+ async function showProjection(state, options) { project(state, options); await openRun(runtime.run); await page.locator('.t1-run-progress').waitFor(); }
+ try {
+-  await check('new_task_has_one_upload_flow_two_scope_layers_and_no_preselected_reuse', async () => {
+-    await newTask(); assert.equal(await scope().locator('fieldset').count(), 2); assert.equal(await reuse().getAttribute('open'), null); assert.equal(await picker().inputValue(), '');
+-    assert.equal(await page.locator('.t1-start').isDisabled(), true); assert.equal(await page.getByText('按上方范围为单篇另开任务', { exact: true }).count(), 0);
++  await check('new_task_has_one_local_upload_flow_two_scope_layers_and_no_explicit_reuse', async () => {
++    await newTask(); assert.equal(await scope().locator('fieldset').count(), 2); assert.equal(await page.locator('.t1-reuse-paper').count(), 0);
++    assert.equal(await page.locator('.t1-batch-actions .t1-primary').isDisabled(), true); assert.equal(await page.getByText('按上方范围为单篇另开任务', { exact: true }).count(), 0);
+     assert.equal(await page.getByText('本次任务论文', { exact: true }).count(), 0); assert.equal(await batch().getByRole('button', { name: '选择文件', exact: true }).count(), 1); assert.equal(await batch().getByRole('button', { name: '选择文件夹', exact: true }).count(), 1);
+     await shot('new-task-desktop.png');
+-  });
+-  await check('identical_pdf_choices_are_grouped_without_merging_same_title_different_bytes', async () => {
+-    duplicateChoices = true; await newTask(); await reuse().locator('> summary').click();
+-    assert.equal(await picker().locator('option[value="engineering-same-bytes-alias"]').count(), 0);
+-    assert.equal(await picker().locator('option[value="engineering-same-title-different-bytes"]').count(), 1);
+-    assert.ok((await picker().locator('option').allTextContents()).some(text => text.includes('同一 PDF')));
+-    assert.equal(await picker().inputValue(), ''); duplicateChoices = false;
+   });
+   await check('single_upload_and_clear_selection_keep_paper_and_tasks_without_creating_a_run', async () => {
+     await newTask(); const before = (await json('runs')).runs.length, papersBefore = (await json('papers')).papers.length;
+@@ -126,20 +114,6 @@
+       assert.deepEqual((await json('runs/' + frozenRun.run_id)).run.scope_catalog, before.scope_catalog); assert.deepEqual((await json('runs/' + admitted.run_id)).run.scope_catalog, saved.scope_catalog);
+       await batch().getByRole('button', { name: '清空本次选择', exact: true }).click();
+     } finally { await writeFile(configPath, original); }
+-  });
+-  await check('task_menu_repeat_selects_exact_pdf_while_blank_new_task_resets_reuse_only', async () => {
+-    await openRun(runtime.run); const before = result.submissions.length; await menu(runtime.run, '再次抽取'); await reuse().waitFor();
+-    assert.equal(await reuse().getAttribute('open'), ''); assert.equal(await picker().inputValue(), runtime.paper); assert.equal(result.submissions.length, before);
+-    await page.locator('.t1-new-task').click(); assert.equal(await picker().inputValue(), ''); assert.equal(await reuse().getAttribute('open'), null); assert.equal(await page.locator('.t1-start').isDisabled(), true);
+-  });
+-  await check('explicit_reuse_creates_single_task_and_last_task_delete_returns_to_empty_reuse', async () => {
+-    await uploadFiles(['engineering-reuse-only.pdf']); const uploaded = (await json('papers')).papers.find(paper => paper.title === 'engineering-reuse-only.pdf'); assert.ok(uploaded);
+-    await batch().getByRole('button', { name: '清空本次选择', exact: true }).click(); await reuse().locator('> summary').click(); await picker().selectOption(uploaded.id); await page.locator('.t1-start').click();
+-    await page.waitForURL(url => url.searchParams.get('view') === 'records' && url.searchParams.has('run')); await page.locator('.t1-evidence-card').waitFor(); const id = new URL(page.url()).searchParams.get('run');
+-    assert.equal((await json('runs')).runs.find(run => run.run_id === id).submission.kind, 'single'); deleteAllowlist.add(id);
+-    await menu(id, '删除这次抽取记录'); await page.getByRole('dialog', { name: '删除这次抽取记录', exact: true }).getByRole('button', { name: '确认删除这次记录', exact: true }).click();
+-    await page.waitForURL(url => url.searchParams.get('view') === 'newTask' && !url.searchParams.has('run')); assert.equal(await picker().inputValue(), ''); assert.equal(await reuse().getAttribute('open'), null);
+-    assert.equal((await json('papers')).papers.some(paper => paper.id === uploaded.id), true); assert.equal(await sidebarRow(id).count(), 0);
+   });
+   await check('queued_and_pdf_figure_discovery_show_indeterminate_stages', async () => {
+     await showProjection('queued'); assert.equal(await page.getByRole('progressbar').getAttribute('aria-valuenow'), null); await page.getByText(/已排队/).waitFor();
+@@ -191,7 +165,7 @@
+   await check('asset_load_failure_is_explicit_and_mobile_new_task_stays_within_viewport', async () => {
+     project('partial'); const figure = projectedDetail.figures.find(item => item.assets.length); figure.assets[0].url = '/t1-engineering-missing-image.png'; projectedDetail.output.records[0].association = 'paired'; projectedDetail.output.records[0].figure_ids = [figure.id]; await openRun(runtime.run); await page.getByRole('button', { name: /查看对应配图/ }).click();
+     await page.getByText('暂未取得可用的整幅原图，请查看原 PDF。', { exact: true }).waitFor();
+-    projectedDetail = null; await page.setViewportSize({ width: 390, height: 844 }); await newTask(); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true); assert.equal(await reuse().getAttribute('open'), null); assert.equal(await picker().inputValue(), ''); await shot('new-task-mobile.png');
++    projectedDetail = null; await page.setViewportSize({ width: 390, height: 844 }); await newTask(); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true); assert.equal(await page.locator('.t1-reuse-paper').count(), 0); await shot('new-task-mobile.png');
+   });
+   assert.deepEqual(result.errors, []); assert.deepEqual(result.blocked, []); result.status = 'passed';
+ } catch (error) { result.status = 'failed'; result.failure = String(error?.stack ?? error); await page.screenshot({ path: join(evidence, 'ui-browser-failure.png') }).catch(() => {}); throw error; }
+--- before/apps/pi-web/t1/RunTaskMenu.tsx
++++ after/apps/pi-web/t1/RunTaskMenu.tsx
+@@ -1,24 +1,23 @@
+ "use client";
+ 
+ import { SidebarMenu, type SidebarMenuAnchor, type SidebarMenuItem } from "@/components/SidebarMenu";
+-import { CloseIcon, MessageIcon, RefreshIcon, TrashIcon } from "@/components/SidebarIcons";
++import { CloseIcon, MessageIcon, TrashIcon } from "@/components/SidebarIcons";
+ import { useI18n } from "@/hooks/useI18n";
+ import type { WorkbenchPaper, WorkbenchRun } from "../../../packages/contracts/src/workbench";
+ import { canCancelRun } from "./task-actions";
+ import { taskDisplayTitle } from "./task-titles";
+ 
+ export interface RunTaskMenuState { runId: string; paperId: string; anchor: SidebarMenuAnchor; opener: HTMLButtonElement }
+-export function RunTaskMenu({ menu, run, paper, cancelling, mobile, onClose, onCancel, onView, onRepeat, onDelete }: {
++export function RunTaskMenu({ menu, run, paper, cancelling, mobile, onClose, onCancel, onView, onDelete }: {
+   menu: RunTaskMenuState | null; run?: WorkbenchRun; paper?: WorkbenchPaper;
+   cancelling: ReadonlySet<string>; mobile: boolean; onClose(): void;
+-  onCancel(run: WorkbenchRun): void; onView(run: WorkbenchRun): void; onRepeat(paper: WorkbenchPaper): void; onDelete(run: WorkbenchRun, opener?: HTMLButtonElement): void;
++  onCancel(run: WorkbenchRun): void; onView(run: WorkbenchRun): void; onDelete(run: WorkbenchRun, opener?: HTMLButtonElement): void;
+ }) {
+   const { t, locale } = useI18n();
+   const items: SidebarMenuItem[] = [
+     { type: "header", id: "title", label: run ? taskDisplayTitle(run, paper) : t("t1.task") },
+     { type: "custom", id: "identity", content: <p className="t1-task-menu-identity">{run?.created_at ? new Date(run.created_at).toLocaleString(locale) : t("t1.timeUnrecorded")}<br />{run?.model_id ?? t("t1.modelUnrecorded")} · #{run?.run_id.slice(-8)}</p> },
+     { type: "item", id: "view", label: t("t1.viewExtraction"), icon: <MessageIcon size={14} />, disabled: !run, onSelect: () => { if (run) onView(run); } },
+-    { type: "item", id: "repeat", label: t("t1.repeatExtraction"), icon: <RefreshIcon size={14} />, disabled: !paper, onSelect: () => { if (paper) onRepeat(paper); } },
+     ...(run && canCancelRun(run) ? [{ type: "item" as const, id: "cancel", label: t(cancelling.has(run.run_id) ? "t1.cancelling" : "t1.cancel"), icon: <CloseIcon size={14} />, disabled: cancelling.has(run.run_id), onSelect: () => onCancel(run) }] : []),
+     { type: "separator", id: "delete-separator" },
+     { type: "item", id: "delete", label: t("t1.deleteRun"), icon: <TrashIcon size={14} />, danger: true, disabled: !run, onSelect: () => { if (run) onDelete(run, menu?.opener); } },
+--- before/apps/pi-web/t1/T1Workbench.tsx
++++ after/apps/pi-web/t1/T1Workbench.tsx
+@@ -17,7 +17,7 @@
+ import { useRunEvents } from "./useRunEvents";
+ import { api, jsonBody, request, WorkbenchError } from "./api";
+ import { ScopeSummary } from "./ScopeEditor";
+-import { refreshDraftScope, scopeProblems, type ScopeCatalog } from "./scope";
++import { refreshDraftScope, type ScopeCatalog } from "./scope";
+ import { FigureView, Fragments } from "./EvidenceSource";
+ import { RecordRetention } from "./RecordRetention";
+ import { SourceEditor } from "./SourceEditor";
+@@ -35,7 +35,6 @@
+ import { canCancelRun, cancellationResult } from "./task-actions";
+ import { runPresentation } from "./run-presentation";
+ import { initialWorkbenchSelection, resultRunForPaper } from "./result-navigation";
+-import { choicePaper, groupPaperChoices } from "./paper-choices";
+ import type { Scope } from "../../../packages/contracts/src/index";
+ import type { WorkbenchCapabilities, WorkbenchExportKind, WorkbenchPaper, WorkbenchPaperDetail, WorkbenchRun, WorkbenchRunDetail, WorkbenchScopeCatalog, WorkbenchModels } from "../../../packages/contracts/src/workbench";
+ 
+@@ -69,10 +68,7 @@
+   const [taskMenu, setTaskMenu] = useState<RunTaskMenuState | null>(null), [cancelling, setCancelling] = useState<ReadonlySet<string>>(new Set());
+   const cancellingRef = useRef(new Set<string>());
+   const [taskNotice, setTaskNotice] = useState<{ id: string; busy: boolean; failed: boolean; text: string } | null>(null);
+-  const [starting, setStarting] = useState(false), [actionError, setActionError] = useState("");
+-  const [reuseOpen, setReuseOpen] = useState(false), [reusePaperId, setReusePaperId] = useState("");
+-  const [reuseTaskTitle, setReuseTaskTitle] = useState(""), [reuseFrozenTitle, setReuseFrozenTitle] = useState<string | null>(null), [taskQuery, setTaskQuery] = useState("");
+-  const startingRef = useRef(false), startRequests = useRef(new Map<string, string>());
++  const [actionError, setActionError] = useState(""), [taskQuery, setTaskQuery] = useState("");
+   const [restoreFile, setRestoreFile] = useState<File | null>(null), [restoreBusy, setRestoreBusy] = useState(false);
+   const [deleteTarget, setDeleteTarget] = useState<RunDeleteTarget | null>(null), [deleteBusy, setDeleteBusy] = useState(false), [deleteError, setDeleteError] = useState("");
+   const [cleanupTarget, setCleanupTarget] = useState<RunDeleteTarget | null>(null);
+@@ -120,7 +116,6 @@
+   const units = currentRun?.source_units ?? currentPaper?.source_units ?? [];
+   const editable = Boolean(runId && currentRun && capabilities?.persisted_review);
+   const paperRuns = runs.filter(run => run.document_id === paperId);
+-  const reuseChoices = groupPaperChoices(papers);
+   const pairedFigures = record?.association === "paired" ? figures.filter(figure => record.figure_ids.includes(figure.id)) : [];
+ 
+   useEffect(() => {
+@@ -173,8 +168,7 @@
+   const currentErrorText = useRef(errorText);
+   useEffect(() => { currentErrorText.current = errorText; });
+   function openTab(id: string) { setTabIds(current => current.includes(id) ? current : [...current, id]); setActiveTab(id); }
+-  function newTask() { setReuseOpen(false); setReusePaperId(""); setReuseTaskTitle(""); setReuseFrozenTitle(null); setShowSource(false); setActionError(""); openTab("newTask"); if (mobile) setShowSidebar(false); }
+-  function repeatExtraction(paper: WorkbenchPaper) { setReusePaperId(paper.id); setReuseTaskTitle(""); setReuseFrozenTitle(null); setReuseOpen(true); setShowSource(false); setActionError(""); openTab("newTask"); if (mobile) setShowSidebar(false); }
++  function newTask() { setShowSource(false); setActionError(""); openTab("newTask"); if (mobile) setShowSidebar(false); }
+   function chooseModel(id: string) { setModelProfileId(id); try { localStorage.setItem("t1:extraction-model-profile", id); } catch { /* In-memory selection still works. */ } }
+   function selectRun(run: WorkbenchRun) {
+     if (deletedRuns.current.has(run.run_id)) return;
+@@ -324,20 +318,6 @@
+   }, []);
+ 
+ 
+-  async function startRun() {
+-    if (startingRef.current || !reusePaperId || !papers.some(paper => paper.id === reusePaperId) || !scope || !catalog || invalidModel || scopeProblems(scope, catalog).length) return;
+-    if (reuseTaskTitle.length > 500 || /[\x00-\x1f]/.test(reuseTaskTitle)) { setActionError(t("t1.invalidTaskTitle")); return; }
+-    startingRef.current = true;
+-    const title = reuseFrozenTitle ?? reuseTaskTitle.trim(); setReuseFrozenTitle(title);
+-    const request = `${reusePaperId}:${JSON.stringify(scope)}:${selectedModel?.profile_id ?? ""}:${JSON.stringify(title)}`;
+-    const key = startRequests.current.get(request) ?? crypto.randomUUID(); startRequests.current.set(request, key);
+-    setStarting(true); setActionError("");
+-    try {
+-      const value = await api<{ run: WorkbenchRun }>(`workbench/papers/${encodeURIComponent(reusePaperId)}/runs`, { ...jsonBody("POST", { scope, submission: { kind: "single" }, ...(selectedModel ? { model_profile_id: selectedModel.profile_id } : {}), ...(title ? { task_title: title } : {}) }), headers: { "content-type": "application/json", "x-t1-request-id": key } });
+-      startRequests.current.delete(request);
+-      setReuseOpen(false); setReuseTaskTitle(""); setReuseFrozenTitle(null); selectRun(value.run); refresh();
+-    } catch (cause) { setActionError(`${errorText(cause)} ${t("t1.batchRetrySafe")}`); } finally { startingRef.current = false; setStarting(false); }
+-  }
+   async function cancelRun(id: string) {
+     if (cancellingRef.current.has(id)) return;
+     cancellingRef.current.add(id); setCancelling(new Set(cancellingRef.current));
+@@ -441,7 +421,7 @@
+         <div className="t1-content-region" aria-busy={refreshing}><div className="t1-content" data-view={activeTab} data-source-blocked={sourceBlocked}>
+           {loading && <p className="t1-status" role="status">{t("t1.loading")}</p>}
+           {error && <div className="t1-alert" role="alert">{error}<button onClick={refresh}>{t("t1.retry")}</button></div>}
+-          {actionError && !reuseOpen && <div className="t1-alert" role="alert">{actionError}</div>}
++          {actionError && <div className="t1-alert" role="alert">{actionError}</div>}
+           {detailError && activeTab !== "newTask" && <div className="t1-alert" role="alert">{detailError}<button onClick={refresh}>{t("t1.retry")}</button></div>}
+           {sourceBlocked && activeTab !== "newTask" && <div className="t1-alert" role="alert">{t("t1.sourceProblem")}{[...new Set(sourceIssues.map(sourceIssueText))].map((issue, i) => <p key={i}>{issue}</p>)}<details><summary>{t("t1.sourceVersion")}</summary>{sourceIssues.join(" · ")}</details></div>}
+           {sourceBlocked && activeTab !== "newTask" && paper && <section className="t1-source-recovery"><p>{t("t1.restoreHelp")}</p><label className="t1-field">{t("t1.selectRestorePdf")}<input type="file" accept="application/pdf,.pdf" aria-label={t("t1.selectRestorePdf")} onChange={e => setRestoreFile(e.target.files?.[0] ?? null)} /></label><button className="t1-primary" disabled={!restoreFile || restoreBusy} onClick={() => void restoreOriginal()}>{t("t1.restorePdf")}</button></section>}
+@@ -456,19 +436,6 @@
+               </section> : undefined}
+               onUploaded={paper => { setPapers(current => [paper, ...current.filter(item => item.id !== paper.id)]); }}
+               onStarted={run => setRuns(current => [run, ...current.filter(item => item.run_id !== run.run_id)])} onView={selectRun} />
+-            <button type="button" className="t1-reuse-paper" aria-haspopup="dialog" aria-expanded={reuseOpen} onClick={() => setReuseOpen(true)}>{t("t1.reusePaper")}<ChevronIcon size={14} /></button>
+-            <WorkbenchNotes variant="creation" open={reuseOpen && activeTab === "newTask"} title={t("t1.reusePaper")} busy={starting} onClose={() => { if (!starting) setReuseOpen(false); }} footer={<>
+-              <button type="button" className="t1-button" disabled={starting} onClick={() => setReuseOpen(false)}>{t("t1.cancelChanges")}</button>
+-              <button type="button" className="t1-primary t1-start" disabled={starting || !reusePaperId || !papers.some(paper => paper.id === reusePaperId) || !scope || !catalog || invalidModel || !capabilities?.extraction_start || scopeProblems(scope, catalog).length > 0} onClick={() => void startRun()}>{t(starting ? "t1.starting" : "t1.startReuse")}</button>
+-            </>}><p className="t1-footnote">{t("t1.reusePaperHelp")}</p>
+-              <label className="t1-field">{t("t1.paperTitle")}<input aria-label={t("t1.paperTitle")} maxLength={500} disabled={starting || reuseFrozenTitle !== null} value={reuseTaskTitle} onChange={event => { setReuseTaskTitle(event.target.value); setActionError(""); }} /></label>
+-              <p className="t1-footnote">{t("t1.singleTaskTitleHelp")}</p>
+-              <label className="t1-field">{t("t1.reusePaperSelection")}<select aria-label={t("t1.reusePaperSelection")} value={reusePaperId} disabled={starting} onChange={event => { setReusePaperId(event.target.value); setReuseFrozenTitle(null); setActionError(""); }}><option value="">{t("t1.choosePaper")}</option>{reuseChoices.map(group => {
+-                const item = choicePaper(group, reusePaperId), sameLabel = reuseChoices.some(other => other.key !== group.key && other.papers.some(paper => paper.title === item.title && paper.pages === item.pages && paper.filename === item.filename));
+-                return <option key={group.key} value={item.id}>{item.title}{item.filename && item.filename !== item.title ? ` · ${item.filename}` : ""}{item.pages > 0 ? ` · ${t("t1.paperPages", { count: item.pages })}` : ""}{sameLabel ? ` · #${item.id.slice(-8)}` : ""}{group.papers.length > 1 ? ` · ${t("t1.samePdfUploads", { count: group.papers.length })}` : ""}</option>;
+-              })}</select></label>
+-              {actionError && <p className="t1-alert" role="alert">{actionError}</p>}
+-            </WorkbenchNotes>
+             {!capabilities?.extraction_start && <p className="t1-notice">{t("t1.extractionUnavailable")}{capabilities?.extraction_unavailable_reason && capabilities.extraction_unavailable_reason !== "server_model_not_enabled" && <small>{capabilities.extraction_unavailable_reason}</small>}</p>}
+           </section>
+           {activeTab === "records" && <>
+@@ -532,7 +499,7 @@
+       </>}
+     </WorkbenchNotes>
+     <SidebarMenu open={menu !== null} anchor={menu} sheet={mobile} ariaLabel={t("t1.theme")} title={t("t1.theme")} cancelLabel={t("t1.close")} onClose={() => setMenu(null)} items={([['auto', 'system'], ['light', 'light'], ['dark', 'dark']] as const).map(([id, key]) => ({ type: "item", id, label: t(`t1.${key}`), checked: preference === id, onSelect: () => setThemePreference(id) }))} />
+-    <RunTaskMenu menu={taskMenu} run={runs.find(run => run.run_id === taskMenu?.runId)} paper={papers.find(paper => paper.id === taskMenu?.paperId)} cancelling={cancelling} mobile={mobile} onClose={() => setTaskMenu(null)} onCancel={run => void cancelRun(run.run_id)} onView={selectRun} onRepeat={repeatExtraction} onDelete={requestRunDeletion} />
++    <RunTaskMenu menu={taskMenu} run={runs.find(run => run.run_id === taskMenu?.runId)} paper={papers.find(paper => paper.id === taskMenu?.paperId)} cancelling={cancelling} mobile={mobile} onClose={() => setTaskMenu(null)} onCancel={run => void cancelRun(run.run_id)} onView={selectRun} onDelete={requestRunDeletion} />
+     <RunDeleteDialog target={deleteTarget} busy={deleteBusy} cleanupPending={Boolean(cleanupTarget && cleanupTarget.runId === deleteTarget?.runId)} blocked={Boolean(deleteTarget && runs.some(run => run.document_id === deleteTarget.paperId && (canCancelRun(run) || run.result_ready === false)))} error={deleteError} onClose={() => setDeleteTarget(null)} onConfirm={target => void deleteRun(target)} />
+   </div>;
+ }
+--- before/apps/pi-web/t1/messages.mjs
++++ after/apps/pi-web/t1/messages.mjs
+@@ -4,17 +4,10 @@
+   taskActions: ["Task actions", "任务操作", "任務操作"],
+   submittedTasks: ["Extraction tasks", "抽取任务", "擷取任務"],
+   submittedTaskCount: ["{count} submitted", "已提交 {count} 个任务", "已提交 {count} 個任務"],
+-  noSubmittedTasks: ["No extraction tasks yet. Upload a PDF or choose an existing paper to start.", "尚无抽取任务，可上传 PDF 或选择已有论文开始。", "尚無擷取任務，可上傳 PDF 或選擇既有論文開始。"],
++  noSubmittedTasks: ["No extraction tasks yet. Select and upload a local PDF to start.", "尚无抽取任务，请选择并上传本地 PDF 后开始。", "尚無擷取任務，請選擇並上傳本機 PDF 後開始。"],
+   groupedTasksHelp: ["Tasks follow their original submissions. Expand a batch to open each extraction. Counts include submitted tasks only; older tasks without submission metadata remain separate.", "按实际提交组织任务，展开批量可查看每次抽取。数量仅计已提交任务；缺少提交信息的旧任务单独列出。", "依實際提交組織任務，展開批次可檢視每次擷取。數量僅計已提交任務；缺少提交資訊的舊任務分別列出。"],
+   modelUnrecorded: ["Model unrecorded", "模型未记录", "模型未記錄"],
+   viewExtraction: ["View this extraction", "查看这次抽取", "檢視這次擷取"],
+-  repeatExtraction: ["Extract again", "再次抽取", "再次擷取"],
+-  reusePaper: ["Reuse an uploaded PDF", "复用已上传论文", "重用已上傳論文"],
+-  reusePaperSelection: ["PDF to reuse", "选择复用的 PDF", "選擇重用的 PDF"],
+-  reusePaperHelp: ["Select a saved PDF to extract again using the scope and model above. Identical PDFs share one choice; all paper and task records are kept.", "选择已上传 PDF，按上方范围与模型重新抽取。相同 PDF 合并显示，已有论文与任务记录保留。", "選擇已上傳 PDF，依上方範圍與模型重新擷取。相同 PDF 合併顯示，既有論文與任務記錄保留。"],
+-  startReuse: ["Start extraction for this PDF", "为所选 PDF 开始抽取", "為所選 PDF 開始擷取"],
+-  paperPages: ["{count} pages", "{count} 页", "{count} 頁"],
+-  samePdfUploads: ["{count} records for the same PDF", "同一 PDF 的 {count} 条记录", "同一 PDF 的 {count} 條記錄"],
+   deleteRun: ["Delete this extraction", "删除这次抽取记录", "刪除這次擷取記錄"],
+   deleteRunHelp: ["Deletes this extraction’s results, versions, keep/exclude choices, reviews, events and saved exports. The paper, PDF, other extractions and any source assets they use are kept.", "将删除这次抽取的结果、版本、保留/排除选择、审核、事件及已保存导出。论文、PDF、其他抽取记录与仍在使用的解析/图片资料会保留。", "將刪除這次擷取的結果、版本、保留/排除選擇、審核、事件及已儲存匯出。論文、PDF、其他擷取記錄與仍在使用的解析/圖片資料會保留。"],
+   deleteRunIrreversible: ["This deletion cannot be undone.", "删除后无法恢复。", "刪除後無法復原。"],
+@@ -316,7 +309,6 @@
+   uploading: ["Uploading and checking PDF…", "正在上传并核对 PDF…", "正在上傳並核對 PDF…"],
+   invalidPdf: ["Choose one PDF no larger than 50 MiB.", "请选择一篇不超过 50 MiB 的 PDF。", "請選擇一篇不超過 50 MiB 的 PDF。"],
+   selectPaper: ["Paper for this task", "本次任务论文", "本次任務論文"],
+-  choosePaper: ["Select an uploaded paper", "选择已上传论文", "選擇已上傳論文"],
+   scopeTitle: ["Extraction scope", "本次抽取范围", "本次擷取範圍"],
+   cancer: ["Cancer", "癌种", "癌種"],
+   modality: ["Image modality", "图像模态", "影像模態"],
+--- before/apps/pi-web/t1/paper-choices.test.ts
++++ /dev/null
+@@ -1,19 +0,0 @@
+-import assert from "node:assert/strict";
+-import test from "node:test";
+-import { choicePaper, groupPaperChoices } from "./paper-choices";
+-import type { WorkbenchPaper } from "../../../packages/contracts/src/workbench";
+-
+-test("the reuse picker groups identical bytes but preserves same-title different PDFs and unknown digests", () => {
+-  const papers = [
+-    { id: "a", title: "Same title", sha256: "a".repeat(64) },
+-    { id: "alias", title: "Renamed upload", sha256: "A".repeat(64) },
+-    { id: "different", title: "Same title", sha256: "b".repeat(64) },
+-    { id: "unknown-a", title: "Same title", sha256: "" },
+-    { id: "unknown-b", title: "Same title", sha256: "" },
+-  ] as WorkbenchPaper[];
+-  const before = structuredClone(papers), groups = groupPaperChoices(papers);
+-  assert.deepEqual(groups.map(group => group.papers.map(paper => paper.id)), [["a", "alias"], ["different"], ["unknown-a"], ["unknown-b"]]);
+-  assert.equal(choicePaper(groups[0]!, "alias").id, "alias");
+-  assert.equal(choicePaper(groups[0]!, "").id, "a");
+-  assert.deepEqual(papers, before);
+-});
+--- before/apps/pi-web/t1/paper-choices.ts
++++ /dev/null
+@@ -1,19 +0,0 @@
+-import type { WorkbenchPaper } from "../../../packages/contracts/src/workbench";
+-
+-export interface PaperChoice { key: string; papers: WorkbenchPaper[] }
+-
+-/** Only the persisted PDF digest proves identity. Titles and upload names do not. */
+-export function groupPaperChoices(papers: WorkbenchPaper[]): PaperChoice[] {
+-  const groups = new Map<string, PaperChoice>();
+-  for (const paper of papers) {
+-    const key = /^[a-f0-9]{64}$/i.test(paper.sha256 ?? "") ? `pdf:${paper.sha256.toLowerCase()}` : `paper:${paper.id}`;
+-    const group = groups.get(key) ?? { key, papers: [] };
+-    group.papers.push(paper); groups.set(key, group);
+-  }
+-  return [...groups.values()];
+-}
+-
+-/** A task-menu selection keeps that exact paper ID, including duplicate uploads. */
+-export function choicePaper(group: PaperChoice, selectedId: string) {
+-  return group.papers.find(paper => paper.id === selectedId) ?? group.papers[0]!;
+-}
+--- before/apps/pi-web/t1/workbench.css
++++ after/apps/pi-web/t1/workbench.css
+@@ -40,9 +40,6 @@
+ .t1-batch-error { color: var(--t1-warning); font-size: 12px; margin: 8px 0 0; }
+ .t1-batch-scope { margin-top: 12px; padding: 12px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 7px; }
+ .t1-clear-help { margin: 8px 0 0; }
+-.t1-reuse-paper { margin: 28px 0 18px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 12px; }
+-.t1-reuse-paper > summary { color: var(--text-muted); cursor: pointer; }
+-.t1-reuse-paper[open] > summary { color: var(--text); }
+ .t1-refresh-spinner { animation: t1-refresh-spin 1.2s linear infinite; }
+ .t1-top-actions button[aria-busy="true"] svg { visibility: hidden; }
+ @keyframes t1-refresh-spin { to { transform: rotate(360deg); } }
+@@ -176,8 +173,6 @@
+ .t1-new-task-panel .t1-batch-actions { gap: 10px; }
+ .t1-new-task-panel .t1-batch-actions > button { min-height: 36px; }
+ .t1-new-task-panel .t1-draft-footer > .t1-footnote:last-child { margin-bottom: 0; }
+-.t1-new-task-panel > .t1-reuse-paper { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin: 18px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--t1-surface); color: var(--text); text-align: left; }
+-.t1-new-task-panel > .t1-reuse-paper > summary { color: var(--text); }
+ @container t1-new-task (min-width: 880px) {
+   .t1-new-task-panel .t1-draft-layout { grid-template-columns: minmax(0, 1.1fr) minmax(340px, .9fr); align-items: stretch; }
+   .t1-new-task-panel .t1-task-settings { grid-template-rows: auto 1fr; align-items: stretch; }
+@@ -195,7 +190,6 @@
+ .t1-creation-dialog .t1-notes-heading h2 { min-width: 0; margin: 0; font-size: 16px; }
+ .t1-creation-dialog .t1-notes-content { padding: 18px 20px; overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior: contain; }
+ .t1-creation-dialog .t1-dialog-footer { display: flex; flex-shrink: 0; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); background: var(--t1-inset); }
+-.t1-creation-dialog .t1-dialog-footer .t1-start { margin: 0; }
+ .t1-creation-dialog .t1-scope-editor { margin: 0; padding: 0; }
+ .t1-creation-dialog .t1-scope-layers { margin: 0 0 18px; }
+ .t1-creation-dialog .t1-scope-layers fieldset { padding: 14px; }
+@@ -489,7 +483,6 @@
+ .t1-upload { padding: 8px 0 22px; margin-bottom: 22px; border-bottom: 1px solid var(--border); }
+ .t1-upload input[type="file"] { padding: 18px; border-style: dashed; background: var(--t1-inset); }
+ .t1-upload input::file-selector-button { margin-right: 12px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 5px; background: var(--t1-surface); color: var(--text); font: inherit; cursor: pointer; }
+-.t1-start { margin: 14px 0 20px; }
+ .t1-scope-editor { margin-top: 24px; }
+ .t1-scope-layers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+ .t1-scope-layers fieldset { min-width: 0; border: 1px solid var(--border); border-radius: 6px; padding: 12px; background: var(--t1-surface); }
+--- before/deploy/README.md
++++ after/deploy/README.md
+@@ -2,14 +2,14 @@
+ 
+ ## 当前宿主工作台（2026-11-14）
+ 
+-普通入口为`http://127.0.0.1:30141/`，后端为`http://127.0.0.1:3210`。当前已验构建为`apps/pi-web/build/task-identity-dedup-validated-20261114`、BUILD_ID `cYfgrEAWO7KngOnOkePsg`；前端Next149024（wrapper149017）、后端148878，后续PID以监听和[创建任务布局报告](../docs/acceptance/new-task-layout-2026-11-14/report.json)为准。创建任务桌面两列底边对齐，固定论文清单内部滚动，范围/添加模型/额度/复用通过弹窗展示；第1项已审核通过，第2项独立任务/批次标题及完整PDF内容去重已验上线待用户审核，第3–5项未开始，正式审查共用2/3。B0、两层范围快照、两FIFO槽及每run额度保持；两次确认无活动/收尾任务后有序更新，17表逻辑行、配置及产物保全。
++普通入口为`http://127.0.0.1:30141/`，后端为`http://127.0.0.1:3210`。当前已验构建为`apps/pi-web/build/remove-explicit-reuse-validated-20261114`、BUILD_ID `7k-AKSqL1i6sLB7gjmNJi`；前端Next155411（wrapper155404）、后端148878，后续PID以监听和[创建任务布局报告](../docs/acceptance/new-task-layout-2026-11-14/report.json)为准。创建任务桌面两列底边对齐，固定论文清单内部滚动，范围/添加模型/额度通过弹窗展示；第1、2项已审核通过，第3项显式复用/再次抽取入口已移除并上线待用户审核，第4、5项未开始，正式审查共用2/3。统一通过本地PDF创建，后台内容SHA去重仍保留；本项仅切前端，后端148878未重启，17表逻辑行、配置及产物保全。B0、两层范围快照、两FIFO槽及每run额度保持。
+ 
+ 前轮[工作台体验验收](../docs/acceptance/workbench-experience-2026-11-14/report.json)记录：正式审查3/3；71项后端、346项抽取回归、14项界面单测、16组同构建隔离与5组真实只读核验通过。切换前3次确认无活动任务，原任务先已自然partial；17表/8run/8篇论文记录的逻辑行与hash、两份env及手工目录前后相同，integrity正常、外键错误0。SQLite一致备份为`runtime-data/backups/workbench-experience-20261114-before/t1.sqlite`，旧已验构建`build/two-layer-catalog-validated-20261114`保留回退。本轮没有新增付费模型请求、业务测试写入或任务中断；本地请求数/查询耗时改善不等于真实总抽取速度已验证。原13条候选、唯一明确配对Figure5、41处字形缺口与未完成汇总保持。S2准备/配置工程结论沿用，医学与S6/S7未升级。
+ 
+ 需复用当前构建启动前端时，先确认原前端监听已经关闭，从`code/`执行：
+ 
+ ```bash
+-T1_NEXT_DIST_DIR=build/task-identity-dedup-validated-20261114 bash scripts/with-node.sh npm run start:web
++T1_NEXT_DIST_DIR=build/remove-explicit-reuse-validated-20261114 bash scripts/with-node.sh npm run start:web
+ ```
+ 
+ 后续历史段中的构建、PID、数据计数和命令只对应各交付时点；当前宿主状态以本节与本轮报告为准。Docker30142使用下述独立部署，不承载现有30141数据。

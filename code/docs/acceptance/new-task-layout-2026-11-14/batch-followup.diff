@@ -1,0 +1,991 @@
+--- a/code/apps/server/src/workflow.ts
++++ b/code/apps/server/src/workflow.ts
+@@ -103,6 +103,9 @@
+   private readonly deletingPapers = new Set<string>();
+   private readonly pdfOperations = new Map<string, Promise<unknown>>();
+   private readonly runWrites = new Map<string, number>();
++  private cleanupFlight?: Promise<void>;
++  private cleanupRetryRequested = false;
++  private directCleanupCount = 0;
+   readonly maxConcurrentRuns = 2;
+   private executing = 0;
+   private readonly queue: Array<{ id: string; controller: AbortController; run: () => Promise<void>; resolve: () => void; reject: (error: unknown) => void }> = [];
+@@ -172,13 +175,9 @@
+         }
+       }
+     }
+-    for (const tombstone of this.store.db.prepare('SELECT run_id,paper_id,payload_json FROM workbench_deleted_runs').all()) {
+-      const plan = JSON.parse(tombstone.payload_json as string) as RunCleanupPlan;
+-      if (plan.status === 'cleanup_pending') {
+-        try { await this.finishRunCleanup(tombstone.run_id as string, tombstone.paper_id as string, plan); }
+-        catch { /* The durable plan stays pending for a later retry. Never restore the run. */ }
+-      }
+-    }
++    // This resumes only existing deletion plans; it does not await initialization
++    // or active coordinators, so startup cannot depend on itself.
++    await this.resumePendingRunCleanup();
+   }
+   capabilities(): WorkbenchCapabilities {
+     const runtime = this.options.runner?.controlled ? undefined : this.options.runner?.public_runtime;
+@@ -325,6 +324,7 @@
+     finally {
+       const remaining = this.runWrites.get(id)! - 1;
+       if (remaining) this.runWrites.set(id, remaining); else this.runWrites.delete(id);
++      void this.resumePendingRunCleanup().catch(() => {});
+     }
+   }
+   async upload(bytes: Buffer, filename: string, title?: string, requestId?: string) {
+@@ -566,11 +566,14 @@
+     this.store.atomic(() => { this.store.create(input, { fixed_method: 'B0', controlled_fixture: runner.controlled }); this.saveRun(row); remember(runId); });
+     const controller = new AbortController();
+     const promise = this.schedule(runId, controller, () => this.execute(row, input, controller));
+-    this.active.set(runId, { controller, promise }); void promise.finally(() => this.active.delete(runId));
++    this.active.set(runId, { controller, promise });
++    const release = () => { this.active.delete(runId); void this.resumePendingRunCleanup().catch(() => {}); };
++    void promise.then(release, release);
+     return { run: (await this.runs(runId))[0]! };
+     } finally {
+       const remaining = this.preparingPapers.get(id)! - 1;
+       if (remaining) this.preparingPapers.set(id, remaining); else this.preparingPapers.delete(id);
++      void this.resumePendingRunCleanup().catch(() => {});
+     }
+     }));
+   }
+@@ -887,41 +890,91 @@
+       ...exports.flatMap(path => [{ path, parent: 'exports' as const }, { path: path + '.tar.gz', parent: 'exports' as const }]),
+     ] };
+   }
++  private paperHasWork(paperId: string) {
++    return this.preparingPapers.has(paperId) || this.runRows().some(row => row.paper_id === paperId
++      && (this.active.has(row.id) || this.runWrites.has(row.id) || !terminals.has(this.store.snapshot(row.id).state)));
++  }
++  private assertRunCanBeDeleted(row: RunRow) {
++    if (this.active.has(row.id) || this.runWrites.has(row.id) || !terminals.has(this.store.snapshot(row.id).state)) throw new ContractError('paper_busy_before_deleting_run');
++  }
++  private async withDirectRunCleanup<T>(operation: () => Promise<T>): Promise<T> {
++    this.directCleanupCount++;
++    try { return await operation(); }
++    finally {
++      this.directCleanupCount--;
++      if (!this.directCleanupCount && this.cleanupRetryRequested) void this.resumePendingRunCleanup().catch(() => {});
++    }
++  }
++  /** Logical deletion is run-owned; shared file cleanup waits for the paper's
++   * preparation, coordinator and human-write guards to become idle. */
++  private async tryRunCleanup(id: string, paperId: string, plan: RunCleanupPlan) {
++    if (this.deletingPapers.has(paperId) || this.paperHasWork(paperId)) return undefined;
++    this.deletingPapers.add(paperId);
++    let completed = false;
++    try { const result = await this.finishRunCleanup(id, paperId, plan); completed = true; return result; }
++    finally {
++      this.deletingPapers.delete(paperId);
++      // A concurrent scan may have skipped another plan behind this lock.
++      // Successful cleanup is a new safe point; failures must not self-retry.
++      if (completed) void this.resumePendingRunCleanup().catch(() => {});
++    }
++  }
++  /** Coalesce safe-point notifications. Never wait for active work inside this
++   * scan: its caller may be the coordinator that just released that work. */
++  private resumePendingRunCleanup(): Promise<void> {
++    this.cleanupRetryRequested = true;
++    if (this.cleanupFlight) return this.cleanupFlight;
++    if (this.directCleanupCount) return Promise.resolve();
++    this.cleanupFlight = Promise.resolve().then(async () => {
++      do {
++        this.cleanupRetryRequested = false;
++        for (const tombstone of this.store.db.prepare('SELECT run_id,paper_id,payload_json FROM workbench_deleted_runs').all()) {
++          if (this.directCleanupCount) { this.cleanupRetryRequested = true; break; }
++          const plan = JSON.parse(tombstone.payload_json as string) as RunCleanupPlan;
++          if (plan.status !== 'cleanup_pending') continue;
++          try { await this.tryRunCleanup(tombstone.run_id as string, tombstone.paper_id as string, plan); }
++          catch { /* Keep the durable plan for DELETE retry or restart recovery. */ }
++        }
++      } while (this.cleanupRetryRequested && !this.directCleanupCount);
++    }).finally(() => {
++      this.cleanupFlight = undefined;
++      // Guard releases can arrive after the last loop check, before finally.
++      // Preserve that notification while keeping failures dormant.
++      if (this.cleanupRetryRequested && !this.directCleanupCount) return this.resumePendingRunCleanup();
++    });
++    return this.cleanupFlight;
++  }
+   /** Validate every source before deleting any member, then tombstone the entire task atomically. */
+   async deleteBatch(id: string) {
+     await this.initialize();
+-    return this.withBatchAdmission({ kind: 'batch', batch_id: id }, async () => {
++    return this.withBatchAdmission({ kind: 'batch', batch_id: id }, () => this.withDirectRunCleanup(async () => {
+       const rows = this.batchRows(id), saved = this.store.db.prepare('SELECT payload_json FROM workbench_deleted_batches WHERE batch_id=?').get(id);
+       const deletion: BatchDeletion = saved ? JSON.parse(saved.payload_json as string) : { members: rows.map(row => ({ run_id: row.id, paper_id: row.paper_id })) };
+       if (!deletion.members.length) throw new ContractError('workbench_batch_not_found');
+       const paperIds = new Set(deletion.members.map(member => member.paper_id));
+-      for (const paperId of paperIds) {
+-        if (this.deletingPapers.has(paperId)) throw new ContractError('paper_deletion_in_progress');
+-        if (this.preparingPapers.has(paperId) || this.runRows().filter(row => row.paper_id === paperId).some(row => this.active.has(row.id) || this.runWrites.has(row.id) || !terminals.has(this.store.snapshot(row.id).state))) throw new ContractError('paper_busy_before_deleting_run');
++      for (const paperId of paperIds) if (this.deletingPapers.has(paperId) && !saved) throw new ContractError('paper_deletion_in_progress');
++      for (const row of rows) this.assertRunCanBeDeleted(row);
++      if (!saved) {
++        const plans = rows.map(row => ({ row, plan: { ...this.cleanupPlan(row), batch_id: id } }));
++        this.store.atomic(() => {
++          this.store.db.prepare('INSERT INTO workbench_deleted_batches VALUES(?,?)').run(id, JSON.stringify(deletion));
++          for (const { row, plan } of plans) {
++            this.deleteRunRows(row.id);
++            this.store.db.prepare('INSERT INTO workbench_deleted_runs VALUES(?,?,?,?)').run(row.id, row.paper_id, now(), JSON.stringify(plan));
++          }
++        });
++        for (const { row } of plans) { this.outputCache.delete(row.id); this.progressEventsCache.delete(row.id); }
+       }
+-      for (const paperId of paperIds) this.deletingPapers.add(paperId);
+-      try {
+-        if (!saved) {
+-          const plans = rows.map(row => ({ row, plan: { ...this.cleanupPlan(row), batch_id: id } }));
+-          this.store.atomic(() => {
+-            this.store.db.prepare('INSERT INTO workbench_deleted_batches VALUES(?,?)').run(id, JSON.stringify(deletion));
+-            for (const { row, plan } of plans) {
+-              this.deleteRunRows(row.id);
+-              this.store.db.prepare('INSERT INTO workbench_deleted_runs VALUES(?,?,?,?)').run(row.id, row.paper_id, now(), JSON.stringify(plan));
+-            }
+-          });
+-        }
+-        let pending = false;
+-        for (const member of deletion.members) {
+-          const tombstone = this.store.db.prepare('SELECT payload_json FROM workbench_deleted_runs WHERE run_id=?').get(member.run_id);
+-          const plan = tombstone ? JSON.parse(tombstone.payload_json as string) as RunCleanupPlan : undefined;
+-          if (plan?.status === 'cleanup_pending') try { await this.finishRunCleanup(member.run_id, member.paper_id, plan); } catch { pending = true; }
+-        }
+-        const runIds = deletion.members.map(member => member.run_id);
+-        if (pending) throw new WorkflowBatchCleanupPending(id, runIds);
+-        return { deleted: true, batch_id: id, run_ids: runIds, already_deleted: Boolean(saved), scope: 'whole_batch_task_results_versions_reviews_retention_events_exports' };
+-      } finally { for (const paperId of paperIds) this.deletingPapers.delete(paperId); }
+-    });
++      let pending = false, deferred = false;
++      for (const member of deletion.members) {
++        const tombstone = this.store.db.prepare('SELECT payload_json FROM workbench_deleted_runs WHERE run_id=?').get(member.run_id);
++        const plan = tombstone ? JSON.parse(tombstone.payload_json as string) as RunCleanupPlan : undefined;
++        if (plan?.status === 'cleanup_pending') try { if (!await this.tryRunCleanup(member.run_id, member.paper_id, plan)) deferred = true; } catch { pending = true; }
++      }
++      const runIds = deletion.members.map(member => member.run_id);
++      if (pending) throw new WorkflowBatchCleanupPending(id, runIds);
++      return { deleted: true, batch_id: id, run_ids: runIds, already_deleted: Boolean(saved), cleanup_deferred: deferred, scope: 'whole_batch_task_results_versions_reviews_retention_events_exports' };
++    }));
+   }
+   async deleteTaskRun(id: string) {
+     await this.initialize();
+@@ -1000,21 +1053,18 @@
+     const savedPlan = tombstone ? JSON.parse(tombstone.payload_json as string) as RunCleanupPlan : undefined;
+     if (tombstone && savedPlan?.status === 'complete') return { deleted: true, run_id: id, paper_id: tombstone.paper_id as string, already_deleted: true };
+     const row = tombstone ? undefined : this.run(id), paperId = row?.paper_id ?? tombstone!.paper_id as string;
+-    const peers = this.runRows().filter(run => run.paper_id === paperId);
+-    if (this.deletingPapers.has(paperId)) throw new ContractError('paper_deletion_in_progress');
+-    // A sibling's source publication or human write can change shared references.
+-    // Hold off deletion until that short operation or active task has fully exited.
+-    if (this.preparingPapers.has(paperId) || peers.some(run => this.active.has(run.id) || this.runWrites.has(run.id) || !terminals.has(this.store.snapshot(run.id).state))) throw new ContractError('paper_busy_before_deleting_run');
+-    this.deletingPapers.add(paperId);
+-    try {
+-      if (savedPlan) return await this.finishRunCleanup(id, paperId, savedPlan);
+-      const plan = this.cleanupPlan(row!);
++    if (this.deletingPapers.has(paperId) && !tombstone) throw new ContractError('paper_deletion_in_progress');
++    if (row) this.assertRunCanBeDeleted(row);
++    const plan = savedPlan ?? this.cleanupPlan(row!);
++    if (!savedPlan) {
+       this.store.atomic(() => {
+         this.deleteRunRows(id);
+         this.store.db.prepare('INSERT INTO workbench_deleted_runs VALUES(?,?,?,?)').run(id, paperId, now(), JSON.stringify(plan));
+       });
+-      return await this.finishRunCleanup(id, paperId, plan);
+-    } finally { this.deletingPapers.delete(paperId); }
++      this.outputCache.delete(id); this.progressEventsCache.delete(id);
++    }
++    return this.withDirectRunCleanup(async () => await this.tryRunCleanup(id, paperId, plan) ?? { deleted: true, run_id: id, paper_id: paperId, already_deleted: Boolean(savedPlan), cleanup_deferred: true,
++      scope: 'single_run_results_versions_reviews_retention_events_exports' });
+   }
+   async deletePaper(id: string) {
+     await this.initialize();
+@@ -1055,9 +1105,9 @@
+     for (const key of this.sourceUnitCache.keys()) if (key.startsWith(id + ':')) this.sourceUnitCache.delete(key);
+     return { deleted: true, paper_id: id, runs_deleted: runs.length, shared_pdf_retained: pdfReferenced, scope: 'paper_runs_candidates_reviews_and_unshared_uploaded_files' };
+     });
+-    } finally { this.deletingPapers.delete(id); }
+-  }
+-  async waitForIdle() { await Promise.all([...this.active.values()].map(t => t.promise)); }
++    } finally { this.deletingPapers.delete(id); void this.resumePendingRunCleanup().catch(() => {}); }
++  }
++  async waitForIdle() { await Promise.all([...this.active.values()].map(t => t.promise)); await this.resumePendingRunCleanup(); }
+   async close() {
+     this.shuttingDown = true;
+     for (const [id, task] of this.active) { if (!terminals.has(this.store.snapshot(id).state)) this.store.transition(id, 'interrupted'); task.controller.abort(); }
+--- a/code/apps/server/test/workflow-batch-task.test.ts
++++ b/code/apps/server/test/workflow-batch-task.test.ts
+@@ -80,6 +80,38 @@
+   } finally { release(); await x.close(); }
+ });
+ 
++test('ended batch deletes while a same-paper sibling parses; artifact cleanup waits for its source publication', { timeout: 60_000 }, async () => {
++  let pause = false, entered!: () => void, release!: () => void;
++  const seen = new Promise<void>(resolve => { entered = resolve; }), wait = new Promise<void>(resolve => { release = resolve; });
++  const x = await setup({ ...replay, parse: async (...args: Parameters<NonNullable<typeof replay.parse>>) => {
++    if (pause) { entered(); await wait; }
++    return replay.parse!(...args);
++  } });
++  try {
++    const a = (await x.start(0)).run, b = (await x.start(1)).run; await x.workflow.waitForIdle();
++    const target = x.workflow['run'](a.run_id), privatePath = resolve(target.directory, 'private-result.json');
++    await writeFile(privatePath, '{"target_only":true}');
++    pause = true;
++    const sibling = (await x.workflow.start(x.papers[0]!.id, x.scope, 'independent-active-sibling', { kind: 'single' })).run; await seen;
++    const deletion = await x.app.inject({ method: 'DELETE', url: '/api/workbench/batches/' + x.batchId });
++    assert.equal(deletion.statusCode, 200, deletion.body); assert.equal(deletion.json().cleanup_deferred, true);
++    assert.deepEqual(new Set(deletion.json().run_ids), new Set([a.run_id, b.run_id]));
++    assert.deepEqual((await x.workflow.runs()).map(run => run.run_id), [sibling.run_id]);
++    assert.equal((await x.workflow.runs())[0]!.state, 'parsing');
++    await access(privatePath); await access(resolve(x.workflow.codeRoot, target.source!.ir.path));
++    assert.deepEqual(await x.workflow.pdf(x.papers[0]!.id), pdfs[0]);
++    const retry = await x.workflow.deleteBatch(x.batchId); assert.equal(retry.already_deleted, true); assert.equal(retry.cleanup_deferred, true);
++    release();
++    // Observe automatic cleanup after coordinator release, without using
++    // waitForIdle() as an extra cleanup trigger.
++    for (let attempt = 0; attempt < 500 && JSON.parse(x.store.db.prepare('SELECT payload_json FROM workbench_deleted_runs WHERE run_id=?').get(a.run_id)!.payload_json as string).status !== 'complete'; attempt++) await new Promise(resolve => setTimeout(resolve, 10));
++    const current = await x.workflow.runDetail(sibling.run_id); assert.equal(current.run.state, 'completed'); assert.equal(current.source_status, 'valid');
++    await assert.rejects(access(privatePath), /ENOENT/);
++    for (const id of [a.run_id, b.run_id]) assert.equal(JSON.parse(x.store.db.prepare('SELECT payload_json FROM workbench_deleted_runs WHERE run_id=?').get(id)!.payload_json as string).status, 'complete');
++    assert.ok(!x.workflow.events(sibling.run_id).some(event => event.type === 'workflow_error'));
++  } finally { release(); await x.close(); }
++});
++
+ test('batch export manifest includes every member, uses actual package counts and excludes other submissions', { timeout: 60_000 }, async () => {
+   const x = await setup();
+   try {
+@@ -112,7 +144,9 @@
+     assert.equal(deleted.statusCode, 503); assert.equal(deleted.json().error, 'batch_deleted_cleanup_pending'); assert.deepEqual(new Set(deleted.json().run_ids), new Set([a.run_id, b.run_id]));
+     assert.equal((await x.workflow.runs()).length, 0); await access(path);
+     interceptor.mock.restore(); interceptor = undefined; syncBuiltinESMExports();
+-    assert.equal((await x.workflow.deleteBatch(x.batchId)).already_deleted, true); await assert.rejects(access(path), /ENOENT/);
++    const retried = await x.workflow.deleteBatch(x.batchId); assert.equal(retried.already_deleted, true);
++    if (retried.cleanup_deferred) await x.workflow.waitForIdle();
++    await assert.rejects(access(path), /ENOENT/);
+     assert.equal(x.store.db.prepare("SELECT COUNT(*) n FROM workbench_deleted_runs WHERE json_extract(payload_json,'$.status')='complete'").get()!.n, 2);
+   } finally { interceptor?.mock.restore(); syncBuiltinESMExports(); await x.close(); }
+ });
+--- a/code/apps/server/test/workflow-run-deletion.test.ts
++++ b/code/apps/server/test/workflow-run-deletion.test.ts
+@@ -66,15 +66,18 @@
+   } finally { await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
+ });
+ 
+-test('a sibling Start preparing or executing blocks deletion until the coordinator exits', { timeout: 30_000 }, async () => {
++test('a sibling Start preparation defers files without blocking deletion of an ended run', { timeout: 30_000 }, async () => {
+   const { directory, store } = await setup(), entered = barrier(), finish = barrier(); let pause = false;
+   const workflow = new WorkbenchWorkflow(store, { ...replay, sources: false, directory, runner: { ...replay.runner!, prepare: async () => { if (pause) { entered.release(); await finish.promise; throw new ContractError('fixture_prepare_end'); } } } });
+   try {
+     const paper = (await workflow.upload(bytes, 'siblings.pdf')).paper, scope = workflow.scopeCatalog().default_scope;
+-    const saved = (await workflow.start(paper.id, scope)).run.run_id; await workflow.waitForIdle(); pause = true;
++    const saved = (await workflow.start(paper.id, scope)).run.run_id; await workflow.waitForIdle();
++    const privatePath = resolve(workflow['run'](saved).directory, 'private-results.json'); await writeFile(privatePath, '{}'); pause = true;
+     const pending = workflow.start(paper.id, scope).then(() => 'unexpected', error => String(error)); await entered.promise;
+-    await assert.rejects(workflow.deleteRun(saved), /paper_busy_before_deleting_run/);
+-    finish.release(); assert.match(await pending, /fixture_prepare_end/); await workflow.deleteRun(saved);
++    const deletion = await workflow.deleteRun(saved); assert.equal(deletion.deleted, true); assert.equal('cleanup_deferred' in deletion && deletion.cleanup_deferred, true);
++    assert.equal((await workflow.runs()).length, 0); await access(privatePath);
++    finish.release(); assert.match(await pending, /fixture_prepare_end/); await workflow.waitForIdle();
++    await assert.rejects(access(privatePath), /ENOENT/); assert.equal((await workflow.deleteRun(saved)).already_deleted, true);
+   } finally { finish.release(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
+ });
+ 
+@@ -90,6 +93,47 @@
+     const exporting = workflow.export(id, 'candidate_jsonl').then(() => 'unexpected', error => String(error)); await entered.promise;
+     await assert.rejects(workflow.deleteRun(id), /paper_busy_before_deleting_run/);
+     finish.release(); assert.match(await exporting, /fixture_export_write_failed/); assert.equal((await workflow.deleteRun(id)).deleted, true);
++  } finally { finish.release(); interceptor?.mock.restore(); syncBuiltinESMExports(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('a sibling export defers cleanup and its write-guard release resumes it without altering that sibling', { timeout: 30_000 }, async () => {
++  const { directory, store } = await setup(), workflow = new WorkbenchWorkflow(store, { ...replay, sources: false, directory }), entered = barrier(), finish = barrier();
++  let interceptor: ReturnType<typeof mock.method> | undefined;
++  try {
++    const paper = (await workflow.upload(bytes, 'sibling-export.pdf')).paper, scope = workflow.scopeCatalog().default_scope;
++    const target = (await workflow.start(paper.id, scope)).run.run_id; await workflow.waitForIdle();
++    const path = resolve(workflow['run'](target).directory, 'private-results.json'); await writeFile(path, '{}');
++    const sibling = (await workflow.start(paper.id, scope)).run.run_id; await workflow.waitForIdle();
++    const before = (await workflow.runDetail(sibling)).output, nativeWrite = fs.writeFile;
++    interceptor = mock.method(fs, 'writeFile', async (...args: Parameters<typeof fs.writeFile>) => {
++      if (String(args[0]).endsWith('human-annotations.json')) { entered.release(); await finish.promise; throw new Error('fixture_sibling_export_failed'); }
++      return nativeWrite(...args);
++    }); syncBuiltinESMExports();
++    const exporting = workflow.export(sibling, 'candidate_jsonl').then(() => 'unexpected', error => String(error)); await entered.promise;
++    const deletion = await workflow.deleteRun(target); assert.equal('cleanup_deferred' in deletion && deletion.cleanup_deferred, true); await access(path);
++    finish.release(); assert.match(await exporting, /fixture_sibling_export_failed/);
++    for (let attempt = 0; attempt < 300 && JSON.parse(store.db.prepare('SELECT payload_json FROM workbench_deleted_runs WHERE run_id=?').get(target)!.payload_json as string).status !== 'complete'; attempt++) await new Promise(resolve => setTimeout(resolve, 10));
++    await assert.rejects(access(path), /ENOENT/); assert.deepEqual((await workflow.runDetail(sibling)).output, before);
++  } finally { finish.release(); interceptor?.mock.restore(); syncBuiltinESMExports(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('direct cleanup keeps pending-plan notifications and releases them after success without failure self-retry', { timeout: 30_000 }, async () => {
++  const { directory, store } = await setup(), workflow = new WorkbenchWorkflow(store, { ...replay, sources: false, directory }), entered = barrier(), finish = barrier();
++  let interceptor: ReturnType<typeof mock.method> | undefined;
++  try {
++    const paper = (await workflow.upload(bytes, 'cleanup-wakeup.pdf')).paper, ids: string[] = [], roots: string[] = [];
++    for (let i = 0; i < 2; i++) { const id = (await workflow.start(paper.id, workflow.scopeCatalog().default_scope)).run.run_id; await workflow.waitForIdle(); ids.push(id); roots.push(workflow['run'](id).directory); await writeFile(resolve(roots[i]!, 'private-results.json'), '{}'); }
++    const nativeRm = fs.rm;
++    interceptor = mock.method(fs, 'rm', async (...args: Parameters<typeof fs.rm>) => { if (roots.some(root => String(args[0]).startsWith(root))) throw new Error('fixture_cleanup_unavailable'); return nativeRm(...args); }); syncBuiltinESMExports();
++    for (const id of ids) await assert.rejects(workflow.deleteRun(id), /run_deleted_cleanup_pending/);
++    interceptor.mock.restore();
++    interceptor = mock.method(fs, 'rm', async (...args: Parameters<typeof fs.rm>) => { if (String(args[0]).startsWith(roots[0]!)) { entered.release(); await finish.promise; } return nativeRm(...args); }); syncBuiltinESMExports();
++    const deleting = workflow.deleteRun(ids[0]!); await entered.promise;
++    // This safe-point notification arrives while explicit cleanup owns files.
++    await workflow.waitForIdle(); finish.release(); assert.equal((await deleting).deleted, true);
++    for (let attempt = 0; attempt < 300 && JSON.parse(store.db.prepare('SELECT payload_json FROM workbench_deleted_runs WHERE run_id=?').get(ids[1]!)!.payload_json as string).status !== 'complete'; attempt++) await new Promise(resolve => setTimeout(resolve, 10));
++    for (const id of ids) assert.equal(JSON.parse(store.db.prepare('SELECT payload_json FROM workbench_deleted_runs WHERE run_id=?').get(id)!.payload_json as string).status, 'complete');
++    for (const root of roots) await assert.rejects(access(resolve(root, 'private-results.json')), /ENOENT/);
+   } finally { finish.release(); interceptor?.mock.restore(); syncBuiltinESMExports(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
+ });
+ 
+--- a/code/apps/pi-web/t1/T1Workbench.tsx
++++ b/code/apps/pi-web/t1/T1Workbench.tsx
+@@ -30,12 +30,14 @@
+ import { BatchSubmission } from "./BatchSubmission";
+ import { RunTaskMenu, type RunTaskMenuState } from "./RunTaskMenu";
+ import { RunProgress } from "./RunProgress";
++import { BatchProgress } from "./BatchProgress";
++import { DetailDisclosure } from "./DetailDisclosure";
+ import { RunDeleteDialog, type RunDeleteTarget } from "./RunDeleteDialog";
+ import { SubmissionRunList } from "./SubmissionRunList";
+ import { groupSubmittedRuns, resultRecordKey, submissionRun, submittedTaskId } from "./submission-groups";
+ import { useBatchResults } from "./useBatchResults";
+ import { GlobalToasts } from "./GlobalToasts";
+-import { canCancelRun, cancellationResult } from "./task-actions";
++import { canCancelRun, cancellationResult, runDeletionBlocked } from "./task-actions";
+ import { runPresentation } from "./run-presentation";
+ import { initialWorkbenchSelection, resultRunForPaper } from "./result-navigation";
+ import type { Scope } from "../../../packages/contracts/src/index";
+@@ -430,7 +432,7 @@
+       {showSidebar && <><aside className="t1-sidebar" aria-label={t("t1.submittedTasks")}><div className="t1-sidebar-heading"><strong>{t("t1.submittedTasks")}</strong><span>{taskGroups.length}</span><button className="t1-sidebar-close" aria-label={t("t1.close")} onClick={() => setShowSidebar(false)}><CloseIcon size={18} /></button></div>
+         <button className="t1-new-task" onClick={newTask}><PlusIcon size={16} />{t("t1.newTask")}</button>
+         <div className="t1-paper-list-region" aria-busy={refreshing}><SubmissionRunList variant="sidebar" runs={runs} papers={papers} selectedId={runId ?? historyId} menuRunId={taskMenu?.runId} onSelect={selectRun} onMenu={openRunMenu} statusLabel={runLabel} />{refreshing && <div className="t1-refresh-overlay" aria-hidden="true" />}</div>
+-        <div className="t1-sidebar-bottom"><button onClick={() => openTab("tasks")}><MessageIcon size={15} />{t("t1.tasks")}</button><details><summary>{t("t1.aboutWorkbench")}</summary><span>Pi Web 0.15.0 · T1 Pi SDK 1.4.0</span></details></div>
++        <div className="t1-sidebar-bottom"><button onClick={() => openTab("tasks")}><MessageIcon size={15} />{t("t1.tasks")}</button><DetailDisclosure title={t("t1.aboutWorkbench")}><p>Pi Web 0.15.0 · T1 Pi SDK 1.4.0</p></DetailDisclosure></div>
+         <SidebarToast toast={toast} onDismiss={() => setToast(null)} dismissLabel={t("t1.close")} /></aside><div className="t1-resize" {...sidebar.separatorProps} /></>}
+       <main className="t1-main"><div className="t1-workspace-bar"><button onClick={() => setShowSidebar(value => !value)} aria-label={t("t1.toggleNav")} title={t("t1.toggleNav")} aria-expanded={showSidebar}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></svg></button><span title={workspaceTitle}>{workspaceTitle}</span><button className="t1-source-toggle" aria-pressed={showSource} onClick={() => setShowSource(value => !value)}><EyeIcon size={15} />{t(showSource ? "t1.hideOriginal" : "t1.showOriginal")}</button>{pdfUrl && <a className="t1-mobile-source" href={`${pdfUrl}#page=${page}`} target="_blank" rel="noreferrer"><OpenInNewTabIcon size={14} />{t("t1.openOriginal")}</a>}</div>
+         <TabBar tabs={tabs} activeTabId={activeTab} onSelectTab={setActiveTab} onCloseTab={id => { const next = tabIds.filter(tab => tab !== id); setTabIds(next); if (activeTab === id) setActiveTab(next[0] ?? ""); }} onReorderTab={(from, to, after) => setTabIds(current => movePanelTab(current, from, to, after))} />
+@@ -441,7 +443,7 @@
+           {batchId && Object.entries(batchResults.errors).map(([id, text]) => <div className="t1-alert" role="alert" key={id}>{t("t1.batchMemberReadFailed", { name: selectedGroup?.runs.find(run => run.run_id === id)?.original_filename ?? id })} · {text}<button className="t1-button" onClick={() => void batchResults.reload(id)}>{t("t1.retry")}</button></div>)}
+           {actionError && <div className="t1-alert" role="alert">{actionError}</div>}
+           {detailError && activeTab !== "newTask" && <div className="t1-alert" role="alert">{detailError}<button onClick={refresh}>{t("t1.retry")}</button></div>}
+-          {sourceBlocked && activeTab !== "newTask" && <div className="t1-alert" role="alert">{t("t1.sourceProblem")}{[...new Set(sourceIssues.map(sourceIssueText))].map((issue, i) => <p key={i}>{issue}</p>)}<details><summary>{t("t1.sourceVersion")}</summary>{sourceIssues.join(" · ")}</details></div>}
++          {sourceBlocked && activeTab !== "newTask" && <div className="t1-alert" role="alert">{t("t1.sourceProblem")}{[...new Set(sourceIssues.map(sourceIssueText))].map((issue, i) => <p key={i}>{issue}</p>)}<DetailDisclosure key={operationRunId} title={t("t1.sourceVersion")}>{sourceIssues.join(" · ")}</DetailDisclosure></div>}
+           {sourceBlocked && activeTab !== "newTask" && paper && <section className="t1-source-recovery"><p>{t("t1.restoreHelp")}</p><label className="t1-field">{t("t1.selectRestorePdf")}<input type="file" accept="application/pdf,.pdf" aria-label={t("t1.selectRestorePdf")} onChange={e => setRestoreFile(e.target.files?.[0] ?? null)} /></label><button className="t1-primary" disabled={!restoreFile || restoreBusy} onClick={() => void restoreOriginal()}>{t("t1.restorePdf")}</button></section>}
+           {capabilities?.controlled_fixture && <p className="t1-fixture-banner">{t("t1.fixture")}</p>}
+           {!activeTab && <div className="t1-empty">{["newTask", "records", "figures", "tasks"].map(id => <button key={id} onClick={() => openTab(id)}>{t(`t1.${id}`)}</button>)}</div>}
+@@ -469,7 +471,7 @@
+               </div>
+             </div>
+             {state && !batchId && <RunProgress run={displayedRun} state={state} coverage={taskCoverage} events={batchId ? [] : progressEvents} onDetails={() => setShowNotes(true)} />}
+-            {batchId && selectedGroup && <section className="t1-batch-overview" aria-label={t("t1.batchMembers")} data-batch-results={batchId}><p>{t("t1.batchResultsHelp", { count: selectedGroup.runs.length })}</p><p>{t("t1.batchEndedCount", { count: selectedGroup.runs.filter(run => !canCancelRun(run) && run.result_ready !== false).length, total: selectedGroup.runs.length })}{selectedGroup.runs.some(canCancelRun) ? " · " : ""}{["queued", "parsing", "extracting", "reconciling"].filter(state => selectedGroup.runs.some(run => run.state === state)).map(state => `${t(`t1.${state}`)} ${selectedGroup.runs.filter(run => run.state === state).length}`).join(" · ")}</p><details><summary>{t("t1.batchMembers")}</summary><ul>{selectedGroup.runs.map(run => <li key={run.run_id}><span>{originalRunFilename(run, papers.find(paper => paper.id === run.document_id))}</span><span>{runLabel(run)}</span><small>{t("t1.recordCount", { count: run.candidate_count })}</small></li>)}</ul></details></section>}
++            {batchId && selectedGroup && <BatchProgress batchId={batchId} runs={selectedGroup.runs} papers={papers} runLabel={runLabel} />}
+             {missingHistoricalSource && <p className="t1-alert" role="status">{t("t1.historicalSourceUnavailable")}</p>}
+             {exportError && <div className="t1-alert t1-export-error" role="alert">{exportError}<button className="t1-button" onClick={() => { setExportError(""); setShowNotes(true); }}>{t("t1.viewDetails")}</button></div>}
+             {download && <span className="t1-sr-only" role="status">{t("t1.downloading")}</span>}
+@@ -485,7 +487,7 @@
+                     <div className="t1-reader-scroll" key={resultRecordKey(record)}>{batchId && <p className="t1-record-provenance">{t("t1.resultPaper")} · {originalRunFilename(recordDetail!.run, recordDetail!.paper)} <small>#{record.run_id.slice(-8)}</small></p>}<div className="t1-record-meta"><span className="t1-record-number">{String(records.indexOf(record) + 1).padStart(2, "0")}</span><h2>{t(record.evidence_role === "background_suggestion" ? "t1.backgroundSource" : "t1.descriptionSource")}</h2>{firstSourcePage && <button className="t1-button t1-locate" onClick={() => sourcePage(firstSourcePage)}><EyeIcon size={14} />{t("t1.locateSource")}</button>}</div>
+                       {record.association === "paired" && record.figure_ids.length > 0 && <button className="t1-pair-shortcut" onClick={() => document.getElementById(`t1-record-figures-${record.id}`)?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })}>{t("t1.linkedFigureShortcut")}{pairedFigures.length > 0 && ` · ${pairedFigures.map(figure => `Figure ${figure.number ?? "?"}`).join(", ")}`}<ChevronIcon size={12} /></button>}
+                       <div className="t1-quote-frame"><Fragments fragments={record.fragments} passages={record.passages} onPage={sourcePage} /></div>
+-                      {!!record.context.length && <details className="t1-context" key={`${record.id}:context`}><summary>{t("t1.context", { count: record.context.length })}</summary><Fragments fragments={record.context} passages={record.context_passages} onPage={sourcePage} /></details>}
++                      {!!record.context.length && <DetailDisclosure className="t1-context" key={`${record.run_id}:${record.id}:context`} title={t("t1.context", { count: record.context.length })}>{close => <Fragments fragments={record.context} passages={record.context_passages} onPage={page => { close(); sourcePage(page); }} />}</DetailDisclosure>}
+                       <section className="t1-association" id={`t1-record-figures-${record.id}`} data-pairing={record.association} key={`${record.id}:figures`} aria-label={t("t1.correspondingFigures")}>
+                         {record.association === "paired" && record.figure_ids.length > 0 ? <><h3>{t("t1.correspondingFigures")}<span>{t("t1.pairedFigureCount", { count: record.figure_ids.length })}</span></h3>{pairedFigures.map(figure => <FigureView key={`${operationRunId}:${figure.id}`} figure={figure} onPage={sourcePage} paired />)}{pairedFigures.length < record.figure_ids.length && <p className="t1-figure-unavailable">{t("t1.linkedFigureUnavailable")}{firstSourcePage && <button className="t1-link" onClick={() => sourcePage(firstSourcePage)}>{t("t1.openOriginal")}</button>}</p>}</> : <p className="t1-pair-status">{t(record.association === "pending" || record.association === "not_checked" ? "t1.figurePairingPending" : "t1.figureNoExplicitReference")}<button className="t1-link" onClick={() => openTab("figures")}>{t("t1.browsePaperFigures")}</button></p>}
+                       </section>
+@@ -501,7 +503,7 @@
+ 
+         </div>{refreshing && <div className="t1-refresh-overlay" aria-hidden="true" />}</div>
+       </main>
+-      {showSource && paper && pdfUrl && <><div className="t1-resize" {...source.separatorProps} /><aside className="t1-source" aria-label={t("t1.originalPdf")}><div className="t1-source-heading"><strong title={paper.filename ?? paper.title}><GenericFileIcon size={15} />{batchId ? paper.filename ?? paper.title : t("t1.originalPdf")}</strong><a href={`${pdfUrl}#page=${page}`} target="_blank" rel="noreferrer">{t("t1.openOriginal")}<OpenInNewTabIcon size={13} /></a></div>{sourceBlocked ? <p className="t1-alert">{t("t1.sourceProblem")}</p> : <PdfSource key={`${paper.id}:${paper.sha256}`} url={pdfUrl} sha256={paper.sha256} page={page} pages={paper.pages} onPage={sourcePage} />}<div className="t1-source-footer"><small>{t("t1.sourceUnchanged")}</small><details><summary>{t("t1.sourceVersion")}</summary><code>SHA256 {paper.sha256}</code></details></div></aside></>}
++      {showSource && paper && pdfUrl && <><div className="t1-resize" {...source.separatorProps} /><aside className="t1-source" aria-label={t("t1.originalPdf")}><div className="t1-source-heading"><strong title={paper.filename ?? paper.title}><GenericFileIcon size={15} />{batchId ? paper.filename ?? paper.title : t("t1.originalPdf")}</strong><a href={`${pdfUrl}#page=${page}`} target="_blank" rel="noreferrer">{t("t1.openOriginal")}<OpenInNewTabIcon size={13} /></a></div>{sourceBlocked ? <p className="t1-alert">{t("t1.sourceProblem")}</p> : <PdfSource key={`${paper.id}:${paper.sha256}`} url={pdfUrl} sha256={paper.sha256} page={page} pages={paper.pages} onPage={sourcePage} />}<div className="t1-source-footer"><small>{t("t1.sourceUnchanged")}</small><DetailDisclosure key={paper.id} title={t("t1.sourceVersion")}><code>SHA256 {paper.sha256}</code></DetailDisclosure></div></aside></>}
+       {refreshing && <RefreshIndicator label={t("t1.refreshing")} />}
+     </div>
+     <WorkbenchNotes open={showNotes} title={t(editor ? "t1.editTitle" : "t1.notes")} onClose={() => { setShowNotes(false); setEditor(null); }}>
+@@ -521,6 +523,6 @@
+     </WorkbenchNotes>
+     <SidebarMenu open={menu !== null} anchor={menu} sheet={mobile} ariaLabel={t("t1.theme")} title={t("t1.theme")} cancelLabel={t("t1.close")} onClose={() => setMenu(null)} items={([['auto', 'system'], ['light', 'light'], ['dark', 'dark']] as const).map(([id, key]) => ({ type: "item", id, label: t(`t1.${key}`), checked: preference === id, onSelect: () => setThemePreference(id) }))} />
+     <RunTaskMenu menu={taskMenu} run={runs.find(run => run.run_id === taskMenu?.runId)} paper={papers.find(paper => paper.id === taskMenu?.paperId)} members={taskGroups.find(group => group.runs.some(run => run.run_id === taskMenu?.runId))?.runs} cancelling={cancelling} mobile={mobile} onClose={() => setTaskMenu(null)} onCancel={run => void cancelRun(run.run_id)} onView={selectRun} onDelete={requestRunDeletion} />
+-    <RunDeleteDialog target={deleteTarget} busy={deleteBusy} cleanupPending={Boolean(cleanupTarget && cleanupTarget.runId === deleteTarget?.runId)} blocked={Boolean(deleteTarget && runs.some(run => (run.document_id === deleteTarget.paperId || deleteTarget.members?.some(member => member.paperId === run.document_id)) && (canCancelRun(run) || run.result_ready === false)))} error={deleteError} onClose={() => setDeleteTarget(null)} onConfirm={target => void deleteRun(target)} />
++    <RunDeleteDialog target={deleteTarget} busy={deleteBusy} cleanupPending={Boolean(cleanupTarget && cleanupTarget.runId === deleteTarget?.runId)} blocked={Boolean(deleteTarget && runs.some(run => (run.run_id === deleteTarget.runId || deleteTarget.members?.some(member => member.runId === run.run_id)) && runDeletionBlocked(run)))} error={deleteError} onClose={() => setDeleteTarget(null)} onConfirm={target => void deleteRun(target)} />
+   </div>;
+ }
+--- a/code/apps/pi-web/t1/WorkbenchNotes.tsx
++++ b/code/apps/pi-web/t1/WorkbenchNotes.tsx
+@@ -10,27 +10,26 @@
+   title: string;
+   onClose: () => void;
+   children: ReactNode;
+-  variant?: "notes" | "creation";
++  variant?: "notes" | "creation" | "details";
+   footer?: ReactNode;
+   busy?: boolean;
+ }) {
+   const { t } = useI18n();
+   const panel = useRef<HTMLDialogElement>(null);
+-  const opener = useRef<HTMLElement | null>(null), uniqueTitle = useId();
+-  const titleId = variant === "creation" ? uniqueTitle : "t1-notes-title";
++  const opener = useRef<HTMLElement | null>(null), titleId = useId();
+   useEffect(() => {
+     const dialog = panel.current;
+     if (open && !dialog?.open) { opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; dialog?.showModal(); }
+     else if (!open && dialog?.open) dialog.close();
+   }, [open]);
+ 
+-  return <dialog ref={panel} className={variant === "creation" ? "t1-creation-dialog" : "t1-notes"} aria-labelledby={titleId} onCancel={event => {
++  return <dialog ref={panel} className={variant === "notes" ? "t1-notes" : variant === "creation" ? "t1-creation-dialog" : "t1-detail-dialog"} aria-labelledby={titleId} onCancel={event => {
+     if (busy) event.preventDefault();
+   }} onClose={() => {
+-    if (variant === "creation" && opener.current?.isConnected && opener.current.getClientRects().length) opener.current.focus({ preventScroll: true });
++    if (opener.current?.isConnected && opener.current.getClientRects().length) opener.current.focus({ preventScroll: true });
+     onClose();
+   }} onKeyDown={event => {
+-    if (variant !== "creation" || event.key !== "Escape") return;
++    if (variant === "notes" || event.key !== "Escape") return;
+     event.stopPropagation();
+     if (event.nativeEvent.isComposing || event.keyCode === 229) event.preventDefault();
+   }} onClick={event => {
+@@ -39,7 +38,7 @@
+     const bounds = event.currentTarget.getBoundingClientRect();
+     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
+   }}>
+-    <header className="t1-notes-heading"><h2 id={titleId}>{title}</h2><button type="button" autoFocus className="t1-icon-button" disabled={busy} aria-label={t(variant === "creation" ? "t1.close" : "t1.closeNotes")} onClick={onClose}><CloseIcon size={18} /></button></header>
++    <header className="t1-notes-heading"><h2 id={titleId}>{title}</h2><button type="button" autoFocus className="t1-icon-button" disabled={busy} aria-label={t(variant === "notes" ? "t1.closeNotes" : "t1.close")} onClick={onClose}><CloseIcon size={18} /></button></header>
+     <div className="t1-notes-content">{children}</div>
+     {footer && <footer className="t1-dialog-footer">{footer}</footer>}
+   </dialog>;
+--- a/code/apps/pi-web/t1/workbench.css
++++ b/code/apps/pi-web/t1/workbench.css
+@@ -195,12 +195,16 @@
+ }
+ 
+ /* Creation dialogs reuse the notes dialog's native focus and Escape behavior. */
+-.t1-creation-dialog { width: min(720px, calc(100vw - 28px)); height: min(640px, calc(var(--app-viewport-height, 100dvh) - 32px)); max-width: calc(100vw - 28px); max-height: calc(var(--app-viewport-height, 100dvh) - 32px); margin: auto; padding: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: var(--t1-surface); color: var(--text); box-shadow: var(--t1-shadow); }
+-.t1-creation-dialog[open] { display: flex; flex-direction: column; }
+-.t1-creation-dialog::backdrop { background: #15151d55; }
+-.t1-creation-dialog .t1-notes-heading { gap: 12px; padding: 16px 20px; }
+-.t1-creation-dialog .t1-notes-heading h2 { min-width: 0; margin: 0; font-size: 16px; }
+-.t1-creation-dialog .t1-notes-content { padding: 18px 20px; overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior: contain; }
++.t1-creation-dialog, .t1-detail-dialog { width: min(720px, calc(100vw - 28px)); height: min(640px, calc(var(--app-viewport-height, 100dvh) - 32px)); max-width: calc(100vw - 28px); max-height: calc(var(--app-viewport-height, 100dvh) - 32px); margin: auto; padding: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: var(--t1-surface); color: var(--text); box-shadow: var(--t1-shadow); }
++.t1-creation-dialog[open], .t1-detail-dialog[open] { display: flex; flex-direction: column; }
++.t1-creation-dialog::backdrop, .t1-detail-dialog::backdrop { background: #15151d55; }
++:is(.t1-creation-dialog, .t1-detail-dialog) .t1-notes-heading { gap: 12px; padding: 16px 20px; }
++:is(.t1-creation-dialog, .t1-detail-dialog) .t1-notes-heading h2 { min-width: 0; margin: 0; font-size: 16px; }
++:is(.t1-creation-dialog, .t1-detail-dialog) .t1-notes-content { padding: 18px 20px; overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior: contain; overflow-wrap: anywhere; }
++.t1-detail-dialog { width: min(640px, calc(100vw - 28px)); height: min(560px, calc(var(--app-viewport-height, 100dvh) - 32px)); }
++.t1-detail-disclosure { margin-top: 8px; }
++.t1-detail-disclosure > button { max-width: 100%; text-align: left; }
++.t1-detail-dialog pre, .t1-detail-dialog code { overflow-wrap: anywhere; white-space: pre-wrap; }
+ .t1-creation-dialog .t1-dialog-footer { display: flex; flex-shrink: 0; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); background: var(--t1-inset); }
+ .t1-creation-dialog .t1-scope-editor { margin: 0; padding: 0; }
+ .t1-creation-dialog .t1-scope-layers { margin: 0 0 18px; }
+@@ -392,7 +396,6 @@
+ .t1-layout-close { font-size: 0; }
+ .t1-source-passage + .t1-source-passage { border-top: 1px solid var(--border); margin-top: 22px; padding-top: 18px; }
+ .t1-context { border-top: 1px solid var(--t1-line); margin-top: 24px; padding-top: 14px; color: var(--text-muted); font-size: 12px; }
+-.t1-context[open] > summary { margin-bottom: 14px; }
+ .t1-context .t1-verbatim { font-size: 14px; }
+ .t1-association { border-top: 1px solid var(--t1-line); padding-top: 18px; margin-top: 24px; font-size: 12px; }
+ .t1-association > summary { color: var(--text-muted); }
+@@ -642,10 +645,19 @@
+ /* Submission results keep paper provenance visible while sharing one task list. */
+ .t1-batch-overview { margin: 0 0 18px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); font-size: 12px; line-height: 1.7; }
+ .t1-batch-overview p { margin: 0 0 5px; }
+-.t1-batch-overview details { margin-top: 7px; }
+-.t1-batch-overview ul { padding: 0; list-style: none; max-height: 220px; overflow: auto; }
+-.t1-batch-overview li { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+-.t1-batch-overview li > span:first-child { flex: 1 1 140px; overflow-wrap: anywhere; }
++.t1-batch-overview .t1-progress-heading { margin-bottom: 7px; color: var(--text); }
++.t1-batch-overview .t1-progress-heading > strong { font-weight: 500; }
++.t1-batch-overview .t1-batch-ended { color: var(--text); font-variant-numeric: tabular-nums; }
++.t1-batch-stages li { align-items: flex-start; }
++.t1-batch-stages li > div { min-width: 0; }
++.t1-batch-stages small { display: block; font-size: 10px; font-weight: 400; margin-top: 2px; }
++.t1-batch-overview[data-progress-outcome="incomplete"] .t1-progress-track > span { background: var(--t1-warning); }
++.t1-batch-overview .t1-batch-progress-help { margin-top: 8px; font-size: 10px; }
++.t1-batch-outcomes { justify-content: flex-start; }
++.t1-batch-members { margin: 16px 0 0; padding: 0; list-style: none; }
++.t1-batch-members li { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
++.t1-batch-members li > span:first-child { flex: 1 1 160px; overflow-wrap: anywhere; }
++.t1-batch-members li > span:not(:first-child), .t1-batch-members small { color: var(--text-muted); }
+ .t1-index-source { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; color: var(--text-muted); margin: 2px 0 5px; }
+ .t1-record-provenance { margin: 0 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 12px; overflow-wrap: anywhere; }
+ .t1-record-provenance small { margin-left: 8px; }
+--- a/code/apps/pi-web/t1/messages.mjs
++++ b/code/apps/pi-web/t1/messages.mjs
+@@ -32,7 +32,7 @@
+   runDeleteFailed: ["Deletion was not confirmed: {reason}", "删除尚未确认：{reason}", "刪除尚未確認：{reason}"],
+   runCleanupPending: ["The extraction record was deleted, but some related files still need cleanup. Retry to finish cleanup; the record will not be restored.", "抽取记录已删除，部分关联文件尚待清理。可重试完成清理，记录不会恢复。", "擷取記錄已刪除，部分關聯檔案尚待清理。可重試完成清理，記錄不會恢復。"],
+   retryCleanup: ["Retry cleanup", "重试清理文件", "重試清理檔案"],
+-  runDeleteBusy: ["A related task is preparing, running, finishing or saving changes. Wait for it to finish, then retry. You can cancel a running task if you want to stop it.", "相关任务仍在准备、运行、收尾或保存修改，请等待相关操作结束后重试；需要停止时可先取消运行中的任务。", "相關任務仍在準備、執行、收尾或儲存修改，請等待相關操作結束後重試；需要停止時可先取消執行中任務。"],
++  runDeleteBusy: ["This task still has papers running, finishing or saving changes. Wait for them to finish, then retry.", "此任务仍有论文在运行、收尾或保存修改，请等待结束后重试。", "此任務仍有論文在執行、收尾或儲存修改，請等待結束後重試。"],
+   currentTaskEvents: ["Events for this extraction", "这次抽取的事件", "這次擷取的事件"],
+   viewTaskHistory: ["View tasks and history", "查看任务与历史", "檢視任務與歷史"],
+   noCancellableTasks: ["No tasks to cancel", "暂无可取消的任务", "暫無可取消的任務"],
+@@ -158,6 +158,14 @@
+   linkedFigureUnavailable: ["This Figure link was recorded, but its source Figure is unavailable. Check the original PDF.", "已记录配图关系，但原图暂不可用，请查看原 PDF。", "已記錄配圖關係，但原圖暫不可用，請檢視原 PDF。"],
+   figureAssetUnavailable: ["The full original Figure is unavailable. Check the original PDF.", "暂未取得可用的整幅原图，请查看原 PDF。", "暫未取得可用的整幅原圖，請檢視原 PDF。"],
+   extractionProgress: ["Extraction progress", "抽取进度", "擷取進度"],
++  batchProgress: ["Batch progress", "整批进度", "整批進度"],
++  batchEndedProgress: ["Ended papers", "已结束论文", "已結束論文"],
++  batchEndedPercent: ["Ended papers {count} / {total} · {percent}%", "已结束论文 {count} / {total} 篇 · {percent}%", "已結束論文 {count} / {total} 篇 · {percent}%"],
++  batchStagePapers: ["{count} papers", "{count} 篇", "{count} 篇"],
++  batchFinishing: ["Saving final results {count}", "收尾落盘 {count} 篇", "收尾儲存 {count} 篇"],
++  batchStateUnknown: ["State unrecorded {count}", "阶段待核 {count} 篇", "階段待核 {count} 篇"],
++  batchEndedHelp: ["Each paper runs independently. Ended papers include failures and cancellations; 100% ended does not mean every paper completed processing.", "各篇独立推进。已结束包含失败、取消等情况；结束比例 100% 不代表全部论文处理完成。", "各篇獨立推進。已結束包含失敗、取消等情況；結束比例 100% 不代表全部論文處理完成。"],
++  progress_ended: ["Ended", "已结束", "已結束"],
+   progress_queued: ["Queued", "排队", "排程"],
+   progress_parsing: ["Parse PDF", "PDF 解析", "PDF 解析"],
+   progress_extracting: ["Extract", "原文抽取", "原文擷取"],
+--- a/code/apps/pi-web/t1/task-actions.ts
++++ b/code/apps/pi-web/t1/task-actions.ts
+@@ -1,4 +1,5 @@
+ import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import { runPresentation } from "./run-presentation";
+ 
+ // Native reconciliation is cancellable. The API also uses this state during
+ // terminal finalization, so the cancel response decides the actual outcome.
+@@ -9,6 +10,12 @@
+   return cancellable.has(run.state);
+ }
+ 
++/** Only the selected task's members can block its logical deletion. Shared
++ * source cleanup is coordinated separately by the server. */
++export function runDeletionBlocked(run: Pick<WorkbenchRun, "state" | "result_ready">) {
++  return !runPresentation(run.state, {}).ended || run.result_ready === false;
++}
++
+ export function cancellationResult(state: string) {
+   if (state === "cancelled") return "cancelDone";
+   if (ended.has(state)) return "cancelEnded";
+--- a/code/apps/pi-web/t1/task-actions.test.ts
++++ b/code/apps/pi-web/t1/task-actions.test.ts
+@@ -1,10 +1,19 @@
+ import assert from "node:assert/strict";
+ import test from "node:test";
+-import { canCancelRun, cancellationResult } from "./task-actions";
++import { canCancelRun, cancellationResult, runDeletionBlocked } from "./task-actions";
+ 
+ test("only active extraction states offer cancellation", () => {
+   for (const state of ["queued", "parsing", "extracting", "reconciling"]) assert.equal(canCancelRun({ state }), true);
+   for (const state of ["completed", "partial", "failed", "cancelled", "interrupted", "unknown"]) assert.equal(canCancelRun({ state }), false);
++});
++
++test("deletion requires the target to have ended and finished saving", () => {
++  for (const state of ["queued", "parsing", "extracting", "reconciling", "unknown"]) assert.equal(runDeletionBlocked({ state, result_ready: true }), true);
++  for (const state of ["completed", "partial", "failed", "cancelled", "interrupted"]) {
++    assert.equal(runDeletionBlocked({ state, result_ready: false }), true);
++    assert.equal(runDeletionBlocked({ state, result_ready: true }), false);
++    assert.equal(runDeletionBlocked({ state }), false);
++  }
+ });
+ 
+ test("a cancellation response reports the actual state, including terminal races and finalization", () => {
+--- a/code/README.md
++++ b/code/README.md
+@@ -2,9 +2,9 @@
+ 
+ 从文本型PDF提取肿瘤影像外观原文，保留出处、必要语境、整幅Figure和原图注，供逐篇核对与导出。正式主流程为B0；F仅保留实验实现与历史对照。
+ 
+-当前普通工作台为 **http://127.0.0.1:30141/**，后端为 **http://127.0.0.1:3210**；当前构建为`apps/pi-web/build/task-feedback-delivery-validated-20261115`，BUILD_ID `pISFsxmp-bRwQ057BEqbQ`。创建任务按上传论文、抽取范围和模型分卡展示；选择文件或文件夹后自动串行上传，确认后点击开始才创建抽取。每次提交在侧栏与历史作为一个任务，批量显示“批量”并统一展示已提交成员结果；每条结果保留所属论文、原页、整图与子run来源。任务完成状态依据各自持久记录区分完成、未完成与待核，不随当前选择漂移。顶部悬浮提示带进出动画，成功4秒、错误6秒自动退场；处理中保持。
++当前普通工作台为 **http://127.0.0.1:30141/**，后端为 **http://127.0.0.1:3210**；当前构建为`apps/pi-web/build/batch-followup-delivery-validated-20261115`，BUILD_ID `tsHeQQNyzce-sz30XK1yw`。创建任务按上传论文、抽取范围和模型分卡展示；选择文件或文件夹后自动串行上传，确认后点击开始才创建抽取。每次提交在侧栏与历史作为一个任务，批量显示“批量”并统一展示已提交成员结果；每条结果保留所属论文、原页、整图与子run来源。任务完成状态依据各自持久记录区分完成、未完成与待核，不随当前选择漂移。顶部悬浮提示带进出动画，成功4秒、错误6秒自动退场；处理中保持。
+ 
+-[本轮记录](docs/acceptance/new-task-layout-2026-11-14/report.json)中的原第1、2、3项已获用户审核通过，原第4项当前新增的5点已统一交付，等待用户统一审核；原第5项尚未开始，正式审查仍共用3/3。本次17项限定测试、1项导出快照复验、7项组件检查及候选构建9组整合浏览器通过；最终构建另经删除身份/结束计数/来源回退定点回放和3项真实GET/HEAD核验。后端38128、前端38147/wrapper38140；原17表、191个来源/产物、两份env及模型配置保全，新增1个空批次删除标记表。生产业务测试写入、生产导出及额外付费调用均为0，医学与完整S6/S7结论不升级。
++[本轮记录](docs/acceptance/new-task-layout-2026-11-14/report.json)中的原第1、2、3项已获用户审核通过，原第4项及新增反馈等待用户统一审核；原第5项尚未开始，正式审查仍共用3/3。最新节点 `item4.followup_batch_delete_progress_layout_20261115` 修复同论文独立活动任务阻止已结束任务删除的问题，补齐整批进度和稳定展开浮层；27项相关后端检查、14项界面单测、6组同构建隔离浏览器通过。后端52821、前端52852/wrapper52845；安全切换和真实只读核验见该节点。真实“测试2”仅核对显示及删除确认框，未确认删除。生产业务测试写入、生产导出及额外付费调用均为0，医学与完整S6/S7结论不升级。
+ 
+ [前轮工作台体验报告](docs/acceptance/workbench-experience-2026-11-14/report.json)记录正式审查3/3、71项后端与346项抽取回归、14项界面单测、16组同构建隔离浏览器与5组真实只读核验。新增任务用相同授权原文投影预载，免去重复索取输入的模型往返；SSE仅查询游标后的新事件。本地SDK与查询基准通过，尚未新增付费任务验证真实总耗时收益。原用户任务自然结束为partial，13条候选和唯一明确配对Figure5保留；上线核验时为17表、8run、8篇论文记录、1模型配置，逻辑数据、两份env与手工目录均保持。代理生产业务写入与额外付费模型调用均为0。
+ 
+@@ -38,7 +38,7 @@
+ 复用本次已验证构建并重启前端时，先确认原前端进程已停止，然后在`code/`运行（普通重新构建流程仍使用上方`build:web`）：
+ 
+ ```bash
+-T1_NEXT_DIST_DIR=build/task-feedback-delivery-validated-20261115 bash scripts/with-node.sh npm run start:web
++T1_NEXT_DIST_DIR=build/batch-followup-delivery-validated-20261115 bash scripts/with-node.sh npm run start:web
+ ```
+ 
+ 开发时可用`bash scripts/with-node.sh npm run dev:web`替代生产前端，默认仍30141。`npm run dev:server`不自动载入工作台开关/限额；不要仅改`.env`就假定这些已生效。首次依赖/CPU模型准备及Docker启动按[部署说明](deploy/README.md)执行，不运行上游通用pi-web入口或另建前端。
+@@ -47,12 +47,18 @@
+ 
+ 1. 创建任务先选择本地PDF。本地入口可“选择文件”多选PDF，或“选择文件夹”递归筛选用户电脑文件夹及子文件夹中的PDF（扩展名不区分大小写）；其它文件不上传。当前文件清单按完整PDF字节SHA去重后计数，异名同内容保留一份并提示，同名异内容保持独立；服务端再次核对并复用已有论文/文件，已有重复历史记录不迁并或删除。每批最多20份不同内容、50MiB/篇；超过上限时整次不加入并保留原清单，按提示分批。选择后自动逐文件串行上传，独立显示成败，可重试失败项或移除未提交项；上传不调用模型。文件与文件夹入口共用癌种→图像模态两层范围和模型设置，默认不限且均可多选；由手工JSON配置可选关联，空选/失效明确提示并阻止开始，不自动放宽。浏览器不支持目录选择时仍可使用多选文件。上传后的PDF保存在服务器；后续存储处理已登记为T1-F02，尚未实现，本轮不清理既有文件。
+ 2. 点击开始后，每篇保留独立子run、2个FIFO槽与原每run预算，用户层按提交任务展示。首次开始按有效未移除成员数固定单篇或批量，标题、范围、模型与batch_id一起冻结；部分创建失败保留草稿与幂等key可继续重试，仅全部有效成员受理成功后清空一次性表单、显示成功提示并打开统一结果，保留范围和模型偏好。单篇留空标题使用原文件名；批量留空使用批量默认名。标题不改论文来源。同论文不同提交始终分开，缺少提交metadata的旧记录不猜组；侧栏/历史数量按提交任务统计。整页重载不恢复未提交草稿，后台已受理任务继续运行。
+-3. 在“抽取结果”阅读连续原文和明确配图，使用“排除此条”或“恢复保留”取舍。每条描述下显示对应配图状态；明确配对时直接展示整幅Figure和完整原图注，不明确时保留文字，不用独立图片猜配。任务进度分别显示排队、解析、原文处理和汇总核验；已处理块数只代表该阶段，来源缺口和失败/取消/部分结果单独显示。同源成员、来源版本与高级操作集中在“说明”，原片段/指纹和主目标/背景语义保持。
++3. 在“抽取结果”阅读连续原文和明确配图，使用“排除此条”或“恢复保留”取舍。每条描述下显示对应配图状态；明确配对时直接展示整幅Figure和完整原图注，不明确时保留文字，不用独立图片猜配。单篇任务进度显示排队、解析、原文处理和汇总核验；批量进度显示各阶段篇数及“已结束论文/实际已提交论文”比例，结束包含失败、取消和中断，100%结束不代表全批处理完成。只有每篇持久完成为true且结果落盘时，整批才显示完成；单篇块数或SSE不代替整批进度。同源成员、来源版本与高级操作集中在“说明”，原片段/指纹和主目标/背景语义保持。
+ 4. 结果默认保留；排除可恢复，旧有效拒绝延续，修改内容不会悄悄恢复。可选来源/标签修订从“说明”进入并记录修订人；日常取舍无需审核人或理由。开发抽样、医学核验与旧评价独立，默认保留不表示医学批准，保留背景仍是背景。
+ 5. 单篇可下载当前未排除结果的JSONL、CSV或证据包；批量下载一个统一证据包，内含逐成员原包和完整成员manifest，保留run/paper/原页/图像隔离。0保留成员明确列出，不把空成员藏起；任一有内容成员来源阻塞会标明成员并使整包失败。默认保留不表示医学批准；来源缺失或SHA不符的既有导出校验保持。
+ 
+-在左侧“抽取任务”或“任务与历史”选择提交任务直接查看结果；批量无需先选子任务。每个任务只有一个“⋯”菜单，取消批量任务作用于该批全部活动成员，已保存结果保留；删除确认会列出整批已提交论文。删除前全成员及共享来源活动预检，通过后同事务删除该任务结果/版本/取舍/审阅/事件/导出并持久记录删除标记，再按引用保护清理文件；原PDF与其它提交仍在引用的来源保留。清理失败可重试且不恢复任务；旧页面按单run删除批量成员会返回409，须刷新从整批菜单操作。技术事件与当前来源信息在“说明”中。
++在左侧“抽取任务”或“任务与历史”选择提交任务直接查看结果；批量无需先选子任务。每个任务只有一个“⋯”菜单，取消批量任务作用于该批全部活动成员，已保存结果保留；删除确认会列出整批已提交论文。删除前预检目标全成员自身活动、收尾及保存；已结束目标同事务删除结果/版本/取舍/审阅/事件/导出并持久记录删除标记。同论文其它独立任务仍在准备、运行或写入时，只延后物理文件清理，逻辑删除成功并返回200；相关守卫释放、已有清理成功释放及重启会恢复既有待清理计划。原PDF与其它提交仍在引用的来源保留；真实文件清理失败仍返回503并可重试，不恢复任务。旧页面按单run删除批量成员会返回409，须刷新从整批菜单操作。技术事件与当前来源信息在“说明”中。
+ 
++
++## 界面展开的统一开发规则
++
++后续新增或修改用户可见的“展开/详情/更多”入口，须保持主页面及相邻区块的尺寸和位置稳定。主页面使用浮层、抽屉或对话框承载额外内容，设置固定或最大高度与内部滚动；条目、文件名或正文数量增加时不得推挤原布局。手机窄屏同样适用，并须支持键盘访问、Esc、点击外部关闭与焦点返回原入口。页码定位等离开详情的动作须先关闭浮层再显示目标原文。已处在固定高度、内部可滚动说明/编辑抽屉中的技术细节可在容器内展开，不要求机械替换。
++
++本轮已应用于已提交论文、主结果原文上下文、来源告警版本、PDF页脚版本与关于工作台；既有范围/模型/额度弹窗及任务选择/导出浮层保持。此为持续界面约束，与T1-F02后续通用存储处理分开。
+ 
+ ## 模型与限额
+ 
+--- a/code/deploy/README.md
++++ b/code/deploy/README.md
+@@ -2,9 +2,11 @@
+ 
+ ## 当前宿主工作台（2026-11-15）
+ 
+-普通入口为`http://127.0.0.1:30141/`，后端为`http://127.0.0.1:3210`。当前构建`apps/pi-web/build/task-feedback-delivery-validated-20261115`、BUILD_ID `pISFsxmp-bRwQ057BEqbQ`；Next38147（wrapper38140）、后端38128。新增5项已统一实现上线，等待用户统一审核；原第5项未开始，正式审查共用3/3。侧栏/历史每提交一个任务，批量统一结果、整批取消/确认删除与统一保留包导出逐成员隔离来源；选择PDF自动上传，开始按钮才创建抽取，全局提示自动退场。限定17项测试+1项导出快照、7项组件及候选9组整合通过；最终构建仅就显示/删除来源回退修整重建并定点回放，通过3项真实GET/HEAD核验，详见[原报告新增节点](../docs/acceptance/new-task-layout-2026-11-14/report.json) `item4.feedback_20261115`。
++普通入口为`http://127.0.0.1:30141/`，后端为`http://127.0.0.1:3210`。当前构建`apps/pi-web/build/batch-followup-delivery-validated-20261115`、BUILD_ID `tsHeQQNyzce-sz30XK1yw`；Next52852（wrapper52845）、后端52821。本轮3项追加反馈已实现上线，等待用户统一审核；原第5项未开始，正式审查共用3/3。已结束任务删除只预检目标run/整批自身活动和写入，同论文独立任务活动时延后既有物理清理并返回逻辑删除成功；共享PDF/来源引用保护保持。批量进度按已结束论文/实际提交篇数统计，100%结束不代表全部处理完成；成员和主页面详情使用有界内部滚动浮层。27项相关后端、14项界面单测、6组同构建隔离和4项真实GET/HEAD核验通过，详见[原报告新增节点](../docs/acceptance/new-task-layout-2026-11-14/report.json) `item4.followup_batch_delete_progress_layout_20261115`。
+ 
+-本次先关闭前端监听阻止新提交，重复确认6个run均结束且结果已落盘，再做SQLite一致备份及保全并优雅切换空闲后端。原17表逻辑hash、9篇论文/6run、191来源/产物和两env/config保持；新增仅空`workbench_deleted_batches`表，完整性ok/外键错误0，模型仍gpt-6-luna/medium/Responses。首试因旧Next长SSE暂缓并恢复入口，重试在空闲后端结束SSE后恢复新服务；精确清理无监听旧前端11874/11881，新服务及任务未受影响。备份`runtime-data/backups/task-feedback-20261115-before/t1.sqlite`、旧后端源码`runtime-data/rollbacks/task-feedback-20261115-before/code`及前一构建`build/single-submit-feedback-validated-20261115`保留；生产业务测试写入/生产导出/额外付费调用均0。
++本次先关闭30141监听，重复确认5run均结束且result_ready=true、无后台解析/业务子进程，再一致备份并优雅切换空闲后端以结束旧SSE。18表逻辑hash、9篇论文/5run、255来源/产物和两env/config保持，integrity ok/外键0，模型仍gpt-6-luna/medium/Responses；未新增schema。本次helper在观察旧Next自然退出时遇到/proc读取竞态，随后直接续接已验新服务，未重复停服或备份；旧服务均优雅退出。SQLite备份`runtime-data/backups/batch-followup-20261115-before/t1.sqlite`、旧后端源码快照`runtime-data/rollbacks/batch-followup-20261115-before/apps/server/src`及前一构建`build/task-feedback-delivery-validated-20261115`保留。真实“测试2”仅查看11条结果、成员浮层及确认框按钮，保留关闭而未确认删除。生产业务写入/导出/额外付费调用0。
++
++前轮`item4.feedback_20261115`的6run/9paper、191产物与新增空`workbench_deleted_batches`表等保全结论仅对应前次交付时点，原备份及证据保留。
+ 
+ 第4项当前记录与导出未复现跨任务合并，已验证的修复限定在精确任务/历史链接、任务来源和SSE显示归属：任务详情加载或失败时不借用论文最新来源；可映射历史项读取其自己的来源快照，缺失时保留该项文字并明确来源不可用。根/web类型检查、触及lint、10项导航/SDK测试、1项无模型同PDF多run综合隔离及8组同构建浏览器通过；不将回放视为新医学抽取验证。用户选择保留Luna medium，现有8192输出上限与内存session等固定行为本轮只核验，未增加temperature/top_p/seed或修改服务器配置；无动态时钟注入，相同输入跨模拟日期请求体相同，不保证完整多轮医学输出一致，真实收费复验未执行。
+ 
+@@ -13,7 +15,7 @@
+ 需复用当前构建启动前端时，先确认原前端监听已经关闭，从`code/`执行：
+ 
+ ```bash
+-T1_NEXT_DIST_DIR=build/task-feedback-delivery-validated-20261115 bash scripts/with-node.sh npm run start:web
++T1_NEXT_DIST_DIR=build/batch-followup-delivery-validated-20261115 bash scripts/with-node.sh npm run start:web
+ ```
+ 
+ 后续历史段中的构建、PID、数据计数和命令只对应各交付时点；当前宿主状态以本节与本轮报告为准。Docker30142使用下述独立部署，不承载现有30141数据。
+--- a/code/apps/pi-web/t1/submission-groups.ts
++++ b/code/apps/pi-web/t1/submission-groups.ts
+@@ -17,10 +17,10 @@
+ export function submissionRun(group: SubmissionGroup): WorkbenchRun {
+   const first = group.runs[0]!;
+   if (group.kind !== "batch") return first;
+-  const active = group.runs.filter(canCancelRun), endedStates = group.runs.map(run => run.state);
+-  const complete = group.runs.every(run => runPresentation(run.state, run).taskComplete);
++  const active = group.runs.filter(run => canCancelRun(run) || run.result_ready === false), endedStates = group.runs.map(run => run.state);
++  const complete = group.runs.every(run => run.result_ready !== false && runPresentation(run.state, run).taskComplete);
+   const incomplete = group.runs.some(run => run.task_processing_complete === false || ["failed", "cancelled", "interrupted"].includes(run.state));
+-  const state = active.length ? ["queued", "parsing", "extracting", "reconciling"].find(stage => active.some(run => run.state === stage))!
++  const state = active.length ? ["queued", "parsing", "extracting", "reconciling"].find(stage => active.some(run => run.state === stage)) ?? "reconciling"
+     : complete ? "completed" : endedStates.every(state => state === "cancelled") ? "cancelled"
+     : endedStates.every(state => state === "failed") ? "failed" : endedStates.every(state => state === "interrupted") ? "interrupted" : "partial";
+   const sum = (key: "completed" | "total" | "completed_batches" | "total_batches" | "source_gap_blocks") => group.runs.every(run => typeof run.progress?.[key] === "number") ? group.runs.reduce((n, run) => n + run.progress![key]!, 0) : undefined;
+--- a/code/apps/pi-web/t1/submission-groups.test.ts
++++ b/code/apps/pi-web/t1/submission-groups.test.ts
+@@ -38,5 +38,7 @@
+   assert.equal(runPresentation("partial", submissionRun(group({ task_processing_complete: false }))).statusKey, "taskEndedIncomplete");
+   assert.equal(submissionRun(group({ state: "queued", task_processing_complete: undefined })).state, "queued");
+   assert.equal(submissionRun(group({ state: "queued", task_processing_complete: undefined })).task_processing_complete, undefined);
++  assert.equal(submissionRun(group({ result_ready: false })).state, "reconciling");
++  assert.equal(runPresentation(submissionRun(group({ result_ready: false })).state, submissionRun(group({ result_ready: false }))).taskComplete, false);
+   assert.notEqual(resultRecordKey({ run_id: "a", id: "same-record" }), resultRecordKey({ run_id: "b", id: "same-record" }));
+ });
+--- a/code/apps/pi-web/t1/BatchProgress.tsx
++++ b/code/apps/pi-web/t1/BatchProgress.tsx
+@@ -0,0 +1,23 @@
++"use client";
++
++import { useI18n } from "@/hooks/useI18n";
++import type { WorkbenchPaper, WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import { batchProgress } from "./batch-progress";
++import { DetailDisclosure } from "./DetailDisclosure";
++import { originalRunFilename } from "./task-titles";
++
++export function BatchProgress({ batchId, runs, papers, runLabel }: { batchId: string; runs: readonly WorkbenchRun[]; papers: readonly WorkbenchPaper[]; runLabel: (run: WorkbenchRun) => string }) {
++  const { t } = useI18n(), progress = batchProgress(runs);
++  const endedText = t("t1.batchEndedCount", { count: progress.ended, total: progress.total });
++  const progressText = progress.percent === undefined ? endedText : t("t1.batchEndedPercent", { count: progress.ended, total: progress.total, percent: progress.percent });
++  return <section className="t1-run-progress t1-batch-overview" aria-label={t("t1.batchProgress")} data-batch-results={batchId} data-progress-outcome={progress.allComplete ? "complete" : progress.allEnded ? "incomplete" : "active"}>
++    <div className="t1-progress-heading"><strong>{t("t1.batchProgress")}</strong><div className="t1-progress-metrics"><span>{t("t1.progressCandidates", { count: progress.candidates })}</span></div></div>
++    <p>{t("t1.batchResultsHelp", { count: progress.total })}</p>
++    <p className="t1-batch-ended" aria-live="polite">{progressText}</p>
++    <ol className="t1-progress-stages t1-batch-stages">{progress.stages.map(({ stage, count }, index) => <li key={stage} data-stage={stage} data-step={count ? stage === "completed" ? progress.allComplete ? "done" : progress.allEnded ? "stopped" : "current" : "current" : "pending"}><span>{index + 1}</span><div>{t(stage === "completed" ? "t1.progress_ended" : `t1.progress_${stage}`)}<small>{t("t1.batchStagePapers", { count })}</small></div></li>)}</ol>
++    <div className="t1-progress-track" role="progressbar" aria-label={t("t1.batchEndedProgress")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress.percent} aria-valuetext={progressText}><span style={{ width: `${progress.percent ?? 0}%` }} /></div>
++    <div className="t1-progress-detail t1-batch-outcomes">{progress.outcomes.map(({ status, count }) => <span key={status}>{t(`t1.${status}`)} {count}</span>)}{progress.finishing > 0 && <span>{t("t1.batchFinishing", { count: progress.finishing })}</span>}{progress.unknownState > 0 && <span>{t("t1.batchStateUnknown", { count: progress.unknownState })}</span>}</div>
++    <p className="t1-batch-progress-help">{t("t1.batchEndedHelp")}</p>
++    <DetailDisclosure key={batchId} title={t("t1.batchMembers")}><p>{t("t1.batchResultsHelp", { count: progress.total })}</p><ul className="t1-batch-members">{runs.map(run => <li key={run.run_id} data-batch-member={run.run_id}><span>{originalRunFilename(run, papers.find(paper => paper.id === run.document_id))}</span><span>{run.result_ready === false && !["queued", "parsing", "extracting", "reconciling"].includes(run.state) ? t("t1.batchFinishing", { count: 1 }) : runLabel(run)}</span><small>{t("t1.recordCount", { count: run.candidate_count })}</small></li>)}</ul></DetailDisclosure>
++  </section>;
++}
+--- a/code/apps/pi-web/t1/DetailDisclosure.tsx
++++ b/code/apps/pi-web/t1/DetailDisclosure.tsx
+@@ -0,0 +1,14 @@
++"use client";
++
++import { useState, type ReactNode } from "react";
++import { WorkbenchNotes } from "./WorkbenchNotes";
++
++/** Main-page disclosures stay outside document flow, with native focus and
++ * Escape behavior and one bounded scrolling surface for any content length. */
++export function DetailDisclosure({ title, children, className = "" }: { title: string; children: ReactNode | ((close: () => void) => ReactNode); className?: string }) {
++  const [open, setOpen] = useState(false);
++  return <div className={`t1-detail-disclosure ${className}`}>
++    <button type="button" className="t1-link" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>{title}</button>
++    <WorkbenchNotes variant="details" open={open} title={title} onClose={() => setOpen(false)}>{typeof children === "function" ? children(() => setOpen(false)) : children}</WorkbenchNotes>
++  </div>;
++}
+--- a/code/apps/pi-web/t1/batch-progress.ts
++++ b/code/apps/pi-web/t1/batch-progress.ts
+@@ -0,0 +1,19 @@
++import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import { progressStages } from "./run-progress";
++import { runPresentation } from "./run-presentation";
++
++/** The fraction measures ended, saved papers only. Source blocks, summary
++ * receipts, selected-record SSE and candidate counts cannot advance it. */
++export function batchProgress(runs: readonly WorkbenchRun[]) {
++  const endedRuns = runs.filter(run => runPresentation(run.state, run).ended && run.result_ready !== false);
++  const complete = endedRuns.filter(run => runPresentation(run.state, run).taskComplete).length;
++  const stages = progressStages.map(stage => ({ stage, count: stage === "completed" ? endedRuns.length : runs.filter(run => run.state === stage).length }));
++  const finishing = runs.filter(run => runPresentation(run.state, run).ended && run.result_ready === false).length;
++  const unknownState = runs.length - stages.reduce((sum, stage) => sum + stage.count, 0) - finishing;
++  const outcomes = new Map<string, number>();
++  for (const run of endedRuns) { const key = runPresentation(run.state, run).statusKey; outcomes.set(key, (outcomes.get(key) ?? 0) + 1); }
++  return { total: runs.length, ended: endedRuns.length, percent: runs.length ? Math.floor(endedRuns.length / runs.length * 100) : undefined,
++    allEnded: runs.length > 0 && endedRuns.length === runs.length, allComplete: runs.length > 0 && complete === runs.length,
++    stages, finishing, unknownState, outcomes: [...outcomes].map(([status, count]) => ({ status, count })),
++    candidates: runs.reduce((sum, run) => sum + run.candidate_count, 0) };
++}
+--- a/code/apps/pi-web/t1/batch-progress.test.ts
++++ b/code/apps/pi-web/t1/batch-progress.test.ts
+@@ -0,0 +1,26 @@
++import test from "node:test";
++import assert from "node:assert/strict";
++import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import { batchProgress } from "./batch-progress";
++
++const run = (state: string, completion?: boolean, ready = true): WorkbenchRun => ({ run_id: state, document_id: state, state, fixture: true, candidate_count: 0,
++  result_ready: ready, ...(completion === undefined ? {} : { task_processing_complete: completion }), progress: { schema_version: "t1-workbench-progress-1", stage: "extracting", candidate_records: 0, telemetry: "events", completed: 100, total: 100, summary_completed: true } });
++
++test("parallel stage counts cover every member, including finalization and unknown states", () => {
++  const progress = batchProgress([run("queued", undefined, false), run("parsing", undefined, false), run("extracting", undefined, false), run("reconciling", undefined, false), run("partial", false), run("completed", true, false), run("future", undefined, false)]);
++  assert.deepEqual(progress.stages.map(stage => stage.count), [1, 1, 1, 1, 1]);
++  assert.equal(progress.finishing, 1); assert.equal(progress.unknownState, 1); assert.equal(progress.ended, 1); assert.equal(progress.percent, 14); assert.equal(progress.allComplete, false);
++});
++
++test("100% ended includes failures/cancellation/unknown completion and never certifies task success", () => {
++  const progress = batchProgress([run("completed", true), run("partial", undefined), run("partial", false), run("failed", true), run("cancelled", true), run("interrupted")]);
++  assert.equal(progress.percent, 100); assert.equal(progress.allEnded, true); assert.equal(progress.allComplete, false); assert.equal(progress.candidates, 0);
++  assert.deepEqual(progress.outcomes.map(item => item.status), ["completed", "taskEndedUnknown", "taskEndedIncomplete", "failed", "cancelled", "interrupted"]);
++});
++
++test("only all persisted successful completion is complete; extraction receipts and empty batches supply no success", () => {
++  assert.equal(batchProgress([run("completed", true), run("partial", true)]).allComplete, true);
++  assert.equal(batchProgress([run("extracting", undefined, false)]).percent, 0);
++  assert.equal(batchProgress([run("completed", true, false)]).allComplete, false);
++  assert.equal(batchProgress([]).percent, undefined); assert.equal(batchProgress([]).allComplete, false);
++});
+--- a/code/apps/pi-web/e2e/batch-followup.mjs
++++ b/code/apps/pi-web/e2e/batch-followup.mjs
+@@ -0,0 +1,106 @@
++/** Same production build, browser-fulfilled APIs only: no live task writes or model calls. */
++import assert from 'node:assert/strict';
++import { readFile, writeFile } from 'node:fs/promises';
++import { createHash } from 'node:crypto';
++import { dirname, join, resolve } from 'node:path';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..'), origin = 'http://127.0.0.1:30157';
++const evidence = join(code, 'docs/acceptance/new-task-layout-2026-11-14'), reportPath = join(evidence, 'report.json');
++const dist = 'apps/pi-web/build/batch-followup-delivery-validated-20261115', BUILD_ID = (await readFile(join(code, dist, 'BUILD_ID'), 'utf8')).trim();
++const result = { status: 'running', BUILD_ID, dist, checks: [], errors: [], blocked: [], mock_mutations: [], production_business_writes: 0, paid_calls: 0 };
++process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
++process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
++const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
++const browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
++const batchId = '11111111-1111-4111-8111-111111111111';
++const scope = { catalog_version: 'batch-progress-fixture', matching_policy_version: 'fixture', cancers: { mode: 'all', ids: [] }, image_types: { mode: 'all', ids: [] }, features: { mode: 'all', binding_ids: [] } };
++const profile = { profile_id: 'chosen-profile', provider: 'fixture', model_id: 'fixture-model', api: 'openai-responses', reasoning_effort: 'medium', context_window: 32768, max_output_tokens: 4096, configuration_source: 'server' };
++const catalog = { catalog_version: scope.catalog_version, cancers: [{ id: 'lung', name: '肺癌' }], image_types: [{ id: 'ct', name: 'CT', cancer_ids: ['lung'] }], features: [], bindings: [], default_scope: scope, restricted_available: true, development_only: false };
++const pdf = await readFile(join(code, 'evaluation/corpus/development-candidates/L01.pdf')), sha = createHash('sha256').update(pdf).digest('hex');
++const fragment = (text, run, page = 1) => ({ block_id: run + text.slice(-5), text_version: run + '-text', start: 0, end: text.length, exact_quote: text, occurrence: 1, physical_page: page, bbox: [0, 0, 10, 10], location_precision: 'block' });
++function seed(states) {
++  const runs = states.map((value, i) => ({ run_id: 'member-' + i, document_id: 'paper-' + i, state: value.state ?? value, fixture: true, candidate_count: i < 2 ? 1 : 0,
++    created_at: '2026-11-15T00:00:00Z', model_id: profile.model_id, model_profile: profile, scope, task_title: '批量核验示例', original_filename: i === states.length - 1 ? '最后一篇-' + '长文件名'.repeat(16) + '.pdf' : `论文 ${i + 1}.pdf`,
++    submission: { kind: 'batch', batch_id: batchId }, result_ready: value.ready ?? !['queued', 'parsing', 'extracting', 'reconciling'].includes(value.state ?? value), ...(value.complete === undefined ? {} : { task_processing_complete: value.complete }) }));
++  const papers = runs.map((run, i) => ({ id: run.document_id, title: '来源 ' + i, filename: run.original_filename, sha256: sha, language: 'en', pages: 12, note: '', uploaded: true, output_ids: [run.run_id] }));
++  runs.push({ ...runs[0], run_id: 'independent-active', state: 'extracting', result_ready: false, submission: { kind: 'single' }, task_title: '同论文的独立活动任务', candidate_count: 0, task_processing_complete: undefined });
++  return { runs, papers, writes: [] };
++}
++async function scenario(name, states, work, viewport = { width: 1440, height: 1000 }) {
++  const context = await browser.newContext({ viewport, locale: 'zh-CN', reducedMotion: 'reduce' }), state = seed(states);
++  await context.addInitScript(expected => { if (location.origin === expected) { localStorage.setItem('pi-locale', 'zh-CN'); localStorage.setItem('pi-theme', 'light'); localStorage.setItem('t1:extraction-model-profile', 'chosen-profile'); } }, origin);
++  const json = (route, value, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(value) });
++  const detail = run => ({ run, paper: state.papers.find(paper => paper.id === run.document_id), output: { id: run.run_id, strategy: 'B0', origin: 'controlled_fixture', state: run.state, scope, records: run.candidate_count ? [{ id: 'same-id', run_id: run.run_id, version: 1, fragments: [fragment('ONLY ' + run.run_id + ' original passage', run.run_id)], context: Array.from({ length: 80 }, (_, i) => fragment('Context ' + i + ' ONLY ' + run.run_id + ' source '.repeat(8), run.run_id, 2)), association: 'not_checked', figure_ids: [], proposed_figure_ids: [], reasons: [], review_status: 'pending', text_fingerprint: run.run_id, evidence_role: 'primary_candidate', retention: { status: 'kept', revision: 0, origin: 'default', record_version: 1 } }] : [], coverage: { ...(run.task_processing_complete === undefined ? {} : { task_processing_complete: run.task_processing_complete }) } }, source_units: [], figures: [], source_issues: [], source_status: 'valid', text_version: run.run_id + '-text', pdf_url: '/api/t1/workbench/papers/' + run.document_id + '/pdf' });
++  await context.route('**/*', async route => {
++    const request = route.request(), url = new URL(request.url()), path = url.pathname, method = request.method(), base = '/api/t1/workbench';
++    if (url.origin !== origin) { result.blocked.push({ name, method, path }); return route.abort('blockedbyclient'); }
++    if (!path.startsWith('/api/')) return route.continue();
++    if (method === 'GET' && path === base + '/capabilities') return json(route, { schema_version: 't1-workbench-capabilities-1', read_only: false, paper_upload: true, extraction_start: true, persisted_review: true, persisted_retention: true, retained_export: true, model_selection: true, backend_pi_sdk: '1.4.0', max_concurrent_runs: 2 });
++    if (method === 'GET' && path === base + '/catalog') return json(route, catalog);
++    if (method === 'GET' && path === base + '/models') return json(route, { provider: 'fixture', default_profile_id: profile.profile_id, profiles: [profile] });
++    if (method === 'GET' && path === base + '/papers') return json(route, { papers: state.papers });
++    if (method === 'GET' && path === base + '/runs') return json(route, { runs: state.runs });
++    if (method === 'GET' && path.endsWith('/events')) return route.fulfill({ contentType: 'text/event-stream', body: ': fixture\n\n' });
++    if (method === 'GET' && path.endsWith('/pdf')) return route.fulfill({ contentType: 'application/pdf', body: pdf });
++    const runId = path.match(/^\/api\/t1\/workbench\/runs\/([^/]+)$/)?.[1], paperId = path.match(/^\/api\/t1\/workbench\/papers\/([^/]+)$/)?.[1];
++    if (method === 'GET' && runId) return json(route, detail(state.runs.find(run => run.run_id === runId)));
++    if (method === 'GET' && paperId) return json(route, { paper: state.papers.find(paper => paper.id === paperId), outputs: state.runs.filter(run => run.document_id === paperId).map(run => detail(run).output), source_units: [], figures: [], source_status: 'not_parsed' });
++    if (method === 'DELETE' && path === base + '/batches/' + batchId) { state.writes.push({ method, path }); state.runs = state.runs.filter(run => run.submission.kind !== 'batch'); return json(route, { deleted: true, batch_id: batchId, cleanup_deferred: true }); }
++    result.blocked.push({ name, method, path }); return route.abort('blockedbyclient');
++  });
++  const page = await context.newPage(); page.setDefaultTimeout(10000); page.on('pageerror', error => result.errors.push({ name, error: String(error) }));
++  const go = async (view = 'records') => { await page.goto(origin + '/?paper=paper-0&run=member-0&view=' + view); await page.locator(view === 'records' ? '[data-batch-results]' : '.t1-new-task-panel:not([hidden])').waitFor(); if (viewport.width < 640 && await page.locator('.t1-sidebar').isVisible()) await page.getByRole('button', { name: '切换导航', exact: true }).click(); };
++  try { await work({ page, state, go, context }); result.checks.push({ name, status: 'passed' }); console.log('PASS ' + name); }
++  catch (error) { result.checks.push({ name, status: 'failed', error: String(error) }); console.log('FAIL ' + name + ' ' + error); await page.screenshot({ path: join(evidence, 'batch-followup-failed-' + name + '.png') }); }
++  finally { result.mock_mutations.push(...state.writes); await context.close(); }
++}
++const geometry = page => page.evaluate(() => Object.fromEntries(['.t1-results-panel', '.t1-record-nav', '.t1-batch-overview'].map(selector => { const rect = document.querySelector(selector).getBoundingClientRect(); return [selector, [rect.x, rect.y, rect.width, rect.height]]; })));
++async function stableOverlay(page, trigger, title, capture) {
++  await trigger.scrollIntoViewIfNeeded(); const before = await geometry(page);
++  await trigger.click(); const dialog = page.getByRole('dialog', { name: title, exact: true }); await dialog.waitFor();
++  assert.deepEqual(await geometry(page), before);
++  const metrics = await dialog.locator('.t1-notes-content').evaluate(element => ({ height: element.clientHeight, scroll: element.scrollHeight, overflow: getComputedStyle(element).overflowY }));
++  assert.ok(metrics.height > 0); assert.equal(metrics.overflow, 'auto');
++  if (capture) { assert.ok(metrics.scroll > metrics.height); await dialog.locator('.t1-notes-content').evaluate(element => { element.scrollTop = element.scrollHeight; }); await page.screenshot({ path: join(evidence, capture) }); }
++  await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' }); assert.deepEqual(await geometry(page), before); assert.equal(await trigger.evaluate(element => document.activeElement === element), true);
++  await trigger.click(); await dialog.waitFor(); await page.mouse.click(2, 2); await dialog.waitFor({ state: 'hidden' }); assert.equal(await trigger.evaluate(element => document.activeElement === element), true);
++}
++try {
++  assert.equal((await fetch(origin + '/_next/static/' + BUILD_ID + '/_buildManifest.js')).status, 200);
++  await scenario('parallel_progress_and_finishing', ['queued', 'parsing', 'extracting', 'reconciling', { state: 'partial', complete: false }, { state: 'completed', complete: true, ready: false }, 'future'], async ({ page, go }) => {
++    await go(); const bar = page.getByRole('progressbar', { name: '已结束论文', exact: true }); assert.equal(await bar.getAttribute('aria-valuenow'), '14');
++    assert.match(await bar.getAttribute('aria-valuetext'), /1 \/ 7/); assert.match(await page.locator('.t1-batch-outcomes').innerText(), /收尾落盘 1 篇/); assert.match(await page.locator('.t1-batch-outcomes').innerText(), /阶段待核 1 篇/);
++    assert.deepEqual(await page.locator('.t1-batch-stages small').allTextContents(), ['1 篇', '1 篇', '1 篇', '1 篇', '1 篇']);
++    assert.equal(await page.locator('[data-batch-results]').getAttribute('data-progress-outcome'), 'active'); await page.screenshot({ path: join(evidence, 'batch-followup-progress-desktop.png') });
++  });
++  const ended = Array.from({ length: 42 }, (_, i) => i % 6 === 0 ? { state: 'completed', complete: true } : ['partial', 'failed', 'cancelled', 'interrupted', 'partial'][i % 5]);
++  for (const [label, viewport] of [['desktop', { width: 1440, height: 1000 }], ['mobile', { width: 390, height: 844 }]]) await scenario('bounded_members_and_context_' + label, ended, async ({ page, go }) => {
++    await go(); await page.locator('.t1-evidence-card').waitFor();
++    assert.equal(await page.getByRole('progressbar', { name: '已结束论文', exact: true }).getAttribute('aria-valuenow'), '100'); assert.equal(await page.locator('[data-batch-results]').getAttribute('data-progress-outcome'), 'incomplete');
++    assert.match(await page.locator('.t1-batch-progress-help').innerText(), /不代表全部论文处理完成/);
++    await stableOverlay(page, page.locator('.t1-batch-overview').getByRole('button', { name: '已提交论文', exact: true }), '已提交论文', 'batch-followup-members-' + label + '.png');
++    const contextTrigger = page.locator('.t1-context > button'), contextName = await contextTrigger.innerText(); await stableOverlay(page, contextTrigger, contextName, 'batch-followup-context-' + label + '.png');
++    if (label === 'desktop') { await contextTrigger.click(); const dialog = page.getByRole('dialog', { name: contextName, exact: true }); await dialog.locator('.t1-fragment-location button').first().click(); await dialog.waitFor({ state: 'hidden' }); await page.locator('.t1-source').waitFor(); assert.match(await page.locator('.t1-pdf-controls').innerText(), /2/); await page.locator('.t1-source-toggle').click(); }
++    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
++    const ids = await page.locator('dialog').evaluateAll(dialogs => dialogs.map(dialog => dialog.getAttribute('aria-labelledby'))); assert.equal(new Set(ids).size, ids.length);
++    if (label === 'desktop') { const before = await geometry(page); const about = page.locator('.t1-sidebar-bottom .t1-detail-disclosure > button'); await stableOverlay(page, about, await about.innerText()); assert.deepEqual(await geometry(page), before); }
++    await page.screenshot({ path: join(evidence, 'batch-followup-' + label + '.png') });
++  }, viewport);
++  await scenario('delete_ended_batch_with_independent_active_sibling', ['partial', 'partial'], async ({ page, state, go }) => {
++    await go(); await page.locator('[data-submission-list="sidebar"] [data-task-menu-id="batch:' + batchId + '"]').click(); await page.getByRole('menuitem', { name: '删除任务', exact: true }).click();
++    const dialog = page.getByRole('dialog', { name: '删除任务', exact: true }); await dialog.waitFor(); assert.equal(await dialog.getByRole('button', { name: '确认删除任务', exact: true }).isEnabled(), true);
++    await dialog.getByRole('button', { name: '确认删除任务', exact: true }).click(); await dialog.waitFor({ state: 'hidden' }); assert.deepEqual(state.writes, [{ method: 'DELETE', path: '/api/t1/workbench/batches/' + batchId }]); assert.equal(state.runs.length, 1); assert.equal(state.runs[0].run_id, 'independent-active'); assert.equal(state.runs[0].state, 'extracting');
++  });
++  await scenario('target_finalization_blocks_delete', [{ state: 'cancelled', ready: false }], async ({ page, go }) => {
++    await go(); assert.equal(await page.getByRole('progressbar', { name: '已结束论文', exact: true }).getAttribute('aria-valuenow'), '0');
++    await page.locator('[data-submission-list="sidebar"] [data-task-menu-id="batch:' + batchId + '"]').click(); await page.getByRole('menuitem', { name: '删除任务', exact: true }).click(); assert.equal(await page.getByRole('dialog', { name: '删除任务', exact: true }).getByRole('button', { name: '确认删除任务', exact: true }).isDisabled(), true); await page.keyboard.press('Escape');
++  });
++  await scenario('existing_scope_model_dialogs_stay_bounded', ['partial'], async ({ page, go }) => {
++    await go('newTask'); const rect = () => page.locator('.t1-draft-layout').boundingBox(), before = await rect();
++    for (const name of ['修改范围', '添加模型']) { const trigger = page.getByRole('button', { name, exact: true }); await trigger.click(); const dialog = page.locator('dialog[open]'); await dialog.waitFor(); assert.deepEqual(await rect(), before); assert.ok((await dialog.boundingBox()).height <= 812); await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' }); assert.equal(await trigger.evaluate(element => document.activeElement === element), true); }
++  });
++  result.status = result.checks.every(check => check.status === 'passed') && !result.errors.length && !result.blocked.length ? 'passed' : 'failed';
++} finally {
++  await browser.close(); const report = JSON.parse(await readFile(reportPath, 'utf8')); report.item4.followup_batch_delete_progress_layout_20261115.browser = { ...result, completed_at_utc: new Date().toISOString() }; await writeFile(reportPath, JSON.stringify(report, null, 2) + '\n'); console.log(JSON.stringify({ ...result, checks: result.checks }));
++}
++if (result.status !== 'passed') process.exitCode = 1;
+--- a/code/apps/pi-web/e2e/batch-followup-readonly.mjs
++++ b/code/apps/pi-web/e2e/batch-followup-readonly.mjs
+@@ -0,0 +1,51 @@
++/** Real task stays intact: all requests are GET/HEAD and confirmation is never clicked. */
++import assert from 'node:assert/strict';
++import { readFile, writeFile } from 'node:fs/promises';
++import { createHash } from 'node:crypto';
++import { dirname, join, resolve } from 'node:path';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..'), origin = 'http://127.0.0.1:30141', backend = 'http://127.0.0.1:3210';
++const evidence = join(code, 'docs/acceptance/new-task-layout-2026-11-14'), reportPath = join(evidence, 'report.json');
++const report = JSON.parse(await readFile(reportPath, 'utf8')), deployment = report.item4.followup_batch_delete_progress_layout_20261115.deployment;
++const result = { status: 'running', BUILD_ID: deployment.BUILD_ID, checks: [], errors: [], blocked: [], production_business_writes: 0, paid_calls: 0, exports_requested: 0, real_task_deleted: false };
++async function snapshot() { const out = {}; for (const name of ['runs', 'papers', 'models']) { const response = await fetch(backend + '/api/workbench/' + name); assert.equal(response.status, 200); const bytes = Buffer.from(await response.arrayBuffer()); out[name] = { value: JSON.parse(bytes), sha256: createHash('sha256').update(bytes).digest('hex') }; } return out; }
++const before = await snapshot(), targetBatchId = '859a5ebd-6f6d-49e4-b7cf-50778327113f';
++const members = before.runs.value.runs.filter(run => run.submission?.kind === 'batch' && run.submission.batch_id === targetBatchId); assert.equal(members.length, 2); assert.ok(members.every(run => run.task_title === '测试2'));
++process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
++process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
++const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href), browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
++const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN', reducedMotion: 'reduce' });
++await context.addInitScript(expected => { if (location.origin === expected) { localStorage.setItem('pi-locale', 'zh-CN'); localStorage.setItem('pi-theme', 'light'); } }, origin);
++await context.route('**/*', async route => {
++  const request = route.request(), url = new URL(request.url());
++  if (url.origin !== origin || !['GET', 'HEAD'].includes(request.method()) || url.pathname.includes('/exports/')) { result.blocked.push({ method: request.method(), path: url.pathname }); return route.abort('blockedbyclient'); }
++  if (url.pathname.endsWith('/events')) return route.fulfill({ contentType: 'text/event-stream', body: ': readonly verification omits live stream\n\n' });
++  return route.continue();
++});
++const page = await context.newPage(); page.setDefaultTimeout(12000); page.on('pageerror', error => result.errors.push(String(error)));
++const geometry = () => page.evaluate(() => Object.fromEntries(['.t1-batch-overview', '.t1-results-panel', '.t1-record-nav'].map(selector => { const rect = document.querySelector(selector).getBoundingClientRect(); return [selector, [rect.x, rect.y, rect.width, rect.height]]; })));
++try {
++  assert.equal((await context.request.head(origin + '/_next/static/' + deployment.BUILD_ID + '/_buildManifest.js')).status(), 200); assert.equal((await (await fetch(backend + '/health')).json()).status, 'ok'); result.checks.push('same_validated_build_and_backend_health');
++  await page.goto(origin + '/?' + new URLSearchParams({ paper: members[0].document_id, run: members[0].run_id, view: 'records' })); await page.locator('.t1-evidence-card').waitFor();
++  const expectedCount = members.reduce((sum, run) => sum + run.candidate_count, 0);
++  await page.waitForFunction(expected => Number(document.querySelector('[data-retention-count="kept"]')?.textContent) + Number(document.querySelector('[data-retention-count="excluded"]')?.textContent) === expected, expectedCount);
++  const expectedEnded = members.filter(run => ['completed', 'partial', 'failed', 'cancelled', 'interrupted'].includes(run.state) && run.result_ready !== false).length;
++  const bar = page.getByRole('progressbar', { name: '已结束论文', exact: true }); assert.equal(await bar.getAttribute('aria-valuenow'), String(Math.floor(expectedEnded / members.length * 100))); assert.equal(await page.locator('[data-batch-results]').getAttribute('data-progress-outcome'), 'incomplete');
++  const sourceId = await page.locator('.t1-evidence-card').getAttribute('data-source-run-id'); assert.ok(members.some(run => run.run_id === sourceId)); result.checks.push('real_batch_ended_ratio_and_run_bound_results');
++  for (const [label, viewport] of [['desktop', { width: 1440, height: 1000 }], ['mobile', { width: 390, height: 844 }]]) {
++    await page.setViewportSize(viewport); await page.locator('.t1-batch-overview').scrollIntoViewIfNeeded(); const beforeLayout = await geometry();
++    const trigger = page.locator('.t1-batch-overview').getByRole('button', { name: '已提交论文', exact: true }); await trigger.click(); const membersDialog = page.getByRole('dialog', { name: '已提交论文', exact: true }); await membersDialog.waitFor(); assert.equal(await membersDialog.locator('[data-batch-member]').count(), members.length); assert.deepEqual(await geometry(), beforeLayout);
++    await page.keyboard.press('Escape'); await membersDialog.waitFor({ state: 'hidden' }); assert.equal(await trigger.evaluate(element => element === document.activeElement), true);
++    await page.screenshot({ path: join(evidence, 'batch-followup-live-' + label + '.png') });
++    if (viewport.width < 640 && !await page.locator('.t1-sidebar').isVisible()) await page.locator('.t1-workspace-bar > button').first().click();
++    await page.locator('[data-submission-list="sidebar"] [data-task-menu-id="batch:' + targetBatchId + '"]').click(); await page.getByRole('menuitem', { name: '删除任务', exact: true }).click(); const confirmation = page.getByRole('dialog', { name: '删除任务', exact: true }); await confirmation.waitFor();
++    assert.equal(await confirmation.getByRole('button', { name: '确认删除任务', exact: true }).isEnabled(), true); assert.equal(await confirmation.locator('[data-delete-batch]').getAttribute('data-delete-batch'), targetBatchId); assert.equal(await confirmation.locator('.t1-delete-members li').count(), 2);
++    await page.screenshot({ path: join(evidence, 'batch-followup-live-delete-confirm-' + label + '.png') }); await confirmation.getByRole('button', { name: '保留任务', exact: true }).click(); await confirmation.waitFor({ state: 'hidden' });
++    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
++  }
++  result.checks.push('real_target_delete_confirmation_enabled_without_confirming_desktop_and_mobile');
++  const after = await snapshot(); result.api_sha256_before = Object.fromEntries(Object.entries(before).map(([key, item]) => [key, item.sha256])); result.api_sha256_after = Object.fromEntries(Object.entries(after).map(([key, item]) => [key, item.sha256])); assert.deepEqual(result.api_sha256_before, result.api_sha256_after);
++  assert.equal(after.runs.value.runs.filter(run => run.submission?.kind === 'batch' && run.submission.batch_id === targetBatchId).length, 2); result.run_count = after.runs.value.runs.length; result.paper_count = after.papers.value.papers.length; result.target_record_count = expectedCount; result.checks.push('GET_HEAD_preserves_real_target_and_all_task_paper_model_lists');
++  assert.deepEqual(result.errors, []); assert.deepEqual(result.blocked, []); result.status = 'passed';
++} catch (error) { result.status = 'failed'; result.error = String(error); throw error; }
++finally { await context.close(); await browser.close(); const current = JSON.parse(await readFile(reportPath, 'utf8')); current.item4.followup_batch_delete_progress_layout_20261115.live_readonly = { ...result, completed_at_utc: new Date().toISOString() }; await writeFile(reportPath, JSON.stringify(current, null, 2) + '\n'); console.log(JSON.stringify(result)); }
+--- a/code/apps/server/test/workflow-deletion.test.ts
++++ b/code/apps/server/test/workflow-deletion.test.ts
+@@ -19,6 +19,14 @@
+ function pdfPath(workflow: WorkbenchWorkflow, id: string) {
+   const row = workflow.store.db.prepare('SELECT payload_json FROM workbench_papers WHERE id=?').get(id)!;
+   return resolve(workflow.codeRoot, JSON.parse(row.payload_json as string).pdf.path);
++}
++/** Older databases may contain distinct paper identities sharing one PDF.
++ * New uploads now deduplicate, so seed that legacy state explicitly. */
++function legacySharedPaper(workflow: WorkbenchWorkflow, id: string) {
++  const row = JSON.parse(workflow.store.db.prepare('SELECT payload_json FROM workbench_papers WHERE id=?').get(id)!.payload_json as string);
++  row.id = id + '-legacy'; row.title = 'legacy-other.pdf'; row.filename = 'legacy-other.pdf';
++  workflow.store.db.prepare('INSERT INTO workbench_papers VALUES(?,?)').run(row.id, JSON.stringify(row));
++  return { id: row.id as string };
+ }
+ const replay = await controlledFixture({ delayMs: 1 });
+ 
+@@ -107,23 +115,23 @@
+   } finally { unlink.release(); interceptor?.mock.restore(); syncBuiltinESMExports(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
+ });
+ 
+-test('upload-first PDF queue rechecks live references and refuses a stale queued restore', { timeout: 30_000 }, async () => {
++test('upload reuse check serializes deletion and refuses reuse and a stale queued restore once deletion starts', { timeout: 30_000 }, async () => {
+   const { directory, store } = await sandbox(), entered = barrier(), write = barrier();
+   const workflow = new WorkbenchWorkflow(store, { sources: false, directory }); let interceptor: ReturnType<typeof mock.method> | undefined;
+   try {
+-    const paper = (await workflow.upload(PDF, 'first.pdf')).paper, path = pdfPath(workflow, paper.id), nativeWrite = fs.writeFile;
+-    interceptor = mock.method(fs, 'writeFile', async (...args: Parameters<typeof fs.writeFile>) => {
++    const paper = (await workflow.upload(PDF, 'first.pdf')).paper, path = pdfPath(workflow, paper.id), nativeRead = fs.readFile;
++    interceptor = mock.method(fs, 'readFile', async (...args: Parameters<typeof fs.readFile>) => {
+       if (String(args[0]) === path) { entered.release(); await write.promise; }
+-      return nativeWrite(...args);
++      return nativeRead(...args);
+     }); syncBuiltinESMExports();
+-    const pending = workflow.upload(PDF, 'second.pdf'); await entered.promise;
++    const pending = workflow.upload(PDF, 'second.pdf').then(() => 'unexpected_success', error => String(error)); await entered.promise;
+     const restoring = workflow.restorePdf(paper.id, PDF).then(() => 'unexpected_success', error => String(error));
+     let deleted = false;
+     const deleting = workflow.deletePaper(paper.id).then(value => { deleted = true; return value; });
+     await delay(20); assert.equal(deleted, false);
+-    write.release(); const duplicate = (await pending).paper;
++    write.release(); assert.match(await pending, /paper_deletion_in_progress/);
+     assert.match(await restoring, /paper_deletion_in_progress/);
+-    assert.equal((await deleting).shared_pdf_retained, true); assert.deepEqual(await workflow.pdf(duplicate.id), PDF);
++    assert.equal((await deleting).shared_pdf_retained, false); await assert.rejects(access(path), /ENOENT/);
+   } finally { write.release(); interceptor?.mock.restore(); syncBuiltinESMExports(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
+ });
+ 
+@@ -162,7 +170,7 @@
+   const { directory, store } = await sandbox(), workflow = new WorkbenchWorkflow(store, { ...replay, sources: false, directory });
+   try {
+     const bytes = await readFile('evaluation/corpus/development-candidates/L01.pdf');
+-    const target = (await workflow.upload(bytes, 'target.pdf')).paper, other = (await workflow.upload(bytes, 'other.pdf')).paper;
++    const target = (await workflow.upload(bytes, 'target.pdf')).paper, other = legacySharedPaper(workflow, target.id);
+     const ids = [];
+     for (const paper of [target, target, other]) { ids.push((await workflow.start(paper.id, workflow.scopeCatalog().default_scope)).run.run_id); await workflow.waitForIdle(); }
+     for (const id of ids.slice(0, 2)) {

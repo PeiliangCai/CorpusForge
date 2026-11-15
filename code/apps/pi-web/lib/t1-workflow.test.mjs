@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { applicableChoices, scopeProblems } from "../t1/scope.ts";
+import { applicableChoices, refreshDraftScope, scopeProblems } from "../t1/scope.ts";
 import { isT1ApiMethod, isT1ApiPath, t1BackendPath } from "../t1/gateway-policy.ts";
 
 // Synthetic nonmedical identifiers; this catalog is never offered by the production service.
@@ -10,23 +10,36 @@ const catalog = { catalog_version: "engineering-only", status: "development_only
 const scope = { scope_version: "1", catalog_version: catalog.catalog_version, matching_policy_version: "engineering-only",
   cancers: { mode: "all", ids: [] }, image_types: { mode: "all", ids: [] }, features: { mode: "all", binding_ids: [] } };
 const data = { catalog, restricted_available: true, development_only: true, default_scope: scope };
-test("S5 three unrestricted dimensions need no approved medical vocabulary", () => {
+test("two unrestricted dimensions do not require medical approval", () => {
   assert.deepEqual(scopeProblems(scope, { ...data, restricted_available: false }), []);
 });
-test("S5 restricted empty and stale downstream selections never silently broaden", () => {
-  const changed = { ...scope, cancers: { mode: "selected", ids: ["a"] }, image_types: { mode: "selected", ids: ["x", "y"] }, features: { mode: "selected", binding_ids: ["ax", "by"] } };
+test("empty, removed and incompatible choices stay selected and block a new task", () => {
+  const changed = { ...scope, cancers: { mode: "selected", ids: ["a", "removed"] }, image_types: { mode: "selected", ids: ["x", "y"] } };
   const before = structuredClone(changed);
   assert.deepEqual(applicableChoices(changed, catalog).images.map(x => x.id), ["x"]);
-  assert.deepEqual(scopeProblems(changed, data), ["image_types_invalid", "features_invalid"]);
+  assert.deepEqual(scopeProblems(changed, data), ["cancers_invalid", "image_types_invalid"]);
   assert.deepEqual(changed, before);
-  assert.ok(scopeProblems({ ...scope, features: { mode: "selected", binding_ids: [] } }, data).includes("features_selected_empty"));
+  assert.ok(scopeProblems({ ...scope, cancers: { mode: "selected", ids: [] } }, data).includes("cancers_selected_empty"));
+  assert.ok(scopeProblems({ ...scope, features: { mode: "selected", binding_ids: ["ax"] } }, data).includes("feature_scope_removed"));
 });
-test("S5 valid multiselect remains exact and unavailable production vocabulary blocks restrictions", () => {
-  const selected = { ...scope, cancers: { mode: "selected", ids: ["a", "b"] }, image_types: { mode: "selected", ids: ["x", "y"] }, features: { mode: "selected", binding_ids: ["ax", "by"] } };
+test("refresh takes the new version and preserves IDs; multiselect remains exact", () => {
+  const selected = { ...scope, cancers: { mode: "selected", ids: ["a", "b"] }, image_types: { mode: "selected", ids: ["x", "y"] } };
   assert.deepEqual(scopeProblems(selected, data), []);
-  assert.ok(scopeProblems(selected, { ...data, restricted_available: false }).includes("restricted_unavailable"));
+  const updated = { ...data, catalog: { ...catalog, catalog_version: "updated" } };
+  const refreshed = refreshDraftScope(selected, updated);
+  assert.equal(refreshed.catalog_version, "updated");
+  assert.deepEqual(refreshed.cancers, selected.cancers);
+  assert.deepEqual(refreshed.image_types, selected.image_types);
+  assert.deepEqual(scopeProblems(refreshed, updated), []);
+  assert.ok(scopeProblems(selected, updated).includes("catalog_version_mismatch"));
 });
 test("T1 mutation gateway admits only business methods on their exact routes", () => {
+  assert.equal(isT1ApiMethod("/api/t1/workbench/models", "GET"), true);
+  assert.equal(isT1ApiMethod("/api/t1/workbench/models", "POST"), true);
+  assert.equal(isT1ApiMethod("/api/t1/workbench/models", "PUT"), false);
+  assert.equal(isT1ApiMethod("/api/t1/workbench/models", "DELETE"), false);
+  for (const path of ["/api/models", "/api/models-config", "/api/auth/api-key/agicto", "/api/t1/workbench/models/discover"])
+    assert.equal(isT1ApiPath(path), false);
   assert.equal(isT1ApiMethod("/api/t1/workbench/papers", "POST"), true);
   assert.equal(isT1ApiMethod("/api/t1/workbench/papers/p-1/pdf", "PUT"), true);
   assert.equal(isT1ApiMethod("/api/t1/workbench/runs/r-1/records/c-1/review", "POST"), true);

@@ -1,0 +1,374 @@
+--- a/code/apps/server/test/workbench-progress.test.ts
++++ b/code/apps/server/test/workbench-progress.test.ts
+@@ -0,0 +1,54 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { workbenchRunProgress } from '../src/workbench-progress.js';
++import type { WorkbenchEvent, WorkbenchRun } from '../../../packages/contracts/src/workbench.js';
++
++const at = (seconds: number) => new Date(Date.UTC(2026, 10, 14, 8, 0, seconds)).toISOString();
++const run = (state = 'extracting'): WorkbenchRun => ({ run_id: 'test-run', document_id: 'test-paper', state, fixture: true,
++  candidate_count: 2, created_at: at(0), execution_started_at: at(3), queue_wait_ms: 3000 });
++const event = (seq: number, type: string, detail: Record<string, unknown>): WorkbenchEvent => ({ run_id: 'test-run', seq, type, timestamp: at(seq), detail });
++
++test('source progress counts successful explicit batches once and keeps glyph gaps visible', () => {
++  const events = [event(1, 'state', { state: 'extracting' }),
++    event(2, 'coverage_inventory', { dispatched_blocks: 3, total_batches: 2, source_gap_blocks: 1 }),
++    event(3, 'batch', { batch_id: 'a', status: 'failed', assigned_block_ids: ['x', 'y'], read_block_ids: ['x', 'y'] }),
++    event(4, 'batch', { batch_id: 'a', status: 'completed', explicit_completion_received: true, assigned_block_ids: ['x', 'y'] }),
++    event(5, 'batch', { batch_id: 'a', status: 'completed', assigned_block_ids: ['x', 'y'] }),
++    event(6, 'batch', { batch_id: 'b', status: 'completed', explicit_completion_received: false, assigned_block_ids: ['z'] }),
++    event(7, 'document_summary', { complete: false, source_blocks_read: 99 })];
++  const p = workbenchRunProgress(run(), events, {}, Date.parse(at(20)))!;
++  assert.equal(p.completed, 2); assert.equal(p.total, 3); assert.equal(p.unit, 'source_blocks');
++  assert.equal(p.completed_batches, 1); assert.equal(p.total_batches, 2); assert.equal(p.source_gap_blocks, 1);
++  assert.equal(p.summary_completed, false); assert.equal(p.elapsed_ms, 20000); assert.equal(p.execution_elapsed_ms, 17000);
++  assert.equal(p.queue_wait_ms, 3000); assert.equal(p.activity, 'source_extraction');
++});
++
++test('all dispatched blocks still require reconciliation and do not erase an uncovered source gap', () => {
++  const events = [event(1, 'coverage_inventory', { dispatched_blocks: 2, source_glyph_quarantined_block_ids: ['gap', 'gap'] }),
++    event(2, 'batch', { batch_id: 'a', status: 'completed', assigned_block_ids: ['x', 'y'] }),
++    event(3, 'state', { state: 'reconciling' }), event(4, 'document_summary', { complete: false })];
++  const p = workbenchRunProgress(run('reconciling'), events)!;
++  assert.equal(p.completed, p.total); assert.equal(p.stage, 'reconciling'); assert.equal(p.summary_completed, false);
++  assert.equal(p.source_gap_blocks, 1); assert.equal(p.activity, 'whole_document_reconciliation');
++  assert.equal(p.total_batches, undefined);
++});
++
++test('unknown parsing totals and distinct terminal outcomes never fabricate a final percentage', () => {
++  const parsing = workbenchRunProgress(run('parsing'), [event(1, 'source_parse_started', {})])!;
++  assert.equal(parsing.total, undefined); assert.equal(parsing.completed, undefined); assert.equal(parsing.activity, 'pdf_parse');
++  const figures = workbenchRunProgress(run('parsing'), [event(1, 'source_parse_started', {}), event(2, 'figure_discovery_started', {})])!;
++  assert.equal(figures.activity, 'figure_discovery');
++  for (const state of ['partial', 'failed', 'cancelled', 'interrupted', 'completed']) {
++    const p = workbenchRunProgress({ ...run(state), finished_at: at(7) }, [event(4, 'state', { state })], {}, Date.parse(at(30)))!;
++    assert.equal(p.stage, state); assert.equal(p.completed, undefined); assert.equal(p.total, undefined);
++    assert.equal(p.elapsed_ms, 7000); assert.equal(p.activity, undefined);
++  }
++});
++
++test('legacy coverage remains optional and malformed counter totals do not manufacture progress', () => {
++  const historical = { ...run('partial'), created_at: undefined, execution_started_at: undefined };
++  const p = workbenchRunProgress(historical, [], { completed: 4, total: 5, summary_completed: false, source_gap_blocks: 1 })!;
++  assert.equal(p.telemetry, 'legacy_coverage'); assert.equal(p.completed, 4); assert.equal(p.elapsed_ms, undefined);
++  assert.equal(workbenchRunProgress(historical, [])!.telemetry, 'unavailable');
++  assert.equal(workbenchRunProgress(historical, [], { completed: 6, total: 5 })!.total, undefined);
++});
+--- a/code/apps/server/test/workflow-events.test.ts
++++ b/code/apps/server/test/workflow-events.test.ts
+@@ -0,0 +1,64 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { mkdtemp, rm } from 'node:fs/promises';
++import { resolve } from 'node:path';
++import { ExtractionStore, validateEvidenceSubmission } from '@t1/agent';
++import { WorkbenchWorkflow } from '../src/workflow.js';
++import { makeEvidenceFixture } from '../../../tests/extraction/fixtures/evidence-fixtures.js';
++
++test('event cursors preserve exact ordering and task isolation without decoding paper snapshots', async () => {
++  const directory = await mkdtemp(resolve('runtime-data/events-cursor-test-')), store = new ExtractionStore(':memory:');
++  const workflow = new WorkbenchWorkflow(store, { directory, sources: false });
++  try {
++    for (const id of ['one', 'two']) {
++      const f = makeEvidenceFixture(undefined, { runId: id, documentId: 'paper-' + id }); store.create(f.input, f.context.metadata);
++      store.db.prepare('INSERT INTO workbench_papers VALUES(?,?)').run(f.input.document_id, '{}');
++      // Event delivery depends on run existence, not on loading a potentially large source snapshot.
++      store.db.prepare('INSERT INTO workbench_runs VALUES(?,?,?)').run(id, f.input.document_id, '{"large_snapshot":"' + 'x'.repeat(1_000_000) + '"}');
++      store.event(id, 'progress_receipt', { index: 1, actor: 'host' }); store.event(id, 'progress_receipt', { index: 2, actor: 'host' });
++    }
++    const all = store.events('one');
++    for (const cursor of [0, 1, 2, 3, 100]) assert.deepEqual(workflow.events('one', cursor), all.filter(e => e.seq > cursor));
++    assert.ok(workflow.events('one').every(e => e.run_id === 'one'));
++    assert.throws(() => workflow.events('missing', 100), /workbench_run_not_found/);
++    // The event query stays independent of the run payload's source/metadata serialization.
++    store.db.prepare('UPDATE workbench_runs SET payload_json=? WHERE id=?').run('not-json-for-this-isolated-query-guard', 'one');
++    assert.deepEqual(workflow.events('one', 2), all.filter(e => e.seq > 2));
++  } finally { store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('run-list progress projects real persisted receipts, caches safely and preserves partial terminal coverage', async () => {
++  const directory = await mkdtemp(resolve('runtime-data/progress-query-test-')), store = new ExtractionStore(':memory:');
++  const workflow = new WorkbenchWorkflow(store, { directory, sources: false });
++  try {
++    await workflow.initialize();
++    const f = makeEvidenceFixture(), id = f.input.run_id; store.create(f.input, f.context.metadata);
++    store.db.prepare('INSERT INTO workbench_papers VALUES(?,?)').run(f.input.document_id, '{}');
++    const row = { id, paper_id: f.input.document_id, created_at: new Date().toISOString(), origin: 'controlled_fixture', controlled: true, directory };
++    store.db.prepare('INSERT INTO workbench_runs VALUES(?,?,?)').run(id, f.input.document_id, JSON.stringify(row));
++    store.transition(id, 'parsing'); store.event(id, 'source_parse_started', { actor: 'host' });
++    store.event(id, 'figure_discovery_started', { actor: 'host' });
++    assert.equal((await workflow.runs(id))[0]!.progress!.activity, 'figure_discovery');
++    store.transition(id, 'extracting');
++    store.event(id, 'coverage_inventory', { dispatched_blocks: 3, total_batches: 2, source_gap_blocks: 1 });
++    store.batch(id, 'a', { status: 'completed', explicit_completion_received: true, assigned_block_ids: ['x', 'y'] });
++    const record = validateEvidenceSubmission(f.submission, f.context).record!;
++    const version = (recordId: string, n: number, status: 'active' | 'proposed') => store.db.prepare('INSERT INTO s4_versions VALUES(?,?,?,?)')
++      .run(id, recordId, n, JSON.stringify({ record: { ...record, record_id: recordId }, version: n, actor: 'automatic', status }));
++    version('active-record', 1, 'active'); version('active-record', 2, 'proposed'); version('proposal-only', 1, 'proposed'); version('deleted-record', 1, 'active');
++    store.db.prepare('INSERT INTO workbench_annotations VALUES(?,?,?,?)').run(id, 'deleted-record', 1, JSON.stringify({ deleted: true }));
++    const p = (await workflow.runs(id))[0]!.progress!;
++    assert.equal(p.completed, 2); assert.equal(p.total, 3); assert.equal(p.completed_batches, 1); assert.equal(p.source_gap_blocks, 1);
++    assert.equal(p.candidate_records, 1, 'only current active, visible evidence counts; proposed versions and deleted records do not');
++    assert.equal((await workflow.runs(id))[0]!.progress!.completed, 2, 'a cached event projection returns the same observed count');
++    store.transition(id, 'reconciling'); store.event(id, 'document_summary', { complete: false }); store.transition(id, 'partial');
++    const final = (await workflow.runs(id))[0]!;
++    assert.equal(final.state, 'partial'); assert.equal(final.progress!.stage, 'partial'); assert.equal(final.progress!.completed, 2);
++    assert.equal(final.progress!.summary_completed, false); assert.equal(final.progress!.total, 3);
++    assert.equal(final.progress!.activity, undefined);
++    store.db.prepare('UPDATE workbench_runs SET payload_json=? WHERE id=?').run(JSON.stringify({ ...row, created_at: undefined, origin: 'historical_compatibility_replay' }), id);
++    const historical = (await workflow.runs(id))[0]!.progress!;
++    assert.equal(historical.elapsed_ms, undefined); assert.equal(historical.execution_elapsed_ms, undefined);
++    assert.equal(historical.stage, 'partial'); assert.equal(historical.candidate_records, 1);
++  } finally { store.close(); await rm(directory, { recursive: true, force: true }); }
++});
+--- a/code/tests/extraction/source-prefill.test.ts
++++ b/code/tests/extraction/source-prefill.test.ts
+@@ -0,0 +1,129 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { mkdtemp, readFile, rm } from 'node:fs/promises';
++import { resolve } from 'node:path';
++import { ExtractionStore } from '../../packages/agent/src/extraction-store.js';
++import { ExtractionTools } from '../../packages/agent/src/extraction-tools.js';
++import { ExtractionBudget, S4_LIMITS } from '../../packages/agent/src/extraction-budget.js';
++import { runExtractionDocument } from '../../packages/agent/src/extraction-run.js';
++import { developmentProfile } from '../../packages/agent/src/extraction-pi.js';
++import { buildArticleScope, planExtractionBatches } from '../../packages/agent/src/article-scope.js';
++import { VISUAL_STATEMENT_POLICY_VERSION } from '../../packages/agent/src/visual-evidence-policy.js';
++import { selectSourceBlocks } from '../../packages/agent/src/source-selection.js';
++import { makeEvidenceFixture } from './fixtures/evidence-fixtures.js';
++import { createRuntimeResponsesFixture, type ResponsesStep } from './fixtures/runtime-responses.js';
++
++const statement = { source_unit_ids: ['su-000001'], feature_name_raw: 'spiculation', feature_category: 'margin',
++  evidence_type: 'imaging_observation', assertion: 'affirmed', origin: 'study_authors' };
++const finish: ResponsesStep = { calls: [{ name: 'submit_candidate_records', arguments: { records: [statement], batch_complete: true } }] };
++const context: ResponsesStep = { calls: [{ name: 'get_document_context', arguments: {} }] };
++const read: ResponsesStep = { calls: [{ name: 'read_document_blocks', arguments: {} }] };
++const summary: ResponsesStep = { calls: [{ name: 'get_document_context', arguments: {} },
++  { name: 'submit_candidate_records', arguments: { summary: 'Synthetic SDK verification only.', reviews: [], links: [], updates: [], summary_complete: true } }] };
++
++test('host preparation uses identical tool projections and records neither a model call nor completed blocks', async () => {
++  const fixture = makeEvidenceFixture(['We observed spiculation on CT in lung cancer, measuring 9 mm.', 'Another original statement.']);
++  const store = new ExtractionStore(':memory:'); store.create(fixture.input, fixture.context.metadata); store.transition(fixture.input.run_id, 'extracting');
++  const article = buildArticleScope(fixture.document), batch = planExtractionBatches(fixture.document, article)[0]!;
++  const tools = new ExtractionTools({ ...fixture.context, evidencePolicyVersion: VISUAL_STATEMENT_POLICY_VERSION }, batch, article, store, 'batch_lines');
++  try {
++    const prepared = await tools.prepareSourcePrefill();
++    assert.equal(tools.readBlocks.size, 0); assert.equal(tools.completed, false); assert.equal(tools.calls.length, 0);
++    assert.equal(store.events(fixture.input.run_id).some(e => e.type === 'model_tool_argument_shape' || e.type === 'tool'), false);
++    const projected = JSON.parse(prepared.content);
++    const definitions = tools.definitions(), decode = (r: { content: Array<{ type: string; text?: string }> }) => JSON.parse(r.content.filter(c => c.type === 'text').map(c => c.text).join(''));
++    for (const [name, key] of [['get_document_context', 'context'], ['read_document_blocks', 'source']] as const) {
++      const tool = definitions.find(d => d.name === name)!;
++      const result = await tool.execute('comparison-' + key, {}, undefined, undefined, {} as Parameters<typeof tool.execute>[4]);
++      assert.deepEqual(projected[key], decode(result));
++    }
++    tools.readBlocks.clear();
++    await assert.rejects(tools.invoke('submit_candidate_records', { ...tools.ids, records: [], batch_complete: true }, 'no-exposure'), /batch_completion_requires_all_assigned_blocks_read/);
++    prepared.acknowledgeExposure(); prepared.acknowledgeExposure();
++    assert.equal(tools.completed, false); assert.equal(tools.readBlocks.size, 2);
++    const receipts = store.events(fixture.input.run_id).filter(e => e.type === 'host_source_prefill');
++    assert.equal(receipts.length, 1); assert.equal(receipts[0]!.detail.actor, 'host');
++    assert.equal(receipts[0]!.detail.model_explicit_completion_required, true);
++    await tools.invoke('submit_candidate_records', { ...tools.ids, records: [], batch_complete: true }, 'explicit-model-completion');
++    assert.equal(tools.completed, true);
++  } finally { store.close(); }
++});
++
++test('host prefill cannot disclose quarantined glyph lines, bibliography or a different assigned batch', async () => {
++  const fixture = makeEvidenceFixture(['An unsafe source scale is 50 mm.', 'CT shows spiculation.', 'An independent separate statement.',
++    'References', '1. Smith A. J Med. 2024;2:1-8.']);
++  fixture.document.blocks[0]!.source_glyph_issues = [{ code: 'sparse_embedded_font_without_unicode_mapping', start: 25, end: 26,
++    font_name: 'Custom', font_program_sha256: 'a'.repeat(64), pdf_character_code: 109, precision: 'glyph_offset' }];
++  const article = buildArticleScope(fixture.document), selection = selectSourceBlocks(fixture.document, article, 'B0');
++  const batch = planExtractionBatches(fixture.document, { ...article, included_block_ids: selection.kept_block_ids }, { maxBlocks: 1, contextBlocks: 0 })[0]!;
++  const store = new ExtractionStore(':memory:'); store.create(fixture.input, fixture.context.metadata); store.transition(fixture.input.run_id, 'extracting');
++  const tools = new ExtractionTools({ ...fixture.context, evidencePolicyVersion: VISUAL_STATEMENT_POLICY_VERSION }, batch, article, store, 'batch_lines');
++  try {
++    const prefill = await tools.prepareSourcePrefill();
++    assert.match(prefill.content, /CT shows spiculation/); assert.doesNotMatch(prefill.content, /unsafe source scale|independent separate|Smith A\./);
++    prefill.acknowledgeExposure();
++    for (const index of [0, 2, 4]) await assert.rejects(tools.invoke('read_document_blocks', { ...tools.ids, block_ids: [fixture.document.blocks[index]!.block_id] }, 'denied-' + index), /block_not_authorized|bibliography_read_outside_task_scope/);
++    assert.deepEqual([...tools.readBlocks], [fixture.document.blocks[1]!.block_id]);
++    assert.equal(tools.completed, false);
++  } finally { store.close(); }
++});
++
++async function run(prefill: boolean, steps: ResponsesStep[], requestLimit = 20) {
++  const directory = await mkdtemp(resolve('runtime-data/source-prefill-test-')), store = new ExtractionStore(':memory:');
++  const fixture = makeEvidenceFixture(['We observed spiculation on CT in lung cancer, measuring 9 mm.']);
++  const server = await createRuntimeResponsesFixture(steps, { summaryAssessments: () => store.current(fixture.input.run_id).map(v => ({
++    record_id: v.record.record_id, expected_version: v.version, issue_codes: [], primary_assessment: 'uncertain' })) });
++  const budget = new ExtractionBudget(resolve(directory, 'ledger.json'), server.endpoint, Date.now, {
++    limits: { ...S4_LIMITS, requests: requestLimit }, authorization: { id: 'local-source-prefill', source: 'synthetic:no-paid-api', recorded_at: '2026-11-14T00:00:00Z' } });
++  fixture.input.runtime_profile = { ...fixture.input.runtime_profile, provider: server.config.provider, model_id: server.config.modelId, endpoint: server.endpoint };
++  try {
++    const result = await runExtractionDocument({ input: fixture.input, document: fixture.document, metadata: fixture.context.metadata,
++      catalog: fixture.catalog, config: server.config, profile: developmentProfile(server.config.modelId), budget, store,
++      directory: resolve(directory, 'run'), strategy: 'baseline', prefillBatchSource: prefill });
++    const delivery = JSON.parse(await readFile(resolve(directory, 'run/delivery.json'), 'utf8'));
++    return { result, delivery, requests: server.requests, totals: budget.totals(), halted: budget.ledger.halted };
++  } finally { store.close(); await server.close(); await rm(directory, { recursive: true, force: true }); }
++}
++
++test('installed SDK batch prefill reduces three local requests to one while exact source and summary completion remain unchanged', async () => {
++  const old = await run(false, [context, read, finish, summary]), fresh = await run(true, [finish, summary]);
++  assert.equal(old.result.error, undefined); assert.equal(fresh.result.error, undefined);
++  assert.equal(old.requests.length, 4); assert.equal(fresh.requests.length, 2);
++  assert.equal(old.result.coverage.explicitly_completed_source_blocks, 1); assert.equal(fresh.result.coverage.explicitly_completed_source_blocks, 1);
++  assert.equal(fresh.result.coverage.whole_document_summary_complete, true);
++  assert.deepEqual(fresh.delivery.records.map((r: { original_fragments: unknown }) => r.original_fragments), old.delivery.records.map((r: { original_fragments: unknown }) => r.original_fragments));
++  assert.equal(fresh.result.events.filter(e => e.type === 'host_source_prefill').length, 1);
++  assert.equal(fresh.result.events.filter(e => e.type === 'model_tool_argument_shape' && e.detail.tool === 'read_document_blocks').length, 0);
++  assert.match(JSON.stringify(fresh.requests[0]!.body), /We observed spiculation on CT in lung cancer, measuring 9 mm\./);
++});
++
++test('prefill does not infer explicit completion from a prose response or expand the request budget for summary', async () => {
++  const noCompletion = await run(true, [{ text: 'Finished reading.' }, summary]);
++  assert.equal(noCompletion.result.coverage.explicitly_completed_source_blocks, 0);
++  assert.equal(noCompletion.result.task_processing_complete, false);
++  const capped = await run(true, [finish, summary], 2);
++  assert.equal(capped.requests.length, 2); assert.equal(capped.halted, 'experiment_request_limit');
++  assert.equal(capped.result.state, 'partial'); assert.equal(capped.result.coverage.whole_document_summary_complete, false);
++});
++
++test('a failed HTTP response never creates a host source exposure receipt', async () => {
++  const value = await run(true, [{ status: 400 }], 1);
++  assert.equal(value.requests.length, 1); assert.equal(value.result.events.filter(e => e.type === 'host_source_prefill').length, 0);
++  assert.equal(value.result.coverage.source_blocks_read, 0); assert.equal(value.result.coverage.explicitly_completed_source_blocks, 0);
++});
++
++test('the observed six-update summary shape is rejected, diagnosed and corrected within the existing three-update schema', async () => {
++  const invalid: ResponsesStep = { calls: [{ name: 'get_document_context', arguments: {} }, {
++    name: 'submit_candidate_records', arguments: { summary: 'Synthetic overfull update array.', reviews: [], links: [],
++      updates: Array.from({ length: 6 }, () => ({ ...statement })), summary_complete: true },
++  }] };
++  const value = await run(true, [finish, invalid, summary]);
++  assert.equal(value.result.error, undefined); assert.equal(value.result.coverage.whole_document_summary_complete, true);
++  const correction = value.result.events.find(e => e.type === 'protocol_correction')!;
++  assert.equal(correction.detail.parameters_rewritten, false);
++  const sample = correction.detail.failed_argument_samples[0];
++  assert.equal(sample.array_lengths.updates, 6);
++  assert.deepEqual(sample.schema_array_violations, [{ path: 'updates', actual_items: 6, max_items: 3 }]);
++  assert.equal(value.result.versions.length, 2, 'rejected six-update array wrote no candidate versions');
++  assert.equal(value.requests.length, 3, 'correction stays in the existing session and ledger');
++});
+--- a/code/tests/extraction/runtime.test.ts
++++ b/code/tests/extraction/runtime.test.ts
+@@ -298,13 +298,13 @@
+   });
+ });
+ 
+-test('installed SDK replay of observed usage keeps the new output allowance while context metadata leaves budget reservations unchanged', async () => {
++test('installed SDK preserves new output allowance while the application guard stops the historical 32K context', async () => {
+   await temporary(async directory => {
+     const firstUsage = { input_tokens: 25781, output_tokens: 72, total_tokens: 25853 };
+     const secondUsage = { input_tokens: 6704, output_tokens: 16, total_tokens: 6720,
+       input_tokens_details: { cached_tokens: 0, cache_write_tokens: 6701 }, output_tokens_details: { reasoning_tokens: 16 } };
+     const scripted = await createRuntimeResponsesFixture([
+-      { calls: [{ name: 'read_document_blocks', arguments: {} }], usage: firstUsage }, { text: 'Synthetic replay complete.', usage: secondUsage },
++      { calls: [{ name: 'read_document_blocks', arguments: {} }], usage: firstUsage },
+       { calls: [{ name: 'read_document_blocks', arguments: {} }], usage: firstUsage }, { text: 'Synthetic replay complete.', usage: secondUsage },
+     ]);
+     const profiles = [
+@@ -320,29 +320,30 @@
+           const budget = new ExtractionBudget(join(directory, `ledger-${index}.json`), scripted.endpoint);
+           const created = await createExtractionSession(scripted.config, profile, c.tools.definitions(), join(directory, `profile-${index}`), budget, 'observed-usage-context-replay');
+           const result = await promptExtractionSession(created, 'Read the synthetic source once, then finish.', budget);
+-          assert.equal(result.error, undefined); assert.equal(result.responses, 2);
+-          assert.equal(created.audit.application_context_estimate_limit, 128000);
++          assert.equal(result.error?.code, index === 0 ? 'application_context_estimate_limit' : undefined); assert.equal(result.responses, 2);
++          const expectedContextLimit = Math.min(128000, profile.context_window - profile.max_output_tokens);
++          assert.equal(created.audit.application_context_estimate_limit, expectedContextLimit);
+           assert.equal(created.audit.model_context_window_metadata, profile.context_window);
+           assert.equal(created.audit.model_capacity_source, 'official_OpenAI_model_specification_not_supplier_stress_test');
+           assert.ok(created.entries.every(entry => entry.model_context_window_metadata === profile.context_window &&
+-            typeof entry.application_context_estimate === 'number' && entry.application_context_estimate < 128000));
+-          assert.deepEqual(created.entries.map(entry => entry.requested_max_output_tokens), scripted.requests.slice(index * 2, index * 2 + 2).map(request => request.body.max_output_tokens));
++            typeof entry.application_context_estimate === 'number' && entry.application_context_estimate < expectedContextLimit));
++          assert.deepEqual(created.entries.map(entry => entry.requested_max_output_tokens), scripted.requests.slice(index === 0 ? 0 : 1, index === 0 ? 1 : 3).map(request => request.body.max_output_tokens));
+           reservations.push(created.entries.map(entry => entry.input_ceiling)); totals.push(budget.totals());
+-          assert.equal(budget.totals().input_tokens, 32485); assert.equal(budget.totals().output_tokens, 88);
++          assert.equal(budget.totals().input_tokens, index === 0 ? 25781 : 32485); assert.equal(budget.totals().output_tokens, index === 0 ? 72 : 88);
+           assert.equal(budget.ledger.limits.input_tokens, 2000000); assert.equal(budget.ledger.limits.output_tokens, 400000);
+           assert.equal(budget.ledger.limits.requests, 400); assert.equal(budget.ledger.limits.seconds, 7200);
+         } finally { c.store.close(); }
+       }
+-      const oldWire = scripted.requests.slice(0, 2).map(request => request.body.max_output_tokens);
+-      const newWire = scripted.requests.slice(2).map(request => request.body.max_output_tokens);
++      const oldWire = scripted.requests.slice(0, 1).map(request => request.body.max_output_tokens);
++      const newWire = scripted.requests.slice(1).map(request => request.body.max_output_tokens);
+       process.stdout.write(JSON.stringify({ test_evidence: 'installed_sdk_context_clamp_replay', observed_usage: firstUsage,
+         historical_context_window: profiles[0]!.context_window, new_context_window: profiles[1]!.context_window,
+         historical_wire_output_limits: oldWire, new_wire_output_limits: newWire,
+         historical_input_reservations: reservations[0], new_input_reservations: reservations[1], reported_token_totals: totals,
+-        gateway_context_window_verified: false }) + '\n');
+-      assert.deepEqual(oldWire, [8192, 16], 'the historical metadata must reproduce the installed SDK clamp');
++        historical_unsafe_followup_stopped_by_application_guard: true, gateway_context_window_verified: false }) + '\n');
++      assert.deepEqual(oldWire, [8192], 'the current application guard must stop before the historical SDK output clamp');
+       assert.deepEqual(newWire, [8192, 8192], 'the new profile must preserve its configured output room after the same observed usage and tool receipt');
+-      assert.deepEqual(reservations[1], reservations[0], 'larger context metadata must not silently raise per-request input reservations');
++      assert.equal(reservations[1]![0], reservations[0]![0], 'larger context metadata must not silently raise the identical first-request input reservation');
+     } finally { await scripted.close(); }
+   });
+ });
+--- a/code/scripts/benchmark-workbench-events.ts
++++ b/code/scripts/benchmark-workbench-events.ts
+@@ -0,0 +1,56 @@
++import assert from 'node:assert/strict';
++import { DatabaseSync } from 'node:sqlite';
++import { writeFile, mkdir } from 'node:fs/promises';
++import { dirname, resolve } from 'node:path';
++import { cpus } from 'node:os';
++import { ExtractionStore } from '@t1/agent';
++import { WorkbenchWorkflow } from '../apps/server/src/workflow.js';
++
++const argument = (key: string) => process.argv[process.argv.indexOf(key) + 1];
++const id = argument('--run-id'), output = argument('--output');
++if (!process.argv.includes('--run-id') || !id || !/^[a-zA-Z0-9:_-]{1,160}$/u.test(id) || !process.argv.includes('--output') || !output) throw new Error('explicit_run_and_output_required');
++const live = new DatabaseSync(resolve('runtime-data/t1.sqlite'), { readOnly: true });
++const isolated = new ExtractionStore(':memory:');
++const workflow = new WorkbenchWorkflow(isolated, { sources: false });
++try {
++  const run = live.prepare('SELECT * FROM s4_runs WHERE id=?').get(id)!;
++  const row = live.prepare('SELECT * FROM workbench_runs WHERE id=?').get(id)!;
++  if (!run || !row) throw new Error('run_not_found');
++  const paper = live.prepare('SELECT * FROM workbench_papers WHERE id=?').get(row.paper_id as string)!;
++  const events = live.prepare('SELECT * FROM s4_events WHERE run_id=? ORDER BY seq').all(id);
++  isolated.db.prepare('INSERT INTO s4_runs VALUES(?,?,?,?)').run(id, run.input_json as string, run.state as string, run.metadata_json as string);
++  isolated.db.prepare('INSERT INTO workbench_papers VALUES(?,?)').run(row.paper_id as string, paper.payload_json as string);
++  isolated.db.prepare('INSERT INTO workbench_runs VALUES(?,?,?)').run(id, row.paper_id as string, row.payload_json as string);
++  for (const event of events) isolated.db.prepare('INSERT INTO s4_events VALUES(?,?,?)').run(id, Number(event.seq), event.payload_json as string);
++  const previous = (after: number) => {
++    const payload = isolated.db.prepare('SELECT payload_json FROM workbench_runs WHERE id=?').get(id)!;
++    JSON.parse(payload.payload_json as string); // Original this.run(id) decoded the complete source snapshot each poll.
++    return isolated.events(id).filter(e => e.seq > after);
++  };
++  const current = (after: number) => workflow.events(id, after);
++  const maximum = Number(events.at(-1)?.seq ?? 0), checks = [0, Math.max(0, maximum - 5), maximum, maximum + 1];
++  for (const cursor of checks) assert.deepEqual(current(cursor), previous(cursor));
++  const measure = (fn: (after: number) => unknown, after: number) => {
++    for (let n = 0; n < 5; n++) fn(after);
++    const cpu = process.cpuUsage(), samples: number[] = [];
++    for (let n = 0; n < 50; n++) { const start = performance.now(); fn(after); samples.push(performance.now() - start); }
++    const used = process.cpuUsage(cpu); samples.sort((a, b) => a - b);
++    return { iterations: samples.length, mean_ms: samples.reduce((a, b) => a + b, 0) / samples.length,
++      median_ms: samples[Math.floor(samples.length / 2)]!, p95_ms: samples[Math.ceil(samples.length * .95) - 1]!,
++      cpu_user_ms: used.user / 1000, cpu_system_ms: used.system / 1000 };
++  };
++  const results = [maximum, Math.max(0, maximum - 5)].map(cursor => {
++    const before = measure(previous, cursor), after = measure(current, cursor);
++    return { cursor, returned_events: current(cursor).length, before, after, mean_ratio_before_over_after: before.mean_ms / after.mean_ms };
++  });
++  const report = { schema_version: 'workbench-event-query-benchmark-1', measured_at: new Date().toISOString(),
++    scope: 'Local synchronous event-poll function on exposed real-task snapshots copied to an isolated in-memory SQLite database; no full-extraction speed claim.',
++    production_database_opened_read_only: true, production_business_writes: 0, extra_paid_model_calls: 0,
++    run_id: id, source_snapshot_bytes: Buffer.byteLength(row.payload_json as string), persisted_events: events.length,
++    event_payload_bytes: events.reduce((n, e) => n + Buffer.byteLength(e.payload_json as string), 0),
++    environment: { node: process.version, platform: process.platform, architecture: process.arch, cpu: cpus()[0]?.model, logical_cpus: cpus().length },
++    equivalence_cursors: checks, exact_event_equivalence: true, results,
++    limitation: 'Process scheduling, concurrent user activity, HTTP serialization and model/provider waits are outside this microbenchmark.' };
++  await mkdir(dirname(resolve(output)), { recursive: true }); await writeFile(resolve(output), JSON.stringify(report, null, 2) + '\n');
++  process.stdout.write(JSON.stringify({ output, exact_event_equivalence: true, results }) + '\n');
++} finally { live.close(); isolated.close(); }

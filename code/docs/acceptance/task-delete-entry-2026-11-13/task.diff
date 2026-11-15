@@ -1,0 +1,1631 @@
+--- baseline/code/apps/server/src/workflow.ts
++++ current/code/apps/server/src/workflow.ts
+@@ -1,5 +1,5 @@
+ import { createHash, randomUUID } from 'node:crypto';
+-import { mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
++import { mkdir, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
+ import { dirname, isAbsolute, relative, resolve } from 'node:path';
+ import { fileURLToPath } from 'node:url';
+ import { spawn } from 'node:child_process';
+@@ -42,6 +42,7 @@
+   source?: SourceSnapshot; coverage?: unknown; error?: string; directory: string; strategy?: string; summary?: string;
+   execution_started_at?: string; queue_wait_ms?: number; runtime_deadline?: string; finished_at?: string; submission?: WorkbenchSubmission; model_profile?: WorkbenchModelProfile }
+ interface Annotation { labels: WorkbenchLabels; deleted: boolean; reviewer: string; reason: string }
++interface RunCleanupPlan { status: 'cleanup_pending' | 'complete'; targets: Array<{ path: string; parent: 'runs' | 'figure-reviews' | 'exports' }> }
+ export interface WorkflowExecution {
+   input: RunInput; document: ExtractionDocument; evidence_catalog?: EvidenceCatalog; catalog?: FigureAssetCatalog; directory: string;
+   signal: AbortSignal; store: ExtractionStore; metadata: EvidenceValidationContext['metadata']; execution_started_at?: string;
+@@ -73,11 +74,18 @@
+ export class WorkflowRetentionConflict extends ContractError {
+   constructor(readonly current_version: number, readonly current_retention_revision: number) { super('retention_revision_conflict'); }
+ }
++export class WorkflowRunCleanupPending extends ContractError {
++  constructor(readonly run_id: string, readonly paper_id: string) { super('run_deleted_cleanup_pending'); }
++}
+ 
+ /** One coordinator owns short SQLite transactions. Parsing/model waits never hold a write transaction. */
+ export class WorkbenchWorkflow {
+   readonly codeRoot: string; readonly directory: string; readonly catalog: EvidenceCatalog;
+   private readonly active = new Map<string, { controller: AbortController; promise: Promise<void> }>();
++  private readonly preparingPapers = new Map<string, number>();
++  private readonly deletingPapers = new Set<string>();
++  private readonly pdfOperations = new Map<string, Promise<unknown>>();
++  private readonly runWrites = new Map<string, number>();
+   readonly maxConcurrentRuns = 2;
+   private executing = 0;
+   private readonly queue: Array<{ id: string; controller: AbortController; run: () => Promise<void>; resolve: () => void; reject: (error: unknown) => void }> = [];
+@@ -98,6 +106,7 @@
+       CREATE TABLE IF NOT EXISTS workbench_retentions(run_id TEXT NOT NULL REFERENCES s4_runs(id),record_id TEXT NOT NULL,payload_json TEXT NOT NULL,PRIMARY KEY(run_id,record_id));
+       CREATE TABLE IF NOT EXISTS workbench_exports(id TEXT PRIMARY KEY,run_id TEXT NOT NULL,payload_json TEXT NOT NULL);`);
+     store.db.exec('CREATE TABLE IF NOT EXISTS workbench_deleted_sources(paper_id TEXT PRIMARY KEY,deleted_at TEXT NOT NULL)');
++    store.db.exec("CREATE TABLE IF NOT EXISTS workbench_deleted_runs(run_id TEXT PRIMARY KEY,paper_id TEXT NOT NULL,deleted_at TEXT NOT NULL,payload_json TEXT NOT NULL DEFAULT '{}')");
+     // Persist only the identity of a successful submission, in the same transaction
+     // as the paper/run. Keys survive deletions and never restart an old run.
+     store.db.exec(`CREATE TABLE IF NOT EXISTS workbench_requests(operation TEXT NOT NULL,request_id TEXT NOT NULL,payload_sha256 TEXT NOT NULL,result_id TEXT NOT NULL,
+@@ -124,6 +133,7 @@
+           const first = versions[0]?.record;
+           const id = first?.extraction_trace.run_id ?? output.result.run_id;
+           if (!id) continue;
++          if (this.store.db.prepare('SELECT run_id FROM workbench_deleted_runs WHERE run_id=?').get(id)) continue;
+           if (this.store.db.prepare('SELECT id FROM workbench_runs WHERE id=?').get(id)) {
+             const existingRun = this.run(id); if (!existingRun.strategy) this.saveRun({ ...existingRun, strategy: output.strategy });
+             continue;
+@@ -140,6 +150,13 @@
+             if (!this.runRows().some(r => r.paper_id === paper.id && r.origin !== 'historical_compatibility_replay')) this.savePaper(paper);
+           });
+         }
++      }
++    }
++    for (const tombstone of this.store.db.prepare('SELECT run_id,paper_id,payload_json FROM workbench_deleted_runs').all()) {
++      const plan = JSON.parse(tombstone.payload_json as string) as RunCleanupPlan;
++      if (plan.status === 'cleanup_pending') {
++        try { await this.finishRunCleanup(tombstone.run_id as string, tombstone.paper_id as string, plan); }
++        catch { /* The durable plan stays pending for a later retry. Never restore the run. */ }
+       }
+     }
+   }
+@@ -230,6 +247,25 @@
+     const promise = create(remember); this.requests.set(key, { hash, promise });
+     try { return await promise; } finally { if (this.requests.get(key)?.promise === promise) this.requests.delete(key); }
+   }
++  /** Content-addressed PDF writes and last-reference removal share one short queue. */
++  private async withPdfFile<T>(path: string, operation: () => Promise<T>): Promise<T> {
++    const key = resolve(path), previous = this.pdfOperations.get(key) ?? Promise.resolve();
++    const current = previous.catch(() => {}).then(operation);
++    this.pdfOperations.set(key, current);
++    try { return await current; }
++    finally { if (this.pdfOperations.get(key) === current) this.pdfOperations.delete(key); }
++  }
++  /** Deletion never races a pending source check, export, or human write. */
++  private async withRunWrite<T>(id: string, operation: () => Promise<T>): Promise<T> {
++    const row = this.run(id);
++    if (this.deletingPapers.has(row.paper_id)) throw new ContractError('paper_deletion_in_progress');
++    this.runWrites.set(id, (this.runWrites.get(id) ?? 0) + 1);
++    try { return await operation(); }
++    finally {
++      const remaining = this.runWrites.get(id)! - 1;
++      if (remaining) this.runWrites.set(id, remaining); else this.runWrites.delete(id);
++    }
++  }
+   async upload(bytes: Buffer, filename: string, title?: string, requestId?: string) {
+     await this.initialize();
+     if (!filename || filename.length > 240 || /[\x00-\x1f/\\]/u.test(filename) || !/\.pdf$/iu.test(filename)) throw new ContractError('invalid_pdf_filename');
+@@ -240,6 +276,7 @@
+     return this.submission('upload', requestId, { sha256: hash, filename, title: title?.trim() || '' },
+       id => ({ paper: this.summary(this.paper(id)) }), async remember => {
+     const id = 'paper-' + randomUUID(), path = resolve(this.directory, 'pdf', hash + '.pdf');
++    return this.withPdfFile(path, async () => {
+     await mkdir(dirname(path), { recursive: true, mode: 0o700 });
+     try { await writeFile(path, bytes, { flag: 'wx', mode: 0o600 }); }
+     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'EEXIST' || digest(await readFile(path)) !== hash) throw error; }
+@@ -247,14 +284,19 @@
+       language: 'und', pages: 0, note: 'Uploaded PDF; parsing and medical content remain unverified.' };
+     this.store.atomic(() => { this.savePaper(row); remember(id); }); return { paper: this.summary(row) };
+     });
++    });
+   }
+   async restorePdf(id: string, bytes: Buffer) {
+     await this.initialize(); const paper = this.paper(id);
+     if (bytes.length > MAX_PDF_BYTES || digest(bytes) !== paper.pdf.sha256) throw new ContractError('restore_requires_identical_pdf');
+     const path = resolve(this.codeRoot, paper.pdf.path), rel = relative(this.codeRoot, path);
+     if (!rel || rel.startsWith('..') || isAbsolute(rel)) throw new ContractError('source_file_outside_code');
++    return this.withPdfFile(path, async () => {
++    if (this.deletingPapers.has(id)) throw new ContractError('paper_deletion_in_progress');
++    this.paper(id); // The paper may have been removed while waiting for this PDF.
+     await mkdir(dirname(path), { recursive: true, mode: 0o700 }); await writeFile(path, bytes, { mode: 0o600 });
+     return { restored: true, sha256: paper.pdf.sha256 };
++    });
+   }
+   private units(document: ExtractionDocument): WorkbenchSourceUnit[] {
+     const key = `${document.document_id}:${document.file_sha256}:${document.text_version}`;
+@@ -366,7 +408,7 @@
+     const asset = row.source?.catalog?.figures.flatMap(f => f.regions).find(a => a.asset_id === assetId);
+     if (!asset) throw new ContractError('workbench_figure_not_found'); return this.readPinned(asset); }
+   async verifyFigure(id: string, figureId: string, body: WorkbenchFigureCheckInput) {
+-    await this.initialize();
++    await this.initialize(); return this.withRunWrite(id, async () => {
+     if (!body || typeof body !== 'object' || Object.keys(body).some(k => !['expected_catalog_sha256', 'reviewer', 'all_panels_included', 'caption_figure_identity_checked', 'notes'].includes(k))) throw new ContractError('invalid_figure_check');
+     this.person(body.reviewer);
+     if (body.all_panels_included !== true || body.caption_figure_identity_checked !== true || typeof body.notes !== 'string' || !body.notes.trim() || body.notes.length > 4000) throw new ContractError('explicit_whole_figure_checks_required');
+@@ -393,6 +435,7 @@
+     });
+     return { verified: true, figure_id: figureId, verification: 'whole_figure_checked', figure_catalog_sha256: next.sha256,
+       record_approval_added: false, run_detail: await this.runDetail(id) };
++    });
+   }
+   events(id: string, after = 0): WorkbenchEvent[] { this.run(id); return (this.store.events(id) as WorkbenchEvent[]).filter(e => e.seq > after); }
+   async start(id: string, scope: Scope, requestId?: string, metadata?: WorkbenchSubmission, modelProfileId?: string) {
+@@ -404,6 +447,11 @@
+     // Keep the exact legacy payload when metadata is absent so old keys still replay after an upgrade.
+     return this.submission('start', requestId, { paper_id: id, scope, ...(submission ? { submission } : {}), ...(modelProfileId !== undefined ? { model_profile_id: modelProfileId } : {}) }, async runId => ({ run: (await this.runs(runId))[0]! }), async remember => {
+     if (this.shuttingDown) throw new ContractError('server_shutting_down');
++    if (this.deletingPapers.has(id)) throw new ContractError('paper_deletion_in_progress');
++    // Admission can await source checks or runner preparation before a run exists.
++    // Protect that whole interval, including overlapping starts of the same paper.
++    this.preparingPapers.set(id, (this.preparingPapers.get(id) ?? 0) + 1);
++    try {
+     const admittedAt = now();
+     assertSchema(ScopeSchema, scope);
+     const scopeErrors = evidenceScopeIssues(scope, this.catalog);
+@@ -424,6 +472,10 @@
+     const promise = this.schedule(runId, controller, () => this.execute(row, input, controller));
+     this.active.set(runId, { controller, promise }); void promise.finally(() => this.active.delete(runId));
+     return { run: (await this.runs(runId))[0]! };
++    } finally {
++      const remaining = this.preparingPapers.get(id)! - 1;
++      if (remaining) this.preparingPapers.set(id, remaining); else this.preparingPapers.delete(id);
++    }
+     });
+   }
+   private schedule(id: string, controller: AbortController, run: () => Promise<void>) {
+@@ -548,7 +600,7 @@
+     validated.record.record_id = record?.record_id ?? 'manual-' + randomUUID(); return validated.record;
+   }
+   async revise(id: string, recordId: string | undefined, body: WorkbenchRevisionInput) {
+-    await this.initialize(); this.assertRevisionInput(body); const row = this.run(id), old = recordId ? this.current(id, recordId, body.expected_version) : undefined;
++    await this.initialize(); return this.withRunWrite(id, async () => { this.assertRevisionInput(body); const row = this.run(id), old = recordId ? this.current(id, recordId, body.expected_version) : undefined;
+     if (!old && body.expected_version !== undefined) throw new ContractError('manual_add_does_not_take_expected_version');
+     if (!row.source) throw new ContractError('parsed_source_required'); await this.requireSource(this.paper(row.paper_id), row.source);
+     const labels = this.labels(body.labels), previous = old ? this.annotation(id, old) : { labels: {}, deleted: false, reviewer: '', reason: '' };
+@@ -558,9 +610,10 @@
+     this.store.atomic(() => { const value = this.store.humanVersion(id, record, old?.version ?? null, body.reason ?? 'human_revision');
+       this.annotationWrite(id, value, { labels: { ...previous.labels, ...labels }, deleted: false, reviewer: body.reviewer, reason: body.reason ?? '' }); });
+     return { record: (await this.output(row)).records.find(r => r.id === record.record_id)! };
++    });
+   }
+   async reviewRecord(id: string, recordId: string, body: WorkbenchReviewInput) {
+-    await this.initialize(); if (!body || typeof body !== 'object' || Object.keys(body).some(k => !['expected_version', 'action', 'reviewer', 'reason', 'source_text_checked', 'relevance_checked', 'context_checked', 'figure_pairing_checked'].includes(k))) throw new ContractError('invalid_review_input');
++    await this.initialize(); return this.withRunWrite(id, async () => { if (!body || typeof body !== 'object' || Object.keys(body).some(k => !['expected_version', 'action', 'reviewer', 'reason', 'source_text_checked', 'relevance_checked', 'context_checked', 'figure_pairing_checked'].includes(k))) throw new ContractError('invalid_review_input');
+     this.person(body.reviewer); if (body.reason !== undefined && (typeof body.reason !== 'string' || body.reason.length > 4000)) throw new ContractError('invalid_review_reason');
+     if (!['approve_text', 'approve_figures', 'reject', 'pending'].includes(body.action)) throw new ContractError('invalid_review_action');
+     const row = this.run(id), old = this.current(id, recordId, body.expected_version); if (!row.source) throw new ContractError('parsed_source_required');
+@@ -588,9 +641,10 @@
+       this.store.event(id, 'human_review', { record_id: recordId, record_version: value.version, action: body.action, reviewer: body.reviewer, text_approved: approved, figures_approved: figures });
+     });
+     return { record: (await this.output(row)).records.find(r => r.id === recordId)! };
++    });
+   }
+   async retainRecord(id: string, recordId: string, body: WorkbenchRetentionInput) {
+-    await this.initialize();
++    await this.initialize(); return this.withRunWrite(id, async () => {
+     if (!body || typeof body !== 'object' || Object.keys(body).some(key => !['expected_version', 'expected_retention_revision', 'status'].includes(key)) ||
+       !['kept', 'excluded'].includes(body.status) || !Number.isSafeInteger(body.expected_retention_revision) || body.expected_retention_revision < 0) throw new ContractError('invalid_retention_input');
+     this.store.atomic(() => {
+@@ -602,16 +656,18 @@
+         status: retention.status, retention_revision: retention.revision, medical_approval_added: false });
+     });
+     return { record: (await this.output(this.run(id))).records.find(record => record.id === recordId)! };
++    });
+   }
+   async deleteRecord(id: string, recordId: string, body: WorkbenchRevisionInput) {
+-    await this.initialize(); this.assertRevisionInput(body); const old = this.current(id, recordId, body.expected_version), record = structuredClone(old.record);
++    await this.initialize(); return this.withRunWrite(id, async () => { this.assertRevisionInput(body); const old = this.current(id, recordId, body.expected_version), record = structuredClone(old.record);
+     record.review_status = 'rejected'; record.review_events = []; record.handoff_status = 'candidate_only';
+     this.store.atomic(() => { const next = this.store.humanVersion(id, record, old.version, body.reason ?? 'human_delete');
+       this.annotationWrite(id, next, { ...this.annotation(id, old), deleted: true, reviewer: body.reviewer, reason: body.reason ?? '' }); });
+     return { deleted: true, record_id: recordId };
++    });
+   }
+   async export(id: string, kind: WorkbenchExportKind) {
+-    await this.initialize(); if (!['candidate_jsonl', 'candidate_csv', 'approved_jsonl', 'approved_csv', 'candidate_package', 'approved_package', 'retained_jsonl', 'retained_csv', 'retained_package'].includes(kind)) throw new ContractError('export_kind_not_found');
++    await this.initialize(); return this.withRunWrite(id, async () => { if (!['candidate_jsonl', 'candidate_csv', 'approved_jsonl', 'approved_csv', 'candidate_package', 'approved_package', 'retained_jsonl', 'retained_csv', 'retained_package'].includes(kind)) throw new ContractError('export_kind_not_found');
+     // Engine terminal state precedes its last file/coverage writes. A terminal download
+     // waits for that coordinator promise instead of exporting a transient null coverage.
+     const finalizing = this.active.get(id); if (finalizing && terminals.has(this.store.snapshot(id).state)) await finalizing.promise;
+@@ -670,26 +726,127 @@
+     if (kind.endsWith('jsonl')) return { bytes: Buffer.from(records.map(r => JSON.stringify(r)).join('\n') + (records.length ? '\n' : '')), filename: id + '-' + kind + '.jsonl', type: 'application/x-ndjson' };
+     const csvs = await Promise.all(['records.csv', 'background-records.csv'].map(f => readFile(resolve(directory, f), 'utf8').catch(() => '')));
+     return { bytes: Buffer.from(csvs[0]! + (csvs[1] ? csvs[1].split('\n').slice(1).join('\n') : '')), filename: id + '-' + kind + '.csv', type: 'text/csv; charset=utf-8' };
++    });
+   }
+   private recordCsv(records: WorkbenchRecord[]) { const quote = (s: string) => '"' + s.replace(/"/g, '""') + '"';
+     return '\ufeffrecord_id,record_version,fragment_index,original_fragment,physical_page,block_id,start,end,figure_status\n' + records.flatMap(r => r.fragments.map((f, i) => [r.id, String(r.version), String(i), f.exact_quote, String(f.physical_page), f.block_id, String(f.start), String(f.end), r.association].map(quote).join(','))).join('\n') + '\n'; }
++  private deleteRunRows(id: string) {
++    for (const table of ['workbench_annotations', 'workbench_reviews', 'workbench_retentions', 'workbench_exports', 's4_batches', 's4_versions', 's4_events']) this.store.db.prepare(`DELETE FROM ${table} WHERE run_id=?`).run(id);
++    this.store.db.prepare('DELETE FROM workbench_runs WHERE id=?').run(id); this.store.db.prepare('DELETE FROM s4_runs WHERE id=?').run(id);
++  }
++  private async existingPath(path: string) {
++    try { return await realpath(path); }
++    catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined; throw error; }
++  }
++  private async referencedSourcePaths() {
++    const paths = new Set<string>();
++    const collect = (value: unknown) => {
++      if (!value || typeof value !== 'object') return;
++      for (const [key, item] of Object.entries(value)) {
++        if (typeof item === 'string' && ['path', 'file_reference'].includes(key)) paths.add(resolve(this.codeRoot, item));
++        else if (item && typeof item === 'object') collect(item);
++      }
++    };
++    for (const row of this.store.db.prepare('SELECT payload_json FROM workbench_papers').all()) collect(JSON.parse(row.payload_json as string));
++    for (const row of this.runRows()) { collect(row.source); if (row.directory) paths.add(resolve(row.directory)); }
++    for (const row of this.store.db.prepare('SELECT payload_json FROM workbench_exports').all()) {
++      const directory = (JSON.parse(row.payload_json as string) as { directory?: string }).directory;
++      if (directory) { paths.add(resolve(this.codeRoot, directory)); paths.add(resolve(this.codeRoot, directory) + '.tar.gz'); }
++    }
++    for (const path of [...paths]) { const pinned = await this.existingPath(path); if (pinned) paths.add(pinned); }
++    return paths;
++  }
++  /** Never follow retained evidence paths into deletion; only owned runtime roots qualify. */
++  private async cleanOwnedArtifacts(path: string, parent: string, references: ReadonlySet<string>): Promise<{ removed: number; retained: number }> {
++    const target = resolve(this.codeRoot, path), rel = relative(parent, target), empty = { removed: 0, retained: 0 };
++    if (!rel || rel.startsWith('..') || isAbsolute(rel)) return empty;
++    const [root, pinned] = await Promise.all([this.existingPath(parent), this.existingPath(target)]);
++    if (!root || !pinned) return empty;
++    const pinnedRel = relative(root, pinned); if (!pinnedRel || pinnedRel.startsWith('..') || isAbsolute(pinnedRel)) return empty;
++    const inside = (directory: string, entry: string) => { const rest = relative(directory, entry); return rest !== '' && !rest.startsWith('..') && !isAbsolute(rest); };
++    const walk = async (entry: string): Promise<{ removed: number; retained: number }> => {
++      if (references.has(entry)) return { removed: 0, retained: 1 };
++      if (![...references].some(reference => inside(entry, reference))) { await rm(entry, { recursive: true, force: true }); return { removed: 1, retained: 0 }; }
++      const result = { removed: 0, retained: 0 };
++      for (const child of await readdir(entry, { withFileTypes: true })) {
++        const childPath = resolve(entry, child.name);
++        if (child.isSymbolicLink()) {
++          if (references.has(childPath)) result.retained++; else { await rm(childPath, { force: true }); result.removed++; }
++        } else { const cleaned = await walk(childPath); result.removed += cleaned.removed; result.retained += cleaned.retained; }
++      }
++      return result;
++    };
++    return walk(pinned);
++  }
++  private async finishRunCleanup(id: string, paperId: string, plan: RunCleanupPlan) {
++    const result = { removed: 0, retained: 0 };
++    try {
++      for (const target of plan.targets) {
++        const references = await this.referencedSourcePaths();
++        const current = await this.cleanOwnedArtifacts(target.path, resolve(this.directory, target.parent), references);
++        result.removed += current.removed; result.retained += current.retained;
++      }
++      this.store.db.prepare('UPDATE workbench_deleted_runs SET payload_json=? WHERE run_id=?').run(JSON.stringify({ ...plan, status: 'complete' }), id);
++      this.outputCache.delete(id);
++      return { deleted: true, run_id: id, paper_id: paperId, already_deleted: false, shared_source_artifacts_retained: result.retained, scope: 'single_run_results_versions_reviews_retention_events_exports' };
++    } catch { throw new WorkflowRunCleanupPending(id, paperId); }
++  }
++  async deleteRun(id: string) {
++    await this.initialize();
++    const tombstone = this.store.db.prepare('SELECT paper_id,payload_json FROM workbench_deleted_runs WHERE run_id=?').get(id);
++    const savedPlan = tombstone ? JSON.parse(tombstone.payload_json as string) as RunCleanupPlan : undefined;
++    if (tombstone && savedPlan?.status === 'complete') return { deleted: true, run_id: id, paper_id: tombstone.paper_id as string, already_deleted: true };
++    const row = tombstone ? undefined : this.run(id), paperId = row?.paper_id ?? tombstone!.paper_id as string;
++    const peers = this.runRows().filter(run => run.paper_id === paperId);
++    if (this.deletingPapers.has(paperId)) throw new ContractError('paper_deletion_in_progress');
++    // A sibling's source publication or human write can change shared references.
++    // Hold off deletion until that short operation or active task has fully exited.
++    if (this.preparingPapers.has(paperId) || peers.some(run => this.active.has(run.id) || this.runWrites.has(run.id) || !terminals.has(this.store.snapshot(run.id).state))) throw new ContractError('paper_busy_before_deleting_run');
++    this.deletingPapers.add(paperId);
++    try {
++      if (savedPlan) return await this.finishRunCleanup(id, paperId, savedPlan);
++      const source = row!;
++      const exports = this.store.db.prepare('SELECT payload_json FROM workbench_exports WHERE run_id=?').all(id)
++        .map(value => (JSON.parse(value.payload_json as string) as { directory?: string }).directory).filter((path): path is string => Boolean(path));
++      const plan: RunCleanupPlan = { status: 'cleanup_pending', targets: [
++        ...(source.directory ? [{ path: source.directory, parent: 'runs' as const }] : []),
++        ...[source.source?.catalog_artifact, ...(source.source?.figure_history ?? [])].filter((artifact): artifact is Artifact => Boolean(artifact)).map(artifact => ({ path: artifact.path, parent: 'figure-reviews' as const })),
++        ...exports.flatMap(path => [{ path, parent: 'exports' as const }, { path: path + '.tar.gz', parent: 'exports' as const }]),
++      ] };
++      this.store.atomic(() => {
++        this.deleteRunRows(id);
++        this.store.db.prepare('INSERT INTO workbench_deleted_runs VALUES(?,?,?,?)').run(id, paperId, now(), JSON.stringify(plan));
++      });
++      return await this.finishRunCleanup(id, paperId, plan);
++    } finally { this.deletingPapers.delete(paperId); }
++  }
+   async deletePaper(id: string) {
+-    await this.initialize(); const paper = this.paper(id), runs = this.runRows().filter(r => r.paper_id === id);
+-    if (runs.some(r => !terminals.has(this.store.snapshot(r.id).state))) throw new ContractError('cancel_active_runs_before_deleting_paper');
++    await this.initialize();
++    if (this.deletingPapers.has(id)) throw new ContractError('paper_deletion_in_progress');
++    const paper = this.paper(id), runs = this.runRows().filter(r => r.paper_id === id);
++    if (this.preparingPapers.has(id) || runs.some(r => this.active.has(r.id) || this.runWrites.has(r.id) || !terminals.has(this.store.snapshot(r.id).state))) throw new ContractError('cancel_active_runs_before_deleting_paper');
++    this.deletingPapers.add(id);
++    try {
+     const exportDirectories = runs.flatMap(row => this.store.db.prepare('SELECT payload_json FROM workbench_exports WHERE run_id=?').all(row.id)
+       .map(value => (JSON.parse(value.payload_json as string) as { directory?: string }).directory).filter((d): d is string => Boolean(d)));
+     this.store.atomic(() => {
+       for (const row of runs) {
+-        for (const table of ['workbench_annotations', 'workbench_reviews', 'workbench_retentions', 'workbench_exports', 's4_batches', 's4_versions', 's4_events']) this.store.db.prepare(`DELETE FROM ${table} WHERE run_id=?`).run(row.id);
+-        this.store.db.prepare('DELETE FROM workbench_runs WHERE id=?').run(row.id); this.store.db.prepare('DELETE FROM s4_runs WHERE id=?').run(row.id);
++        this.deleteRunRows(row.id);
+       }
+       this.store.db.prepare('DELETE FROM workbench_papers WHERE id=?').run(id);
+       this.store.db.prepare('INSERT INTO workbench_deleted_sources VALUES(?,?) ON CONFLICT(paper_id) DO NOTHING').run(id, now());
+     });
++    let pdfReferenced = false;
++    // Immutable retained evidence is never deleted. Uploaded content-addressed PDFs are removed only after their last reference.
++    await this.withPdfFile(resolve(this.codeRoot, paper.pdf.path), async () => {
++      // An upload may have committed while this deletion waited for the PDF queue.
++      // Decide from live references under that same queue, never an earlier snapshot.
++      const papers = this.store.db.prepare('SELECT payload_json FROM workbench_papers').all().map(r => JSON.parse(r.payload_json as string) as PaperRow);
++      pdfReferenced = papers.some(p => p.pdf.path === paper.pdf.path)
++        || this.runRows().some(row => row.source?.document.source.file_reference === paper.pdf.path);
++      if (paper.uploaded && !pdfReferenced) await rm(resolve(this.codeRoot, paper.pdf.path), { force: true });
++    });
+     const otherPapers = this.store.db.prepare('SELECT payload_json FROM workbench_papers').all().map(r => JSON.parse(r.payload_json as string) as PaperRow);
+-    const pdfReferenced = otherPapers.some(p => p.pdf.path === paper.pdf.path);
+-    // Immutable retained evidence is never deleted. Uploaded content-addressed PDFs are removed only after their last reference.
+-    if (paper.uploaded && !pdfReferenced) await rm(resolve(this.codeRoot, paper.pdf.path), { force: true });
+     const stillReferenced = JSON.stringify({ papers: otherPapers, runs: this.runRows() });
+     for (const row of runs) if (row.directory && !stillReferenced.includes(row.directory) && !stillReferenced.includes(relative(this.codeRoot, row.directory))) await rm(row.directory, { recursive: true, force: true });
+     for (const artifact of runs.flatMap(row => [row.source?.catalog_artifact, ...(row.source?.figure_history ?? [])]).filter((a): a is Artifact => Boolean(a))) {
+@@ -701,6 +858,7 @@
+     for (const row of runs) this.outputCache.delete(row.id);
+     for (const key of this.sourceUnitCache.keys()) if (key.startsWith(id + ':')) this.sourceUnitCache.delete(key);
+     return { deleted: true, paper_id: id, runs_deleted: runs.length, shared_pdf_retained: pdfReferenced, scope: 'paper_runs_candidates_reviews_and_unshared_uploaded_files' };
++    } finally { this.deletingPapers.delete(id); }
+   }
+   async waitForIdle() { await Promise.all([...this.active.values()].map(t => t.promise)); }
+   async close() {
+--- baseline/code/apps/server/src/app.ts
++++ current/code/apps/server/src/app.ts
+@@ -2,7 +2,7 @@
+ import { catalog, RunStore } from '@t1/agent';
+ import { ContractError } from '@t1/contracts';
+ import { WorkbenchSources, WORKBENCH_CAPABILITIES } from './workbench.js';
+-import { MAX_PDF_BYTES, WorkbenchWorkflow, WorkflowConflict, WorkflowCatalogConflict, WorkflowRetentionConflict } from './workflow.js';
++import { MAX_PDF_BYTES, WorkbenchWorkflow, WorkflowConflict, WorkflowCatalogConflict, WorkflowRetentionConflict, WorkflowRunCleanupPending } from './workflow.js';
+ import type { Scope } from '@t1/contracts';
+ import type { WorkbenchExportKind, WorkbenchRevisionInput, WorkbenchReviewInput, WorkbenchFigureCheckInput, WorkbenchRetentionInput, WorkbenchSubmission } from '../../../packages/contracts/src/workbench.js';
+ 
+@@ -12,6 +12,7 @@
+   app.addHook('preClose', async () => { for (const close of streams) close(); await workflow?.close(); });
+   app.setErrorHandler((error, _request, reply) => {
+     const code = error instanceof ContractError ? error.code : 'request_failed';
++    if (error instanceof WorkflowRunCleanupPending) return reply.code(503).send({ error: code, deleted: true, cleanup_pending: true, run_id: error.run_id, paper_id: error.paper_id });
+     if (error instanceof WorkflowConflict) return reply.code(409).send({ error: code, message: 'This record has a newer saved version. Reload before applying your changes.', current_version: error.current_version });
+     if (error instanceof WorkflowRetentionConflict) return reply.code(409).send({ error: code, message: 'The saved keep/exclude choice changed. Reload before applying your choice.', current_version: error.current_version, current_retention_revision: error.current_retention_revision });
+     if (error instanceof WorkflowCatalogConflict) return reply.code(409).send({ error: code, message: 'The Figure catalog has a newer version. Reload before confirming.', current_catalog_sha256: error.current_catalog_sha256 });
+@@ -19,6 +20,7 @@
+     if (code === 'submission_payload_conflict') return reply.code(409).send({ error: code });
+     if (code === 'submission_result_deleted') return reply.code(410).send({ error: code });
+     if (code === 'submission_busy') return reply.code(429).send({ error: code });
++    if (['cancel_active_runs_before_deleting_paper', 'paper_deletion_in_progress', 'paper_busy_before_deleting_run'].includes(code)) return reply.code(409).send({ error: code });
+     return reply.code(code === 'run_not_found' || code.endsWith('_not_found') || code === 'workbench_figure_not_available' ? 404 : 400).send({ error: code });
+   });
+   app.get('/health', async () => workflow ? { status: 'ok', service: 't1-workbench', runtime_mode: 'workflow', backend_pi_sdk: '1.4.0',
+@@ -59,6 +61,7 @@
+       return reply.code(202).send(await workflow.start(request.params.paperId, request.body.scope, requestId(request.headers['x-t1-request-id']), request.body.submission, request.body.model_profile_id));
+     });
+     app.get<{ Params: { runId: string } }>('/api/workbench/runs/:runId', async request => workflow.runDetail(request.params.runId));
++    app.delete<{ Params: { runId: string } }>('/api/workbench/runs/:runId', async request => workflow.deleteRun(request.params.runId));
+     app.get<{ Params: { runId: string; assetId: string } }>('/api/workbench/runs/:runId/figures/:assetId', async (request, reply) =>
+       reply.type('image/png').header('x-content-type-options', 'nosniff').send(await workflow.runFigure(request.params.runId, request.params.assetId)));
+     app.post<{ Params: { runId: string; figureId: string }; Body: WorkbenchFigureCheckInput }>('/api/workbench/runs/:runId/figures/:figureId/verify', async request =>
+--- baseline/code/apps/server/test/workflow-deletion.test.ts
++++ current/code/apps/server/test/workflow-deletion.test.ts
+@@ -0,0 +1,187 @@
++import test, { mock } from 'node:test';
++import assert from 'node:assert/strict';
++import fs, { access, mkdtemp, readFile, rm } from 'node:fs/promises';
++import { syncBuiltinESMExports } from 'node:module';
++import { resolve } from 'node:path';
++import { setTimeout as delay } from 'node:timers/promises';
++import { ExtractionStore, RunStore } from '@t1/agent';
++import { ContractError } from '@t1/contracts';
++import { WorkbenchWorkflow } from '../src/workflow.js';
++import { buildApp } from '../src/app.js';
++import { controlledFixture } from './controlled-fixture.js';
++
++const PDF = Buffer.from('%PDF-1.4\n% ISOLATED DELETION ENGINEERING STUB\n%%EOF\n');
++function barrier() { let release!: () => void; const promise = new Promise<void>(resolve => { release = resolve; }); return { promise, release }; }
++async function sandbox() {
++  const directory = await mkdtemp(resolve('runtime-data/workflow-deletion-'));
++  return { directory, store: new ExtractionStore(resolve(directory, 'test.sqlite')) };
++}
++function pdfPath(workflow: WorkbenchWorkflow, id: string) {
++  const row = workflow.store.db.prepare('SELECT payload_json FROM workbench_papers WHERE id=?').get(id)!;
++  return resolve(workflow.codeRoot, JSON.parse(row.payload_json as string).pdf.path);
++}
++const replay = await controlledFixture({ delayMs: 1 });
++
++for (const terminal of ['completed', 'partial', 'failed', 'cancelled', 'interrupted'] as const) {
++  test(`paper deletion refuses ${terminal} while its coordinator is still saving`, { timeout: 30_000 }, async () => {
++    const { directory, store } = await sandbox(), entered = barrier(), finish = barrier();
++    const workflow = new WorkbenchWorkflow(store, { sources: false, directory, parse: replay.parse, discover: replay.discover,
++      runner: { controlled: true, provider: 'deletion-fixture', model_id: 'no-model-call', execute: async context => {
++        context.store.transition(context.input.run_id, 'extracting'); context.store.transition(context.input.run_id, 'reconciling');
++        context.store.transition(context.input.run_id, terminal); entered.release(); await finish.promise;
++        return { coverage: { paid_requests: 0 }, summary: 'Controlled delayed final save.' };
++      } } });
++    try {
++      const paper = (await workflow.upload(await readFile('evaluation/corpus/development-candidates/L05.pdf'), terminal + '.pdf')).paper;
++      const id = (await workflow.start(paper.id, workflow.scopeCatalog().default_scope)).run.run_id; await entered.promise;
++      assert.equal(store.snapshot(id).state, terminal);
++      await assert.rejects(workflow.deleteRun(id), /paper_busy_before_deleting_run/);
++      await assert.rejects(workflow.deletePaper(paper.id), /cancel_active_runs_before_deleting_paper/);
++      assert.equal((await workflow.papers()).length, 1); assert.equal((await workflow.runs()).length, 1);
++      finish.release(); await workflow.waitForIdle();
++      assert.ok(workflow.events(id).some(event => event.type === 'run_result_saved'));
++      assert.equal((await workflow.deletePaper(paper.id)).runs_deleted, 1);
++    } finally { finish.release(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++  });
++}
++
++test('cancelled parser must exit before deletion; queued and active tasks remain guarded', { timeout: 30_000 }, async () => {
++  const { directory, store } = await sandbox(), entered = barrier(), finish = barrier();
++  const workflow = new WorkbenchWorkflow(store, { sources: false, directory,
++    runner: { controlled: true, provider: 'deletion-fixture', model_id: 'no-model-call', execute: async () => { throw new Error('unexpected_model_execution'); } },
++    parse: async () => { entered.release(); await finish.promise; throw new ContractError('controlled_parser_exit'); } });
++  try {
++    const paper = (await workflow.upload(PDF, 'cancel.pdf')).paper, scope = workflow.scopeCatalog().default_scope;
++    const ids = [];
++    for (let i = 0; i < 3; i++) ids.push((await workflow.start(paper.id, scope)).run.run_id);
++    await entered.promise; assert.equal(store.snapshot(ids[2]!).state, 'queued');
++    await assert.rejects(workflow.deletePaper(paper.id), /cancel_active_runs_before_deleting_paper/);
++    for (const id of ids) await workflow.cancel(id);
++    assert.equal(store.snapshot(ids[0]!).state, 'cancelled');
++    await assert.rejects(workflow.deleteRun(ids[0]!), /paper_busy_before_deleting_run/);
++    await assert.rejects(workflow.deletePaper(paper.id), /cancel_active_runs_before_deleting_paper/);
++    finish.release(); await workflow.waitForIdle();
++    assert.equal((await workflow.deletePaper(paper.id)).runs_deleted, 3);
++  } finally { finish.release(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('every overlapping Start preparation blocks deletion and failed admission releases its guard', { timeout: 30_000 }, async () => {
++  const { directory, store } = await sandbox(), prepared = [barrier(), barrier()], entered = [barrier(), barrier()]; let count = 0;
++  const workflow = new WorkbenchWorkflow(store, { sources: false, directory,
++    runner: { controlled: true, provider: 'deletion-fixture', model_id: 'no-model-call',
++      prepare: async () => { const index = count++; entered[index]!.release(); await prepared[index]!.promise; throw new ContractError('controlled_prepare_failed'); },
++      execute: async () => { throw new Error('unexpected_model_execution'); } } });
++  const legacy = new RunStore(':memory:'), app = buildApp(legacy, undefined, workflow);
++  try {
++    const paper = (await workflow.upload(PDF, 'prepare.pdf')).paper, scope = workflow.scopeCatalog().default_scope;
++    const pending = [workflow.start(paper.id, scope).then(() => 'unexpected_success', error => String(error)), workflow.start(paper.id, scope).then(() => 'unexpected_success', error => String(error))];
++    await Promise.all(entered.map(item => item.promise)); assert.equal((await workflow.runs()).length, 0);
++    const refused = await app.inject({ method: 'DELETE', url: '/api/workbench/papers/' + paper.id });
++    assert.equal(refused.statusCode, 409); assert.equal(refused.json().error, 'cancel_active_runs_before_deleting_paper');
++    prepared[0]!.release(); assert.match(await pending[0]!, /controlled_prepare_failed/);
++    await assert.rejects(workflow.deletePaper(paper.id), /cancel_active_runs_before_deleting_paper/);
++    prepared[1]!.release(); assert.match(await pending[1]!, /controlled_prepare_failed/);
++    assert.equal((await workflow.deletePaper(paper.id)).runs_deleted, 0);
++  } finally { for (const gate of prepared) gate.release(); await app.close(); legacy.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('delete-first PDF unlink serializes a same-SHA upload and rejects new Starts until cleanup exits', { timeout: 30_000 }, async () => {
++  const { directory, store } = await sandbox(), entered = barrier(), unlink = barrier();
++  const workflow = new WorkbenchWorkflow(store, { sources: false, directory }); let interceptor: ReturnType<typeof mock.method> | undefined;
++  try {
++    const paper = (await workflow.upload(PDF, 'first.pdf')).paper, path = pdfPath(workflow, paper.id), nativeRm = fs.rm;
++    interceptor = mock.method(fs, 'rm', async (...args: Parameters<typeof fs.rm>) => {
++      if (String(args[0]) === path) { entered.release(); await unlink.promise; }
++      return nativeRm(...args);
++    }); syncBuiltinESMExports();
++    const deleting = workflow.deletePaper(paper.id); await entered.promise;
++    await assert.rejects(workflow.start(paper.id, workflow.scopeCatalog().default_scope), /paper_deletion_in_progress/);
++    await assert.rejects(workflow.deletePaper(paper.id), /paper_deletion_in_progress/);
++    await assert.rejects(workflow.restorePdf(paper.id, PDF), /workbench_paper_not_found/);
++    let uploaded = false;
++    const pending = workflow.upload(PDF, 'second.pdf').then(value => { uploaded = true; return value; });
++    await delay(20); assert.equal(uploaded, false);
++    unlink.release(); assert.equal((await deleting).shared_pdf_retained, false);
++    const duplicate = (await pending).paper; assert.deepEqual(await workflow.pdf(duplicate.id), PDF);
++    await assert.rejects(workflow.start(paper.id, workflow.scopeCatalog().default_scope), /workbench_paper_not_found/);
++  } finally { unlink.release(); interceptor?.mock.restore(); syncBuiltinESMExports(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('upload-first PDF queue rechecks live references and refuses a stale queued restore', { timeout: 30_000 }, async () => {
++  const { directory, store } = await sandbox(), entered = barrier(), write = barrier();
++  const workflow = new WorkbenchWorkflow(store, { sources: false, directory }); let interceptor: ReturnType<typeof mock.method> | undefined;
++  try {
++    const paper = (await workflow.upload(PDF, 'first.pdf')).paper, path = pdfPath(workflow, paper.id), nativeWrite = fs.writeFile;
++    interceptor = mock.method(fs, 'writeFile', async (...args: Parameters<typeof fs.writeFile>) => {
++      if (String(args[0]) === path) { entered.release(); await write.promise; }
++      return nativeWrite(...args);
++    }); syncBuiltinESMExports();
++    const pending = workflow.upload(PDF, 'second.pdf'); await entered.promise;
++    const restoring = workflow.restorePdf(paper.id, PDF).then(() => 'unexpected_success', error => String(error));
++    let deleted = false;
++    const deleting = workflow.deletePaper(paper.id).then(value => { deleted = true; return value; });
++    await delay(20); assert.equal(deleted, false);
++    write.release(); const duplicate = (await pending).paper;
++    assert.match(await restoring, /paper_deletion_in_progress/);
++    assert.equal((await deleting).shared_pdf_retained, true); assert.deepEqual(await workflow.pdf(duplicate.id), PDF);
++  } finally { write.release(); interceptor?.mock.restore(); syncBuiltinESMExports(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('restore-first PDF write finishes before deletion unlinks it and cannot recreate an orphan', { timeout: 30_000 }, async () => {
++  const { directory, store } = await sandbox(), entered = barrier(), write = barrier();
++  const workflow = new WorkbenchWorkflow(store, { sources: false, directory }); let interceptor: ReturnType<typeof mock.method> | undefined;
++  try {
++    const paper = (await workflow.upload(PDF, 'restore.pdf')).paper, path = pdfPath(workflow, paper.id), nativeWrite = fs.writeFile;
++    interceptor = mock.method(fs, 'writeFile', async (...args: Parameters<typeof fs.writeFile>) => {
++      if (String(args[0]) === path) { entered.release(); await write.promise; } return nativeWrite(...args);
++    }); syncBuiltinESMExports();
++    const restoring = workflow.restorePdf(paper.id, PDF); await entered.promise;
++    let deleted = false;
++    const deleting = workflow.deletePaper(paper.id).then(value => { deleted = true; return value; });
++    await delay(20); assert.equal(deleted, false);
++    write.release(); assert.equal((await restoring).restored, true); await deleting;
++    assert.equal((await workflow.papers()).length, 0); await assert.rejects(access(path), /ENOENT/);
++  } finally { write.release(); interceptor?.mock.restore(); syncBuiltinESMExports(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('PDF cleanup failure releases deletion and file guards', { timeout: 30_000 }, async () => {
++  const { directory, store } = await sandbox(), workflow = new WorkbenchWorkflow(store, { sources: false, directory });
++  let interceptor: ReturnType<typeof mock.method> | undefined;
++  try {
++    const paper = (await workflow.upload(PDF, 'failure.pdf')).paper, path = pdfPath(workflow, paper.id), nativeRm = fs.rm;
++    interceptor = mock.method(fs, 'rm', async (...args: Parameters<typeof fs.rm>) => {
++      if (String(args[0]) === path) throw new Error('controlled_unlink_failure'); return nativeRm(...args);
++    }); syncBuiltinESMExports();
++    await assert.rejects(workflow.deletePaper(paper.id), /controlled_unlink_failure/);
++    await assert.rejects(workflow.start(paper.id, workflow.scopeCatalog().default_scope), /workbench_paper_not_found/);
++    const duplicate = (await workflow.upload(PDF, 'after-failure.pdf')).paper; assert.deepEqual(await workflow.pdf(duplicate.id), PDF);
++  } finally { interceptor?.mock.restore(); syncBuiltinESMExports(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('paper deletion removes all its runs and saved artifacts while preserving another paper and its shared PDF', { timeout: 60_000 }, async () => {
++  const { directory, store } = await sandbox(), workflow = new WorkbenchWorkflow(store, { ...replay, sources: false, directory });
++  try {
++    const bytes = await readFile('evaluation/corpus/development-candidates/L01.pdf');
++    const target = (await workflow.upload(bytes, 'target.pdf')).paper, other = (await workflow.upload(bytes, 'other.pdf')).paper;
++    const ids = [];
++    for (const paper of [target, target, other]) { ids.push((await workflow.start(paper.id, workflow.scopeCatalog().default_scope)).run.run_id); await workflow.waitForIdle(); }
++    for (const id of ids.slice(0, 2)) {
++      const record = (await workflow.runDetail(id!)).output.records[0]!; assert.ok(record);
++      await workflow.retainRecord(id!, record.id, { expected_version: record.version, expected_retention_revision: 0, status: 'excluded' });
++      await workflow.revise(id!, record.id, { expected_version: record.version, reviewer: 'isolated-delete-test', labels: { comment: 'Deletion fixture.' } });
++      store.db.prepare('INSERT INTO workbench_reviews VALUES(?,?,?,?)').run(id!, record.id, record.version, '{}');
++      store.batch(id!, 'isolated-batch', { paid_requests: 0 });
++      await workflow.export(id!, 'candidate_package');
++    }
++    const targetDirectories = store.db.prepare('SELECT payload_json FROM workbench_runs WHERE paper_id=?').all(target.id).map(value => JSON.parse(value.payload_json as string).directory as string);
++    const exportDirectories = store.db.prepare('SELECT payload_json FROM workbench_exports').all().map(value => resolve(workflow.codeRoot, JSON.parse(value.payload_json as string).directory));
++    const otherBefore = JSON.stringify(await workflow.runDetail(ids[2]!));
++    const deletion = await workflow.deletePaper(target.id); assert.equal(deletion.runs_deleted, 2); assert.equal(deletion.shared_pdf_retained, true);
++    for (const id of ids.slice(0, 2)) for (const table of ['workbench_annotations', 'workbench_reviews', 'workbench_retentions', 'workbench_exports', 's4_batches', 's4_versions', 's4_events']) assert.equal(store.db.prepare(`SELECT COUNT(*) n FROM ${table} WHERE run_id=?`).get(id!)!.n, 0, table);
++    assert.equal((await workflow.runs()).length, 1); assert.equal(JSON.stringify(await workflow.runDetail(ids[2]!)), otherBefore);
++    assert.deepEqual(await workflow.pdf(other.id), bytes);
++    for (const path of [...targetDirectories, ...exportDirectories, ...exportDirectories.map(path => path + '.tar.gz')]) await assert.rejects(access(path), /ENOENT/);
++    assert.ok(store.db.prepare('SELECT paper_id FROM workbench_deleted_sources WHERE paper_id=?').get(target.id));
++    await workflow.deletePaper(other.id); await assert.rejects(access(resolve(directory, 'pdf', target.sha256 + '.pdf')), /ENOENT/);
++  } finally { await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
+--- baseline/code/apps/server/test/workflow-run-deletion.test.ts
++++ current/code/apps/server/test/workflow-run-deletion.test.ts
+@@ -0,0 +1,137 @@
++import test, { mock } from 'node:test';
++import assert from 'node:assert/strict';
++import fs, { access, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
++import { syncBuiltinESMExports } from 'node:module';
++import { createHash } from 'node:crypto';
++import { relative, resolve } from 'node:path';
++import { ExtractionStore, RunStore } from '@t1/agent';
++import { ContractError } from '@t1/contracts';
++import { WorkbenchWorkflow } from '../src/workflow.js';
++import { buildApp } from '../src/app.js';
++import { controlledFixture } from './controlled-fixture.js';
++const replay = await controlledFixture({ delayMs: 1 });
++const bytes = await readFile('evaluation/corpus/development-candidates/L01.pdf');
++function barrier() { let release!: () => void; const promise = new Promise<void>(resolve => { release = resolve; }); return { promise, release }; }
++async function setup() { const directory = await mkdtemp(resolve('runtime-data/run-deletion-')); return { directory, store: new ExtractionStore(resolve(directory, 'test.sqlite')) }; }
++
++test('single-run deletion clears only its records/exports and preserves paper, PDF, other runs and referenced source assets', { timeout: 60_000 }, async () => {
++  const { directory, store } = await setup(), workflow = new WorkbenchWorkflow(store, { ...replay, sources: false, directory }), legacy = new RunStore(':memory:'), app = buildApp(legacy, undefined, workflow);
++  try {
++    const paper = (await workflow.upload(bytes, 'keep-paper.pdf')).paper, scope = workflow.scopeCatalog().default_scope;
++    const first = (await workflow.start(paper.id, scope, 'delete-older-request')).run.run_id; await workflow.waitForIdle();
++    const target = (await workflow.start(paper.id, scope, 'delete-target-request')).run.run_id; await workflow.waitForIdle();
++    const readRow = (id: string) => JSON.parse(store.db.prepare('SELECT payload_json FROM workbench_runs WHERE id=?').get(id)!.payload_json as string);
++    const row = readRow(target), sibling = readRow(first), source = row.source;
++    const native = resolve(row.directory, 'native-source.json'), result = resolve(row.directory, 'private-results.json');
++    await writeFile(native, '{"source_only":true}'); await writeFile(result, '{"extraction_results":"must be deleted"}');
++    source.document.native_artifact = { path: relative(workflow.codeRoot, native), sha256: createHash('sha256').update(await readFile(native)).digest('hex'), format: 'fixture-native' };
++    const region = source.catalog?.figures.flatMap((figure: { regions: Array<{ path: string }> }) => figure.regions)[0];
++    let image = '';
++    if (region) { await mkdir(resolve(row.directory, 'shared-figures')); image = resolve(row.directory, 'shared-figures/image.png'); await writeFile(image, await readFile(resolve(workflow.codeRoot, region.path))); region.path = relative(workflow.codeRoot, image); }
++    const paperRow = JSON.parse(store.db.prepare('SELECT payload_json FROM workbench_papers WHERE id=?').get(paper.id)!.payload_json as string);
++    paperRow.latest_source = source; sibling.source = structuredClone(source);
++    store.db.prepare('UPDATE workbench_papers SET payload_json=? WHERE id=?').run(JSON.stringify(paperRow), paper.id);
++    for (const item of [row, sibling]) store.db.prepare('UPDATE workbench_runs SET payload_json=? WHERE id=?').run(JSON.stringify(item), item.id);
++    const record = (await workflow.runDetail(target)).output.records[0]!;
++    await workflow.retainRecord(target, record.id, { expected_version: record.version, expected_retention_revision: 0, status: 'excluded' });
++    await workflow.revise(target, record.id, { expected_version: record.version, reviewer: 'isolated-run-delete', labels: { comment: 'Fixture annotation.' } });
++    store.db.prepare('INSERT INTO workbench_reviews VALUES(?,?,?,?)').run(target, record.id, record.version, '{}'); store.batch(target, 'fixture-batch', {});
++    await workflow.export(target, 'candidate_package');
++    const exports = store.db.prepare('SELECT payload_json FROM workbench_exports WHERE run_id=?').all(target).map(value => resolve(workflow.codeRoot, JSON.parse(value.payload_json as string).directory));
++    const siblingBefore = await workflow.runDetail(first); siblingBefore.paper.output_ids = siblingBefore.paper.output_ids.filter(id => id !== target);
++    const response = await app.inject({ method: 'DELETE', url: '/api/workbench/runs/' + target }); assert.equal(response.statusCode, 200); assert.equal(response.json().run_id, target);
++    for (const table of ['workbench_annotations', 'workbench_reviews', 'workbench_retentions', 'workbench_exports', 's4_batches', 's4_versions', 's4_events']) assert.equal(store.db.prepare(`SELECT COUNT(*) n FROM ${table} WHERE run_id=?`).get(target)!.n, 0, table);
++    assert.equal((await workflow.papers()).length, 1); assert.equal((await workflow.runs()).length, 1); assert.deepEqual(await workflow.pdf(paper.id), bytes);
++    assert.deepEqual(await workflow.runDetail(first), siblingBefore); assert.equal((await workflow.detail(paper.id)).source_status, 'valid');
++    await access(native); await access(resolve(workflow.codeRoot, source.ir.path)); if (image) await access(image);
++    await assert.rejects(access(result), /ENOENT/); for (const path of [...exports, ...exports.map(path => path + '.tar.gz')]) await assert.rejects(access(path), /ENOENT/);
++    const replayRequest = await app.inject({ method: 'POST', url: '/api/workbench/papers/' + paper.id + '/runs', headers: { 'x-t1-request-id': 'delete-target-request' }, payload: { scope } });
++    assert.equal(replayRequest.statusCode, 410); assert.equal(replayRequest.json().error, 'submission_result_deleted');
++    assert.equal((await workflow.deleteRun(target)).already_deleted, true);
++    await workflow.deleteRun(first); assert.equal((await workflow.runs()).length, 0); assert.equal((await workflow.papers()).length, 1); assert.deepEqual(await workflow.pdf(paper.id), bytes);
++    assert.equal((await workflow.detail(paper.id)).source_status, 'valid');
++    const rerun = (await workflow.start(paper.id, scope, 'delete-after-new-request')).run.run_id; await workflow.waitForIdle(); assert.notEqual(rerun, target);
++  } finally { await app.close(); legacy.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('legacy run tombstones prevent reimport after restart without removing immutable evidence or the paper', { timeout: 60_000 }, async () => {
++  const { directory, store } = await setup(); let workflow = new WorkbenchWorkflow(store, { directory });
++  try {
++    const run = (await workflow.runs()).find(run => run.document_id === 'L01')!; assert.ok(run);
++    const source = workflow['run'](run.run_id).source!, original = await readFile(resolve(workflow.codeRoot, source.ir.path));
++    await workflow.deleteRun(run.run_id); assert.ok((await workflow.papers()).some(paper => paper.id === 'L01'));
++    await workflow.close(); workflow = new WorkbenchWorkflow(store, { directory }); await workflow.initialize();
++    assert.ok(!(await workflow.runs()).some(item => item.run_id === run.run_id)); assert.deepEqual(await readFile(resolve(workflow.codeRoot, source.ir.path)), original);
++    assert.equal(store.db.prepare('SELECT COUNT(*) n FROM workbench_deleted_runs').get()!.n, 1); assert.equal(store.db.prepare('SELECT COUNT(*) n FROM workbench_deleted_sources').get()!.n, 0);
++  } finally { await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('a sibling Start preparing or executing blocks deletion until the coordinator exits', { timeout: 30_000 }, async () => {
++  const { directory, store } = await setup(), entered = barrier(), finish = barrier(); let pause = false;
++  const workflow = new WorkbenchWorkflow(store, { ...replay, sources: false, directory, runner: { ...replay.runner!, prepare: async () => { if (pause) { entered.release(); await finish.promise; throw new ContractError('fixture_prepare_end'); } } } });
++  try {
++    const paper = (await workflow.upload(bytes, 'siblings.pdf')).paper, scope = workflow.scopeCatalog().default_scope;
++    const saved = (await workflow.start(paper.id, scope)).run.run_id; await workflow.waitForIdle(); pause = true;
++    const pending = workflow.start(paper.id, scope).then(() => 'unexpected', error => String(error)); await entered.promise;
++    await assert.rejects(workflow.deleteRun(saved), /paper_busy_before_deleting_run/);
++    finish.release(); assert.match(await pending, /fixture_prepare_end/); await workflow.deleteRun(saved);
++  } finally { finish.release(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('pending export writes block deletion and a failed export releases the guard for a safe retry', { timeout: 30_000 }, async () => {
++  const { directory, store } = await setup(), workflow = new WorkbenchWorkflow(store, { ...replay, sources: false, directory }), entered = barrier(), finish = barrier();
++  let interceptor: ReturnType<typeof mock.method> | undefined;
++  try {
++    const paper = (await workflow.upload(bytes, 'export.pdf')).paper, id = (await workflow.start(paper.id, workflow.scopeCatalog().default_scope)).run.run_id; await workflow.waitForIdle();
++    const nativeWrite = fs.writeFile;
++    interceptor = mock.method(fs, 'writeFile', async (...args: Parameters<typeof fs.writeFile>) => {
++      if (String(args[0]).endsWith('human-annotations.json')) { entered.release(); await finish.promise; throw new Error('fixture_export_write_failed'); } return nativeWrite(...args);
++    }); syncBuiltinESMExports();
++    const exporting = workflow.export(id, 'candidate_jsonl').then(() => 'unexpected', error => String(error)); await entered.promise;
++    await assert.rejects(workflow.deleteRun(id), /paper_busy_before_deleting_run/);
++    finish.release(); assert.match(await exporting, /fixture_export_write_failed/); assert.equal((await workflow.deleteRun(id)).deleted, true);
++  } finally { finish.release(); interceptor?.mock.restore(); syncBuiltinESMExports(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('cleanup failures keep a durable pending plan; repeated DELETE and restart finish cleanup without reviving a run', { timeout: 40_000 }, async () => {
++  const { directory, store } = await setup(), legacy = new RunStore(':memory:');
++  let workflow = new WorkbenchWorkflow(store, { ...replay, sources: false, directory }), app = buildApp(legacy, undefined, workflow);
++  let interceptor: ReturnType<typeof mock.method> | undefined;
++  try {
++    const paper = (await workflow.upload(bytes, 'cleanup-retry.pdf')).paper;
++    for (const mode of ['retry', 'restart']) {
++      const id = (await workflow.start(paper.id, workflow.scopeCatalog().default_scope)).run.run_id; await workflow.waitForIdle();
++      const path = resolve(workflow['run'](id).directory, 'private-extraction-results.json'); await writeFile(path, '{"fixture_private_result":true}');
++      const nativeRm = fs.rm;
++      interceptor = mock.method(fs, 'rm', async (...args: Parameters<typeof fs.rm>) => { if (String(args[0]) === path) throw new Error('controlled_cleanup_failure'); return nativeRm(...args); }); syncBuiltinESMExports();
++      const failed = await app.inject({ method: 'DELETE', url: '/api/workbench/runs/' + id });
++      assert.equal(failed.statusCode, 503); assert.equal(failed.json().error, 'run_deleted_cleanup_pending'); assert.equal(failed.json().deleted, true);
++      assert.ok(!(await workflow.runs()).some(run => run.run_id === id)); await access(path);
++      const plan = () => JSON.parse(store.db.prepare('SELECT payload_json FROM workbench_deleted_runs WHERE run_id=?').get(id)!.payload_json as string);
++      assert.equal(plan().status, 'cleanup_pending'); assert.ok(plan().targets.length);
++      interceptor.mock.restore(); interceptor = undefined; syncBuiltinESMExports();
++      if (mode === 'restart') { await app.close(); workflow = new WorkbenchWorkflow(store, { ...replay, sources: false, directory }); app = buildApp(legacy, undefined, workflow); await app.ready(); }
++      const retried = await app.inject({ method: 'DELETE', url: '/api/workbench/runs/' + id }); assert.equal(retried.statusCode, 200);
++      assert.equal(plan().status, 'complete'); await assert.rejects(access(path), /ENOENT/);
++      assert.equal((await workflow.runs()).length, 0); assert.deepEqual(await workflow.pdf(paper.id), bytes);
++    }
++  } finally { interceptor?.mock.restore(); syncBuiltinESMExports(); await app.close(); legacy.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('realpath permission and IO errors keep cleanup pending; only missing paths count as already removed', { timeout: 30_000 }, async () => {
++  const { directory, store } = await setup(), workflow = new WorkbenchWorkflow(store, { ...replay, sources: false, directory });
++  let interceptor: ReturnType<typeof mock.method> | undefined;
++  try {
++    const paper = (await workflow.upload(bytes, 'realpath-retry.pdf')).paper;
++    for (const code of ['EACCES', 'EIO']) {
++      const id = (await workflow.start(paper.id, workflow.scopeCatalog().default_scope)).run.run_id; await workflow.waitForIdle();
++      const row = workflow['run'](id), path = code === 'EACCES' ? resolve(workflow.codeRoot, row.source!.ir.path) : row.directory;
++      const nativeRealpath = fs.realpath;
++      interceptor = mock.method(fs, 'realpath', async (...args: Parameters<typeof fs.realpath>) => { if (String(args[0]) === path) throw Object.assign(new Error('controlled_realpath_' + code), { code }); return nativeRealpath(...args); }); syncBuiltinESMExports();
++      await assert.rejects(workflow.deleteRun(id), /run_deleted_cleanup_pending/);
++      assert.equal(JSON.parse(store.db.prepare('SELECT payload_json FROM workbench_deleted_runs WHERE run_id=?').get(id)!.payload_json as string).status, 'cleanup_pending');
++      interceptor.mock.restore(); interceptor = undefined; syncBuiltinESMExports();
++      await workflow.deleteRun(id); assert.equal(JSON.parse(store.db.prepare('SELECT payload_json FROM workbench_deleted_runs WHERE run_id=?').get(id)!.payload_json as string).status, 'complete');
++    }
++  } finally { interceptor?.mock.restore(); syncBuiltinESMExports(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
+--- baseline/code/apps/server/test/gateway-run-deletion.test.ts
++++ current/code/apps/server/test/gateway-run-deletion.test.ts
+@@ -0,0 +1,33 @@
++import test from "node:test";
++import assert from "node:assert/strict";
++import { mkdtemp, rm } from "node:fs/promises";
++import { resolve } from "node:path";
++import { ExtractionStore, RunStore } from "@t1/agent";
++import { ContractError } from "@t1/contracts";
++import { WorkbenchWorkflow } from "../src/workflow.js";
++import { buildApp } from "../src/app.js";
++import { fileURLToPath } from "node:url";
++const gatewayPath = fileURLToPath(new URL("../../pi-web/app/api/t1/[...path]/route.ts", import.meta.url));
++const { DELETE } = await import(gatewayPath) as { DELETE(request: Request, context: { params: Promise<{ path: string[] }> }): Promise<Response> };
++
++test("the actual Next DELETE handler forwards only the selected run to an isolated workflow", async context => {
++  const directory = await mkdtemp(resolve("runtime-data/gateway-run-delete-")), extraction = new ExtractionStore(resolve(directory, "fixture.sqlite")), legacy = new RunStore(":memory:");
++  const workflow = new WorkbenchWorkflow(extraction, { directory, sources: false,
++    runner: { controlled: true, provider: "gateway-fixture", model_id: "no-model", execute: async () => { throw new Error("unexpected_model_call"); } },
++    parse: async () => { throw new ContractError("fixture_parse_end"); } });
++  const app = buildApp(legacy, undefined, workflow), calls: string[] = [];
++  context.mock.method(globalThis, "fetch", async (url: string, init: RequestInit) => {
++    assert.ok(url.startsWith("http://127.0.0.1:3210/api/workbench/runs/")); calls.push(url);
++    const response = await app.inject({ method: "DELETE", url: new URL(url).pathname, payload: Buffer.from(init.body as Uint8Array), headers: { "content-type": "application/json" } });
++    return new Response(response.body, { status: response.statusCode, headers: { "content-type": "application/json" } });
++  });
++  const remove = (id: string) => DELETE(new Request("http://127.0.0.1:30154/api/t1/workbench/runs/" + id, { method: "DELETE", headers: { "content-type": "application/json" }, body: "{}" }), { params: Promise.resolve({ path: ["workbench", "runs", id] }) });
++  try {
++    const paper = (await workflow.upload(Buffer.from("%PDF-1.4\n% GATEWAY FIXTURE\n%%EOF\n"), "gateway.pdf")).paper;
++    const first = (await workflow.start(paper.id, workflow.scopeCatalog().default_scope)).run.run_id, second = (await workflow.start(paper.id, workflow.scopeCatalog().default_scope)).run.run_id;
++    await workflow.waitForIdle();
++    const response = await remove(first); assert.equal(response.status, 200); assert.equal((await response.json()).run_id, first);
++    assert.deepEqual((await workflow.runs()).map(run => run.run_id), [second]); assert.equal((await workflow.papers()).length, 1);
++    assert.equal((await remove(first)).status, 200); assert.equal((await remove("missing-run")).status, 404); assert.equal(calls.length, 3);
++  } finally { await app.close(); legacy.close(); extraction.close(); await rm(directory, { recursive: true, force: true }); }
++});
+--- baseline/code/apps/server/test/task-records-fixture.ts
++++ current/code/apps/server/test/task-records-fixture.ts
+@@ -0,0 +1,49 @@
++/** One isolated browser fixture; saved-source replay only, no credentials or paid model. */
++import { mkdir, readFile, writeFile } from 'node:fs/promises';
++import { resolve } from 'node:path';
++import { ExtractionStore, RunStore } from '@t1/agent';
++import { ContractError } from '@t1/contracts';
++import { WorkbenchWorkflow } from '../src/workflow.js';
++import { modelProfile } from '../src/workbench-models.js';
++import { buildApp } from '../src/app.js';
++import { controlledFixture } from './controlled-fixture.js';
++const directory = resolve(process.env.T1_TASK_RECORDS_FIXTURE_DIR ?? 'runtime-data/task-records-fixture-20261113');
++await mkdir(directory, { recursive: true, mode: 0o700 });
++const store = new ExtractionStore(resolve(directory, 'fixture.sqlite')), legacy = new RunStore(':memory:');
++const fixture = await controlledFixture({ delayMs: 1 }), parse = fixture.parse!, execute = fixture.runner!.execute;
++const profile = modelProfile('agicto', { model_id: 'gpt-6-luna', api: 'openai-responses', reasoning_effort: 'medium', context_window: 1050000, max_output_tokens: 8192 }, 'server');
++fixture.runner!.default_model_profile = profile;
++const paused = new Set<string>(); let finishingPaper = '', finish!: () => void;
++fixture.parse = async (...args) => {
++  if (!paused.has(args[0].document_id)) return parse(...args);
++  return new Promise((_resolve, reject) => { const signal = args[3], abort = () => reject(new ContractError('fixture_parser_cancelled')); signal.addEventListener('abort', abort, { once: true }); if (signal.aborted) abort(); });
++};
++fixture.runner!.execute = async context => {
++  const result = await execute(context);
++  if (context.input.document_id === finishingPaper) await new Promise<void>(resolve => { finish = resolve; context.signal.addEventListener('abort', resolve as () => void, { once: true }); });
++  return result;
++};
++const workflow = new WorkbenchWorkflow(store, { ...fixture, directory: resolve(directory, 'workbench') }); await workflow.initialize();
++const scope = workflow.scopeCatalog().default_scope, bytes = await readFile('evaluation/corpus/development-candidates/L01.pdf');
++const currentPaper = (await workflow.upload(bytes, 'repeat.pdf', '同一论文 · 两次独立抽取')).paper;
++const lastPaper = (await workflow.upload(bytes, 'last.pdf', '仅一次抽取 · 删除验证')).paper;
++const uploadOnly = (await workflow.upload(bytes, 'upload-only.pdf', '仅上传 · 尚未提交')).paper;
++const activePaper = (await workflow.upload(bytes, 'active.pdf', '运行与收尾 · 删除保护')).paper;
++const ids: Record<string, string> = {};
++for (const [label, paper] of [['older', currentPaper], ['spare', currentPaper], ['current', currentPaper], ['last', lastPaper]] as const) { ids[label] = (await workflow.start(paper.id, scope, 'fixture-' + label, { kind: 'single' }, profile.profile_id)).run.run_id; await workflow.waitForIdle(); }
++const batchId = '1dc9a538-88ab-4537-a1f3-c72fe778a911';
++for (const [label, paperId] of [['batchA', 'L01'], ['batchB', 'L02']] as const) { ids[label] = (await workflow.start(paperId, scope, 'fixture-' + label, { kind: 'batch', batch_id: batchId }, profile.profile_id)).run.run_id; await workflow.waitForIdle(); }
++const terminalPaper = (await workflow.upload(bytes, 'finishing.pdf', '完成后保存 · 删除保护')).paper; finishingPaper = terminalPaper.id;
++ids.finishing = (await workflow.start(terminalPaper.id, scope, 'fixture-finishing', { kind: 'single' }, profile.profile_id)).run.run_id;
++for (let i = 0; i < 200 && store.snapshot(ids.finishing).state !== 'completed'; i++) await new Promise(resolve => setTimeout(resolve, 10));
++paused.add(activePaper.id); ids.active = (await workflow.start(activePaper.id, scope, 'fixture-active', { kind: 'single' }, profile.profile_id)).run.run_id;
++const app = buildApp(legacy, undefined, workflow);
++app.post('/__fixture/release-finishing', async () => { finish?.(); return { released: true }; });
++const requests: Array<{ method: string; path: string }> = [];
++app.addHook('onRequest', async request => { if (!['GET', 'HEAD'].includes(request.method)) requests.push({ method: request.method, path: request.url }); });
++app.get('/__fixture/requests', async () => ({ requests, paid_model_calls: 0 }));
++await app.listen({ host: '127.0.0.1', port: 3215 });
++await writeFile(resolve(directory, 'runtime.json'), JSON.stringify({ pid: process.pid, port: 3215, ids, papers: { current: currentPaper.id, last: lastPaper.id, active: activePaper.id, finishing: terminalPaper.id, uploadOnly: uploadOnly.id }, batchId, paid_model_calls: 0 }, null, 2));
++console.log('Isolated task records fixture ready on 3215');
++const shutdown = async () => { finish?.(); await app.close(); legacy.close(); store.close(); };
++process.once('SIGTERM', () => void shutdown()); process.once('SIGINT', () => void shutdown());
+--- baseline/code/apps/pi-web/t1/T1Workbench.tsx
++++ current/code/apps/pi-web/t1/T1Workbench.tsx
+@@ -5,7 +5,7 @@
+ import { TabBar, type Tab } from "@/components/TabBar";
+ import { SidebarMenu, type SidebarMenuAnchor } from "@/components/SidebarMenu";
+ import { SidebarToast, type SidebarToastData } from "@/components/SidebarToast";
+-import { PlusIcon, RefreshIcon, SearchIcon, ChevronIcon, CloseIcon, EyeIcon, MessageIcon, MoreIcon, OpenInNewTabIcon } from "@/components/SidebarIcons";
++import { PlusIcon, RefreshIcon, SearchIcon, ChevronIcon, CloseIcon, EyeIcon, MessageIcon, OpenInNewTabIcon } from "@/components/SidebarIcons";
+ import { GenericFileIcon } from "@/components/FileIcons";
+ import { useResizablePanel } from "@/hooks/useResizablePanel";
+ import { useTheme } from "@/hooks/useTheme";
+@@ -27,11 +27,12 @@
+ import { ModelSelection } from "./ModelSelection";
+ import { WorkbenchNotes } from "./WorkbenchNotes";
+ import { BatchSubmission } from "./BatchSubmission";
+-import { TaskKindBadge } from "./TaskKindBadge";
+-import { PaperTaskMenu, type PaperTaskMenuState } from "./PaperTaskMenu";
++import { RunTaskMenu, type RunTaskMenuState } from "./RunTaskMenu";
++import { RunDeleteDialog, type RunDeleteTarget } from "./RunDeleteDialog";
++import { SubmissionRunList } from "./SubmissionRunList";
+ import { canCancelRun, cancellationResult } from "./task-actions";
+ import { runPresentation } from "./run-presentation";
+-import { initialWorkbenchSelection, sidebarPaperSelection } from "./result-navigation";
++import { initialWorkbenchSelection, resultRunForPaper } from "./result-navigation";
+ import type { Scope } from "../../../packages/contracts/src/index";
+ import type { WorkbenchCapabilities, WorkbenchExportKind, WorkbenchPaper, WorkbenchPaperDetail, WorkbenchRun, WorkbenchRunDetail, WorkbenchScopeCatalog, WorkbenchModels } from "../../../packages/contracts/src/workbench";
+ 
+@@ -61,12 +62,17 @@
+   const [activeTab, setActiveTab] = useState("newTask"), [tabIds, setTabIds] = useState(["newTask", "records", "figures", "tasks"]);
+   const [showSource, setShowSource] = useState(false), [showSidebar, setShowSidebar] = useState(true), [showNotes, setShowNotes] = useState(false);
+   const [menu, setMenu] = useState<SidebarMenuAnchor | null>(null), [toast, setToast] = useState<SidebarToastData | null>(null);
+-  const [taskMenu, setTaskMenu] = useState<PaperTaskMenuState | null>(null), [cancelling, setCancelling] = useState<ReadonlySet<string>>(new Set());
++  const [taskMenu, setTaskMenu] = useState<RunTaskMenuState | null>(null), [cancelling, setCancelling] = useState<ReadonlySet<string>>(new Set());
+   const cancellingRef = useRef(new Set<string>());
+   const [taskNotice, setTaskNotice] = useState<{ id: string; busy: boolean; failed: boolean; text: string } | null>(null);
+   const [starting, setStarting] = useState(false), [actionError, setActionError] = useState("");
+   const startingRef = useRef(false), startRequests = useRef(new Map<string, string>());
+-  const [restoreFile, setRestoreFile] = useState<File | null>(null), [restoreBusy, setRestoreBusy] = useState(false), [deletePaperConfirm, setDeletePaperConfirm] = useState(false);
++  const [restoreFile, setRestoreFile] = useState<File | null>(null), [restoreBusy, setRestoreBusy] = useState(false);
++  const [deleteTarget, setDeleteTarget] = useState<RunDeleteTarget | null>(null), [deleteBusy, setDeleteBusy] = useState(false), [deleteError, setDeleteError] = useState("");
++  const [cleanupTarget, setCleanupTarget] = useState<RunDeleteTarget | null>(null);
++  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
++  const deletedRuns = useRef(new Set<string>()), deletingRuns = useRef(new Set<string>());
++  const runsRef = useRef(runs); runsRef.current = runs;
+   const [editor, setEditor] = useState<{ run: string; record: string | null } | null>(null), [download, setDownload] = useState(""), [exportError, setExportError] = useState("");
+   const refreshRunRef = useRef<{ id: string; load: () => Promise<void> } | null>(null);
+   const refreshPaperRef = useRef<{ id: string; load: () => Promise<void> } | null>(null);
+@@ -142,7 +148,9 @@
+     if (cause instanceof WorkbenchError && cause.code.includes("source_glyph_check_missing")) return t("t1.sourceGlyphLegacy");
+     if (cause instanceof WorkbenchError && cause.code.includes("source_glyph_fidelity_unverified")) return t("t1.sourceGlyphUnreliable");
+     if (cause instanceof WorkbenchError && cause.code === "restore_requires_identical_pdf") return t("t1.restoreMismatch");
+-    if (cause instanceof WorkbenchError && cause.code === "paper_has_active_runs") return t("t1.activePaperDelete");
++    if (cause instanceof WorkbenchError && ["paper_has_active_runs", "cancel_active_runs_before_deleting_paper"].includes(cause.code)) return t("t1.activePaperDelete");
++    if (cause instanceof WorkbenchError && cause.code === "paper_deletion_in_progress") return t("t1.paperDeleting");
++    if (cause instanceof WorkbenchError && cause.code === "paper_busy_before_deleting_run") return t("t1.runDeleteBusy");
+     if (cause instanceof WorkbenchError && cause.code.startsWith("source_integrity_blocked")) return t("t1.sourceProblem");
+     if (cause instanceof WorkbenchError) return cause.status === 502 ? t("t1.backendUnavailable") : cause.status === 404 ? t("t1.notFound") : cause.status === 409 ? t("t1.conflict") : cause.code;
+     if (cause instanceof TypeError) return t("t1.connectionInterrupted");
+@@ -150,8 +158,22 @@
+   }
+   function openTab(id: string) { setTabIds(current => current.includes(id) ? current : [...current, id]); setActiveTab(id); }
+   function chooseModel(id: string) { setModelProfileId(id); try { localStorage.setItem("t1:extraction-model-profile", id); } catch { /* In-memory selection still works. */ } }
+-  function selectPaper(id: string) { const selected = sidebarPaperSelection(id, runs, selectionRef.current); setDeletePaperConfirm(false); setRestoreFile(null); setPaperId(id); setRunId(selected.runId); setHistoryId(selected.historyId); setRecordId(""); setRunDetail(null); setShowSource(false); setPage(1); setActionError(""); openTab("records"); if (mobile) setShowSidebar(false); }
+-  function selectRun(run: WorkbenchRun) { setDeletePaperConfirm(false); setRestoreFile(null); setPaperId(run.document_id); setRunId(run.run_id); setHistoryId(""); setRecordId(""); setPage(1); setActionError(""); openTab("records"); }
++  function selectRun(run: WorkbenchRun) {
++    if (deletedRuns.current.has(run.run_id)) return;
++    const batchId = run.submission?.kind === "batch" ? run.submission.batch_id : undefined;
++    if (batchId) setExpandedGroups(current => ({ ...current, [`batch:${batchId}`]: true }));
++    setRestoreFile(null); setPaperId(run.document_id); setRunId(run.run_id); setHistoryId(""); setRecordId(""); setPage(1); setActionError(""); openTab("records"); if (mobile) setShowSidebar(false);
++  }
++  const visibleRun = (run: WorkbenchRun) => !deletedRuns.current.has(run.run_id);
++  const cleanPaper = (paper: WorkbenchPaper) => ({ ...paper, output_ids: paper.output_ids.filter(id => !deletedRuns.current.has(id)) });
++  const cleanPaperDetail = (value: WorkbenchPaperDetail) => ({ ...value, paper: cleanPaper(value.paper), outputs: value.outputs.filter(output => !deletedRuns.current.has(output.id)) });
++  function openRunMenu(event: React.MouseEvent<HTMLButtonElement>, run: WorkbenchRun) {
++    setMenu(null); const opener = event.currentTarget, rect = opener.getBoundingClientRect();
++    setTaskMenu({ runId: run.run_id, paperId: run.document_id, anchor: { kind: "rect", rect, align: "start" }, opener });
++  }
++  function requestRunDeletion(run: WorkbenchRun, opener?: HTMLButtonElement) {
++    setDeleteError(""); setDeleteTarget({ runId: run.run_id, paperId: run.document_id, title: papers.find(paper => paper.id === run.document_id)?.title ?? run.document_id, createdAt: run.created_at, modelId: run.model_id, opener });
++  }
+   function sourcePage(value: number) { setPage(value); setShowSource(true); if (window.matchMedia("(max-width: 900px)").matches && pdfUrl) window.open(`${pdfUrl}#page=${value}`, "_blank", "noopener,noreferrer"); }
+   const refresh = () => setRevision(value => value + 1);
+   const reloadCurrent = async () => { await refreshRunRef.current?.load(); };
+@@ -194,7 +216,7 @@
+       .then(([caps, listed, tasks, rawChoices, availableModels]) => {
+         if (controller.signal.aborted) return;
+         const choices: ScopeCatalog = { ...rawChoices, catalog: rawChoices };
+-        setCapabilities(caps); setPapers(listed.papers); if (version === runsReadVersion.current) setRuns(tasks.runs); setCatalog(choices); setScope(current => current ?? choices.default_scope); setError("");
++        setCapabilities(caps); setPapers(listed.papers.map(cleanPaper)); if (version === runsReadVersion.current) setRuns(tasks.runs.filter(visibleRun)); setCatalog(choices); setScope(current => current ?? choices.default_scope); setError("");
+         setModels(availableModels);
+         if (!modelInitialized.current) {
+           let saved: string | null = null; try { saved = localStorage.getItem("t1:extraction-model-profile"); } catch { /* A fresh selection uses the configured default. */ }
+@@ -221,8 +243,8 @@
+       if (flight) return flight;
+       flight = api<WorkbenchPaperDetail>(`workbench/papers/${encodeURIComponent(paperId)}`, { signal: controller.signal }).then(value => {
+       if (controller.signal.aborted) return;
+-      setDetail(value);
+-      if (!selectionRef.current.runId) setHistoryId(current => value.outputs.some(item => item.id === current) ? current : value.outputs.find(item => item.strategy === "B0")?.id ?? value.outputs[0]?.id ?? "");
++      const cleaned = cleanPaperDetail(value); setDetail(cleaned);
++      if (!selectionRef.current.runId) setHistoryId(current => cleaned.outputs.some(item => item.id === current) ? current : cleaned.outputs.find(item => item.strategy === "B0")?.id ?? cleaned.outputs[0]?.id ?? "");
+       }).catch(cause => { if (!controller.signal.aborted && !refreshingRef.current) setDetailError(errorText(cause)); throw cause; }).finally(() => { flight = null; });
+       return flight;
+     }
+@@ -243,8 +265,8 @@
+           const mutationVersion = runMutationVersions.current.get(runId!) ?? 0;
+           try {
+             const value = await api<RunDetail>(`workbench/runs/${encodeURIComponent(runId!)}`, { signal: controller.signal });
+-            if (!controller.signal.aborted && mutationVersion === (runMutationVersions.current.get(runId!) ?? 0)) { setRunDetail(value); setDetailError(""); setPapers(current => current.map(paper => paper.id === value.paper.id ? value.paper : paper)); }
+-          } catch (cause) { if (!controller.signal.aborted && !refreshingRef.current && !cancellingRef.current.has(runId!)) setDetailError(errorText(cause)); throw cause; }
++            if (!controller.signal.aborted && !deletedRuns.current.has(runId!) && mutationVersion === (runMutationVersions.current.get(runId!) ?? 0)) { setRunDetail(value); setDetailError(""); setPapers(current => current.map(paper => paper.id === value.paper.id ? cleanPaper(value.paper) : paper)); }
++          } catch (cause) { if (!controller.signal.aborted && !refreshingRef.current && !cancellingRef.current.has(runId!) && !deletedRuns.current.has(runId!)) setDetailError(errorText(cause)); throw cause; }
+         } while (dirty && !controller.signal.aborted);
+       })();
+       try { await flight; } finally { flight = null; }
+@@ -275,7 +297,7 @@
+     const timer = window.setInterval(async () => {
+       if (busy || refreshingRef.current || document.visibilityState !== "visible") return;
+       busy = true; const version = ++runsReadVersion.current;
+-      try { const listed = await api<{ runs: WorkbenchRun[] }>("workbench/runs", { signal: controller.signal }); if (!controller.signal.aborted && version === runsReadVersion.current) setRuns(listed.runs); }
++      try { const listed = await api<{ runs: WorkbenchRun[] }>("workbench/runs", { signal: controller.signal }); if (!controller.signal.aborted && version === runsReadVersion.current) setRuns(listed.runs.filter(visibleRun)); }
+       catch { /* The selected run has its own visible connection and read errors. */ }
+       finally { busy = false; }
+     }, 10000);
+@@ -311,7 +333,7 @@
+       const version = ++runsReadVersion.current;
+       const reader = refreshRunRef.current;
+       const reads = await Promise.allSettled([
+-        api<{ runs: WorkbenchRun[] }>("workbench/runs").then(listed => { if (version === runsReadVersion.current) setRuns(listed.runs); }),
++        api<{ runs: WorkbenchRun[] }>("workbench/runs").then(listed => { if (version === runsReadVersion.current) setRuns(listed.runs.filter(visibleRun)); }),
+         selectionRef.current.runId === id && reader?.id === id ? reader.load() : Promise.resolve(),
+       ]);
+       const key = cancellationResult(value.run.state), failed = key === "cancelUnconfirmed";
+@@ -337,9 +359,35 @@
+     try { await api(`workbench/papers/${encodeURIComponent(paperId)}/pdf`, { method: "PUT", headers: { "content-type": "application/pdf" }, body: restoreFile }); setRestoreFile(null); await reloadCurrent(); }
+     catch (cause) { setActionError(errorText(cause)); } finally { setRestoreBusy(false); }
+   }
+-  async function deletePaper() {
+-    try { await api(`workbench/papers/${encodeURIComponent(paperId)}`, jsonBody("DELETE", {})); setPaperId(""); setRunId(null); setDetail(null); setRunDetail(null); setDeletePaperConfirm(false); openTab("newTask"); refresh(); }
+-    catch (cause) { setActionError(errorText(cause)); }
++  function applyRunDeletion(target: RunDeleteTarget) {
++      deletedRuns.current.add(target.runId); ++runsReadVersion.current;
++      runMutationVersions.current.set(target.runId, (runMutationVersions.current.get(target.runId) ?? 0) + 1);
++      const remaining = runsRef.current.filter(visibleRun);
++      setRuns(remaining); setPapers(current => current.map(cleanPaper)); setDetail(current => current ? cleanPaperDetail(current) : current);
++      setRunDetail(current => current?.run.run_id === target.runId ? null : current);
++      const selected = selectionRef.current;
++      if (selected.runId === target.runId || selected.paperId === target.paperId && selected.historyId === target.runId) {
++        const fallback = resultRunForPaper(target.paperId, remaining);
++        setRunId(fallback?.run_id ?? null); setHistoryId(""); setRecordId(""); setDetailError(""); setActionError("");
++        if (!fallback) { setShowSource(false); openTab("newTask"); }
++      }
++  }
++  async function deleteRun(target: RunDeleteTarget) {
++    if (deletingRuns.current.has(target.runId)) return;
++    deletingRuns.current.add(target.runId); setDeleteBusy(true); setDeleteError("");
++    try {
++      await api(`workbench/runs/${encodeURIComponent(target.runId)}`, jsonBody("DELETE", {}));
++      applyRunDeletion(target);
++      setCleanupTarget(current => current?.runId === target.runId ? null : current);
++      setDeleteTarget(current => current?.runId === target.runId ? null : current);
++      setRefreshMessage({ failed: false, text: t("t1.runDeleted", { title: `${target.title} · #${target.runId.slice(-8)}` }) });
++      refresh();
++    } catch (cause) {
++      if (cause instanceof WorkbenchError && cause.code === "run_deleted_cleanup_pending") {
++        applyRunDeletion(target); setCleanupTarget(target); setDeleteError(t("t1.runCleanupPending")); refresh();
++      } else setDeleteError(t("t1.runDeleteFailed", { reason: errorText(cause) }));
++    }
++    finally { deletingRuns.current.delete(target.runId); setDeleteBusy(false); }
+   }
+   function sourceIssueText(issue: string) {
+     return t(issue.startsWith("pdf_") ? issue.includes("missing") ? "t1.pdfMissing" : "t1.pdfChanged" : issue.startsWith("ir_") ? "t1.irProblem" : "t1.bindingProblem");
+@@ -358,15 +406,12 @@
+     </header>
+     <span className="t1-sr-only" role="status" aria-live="polite">{refreshing ? t("t1.refreshing") : ""}</span>
+     {refreshMessage && <div className="t1-refresh-toast" data-failed={refreshMessage.failed} role={refreshMessage.failed ? "alert" : "status"}><span>{refreshMessage.text}</span>{refreshMessage.failed && <button className="t1-button" onClick={() => void refreshWorkspace()}>{t("t1.retry")}</button>}<button className="t1-refresh-dismiss" aria-label={t("t1.close")} onClick={() => setRefreshMessage(null)}><CloseIcon size={14} /></button></div>}
++    {cleanupTarget && !deleteTarget && <div className="t1-refresh-toast" data-failed="true" role="alert"><span>{t("t1.runCleanupPending")} · {cleanupTarget.title} · #{cleanupTarget.runId.slice(-8)}</span><button className="t1-button" onClick={() => { setDeleteTarget(cleanupTarget); setDeleteError(t("t1.runCleanupPending")); }}>{t("t1.retryCleanup")}</button></div>}
+     {taskNotice && <div className="t1-refresh-toast t1-task-toast" data-failed={taskNotice.failed} aria-busy={taskNotice.busy} role={taskNotice.failed ? "alert" : "status"}><span>{taskNotice.text}</span>{taskNotice.failed && <button className="t1-button" onClick={() => void cancelRun(taskNotice.id)}>{t("t1.retry")}</button>}<button className="t1-refresh-dismiss" aria-label={t("t1.close")} onClick={() => setTaskNotice(null)}><CloseIcon size={14} /></button></div>}
+     <div className="t1-body" ref={source.panelRef}>
+-      {showSidebar && <><aside className="t1-sidebar" aria-label={t("t1.paperNav")}><div className="t1-sidebar-heading"><strong>{t("t1.papers")}</strong><span>{papers.length}</span><button className="t1-sidebar-close" aria-label={t("t1.close")} onClick={() => setShowSidebar(false)}><CloseIcon size={18} /></button></div>
++      {showSidebar && <><aside className="t1-sidebar" aria-label={t("t1.submittedTasks")}><div className="t1-sidebar-heading"><strong>{t("t1.submittedTasks")}</strong><span>{runs.length}</span><button className="t1-sidebar-close" aria-label={t("t1.close")} onClick={() => setShowSidebar(false)}><CloseIcon size={18} /></button></div>
+         <button className="t1-new-task" onClick={() => { openTab("newTask"); if (mobile) setShowSidebar(false); }}><PlusIcon size={16} />{t("t1.newTask")}</button>
+-        <div className="t1-paper-list-region" aria-busy={refreshing}><div className="t1-paper-list">{papers.map(item => {
+-          const selected = sidebarPaperSelection(item.id, runs, selectionRef.current);
+-          const run = runs.find(run => run.run_id === selected.runId && run.document_id === item.id);
+-          return <div key={item.id} className={paperId === item.id ? "t1-paper-row selected" : "t1-paper-row"}><button data-paper-id={item.id} data-sidebar-run-id={selected.runId ?? undefined} className={paperId === item.id ? "t1-paper-select selected" : "t1-paper-select"} aria-current={paperId === item.id ? "page" : undefined} title={item.title} onClick={() => selectPaper(item.id)}><span className="t1-paper-label"><GenericFileIcon size={14} /><b>{item.uploaded || item.id.startsWith("paper-") ? t("t1.uploadedPaper") : item.id}</b><small>{item.pages || "—"} {t("t1.pagesShort")}</small></span><strong>{item.title}</strong>{(selected.runId || selected.historyId || item.output_ids.length > 0) && <span className="t1-paper-meta"><TaskKindBadge kind={run?.submission?.kind} /></span>}<em>{item.uploaded ? "PDF" : t("t1.historical")}</em></button><button type="button" className="t1-paper-actions" aria-label={t("t1.taskActions")} title={t("t1.taskActions")} aria-haspopup={mobile ? "dialog" : "menu"} aria-expanded={taskMenu?.paperId === item.id} onClick={event => { setMenu(null); const opener = event.currentTarget, rect = opener.getBoundingClientRect(); setTaskMenu({ paperId: item.id, anchor: { kind: "rect", rect, align: "start" }, opener }); }}><MoreIcon size={17} /></button></div>;
+-        })}</div>{refreshing && <div className="t1-refresh-overlay" aria-hidden="true" />}</div>
++        <div className="t1-paper-list-region" aria-busy={refreshing}><SubmissionRunList variant="sidebar" runs={runs} papers={papers} selectedId={runId ?? historyId} expanded={expandedGroups} menuRunId={taskMenu?.runId} onToggle={(id, value) => setExpandedGroups(current => ({ ...current, [id]: value }))} onSelect={selectRun} onMenu={openRunMenu} statusLabel={runLabel} />{refreshing && <div className="t1-refresh-overlay" aria-hidden="true" />}</div>
+         <div className="t1-sidebar-bottom"><button onClick={() => openTab("tasks")}><MessageIcon size={15} />{t("t1.tasks")}</button><details><summary>{t("t1.aboutWorkbench")}</summary><span>Pi Web 0.15.0 · T1 Pi SDK 1.4.0</span></details></div>
+         <SidebarToast toast={toast} onDismiss={() => setToast(null)} dismissLabel={t("t1.close")} /></aside><div className="t1-resize" {...sidebar.separatorProps} /></>}
+       <main className="t1-main"><div className="t1-workspace-bar"><button onClick={() => setShowSidebar(value => !value)} aria-label={t("t1.toggleNav")} title={t("t1.toggleNav")} aria-expanded={showSidebar}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></svg></button><span title={paper?.title}>{paper?.title ?? t("t1.newTask")}</span><button className="t1-source-toggle" aria-pressed={showSource} onClick={() => setShowSource(value => !value)}><EyeIcon size={15} />{t(showSource ? "t1.hideOriginal" : "t1.showOriginal")}</button>{pdfUrl && <a className="t1-mobile-source" href={`${pdfUrl}#page=${page}`} target="_blank" rel="noreferrer"><OpenInNewTabIcon size={14} />{t("t1.openOriginal")}</a>}</div>
+@@ -425,10 +470,8 @@
+             </section>
+           </>}
+           {activeTab === "figures" && <><div className="t1-heading"><h1>{t("t1.figures")}</h1></div><p className="t1-lead">{t("t1.independentFigure")}</p>{figures.length ? figures.map(figure => <FigureView key={figure.id} figure={figure} onPage={sourcePage} />) : <p className="t1-empty">{t("t1.noFigures")}</p>}</>}
+-          {activeTab === "tasks" && <><div className="t1-heading"><h1>{t("t1.tasks")}</h1></div><p className="t1-lead">{t("t1.separateTasks")}</p><div className="t1-run-list">{runs.length ? runs.map(run => <div className="t1-task-row" key={run.run_id}><button onClick={() => selectRun(run)}><strong>{papers.find(item => item.id === run.document_id)?.title ?? run.document_id}</strong><span>{runLabel(run)} · {run.candidate_count}{run.fixture && " · fixture"}</span><small>{run.created_at ? new Date(run.created_at).toLocaleString(locale) : ""}</small></button>{canCancelRun(run) && <button disabled={cancelling.has(run.run_id)} aria-busy={cancelling.has(run.run_id)} onClick={() => void cancelRun(run.run_id)}>{t(cancelling.has(run.run_id) ? "t1.cancelling" : "t1.cancel")}</button>}<details><summary>{t("t1.sourceVersion")}</summary><code>{run.run_id}</code>{run.model_id && <p data-run-model={run.model_id}>{t("t1.extractionModel")}: {run.model_id}{run.model_profile && ` · ${run.model_profile.api} · ${run.model_profile.reasoning_effort === "none" ? t("t1.noReasoningParameter") : run.model_profile.reasoning_effort}`}</p>}</details></div>) : <p>{t("t1.noTasks")}</p>}</div>
+-            {paper && <details className="t1-context"><summary>{t("t1.deletePaper")}</summary><p>{t("t1.deletePaperHelp")}</p><button onClick={() => setDeletePaperConfirm(true)}>{t("t1.deletePaper")}</button>{deletePaperConfirm && <button onClick={() => void deletePaper()}>{t("t1.confirmDeletePaper")}</button>}</details>}
+-            <h2>{t("t1.events")}</h2><div className="t1-stream-status" role="status">{t(`t1.${connection}`)}</div>{events.length ? <ol className="t1-events">{events.map(event => <li key={event.seq}><span>#{event.seq} · {event.type}</span><p>{event.summary}</p><time>{event.timestamp}</time></li>)}</ol> : <p>{t("t1.noEvents")}</p>}
+-          </>}
++          {activeTab === "tasks" && <><div className="t1-heading"><h1>{t("t1.tasks")}</h1><span className="t1-badge">{t("t1.submittedTaskCount", { count: runs.length })}</span></div><p className="t1-lead">{t("t1.groupedTasksHelp")}</p><SubmissionRunList variant="history" runs={runs} papers={papers} selectedId={runId ?? historyId} expanded={expandedGroups} menuRunId={taskMenu?.runId} onToggle={(id, value) => setExpandedGroups(current => ({ ...current, [id]: value }))} onSelect={selectRun} onMenu={openRunMenu} statusLabel={runLabel} /></>}
++
+         </div>{refreshing && <div className="t1-refresh-overlay" aria-hidden="true" />}</div>
+       </main>
+       {showSource && paper && pdfUrl && <><div className="t1-resize" {...source.separatorProps} /><aside className="t1-source" aria-label={t("t1.originalPdf")}><div className="t1-source-heading"><strong><GenericFileIcon size={15} />{t("t1.originalPdf")}</strong><a href={`${pdfUrl}#page=${page}`} target="_blank" rel="noreferrer">{t("t1.openOriginal")}<OpenInNewTabIcon size={13} /></a></div>{sourceBlocked ? <p className="t1-alert">{t("t1.sourceProblem")}</p> : <PdfSource key={`${paper.id}:${paper.sha256}`} url={pdfUrl} sha256={paper.sha256} page={page} pages={paper.pages} onPage={sourcePage} />}<div className="t1-source-footer"><small>{t("t1.sourceUnchanged")}</small><details><summary>{t("t1.sourceVersion")}</summary><code>SHA256 {paper.sha256}</code></details></div></aside></>}
+@@ -440,6 +483,7 @@
+           {record && <><h4>{t("t1.figureRelationship")}</h4><p>{t(record.association === "paired" ? "t1.pairedFigureCount" : record.association === "pending" ? "t1.pendingPair" : record.association === "not_checked" ? "t1.notChecked" : "t1.noPair", { count: record.figure_ids.length })}</p></>}
+           {record?.labels?.comment && <aside className="t1-reviewer-comment"><strong>{t("t1.comment")}</strong><p>{record.labels.comment}</p></aside>}
+         </section>
++        {runId && <details className="t1-technical-details"><summary>{t("t1.currentTaskEvents")}</summary><p className="t1-stream-status">{t(`t1.${connection}`)}</p>{events.length ? <ol className="t1-events">{events.map(event => <li key={event.seq}><span>#{event.seq} · {event.type}</span><p>{event.summary}</p><time>{event.timestamp}</time></li>)}</ol> : <p>{t("t1.noEvents")}</p>}</details>}
+         <section className="t1-notes-section"><h3>{t("t1.sourceInformation")}</h3>{displayedRun?.model_id && <p data-run-model={displayedRun.model_id}>{t("t1.extractionModel")}: {displayedRun.model_id}{displayedRun.model_profile && ` · ${displayedRun.model_profile.api} · ${displayedRun.model_profile.reasoning_effort === "none" ? t("t1.noReasoningParameter") : displayedRun.model_profile.reasoning_effort}`}</p>}<p>{t("t1.fragmentsSeparate")}</p>{output?.scope && <details className="t1-note-disclosure"><summary>{t("t1.runScope")}</summary><ScopeSummary scope={output.scope} data={catalog} /></details>}
+           {record && <SameSourceMembers index={output?.same_source_review_index} record={record} records={records} onSelect={id => { const member = records.find(item => item.id === id); setRecordQuery(""); setRecordRole("all"); setRetentionView(member ? retainedStatus(member) : "kept"); setRecordId(id); setShowNotes(false); }} />}
+         </section>
+@@ -449,6 +493,7 @@
+       </>}
+     </WorkbenchNotes>
+     <SidebarMenu open={menu !== null} anchor={menu} sheet={mobile} ariaLabel={t("t1.theme")} title={t("t1.theme")} cancelLabel={t("t1.close")} onClose={() => setMenu(null)} items={([['auto', 'system'], ['light', 'light'], ['dark', 'dark']] as const).map(([id, key]) => ({ type: "item", id, label: t(`t1.${key}`), checked: preference === id, onSelect: () => setThemePreference(id) }))} />
+-    <PaperTaskMenu menu={taskMenu} paper={papers.find(item => item.id === taskMenu?.paperId)} runs={runs} cancelling={cancelling} mobile={mobile} onClose={() => setTaskMenu(null)} onCancel={id => void cancelRun(id)} onView={() => { openTab("tasks"); if (mobile) setShowSidebar(false); }} />
++    <RunTaskMenu menu={taskMenu} run={runs.find(run => run.run_id === taskMenu?.runId)} paper={papers.find(paper => paper.id === taskMenu?.paperId)} cancelling={cancelling} mobile={mobile} onClose={() => setTaskMenu(null)} onCancel={run => void cancelRun(run.run_id)} onView={selectRun} onDelete={requestRunDeletion} />
++    <RunDeleteDialog target={deleteTarget} busy={deleteBusy} cleanupPending={Boolean(cleanupTarget && cleanupTarget.runId === deleteTarget?.runId)} blocked={Boolean(deleteTarget && runs.some(run => run.document_id === deleteTarget.paperId && (canCancelRun(run) || run.result_ready === false)))} error={deleteError} onClose={() => setDeleteTarget(null)} onConfirm={target => void deleteRun(target)} />
+   </div>;
+ }
+--- baseline/code/apps/pi-web/t1/RunTaskMenu.tsx
++++ current/code/apps/pi-web/t1/RunTaskMenu.tsx
+@@ -0,0 +1,25 @@
++"use client";
++
++import { SidebarMenu, type SidebarMenuAnchor, type SidebarMenuItem } from "@/components/SidebarMenu";
++import { CloseIcon, MessageIcon, TrashIcon } from "@/components/SidebarIcons";
++import { useI18n } from "@/hooks/useI18n";
++import type { WorkbenchPaper, WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import { canCancelRun } from "./task-actions";
++
++export interface RunTaskMenuState { runId: string; paperId: string; anchor: SidebarMenuAnchor; opener: HTMLButtonElement }
++export function RunTaskMenu({ menu, run, paper, cancelling, mobile, onClose, onCancel, onView, onDelete }: {
++  menu: RunTaskMenuState | null; run?: WorkbenchRun; paper?: WorkbenchPaper;
++  cancelling: ReadonlySet<string>; mobile: boolean; onClose(): void;
++  onCancel(run: WorkbenchRun): void; onView(run: WorkbenchRun): void; onDelete(run: WorkbenchRun, opener?: HTMLButtonElement): void;
++}) {
++  const { t, locale } = useI18n();
++  const items: SidebarMenuItem[] = [
++    { type: "header", id: "title", label: paper?.title ?? t("t1.task") },
++    { type: "custom", id: "identity", content: <p className="t1-task-menu-identity">{run?.created_at ? new Date(run.created_at).toLocaleString(locale) : t("t1.timeUnrecorded")}<br />{run?.model_id ?? t("t1.modelUnrecorded")} · #{run?.run_id.slice(-8)}</p> },
++    { type: "item", id: "view", label: t("t1.viewExtraction"), icon: <MessageIcon size={14} />, disabled: !run, onSelect: () => { if (run) onView(run); } },
++    ...(run && canCancelRun(run) ? [{ type: "item" as const, id: "cancel", label: t(cancelling.has(run.run_id) ? "t1.cancelling" : "t1.cancel"), icon: <CloseIcon size={14} />, disabled: cancelling.has(run.run_id), onSelect: () => onCancel(run) }] : []),
++    { type: "separator", id: "delete-separator" },
++    { type: "item", id: "delete", label: t("t1.deleteRun"), icon: <TrashIcon size={14} />, danger: true, disabled: !run, onSelect: () => { if (run) onDelete(run, menu?.opener); } },
++  ];
++  return <SidebarMenu open={menu !== null} anchor={menu?.anchor ?? null} returnFocusTo={menu?.opener} sheet={mobile} ariaLabel={t("t1.taskActions")} title={t("t1.taskActions")} cancelLabel={t("t1.close")} width={320} items={items} onClose={onClose} />;
++}
+--- baseline/code/apps/pi-web/t1/RunDeleteDialog.tsx
++++ current/code/apps/pi-web/t1/RunDeleteDialog.tsx
+@@ -0,0 +1,24 @@
++"use client";
++
++import { useEffect, useRef } from "react";
++import { useI18n } from "@/hooks/useI18n";
++
++export interface RunDeleteTarget { readonly runId: string; readonly paperId: string; readonly title: string; readonly createdAt?: string; readonly modelId?: string; readonly opener?: HTMLButtonElement }
++export function RunDeleteDialog({ target, busy, blocked, cleanupPending, error, onClose, onConfirm }: {
++  target: RunDeleteTarget | null; busy: boolean; blocked: boolean; cleanupPending: boolean; error: string; onClose(): void; onConfirm(target: RunDeleteTarget): void;
++}) {
++  const { t, locale } = useI18n(), panel = useRef<HTMLDialogElement>(null);
++  useEffect(() => {
++    const dialog = panel.current;
++    if (target && !dialog?.open) dialog?.showModal();
++    else if (!target && dialog?.open) dialog.close();
++  }, [target]);
++  return <dialog ref={panel} className="t1-delete-dialog" aria-labelledby="t1-delete-title" aria-describedby="t1-delete-scope" onCancel={event => { if (busy) event.preventDefault(); }} onClose={() => { if (!busy) { target?.opener?.focus(); onClose(); } }}>
++    <h2 id="t1-delete-title">{t("t1.deleteRun")}</h2>
++    {target && <div className="t1-delete-target" data-delete-run-id={target.runId}><strong>{target.title}</strong><time dateTime={target.createdAt}>{target.createdAt ? new Date(target.createdAt).toLocaleString(locale) : t("t1.timeUnrecorded")}</time><span>{target.modelId ?? t("t1.modelUnrecorded")}</span><code>{target.runId}</code></div>}
++    <p id="t1-delete-scope">{t("t1.deleteRunHelp")}</p><p className="t1-delete-warning">{t("t1.deleteRunIrreversible")}</p>
++    {blocked && <p className="t1-delete-warning" role="status">{t("t1.runDeleteBusy")}</p>}
++    {error && <p className="t1-delete-warning" role="alert">{error}</p>}
++    <div className="t1-delete-actions"><button type="button" autoFocus className="t1-button" disabled={busy} onClick={() => { panel.current?.close(); }}>{t(cleanupPending ? "t1.close" : "t1.keepRun")}</button><button type="button" className="t1-primary" disabled={busy || blocked || !target} aria-busy={busy} onClick={() => { if (target) onConfirm(target); }}>{t(busy ? "t1.deletingRun" : cleanupPending ? "t1.retryCleanup" : "t1.confirmDeleteRun")}</button></div>
++  </dialog>;
++}
+--- baseline/code/apps/pi-web/t1/SubmissionRunList.tsx
++++ current/code/apps/pi-web/t1/SubmissionRunList.tsx
+@@ -0,0 +1,45 @@
++"use client";
++
++import type { MouseEvent } from "react";
++import { ChevronIcon, MoreIcon } from "@/components/SidebarIcons";
++import { useI18n } from "@/hooks/useI18n";
++import type { WorkbenchPaper, WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import { TaskKindBadge } from "./TaskKindBadge";
++import { groupSubmittedRuns } from "./submission-groups";
++
++export function SubmissionRunList({ runs, papers, selectedId, variant, expanded, menuRunId, onToggle, onSelect, onMenu, statusLabel }: {
++  runs: WorkbenchRun[]; papers: WorkbenchPaper[]; selectedId: string | null; variant: "sidebar" | "history";
++  expanded: Readonly<Record<string, boolean>>; menuRunId?: string;
++  onToggle(id: string, value: boolean): void; onSelect(run: WorkbenchRun): void;
++  onMenu(event: MouseEvent<HTMLButtonElement>, run: WorkbenchRun): void; statusLabel(run: WorkbenchRun): string;
++}) {
++  const { t, locale } = useI18n();
++  const groups = groupSubmittedRuns(runs);
++  const time = (value?: string) => value ? new Date(value).toLocaleString(locale, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }) : t("t1.timeUnrecorded");
++  const row = (run: WorkbenchRun, child = false) => {
++    const title = papers.find(paper => paper.id === run.document_id)?.title ?? run.document_id;
++    const selected = selectedId === run.run_id;
++    const tooltip = [title, run.created_at ? new Date(run.created_at).toLocaleString(locale) : t("t1.timeUnrecorded"), run.model_id, run.run_id].filter(Boolean).join(" · ");
++    return <div className={`t1-run-nav-row${selected ? " selected" : ""}`} key={run.run_id} data-run-row={run.run_id}>
++      <button className="t1-run-select" data-run-id={run.run_id} data-paper-id={run.document_id} aria-current={selected ? "page" : undefined} title={tooltip} onClick={() => onSelect(run)}>
++        <strong>{title}</strong><span className="t1-run-meta">{!child && <TaskKindBadge kind={run.submission?.kind} />}<time dateTime={run.created_at}>{time(run.created_at)}</time><span>#{run.run_id.slice(-8)}</span></span>
++        <span className="t1-run-model" title={run.model_id}>{run.model_id ?? t("t1.modelUnrecorded")}</span>
++        <span className="t1-run-state"><i data-state={run.state} />{statusLabel(run)}<small>{t("t1.recordCount", { count: run.candidate_count })}</small></span>
++      </button>
++      <button type="button" className="t1-paper-actions" data-run-menu-id={run.run_id} aria-label={`${t("t1.taskActions")} · #${run.run_id.slice(-8)}`} title={t("t1.taskActions")} aria-haspopup="menu" aria-expanded={menuRunId === run.run_id} onClick={event => onMenu(event, run)}><MoreIcon size={17} /></button>
++    </div>;
++  };
++  return <div className={`t1-submission-list t1-submission-${variant}`} data-submission-list={variant}>
++    {!groups.length && <p className="t1-submission-empty">{t("t1.noSubmittedTasks")}</p>}
++    {groups.map(group => {
++      if (group.kind !== "batch") return <section key={group.id} data-submission-group={group.id} data-submission-kind={group.kind}>{row(group.runs[0]!)}</section>;
++      const open = expanded[group.id] ?? group.runs.some(run => run.run_id === selectedId), id = `${variant}-${group.id}`;
++      return <section className="t1-submission-batch" key={group.id} data-submission-group={group.id} data-submission-kind="batch">
++        <button className="t1-submission-heading" aria-expanded={open} aria-controls={id} onClick={() => onToggle(group.id, !open)}>
++          <ChevronIcon size={13} className={open ? "t1-group-chevron open" : "t1-group-chevron"} /><span><strong>{t("t1.taskBatch")}</strong><small>{t("t1.submittedTaskCount", { count: group.runs.length })}</small></span><time dateTime={group.createdAt}>{time(group.createdAt)}</time>
++        </button>
++        <div id={id} className="t1-submission-children" hidden={!open}>{group.runs.map(run => row(run, true))}</div>
++      </section>;
++    })}
++  </div>;
++}
+--- baseline/code/apps/pi-web/t1/submission-groups.ts
++++ current/code/apps/pi-web/t1/submission-groups.ts
+@@ -0,0 +1,22 @@
++import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
++
++export interface SubmissionGroup {
++  id: string;
++  kind: "single" | "batch" | "unrecorded";
++  runs: WorkbenchRun[];
++  createdAt?: string;
++}
++
++/** Only admitted runs enter this view. Missing metadata never invents a batch. */
++export function groupSubmittedRuns(runs: readonly WorkbenchRun[]): SubmissionGroup[] {
++  const groups = new Map<string, SubmissionGroup>();
++  for (const run of runs) {
++    const batch = run.submission?.kind === "batch" ? run.submission.batch_id : undefined;
++    const id = batch ? `batch:${batch}` : `run:${run.run_id}`;
++    let group = groups.get(id);
++    if (!group) { group = { id, kind: batch ? "batch" : run.submission?.kind === "single" ? "single" : "unrecorded", runs: [], createdAt: run.created_at }; groups.set(id, group); }
++    group.runs.push(run);
++    if ((run.created_at ?? "") > (group.createdAt ?? "")) group.createdAt = run.created_at;
++  }
++  return [...groups.values()].sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
++}
+--- baseline/code/apps/pi-web/t1/submission-groups.test.ts
++++ current/code/apps/pi-web/t1/submission-groups.test.ts
+@@ -0,0 +1,22 @@
++import test from "node:test";
++import assert from "node:assert/strict";
++import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import { groupSubmittedRuns } from "./submission-groups";
++
++test("only admitted metadata groups batches; repeated papers, singles and legacy runs remain exact", () => {
++  const runs = [
++    { run_id: "repeat-new", document_id: "p", submission: { kind: "single" }, created_at: "2026-11-04" },
++    { run_id: "batch-a", document_id: "p", submission: { kind: "batch", batch_id: "b1" }, created_at: "2026-11-03" },
++    { run_id: "batch-b", document_id: "q", submission: { kind: "batch", batch_id: "b1" }, created_at: "2026-11-02" },
++    { run_id: "old-a", document_id: "p", created_at: "2026-11-01" },
++    { run_id: "old-b", document_id: "p", created_at: "2026-11-01" },
++  ] as WorkbenchRun[];
++  const original = structuredClone(runs), groups = groupSubmittedRuns(runs);
++  assert.deepEqual(groups.map(group => [group.id, group.kind, group.runs.map(run => run.run_id)]), [
++    ["run:repeat-new", "single", ["repeat-new"]], ["batch:b1", "batch", ["batch-a", "batch-b"]], ["run:old-a", "unrecorded", ["old-a"]], ["run:old-b", "unrecorded", ["old-b"]],
++  ]);
++  assert.equal(groups.reduce((count, group) => count + group.runs.length, 0), runs.length);
++  assert.deepEqual(runs, original);
++  assert.equal(groupSubmittedRuns(runs.filter(run => run.run_id !== "batch-a")).find(group => group.id === "batch:b1")!.runs.length, 1);
++  assert.deepEqual(groupSubmittedRuns([]), []);
++});
+--- baseline/code/apps/pi-web/t1/gateway-policy.ts
++++ current/code/apps/pi-web/t1/gateway-policy.ts
+@@ -15,6 +15,7 @@
+   if (method === "GET" || method === "HEAD") return !/\/(?:cancel|review|verify|retention)$/.test(path);
+   if (method === "PUT") return new RegExp(`^/api/t1/workbench/papers/${id}/pdf$`).test(path);
+   if (method === "DELETE" && new RegExp(`^/api/t1/workbench/papers/${id}$`).test(path)) return true;
++  if (method === "DELETE" && new RegExp(`^/api/t1/workbench/runs/${id}$`).test(path)) return true;
+   if (method === "POST") return new RegExp(`^/api/t1/workbench/(?:models|papers(?:/${id}/runs)?|runs/${id}/(?:cancel|figures/${id}/verify|records(?:/${id}/(?:review|retention))?))$`).test(path);
+   return (method === "PATCH" || method === "DELETE") && new RegExp(`^/api/t1/workbench/runs/${id}/records/${id}$`).test(path);
+ }
+--- baseline/code/apps/pi-web/t1/messages.mjs
++++ current/code/apps/pi-web/t1/messages.mjs
+@@ -2,6 +2,24 @@
+ /** @type {Record<string, [string, string, string]>} */
+ const rows = {
+   taskActions: ["Task actions", "任务操作", "任務操作"],
++  submittedTasks: ["Extraction tasks", "抽取任务", "擷取任務"],
++  submittedTaskCount: ["{count} submitted", "已提交 {count} 个任务", "已提交 {count} 個任務"],
++  noSubmittedTasks: ["No extraction tasks yet. Upload a PDF or choose an existing paper to start.", "尚无抽取任务，可上传 PDF 或选择已有论文开始。", "尚無擷取任務，可上傳 PDF 或選擇既有論文開始。"],
++  groupedTasksHelp: ["Tasks follow their original submissions. Expand a batch to open each extraction. Counts include submitted tasks only; older tasks without submission metadata remain separate.", "按实际提交组织任务，展开批量可查看每次抽取。数量仅计已提交任务；缺少提交信息的旧任务单独列出。", "依實際提交組織任務，展開批次可檢視每次擷取。數量僅計已提交任務；缺少提交資訊的舊任務分別列出。"],
++  modelUnrecorded: ["Model unrecorded", "模型未记录", "模型未記錄"],
++  viewExtraction: ["View this extraction", "查看这次抽取", "檢視這次擷取"],
++  deleteRun: ["Delete this extraction", "删除这次抽取记录", "刪除這次擷取記錄"],
++  deleteRunHelp: ["Deletes this extraction’s results, versions, keep/exclude choices, reviews, events and saved exports. The paper, PDF, other extractions and any source assets they use are kept.", "将删除这次抽取的结果、版本、保留/排除选择、审核、事件及已保存导出。论文、PDF、其他抽取记录与仍在使用的解析/图片资料会保留。", "將刪除這次擷取的結果、版本、保留/排除選擇、審核、事件及已儲存匯出。論文、PDF、其他擷取記錄與仍在使用的解析/圖片資料會保留。"],
++  deleteRunIrreversible: ["This deletion cannot be undone.", "删除后无法恢复。", "刪除後無法復原。"],
++  keepRun: ["Keep this extraction", "保留这次记录", "保留這次記錄"],
++  confirmDeleteRun: ["Confirm deletion", "确认删除这次记录", "確認刪除這次記錄"],
++  deletingRun: ["Deleting…", "正在删除…", "正在刪除…"],
++  runDeleted: ["Extraction deleted · {title}", "已删除这次抽取记录 · {title}", "已刪除這次擷取記錄 · {title}"],
++  runDeleteFailed: ["Deletion was not confirmed: {reason}", "删除尚未确认：{reason}", "刪除尚未確認：{reason}"],
++  runCleanupPending: ["The extraction record was deleted, but some related files still need cleanup. Retry to finish cleanup; the record will not be restored.", "抽取记录已删除，部分关联文件尚待清理。可重试完成清理，记录不会恢复。", "擷取記錄已刪除，部分關聯檔案尚待清理。可重試完成清理，記錄不會恢復。"],
++  retryCleanup: ["Retry cleanup", "重试清理文件", "重試清理檔案"],
++  runDeleteBusy: ["A related task is preparing, running, finishing or saving changes. Wait for it to finish, then retry. You can cancel a running task if you want to stop it.", "相关任务仍在准备、运行、收尾或保存修改，请等待相关操作结束后重试；需要停止时可先取消运行中的任务。", "相關任務仍在準備、執行、收尾或儲存修改，請等待相關操作結束後重試；需要停止時可先取消執行中任務。"],
++  currentTaskEvents: ["Events for this extraction", "这次抽取的事件", "這次擷取的事件"],
+   viewTaskHistory: ["View tasks and history", "查看任务与历史", "檢視任務與歷史"],
+   noCancellableTasks: ["No tasks to cancel", "暂无可取消的任务", "暫無可取消的任務"],
+   timeUnrecorded: ["Time unrecorded", "时间未记录", "時間未記錄"],
+@@ -182,7 +200,8 @@
+   irProblem: ["The retained parsed source is missing or changed. Repair it before new extraction or retained export.", "已保存解析来源缺失或变化；修复后才能新抽取或导出保留结果。", "已儲存解析來源遺失或變更；修復後才能新擷取或匯出保留結果。"],
+   "bindingProblem": ["Paper identity or source versions do not match. Stop and check the retained source.", "文献身份或来源版本不一致，请先核对保留的来源。", "文獻身分或來源版本不一致，請先核對保留的來源。"],
+   "restoreMismatch": ["The selected PDF is a different file. Its SHA256 must match the retained original.", "所选 PDF 不是同一文件，须与保留原件的 SHA256 完全一致。", "所選 PDF 不是相同檔案，須與保留原件的 SHA256 完全一致。"],
+-  "activePaperDelete": ["Cancel the paper’s active tasks before deleting it.", "请先取消此论文仍在运行的任务，再删除论文。", "請先取消此論文仍在執行的任務，再刪除論文。"],
++  "activePaperDelete": ["This paper has tasks preparing, running or finishing. Cancel active tasks and wait for them to finish before deleting it.", "此论文仍有任务在准备、运行或收尾。请先取消运行中的任务，并等待它们退出后再删除。", "此論文仍有任務在準備、執行或收尾。請先取消執行中任務，並等待它們退出後再刪除。"],
++  paperDeleting: ["A related deletion is still in progress. Please retry shortly.", "相关删除操作尚未完成，请稍后重试。", "相關刪除操作尚未完成，請稍後重試。"],
+ 
+   "sameSource": ["Same source text · {count} separate records", "同源原句 · {count} 条独立记录", "同源原句 · {count} 條獨立記錄"],
+   sameSourceHelp: ["A source index helps compare related records. Each member keeps its own source, role and keep/exclude choice.", "同源索引仅帮助比较相关记录；每个成员仍保留独立来源、角色和保留／排除选择。", "同源索引僅協助比較相關記錄；每個成員仍保留獨立來源、角色和保留／排除選擇。"],
+@@ -346,7 +365,7 @@
+   paperNav: ["Paper navigation", "论文导航", "論文導覽"],
+   resizeNav: ["Resize paper navigation", "调整论文导航宽度", "調整論文導覽寬度"],
+   resizeSource: ["Resize original PDF panel", "调整原文阅读器宽度", "調整原文閱讀器寬度"],
+-  toggleNav: ["Toggle paper navigation", "切换论文导航", "切換論文導覽"],
++  toggleNav: ["Toggle task navigation", "切换任务导航", "切換任務導覽"],
+   separateTasks: ["Each run keeps its own scope, events and reviews.", "各运行独立保留范围、事件与审核。", "各執行獨立保留範圍、事件與審核。"],
+   sourceVersion: ["Source version", "来源版本", "來源版本"],
+   previousPage: ["Previous original page", "原件上一页", "原件上一頁"],
+--- baseline/code/apps/pi-web/t1/workbench.css
++++ current/code/apps/pi-web/t1/workbench.css
+@@ -453,3 +453,49 @@
+   .t1-source-choices { max-height: 330px; }
+ }
+ @media (prefers-reduced-motion: no-preference) { .t1-index-list > button, .t1-paper-row, .t1-button, .t1-top-actions button { transition: background-color 120ms ease, border-color 120ms ease; } }
++
++/* Submitted extractions share one grouping and selection in navigation and history. */
++.t1-submission-list { min-width: 0; }
++.t1-submission-sidebar { flex: 1; overflow: auto; padding: 0 7px 12px; scrollbar-width: thin; }
++.t1-submission-history { display: grid; gap: 10px; max-width: 960px; }
++.t1-run-nav-row { display: flex; align-items: flex-start; min-width: 0; border-radius: 6px; margin: 2px 0; }
++.t1-run-nav-row:hover { background: var(--bg-hover); }
++.t1-run-nav-row.selected { background: var(--bg-selected); }
++.t1-run-select { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; padding: 10px 0 10px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text); text-align: left; }
++.t1-run-select > strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12px; font-weight: 500; line-height: 1.55; }
++.t1-run-nav-row.selected .t1-run-select > strong { font-weight: 600; }
++.t1-run-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; color: var(--text-dim); font-size: 10px; }
++.t1-run-meta .t1-task-kind { padding: 0 4px; font-size: 9px; }
++.t1-run-model { display: block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 10px; }
++.t1-run-state { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; color: var(--text-muted); font-size: 10px; line-height: 1.5; }
++.t1-run-state > i { width: 5px; height: 5px; border-radius: 50%; background: var(--text-dim); }
++.t1-run-state > i[data-state="extracting"], .t1-run-state > i[data-state="parsing"], .t1-run-state > i[data-state="reconciling"] { background: var(--accent); }
++.t1-run-state small { font-size: 10px; opacity: .8; }
++.t1-run-select:focus-visible, .t1-submission-heading:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
++.t1-submission-heading { display: flex; align-items: center; gap: 7px; width: 100%; padding: 10px 7px; border: 0; border-radius: 6px; background: transparent; color: var(--text); text-align: left; }
++.t1-submission-heading:hover { background: var(--bg-hover); }
++.t1-submission-heading > span { flex: 1; min-width: 0; display: grid; gap: 3px; }
++.t1-submission-heading strong { font-size: 12px; font-weight: 500; }
++.t1-submission-heading small, .t1-submission-heading time { font-size: 10px; color: var(--text-muted); }
++.t1-submission-heading time { max-width: 80px; line-height: 1.5; text-align: right; }
++.t1-group-chevron { flex-shrink: 0; }
++.t1-group-chevron.open { transform: rotate(90deg); }
++.t1-submission-children { margin-left: 8px; padding-left: 5px; border-left: 1px solid var(--border); }
++.t1-submission-children[hidden] { display: none; }
++.t1-submission-history > section { border: 1px solid var(--border); border-radius: 7px; padding: 4px 6px; background: var(--t1-surface); }
++.t1-submission-history .t1-run-select { gap: 7px; padding: 11px; }
++.t1-submission-history .t1-run-select > strong { font-size: 13px; }
++.t1-submission-history .t1-run-meta, .t1-submission-history .t1-run-model, .t1-submission-history .t1-run-state { font-size: 11px; }
++.t1-submission-history .t1-paper-actions { margin: 6px; }
++.t1-submission-empty { padding: 14px 10px; color: var(--text-muted); font-size: 12px; line-height: 1.8; }
++.t1-task-menu-identity { margin: 2px 8px 8px; color: var(--text-muted); font-size: 11px; line-height: 1.7; overflow-wrap: anywhere; }
++.t1-delete-dialog { margin: auto; width: min(480px, calc(100vw - 28px)); max-height: calc(var(--app-viewport-height, 100dvh) - 32px); overflow: auto; padding: 24px; border: 1px solid var(--border); border-radius: 12px; background: var(--t1-surface); color: var(--text); box-shadow: var(--t1-shadow); }
++.t1-delete-dialog::backdrop { background: #15151d55; }
++.t1-delete-dialog h2 { margin: 0 0 18px; font-size: 16px; font-weight: 600; }
++.t1-delete-target { display: grid; gap: 7px; padding: 13px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-panel); font-size: 12px; overflow-wrap: anywhere; }
++.t1-delete-target strong { font-size: 13px; font-weight: 500; line-height: 1.6; }
++.t1-delete-target time, .t1-delete-target span, .t1-delete-target code { color: var(--text-muted); font-size: 11px; }
++.t1-delete-dialog > p { font-size: 12px; line-height: 1.9; color: var(--text-muted); }
++.t1-delete-dialog .t1-delete-warning { color: var(--t1-warning); }
++.t1-delete-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px; margin-top: 20px; }
++@media (max-width: 640px) { .t1-delete-dialog { padding: 20px; } .t1-delete-actions > button { min-height: 44px; } .t1-run-select { min-height: 72px; } }
+--- baseline/code/apps/pi-web/e2e/task-records-fetch-hook.mjs
++++ current/code/apps/pi-web/e2e/task-records-fetch-hook.mjs
+@@ -0,0 +1,11 @@
++/** Test-process preload only: the unchanged built Next gateway reaches an isolated workflow. */
++const original = globalThis.fetch;
++globalThis.fetch = (input, init) => {
++  const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url);
++  if (url.origin === 'http://127.0.0.1:3210') {
++    if (!url.pathname.startsWith('/api/workbench/')) throw new Error('Unexpected fixture upstream path');
++    url.port = '3215';
++    return original(input instanceof Request ? new Request(url, input) : url, init);
++  }
++  return original(input, init);
++};
+--- baseline/code/apps/pi-web/t1/task-actions.ts
++++ current/code/apps/pi-web/t1/task-actions.ts
+@@ -9,12 +9,6 @@
+   return cancellable.has(run.state);
+ }
+ 
+-/** A paper's displayed result can be older than its running tasks. */
+-export function cancellablePaperRuns(paperId: string, runs: WorkbenchRun[]) {
+-  return runs.filter(run => run.document_id === paperId && canCancelRun(run))
+-    .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? "") || a.run_id.localeCompare(b.run_id));
+-}
+-
+ export function cancellationResult(state: string) {
+   if (state === "cancelled") return "cancelDone";
+   if (ended.has(state)) return "cancelEnded";
+--- baseline/code/apps/pi-web/t1/task-actions.test.ts
++++ current/code/apps/pi-web/t1/task-actions.test.ts
+@@ -1,21 +1,9 @@
+ import assert from "node:assert/strict";
+ import test from "node:test";
+-import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
+-import { canCancelRun, cancellablePaperRuns, cancellationResult } from "./task-actions";
++import { canCancelRun, cancellationResult } from "./task-actions";
+ 
+-test("paper actions include every active task even when a completed result is displayed", () => {
+-  const runs = [
+-    { run_id: "old", document_id: "a", state: "completed", candidate_count: 8, created_at: "2026-11-01T00:00:00Z" },
+-    { run_id: "parse", document_id: "a", state: "parsing", candidate_count: 0, created_at: "2026-11-02T00:00:00Z" },
+-    { run_id: "queue", document_id: "a", state: "queued", candidate_count: 0, created_at: "2026-11-03T00:00:00Z" },
+-    { run_id: "extract", document_id: "a", state: "extracting", candidate_count: 1 },
+-    { run_id: "finish", document_id: "a", state: "reconciling", candidate_count: 2 },
+-    { run_id: "other", document_id: "b", state: "parsing", candidate_count: 0 },
+-    { run_id: "cancelled", document_id: "a", state: "cancelled", candidate_count: 2 },
+-  ] as WorkbenchRun[];
+-  assert.deepEqual(cancellablePaperRuns("a", runs).map(run => run.run_id), ["queue", "parse", "extract", "finish"]);
+-  assert.deepEqual(cancellablePaperRuns("unknown", runs), []);
+-  assert.equal(runs[0].run_id, "old");
++test("only active extraction states offer cancellation", () => {
++  for (const state of ["queued", "parsing", "extracting", "reconciling"]) assert.equal(canCancelRun({ state }), true);
+   for (const state of ["completed", "partial", "failed", "cancelled", "interrupted", "unknown"]) assert.equal(canCancelRun({ state }), false);
+ });
+ 
+--- baseline/code/apps/pi-web/t1/result-navigation.ts
++++ current/code/apps/pi-web/t1/result-navigation.ts
+@@ -6,16 +6,6 @@
+ export function resultRunForPaper(paperId: string, runs: WorkbenchRun[]) {
+   return runs.find(run => run.document_id === paperId && run.candidate_count > 0)
+     ?? runs.find(run => run.document_id === paperId);
+-}
+-
+-/** The sidebar label and its click target share one selection, including an explicit historical view. */
+-export function sidebarPaperSelection(paperId: string, runs: WorkbenchRun[], selected: { paperId: string; runId: string | null; historyId: string }) {
+-  if (selected.paperId === paperId) {
+-    const run = runs.find(item => item.run_id === selected.runId && item.document_id === paperId);
+-    if (run) return { runId: run.run_id, historyId: "" };
+-    if (!selected.runId && selected.historyId) return { runId: null, historyId: selected.historyId };
+-  }
+-  return { runId: resultRunForPaper(paperId, runs)?.run_id ?? null, historyId: "" };
+ }
+ 
+ export function initialWorkbenchSelection(params: URLSearchParams, papers: WorkbenchPaper[], runs: WorkbenchRun[]) {
+--- baseline/code/apps/server/test/workflow-submission.test.ts
++++ current/code/apps/server/test/workflow-submission.test.ts
+@@ -70,6 +70,8 @@
+   const workflow = new WorkbenchWorkflow(store, { ...fixture.options, directory });
+   let restarted: WorkbenchWorkflow | undefined, restored: ExtractionStore | undefined;
+   try {
++    const schema = () => store.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'workbench_%' ORDER BY name").all().map(row => row.name);
++    const schemaBeforeSubmission = schema();
+     const paper = (await workflow.upload(PDF, 'kind.pdf')).paper, scope = workflow.scopeCatalog().default_scope;
+     const submission = { kind: 'batch', batch_id: randomUUID() } as const;
+     const accepted = await Promise.all(Array.from({ length: 4 }, () => workflow.start(paper.id, scope, 'batch-kind-0001', submission)));
+@@ -90,7 +92,7 @@
+     assert.deepEqual((await restarted.runDetail(id)).run.submission, submission);
+     assert.deepEqual((await restarted.runs(single.run_id))[0]!.submission, { kind: 'single' });
+     assert.equal(after.prepares(), 0); assert.deepEqual(after.started, []);
+-    assert.equal(store.db.prepare("SELECT COUNT(*) n FROM sqlite_master WHERE type='table' AND name LIKE 'workbench_%'").get()!.n, 8, 'no batch table is added');
++    assert.deepEqual(schema(), schemaBeforeSubmission, 'submission metadata adds no table or batch entity');
+   } finally { await workflow.close(); store.close(); await restarted?.close(); restored?.close(); await rm(directory, { recursive: true, force: true }); }
+ });
+ 
+--- baseline/code/apps/pi-web/e2e/task-records.mjs
++++ current/code/apps/pi-web/e2e/task-records.mjs
+@@ -0,0 +1,146 @@
++/** Final built Next gateway -> isolated workflow. No real task operations or providers. */
++import assert from 'node:assert/strict';
++import { readFile, writeFile } from 'node:fs/promises';
++import { dirname, join, resolve } from 'node:path';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..'), origin = 'http://127.0.0.1:30155', fixture = 'http://127.0.0.1:3215';
++const evidence = join(code, 'docs/acceptance/task-delete-entry-2026-11-13'), dist = 'apps/pi-web/build/task-records-validated-20261113';
++const runtime = JSON.parse(await readFile(join(code, 'runtime-data/task-records-fixture-20261113/runtime.json'), 'utf8')), ids = runtime.ids;
++const result = { status: 'in_progress', origin, fixture, dist, BUILD_ID: (await readFile(join(code, dist, 'BUILD_ID'), 'utf8')).trim(), checks: [], errors: [], blocked: [], mutations: [], screenshots: [], dialog_positions: [], production_write_requests: 0, paid_model_calls: 0 };
++process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
++process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
++const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
++const browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
++const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN', reducedMotion: 'reduce', hasTouch: true, acceptDownloads: true });
++await context.addInitScript(expected => { if (location.origin === expected) { localStorage.setItem('pi-locale', 'zh-CN'); localStorage.setItem('pi-theme', 'light'); } }, origin);
++let failDelete = null, stale = null;
++function deferred() { let release; const promise = new Promise(resolve => { release = resolve; }); return { promise, release }; }
++await context.route(/^https?:\/\//, async route => {
++  const request = route.request(), url = new URL(request.url());
++  if (url.origin !== origin) { result.blocked.push({ method: request.method(), path: url.pathname }); return route.abort('blockedbyclient'); }
++  if (url.pathname.startsWith('/api/t1/') && !['GET', 'HEAD'].includes(request.method())) result.mutations.push({ method: request.method(), path: url.pathname, body: request.postDataJSON() });
++  if (request.method() === 'DELETE' && failDelete === url.pathname) { failDelete = null; return route.fulfill({ status: 502, contentType: 'application/json', body: '{"error":"fixture_delete_unavailable"}' }); }
++  if (stale && request.method() === 'GET' && url.pathname === '/api/t1/workbench/runs') {
++    const held = stale; stale = null; const response = await route.fetch(); held.captured.release(); await held.release.promise;
++    try { return await route.fulfill({ response }); } catch { return; }
++  }
++  return route.continue();
++});
++const page = await context.newPage(); page.setDefaultTimeout(15000); page.on('pageerror', error => result.errors.push(String(error)));
++const json = async path => { const response = await context.request.get(origin + '/api/t1/workbench/' + path); assert.equal(response.status(), 200, path); return response.json(); };
++const sidebar = () => page.locator('[data-submission-list="sidebar"]');
++const history = () => page.locator('[data-submission-list="history"]');
++const opener = id => sidebar().locator(`[data-run-menu-id="${id}"]`);
++const select = id => sidebar().locator(`[data-run-id="${id}"]`);
++const dialog = () => page.getByRole('dialog', { name: '删除这次抽取记录', exact: true });
++async function snapshot() { return page.evaluate(() => ({ url: location.href, run: new URL(location.href).searchParams.get('run'), record: document.querySelector('.t1-evidence-card')?.getAttribute('data-record-id'), text: document.querySelector('.t1-quote-frame')?.textContent, query: document.querySelector('.t1-record-search input')?.value })); }
++async function showMenu(id) { await opener(id).click(); await page.locator('.sidebar-menu, .sidebar-sheet').waitFor(); }
++async function confirmFor(id) { await showMenu(id); await page.getByRole('menuitem', { name: '删除这次抽取记录', exact: true }).click(); await dialog().waitFor(); assert.equal(await dialog().locator('[data-delete-run-id]').getAttribute('data-delete-run-id'), id); }
++async function check(name, work) { await work(); result.checks.push(name); console.log('PASS ' + name); }
++async function centeredDialog(label) {
++  const rect = await dialog().boundingBox(), viewport = page.viewportSize();
++  const offsets = { label, x: Math.abs(rect.x + rect.width / 2 - viewport.width / 2), y: Math.abs(rect.y + rect.height / 2 - viewport.height / 2) };
++  result.dialog_positions.push(offsets); assert.ok(offsets.x <= 1 && offsets.y <= 1, JSON.stringify(offsets));
++}
++async function screenshot(name) { await page.screenshot({ path: join(evidence, name) }); result.screenshots.push(name); }
++async function waitRun(id, state = 'completed') { for (let i = 0; i < 200; i++) { const run = (await json('runs')).runs.find(run => run.run_id === id); if (run?.state === state && run.result_ready) return run; await new Promise(resolve => setTimeout(resolve, 20)); } throw new Error('fixture run wait timed out: ' + id); }
++async function removeViaGateway(id) { return context.request.delete(origin + '/api/t1/workbench/runs/' + encodeURIComponent(id), { data: {} }); }
++const persist = async () => { let report = {}; try { report = JSON.parse(await readFile(join(evidence, 'report.json'), 'utf8')); } catch {} report.browser = result; await writeFile(join(evidence, 'report.json'), JSON.stringify(report, null, 2) + '\n'); };
++try {
++  assert.equal((await json('capabilities')).controlled_fixture, true);
++  const catalog = await json('catalog'), models = await json('models');
++  await page.goto(origin + '/?' + new URLSearchParams({ paper: runtime.papers.current, run: ids.current, view: 'records' })); await page.locator('.t1-evidence-card').waitFor(); await page.evaluate(() => document.fonts.ready);
++  assert.equal((await context.request.get(origin + '/_next/static/' + result.BUILD_ID + '/_buildManifest.js')).status(), 200);
++  await check('sidebar_and_history_share_exact_submissions_without_upload_only_or_invented_legacy_batches', async () => {
++    const runs = (await json('runs')).runs;
++    assert.equal(await sidebar().locator('[data-run-id]').count(), runs.length);
++    assert.equal(await sidebar().locator(`[data-paper-id="${runtime.papers.uploadOnly}"]`).count(), 0);
++    assert.equal(await sidebar().locator('[data-submission-kind="batch"]').count(), 1);
++    const legacy = runs.filter(run => !run.submission); assert.equal(await sidebar().locator('[data-submission-kind="unrecorded"]').count(), legacy.length);
++    for (const run of legacy) assert.equal(await sidebar().locator(`[data-submission-group="run:${run.run_id}"] [data-task-kind="unrecorded"]`).count(), 1);
++    await page.getByRole('tab', { name: '任务与历史', exact: true }).click(); await history().waitFor();
++    assert.deepEqual(await sidebar().locator('[data-submission-group]').evaluateAll(elements => elements.map(element => element.dataset.submissionGroup)), await history().locator('[data-submission-group]').evaluateAll(elements => elements.map(element => element.dataset.submissionGroup)));
++    await sidebar().locator('[data-submission-kind="batch"] > .t1-submission-heading').click();
++    assert.equal(await history().locator('[data-submission-kind="batch"] > .t1-submission-heading').getAttribute('aria-expanded'), 'true');
++    assert.equal(await history().locator('[data-submission-kind="batch"] [data-run-id]').count(), 2);
++    await screenshot('submission-groups-desktop.png');
++    assert.equal(await page.locator('.t1-content[data-view="tasks"] .t1-events').count(), 0);
++    assert.equal(await page.getByText('删除此论文及其运行', { exact: true }).count(), 0);
++    await page.getByRole('tab', { name: '抽取结果', exact: true }).click();
++  });
++  await check('same_paper_runs_and_menu_view_keep_the_exact_selected_extraction_and_keyboard_focus', async () => {
++    await select(ids.older).click(); await page.waitForURL(url => url.searchParams.get('run') === ids.older); await page.locator('.t1-evidence-card').waitFor();
++    await showMenu(ids.current); await page.getByRole('menuitem', { name: '查看这次抽取', exact: true }).click(); await page.waitForURL(url => url.searchParams.get('run') === ids.current); await page.locator('.t1-evidence-card').waitFor();
++    await opener(ids.current).focus(); await page.keyboard.press('Enter'); await page.getByRole('menu', { name: '任务操作', exact: true }).waitFor(); await page.keyboard.press('Escape');
++    assert.equal(await opener(ids.current).evaluate(element => element === document.activeElement), true);
++    assert.equal(await page.locator('button button').count(), 0);
++  });
++  await check('delete_confirmation_freezes_one_run_and_cancelling_it_never_sends_a_delete', async () => {
++    await page.locator('.t1-record-search input').fill('CT'); const before = await snapshot(), count = result.mutations.length;
++    await confirmFor(ids.older); await dialog().getByText('论文、PDF', { exact: false }).count();
++    assert.ok((await dialog().textContent()).includes(ids.older)); assert.ok((await dialog().textContent()).includes('gpt-6-luna'));
++    await centeredDialog('desktop'); await screenshot('delete-confirmation-desktop.png');
++    await dialog().getByRole('button', { name: '保留这次记录', exact: true }).click(); await dialog().waitFor({ state: 'hidden' });
++    assert.deepEqual(await snapshot(), before); assert.equal(result.mutations.length, count);
++  });
++  await check('noncurrent_delete_failure_retry_and_slow_workspace_read_do_not_switch_or_revive_results', async () => {
++    const before = await snapshot(); await confirmFor(ids.older); failDelete = '/api/t1/workbench/runs/' + ids.older;
++    await dialog().getByRole('button', { name: '确认删除这次记录', exact: true }).click(); await dialog().getByRole('alert').waitFor();
++    assert.equal((await json('runs')).runs.some(run => run.run_id === ids.older), true); assert.deepEqual(await snapshot(), before);
++    await dialog().getByRole('button', { name: '保留这次记录', exact: true }).click();
++    const captured = deferred(), release = deferred(); stale = { captured, release };
++    await page.getByRole('button', { name: '刷新工作台', exact: true }).click(); await captured.promise;
++    assert.equal(await page.locator('.t1-refresh-center .t1-refresh-spinner').count(), 1);
++    await confirmFor(ids.older); await dialog().getByRole('button', { name: '确认删除这次记录', exact: true }).click(); await dialog().waitFor({ state: 'hidden' }); release.release();
++    await page.waitForFunction(id => !document.querySelector(`[data-run-id="${id}"]`), ids.older);
++    assert.equal((await json('runs')).runs.some(run => run.run_id === ids.older), false); assert.deepEqual(await snapshot(), before);
++    await page.getByRole('tab', { name: '任务与历史', exact: true }).click(); assert.equal(await history().locator(`[data-run-id="${ids.older}"]`).count(), 0); await page.getByRole('tab', { name: '抽取结果', exact: true }).click();
++  });
++  await check('active_and_terminal_finalization_are_refused_and_cancel_stays_scoped_to_the_selected_run', async () => {
++    const before = await snapshot();
++    for (const id of [ids.active, ids.finishing]) {
++      await confirmFor(id); assert.equal(await dialog().getByRole('button', { name: '确认删除这次记录', exact: true }).isDisabled(), true);
++      const refused = await removeViaGateway(id); assert.equal(refused.status(), 409); assert.equal((await refused.json()).error, 'paper_busy_before_deleting_run');
++      await dialog().getByRole('button', { name: '保留这次记录', exact: true }).click();
++    }
++    await showMenu(ids.active); await page.getByRole('menuitem', { name: '取消此任务', exact: true }).click(); await page.locator('.t1-task-toast').filter({ hasText: '已取消此任务' }).waitFor();
++    assert.equal((await json('runs')).runs.find(run => run.run_id === ids.active).state, 'cancelled'); assert.deepEqual(await snapshot(), before);
++    await fetch(fixture + '/__fixture/release-finishing', { method: 'POST' }); await waitRun(ids.finishing);
++  });
++  await check('deleting_current_run_selects_remaining_result_of_the_same_paper', async () => {
++    await confirmFor(ids.current); await dialog().getByRole('button', { name: '确认删除这次记录', exact: true }).click();
++    await page.waitForURL(url => url.searchParams.get('run') === ids.spare); await page.locator('.t1-evidence-card').waitFor();
++    assert.equal(await select(ids.spare).getAttribute('aria-current'), 'page'); assert.equal(await select(ids.current).count(), 0);
++    assert.equal((await json('papers')).papers.some(paper => paper.id === runtime.papers.current), true);
++  });
++  await check('kept_export_and_model_scope_controls_still_work_through_the_gateway', async () => {
++    await page.locator('.t1-exports > summary').click();
++    const download = page.waitForEvent('download'); await page.getByRole('button', { name: '保留结果 JSONL', exact: true }).click();
++    const saved = await download, text = await readFile(await saved.path(), 'utf8'); assert.equal(text.trim().split('\n').length, 2);
++    await page.getByRole('tab', { name: '新任务', exact: true }).click(); await page.locator('.t1-model-selection').waitFor(); assert.equal(await page.getByRole('button', { name: '选择文件', exact: true }).count(), 1); assert.equal(await page.getByRole('button', { name: '选择文件夹', exact: true }).count(), 1);
++    assert.ok((await page.locator('.t1-model-selection').textContent()).includes('gpt-6-luna')); await page.getByRole('tab', { name: '抽取结果', exact: true }).click();
++  });
++  await check('last_run_delete_opens_reusable_existing_paper_new_task_and_a_new_run_is_independent', async () => {
++    await select(ids.last).click(); await page.waitForURL(url => url.searchParams.get('run') === ids.last); await confirmFor(ids.last); await dialog().getByRole('button', { name: '确认删除这次记录', exact: true }).click();
++    await page.waitForURL(url => url.searchParams.get('view') === 'newTask' && !url.searchParams.has('run'));
++    const picker = page.getByRole('combobox', { name: '本次任务论文', exact: true });
++    // The selected paper stays available even though it has no submitted run.
++    const actualPicker = await picker.count() ? picker : page.locator('.t1-new-task-panel select').filter({ has: page.locator(`option[value="${runtime.papers.last}"]`) });
++    assert.equal(await actualPicker.inputValue(), runtime.papers.last); assert.equal(await select(ids.last).count(), 0);
++    await page.locator('.t1-start').click(); await page.waitForURL(url => url.searchParams.get('run') && url.searchParams.get('run') !== ids.last); await page.locator('.t1-evidence-card').waitFor();
++    const id = new URL(page.url()).searchParams.get('run'); assert.equal((await json('runs')).runs.find(run => run.run_id === id).submission.kind, 'single');
++  });
++  await check('mobile_batch_expansion_exact_menu_confirmation_and_layout_are_usable', async () => {
++    await page.setViewportSize({ width: 390, height: 844 }); await page.locator('.t1-sidebar').waitFor({ state: 'detached' }); await page.getByRole('button', { name: '切换任务导航', exact: true }).click();
++    const batch = sidebar().locator('[data-submission-kind="batch"]'); if (await batch.locator('> .t1-submission-heading').getAttribute('aria-expanded') !== 'true') await batch.locator('> .t1-submission-heading').click();
++    await batch.scrollIntoViewIfNeeded(); const target = await opener(ids.batchA).boundingBox(); assert.ok(target.width >= 44 && target.height >= 44);
++    await screenshot('submission-groups-mobile.png'); const before = await snapshot();
++    await opener(ids.batchA).tap(); await page.getByRole('dialog', { name: '任务操作', exact: true }).waitFor(); await page.getByRole('menuitem', { name: '删除这次抽取记录', exact: true }).tap(); await dialog().waitFor();
++    const rect = await dialog().boundingBox(); assert.ok(rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= 391 && rect.y + rect.height <= 845); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
++    await centeredDialog('mobile'); await screenshot('delete-confirmation-mobile.png'); await page.keyboard.press('Escape'); await dialog().waitFor({ state: 'hidden' }); assert.deepEqual(await snapshot(), before);
++  });
++  assert.deepEqual(result.errors, []); assert.deepEqual(result.blocked, []);
++  const audit = await (await fetch(fixture + '/__fixture/requests')).json(); result.fixture_audit = audit;
++  assert.equal(audit.paid_model_calls, 0); assert.ok(audit.requests.some(request => request.method === 'DELETE' && request.path.endsWith(ids.older))); result.status = 'passed';
++} catch (cause) { result.status = 'failed'; result.failure = String(cause?.stack ?? cause); await page.screenshot({ path: join(evidence, 'browser-failure.png') }).catch(() => {}); throw cause; }
++finally { await persist(); await browser.close(); }
+--- baseline/code/apps/pi-web/e2e/task-records-readonly.mjs
++++ current/code/apps/pi-web/e2e/task-records-readonly.mjs
+@@ -0,0 +1,42 @@
++/** Production smoke: GET/HEAD only, including opening and cancelling confirmation. */
++import assert from 'node:assert/strict';
++import { readFile, writeFile } from 'node:fs/promises';
++import { dirname, join, resolve } from 'node:path';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..'), origin = 'http://127.0.0.1:30141', evidence = join(code, 'docs/acceptance/task-delete-entry-2026-11-13');
++const report = JSON.parse(await readFile(join(evidence, 'report.json'), 'utf8')), result = { status: 'in_progress', checks: [], errors: [], blocked: [], production_write_requests: 0, paid_model_calls: 0 };
++process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers'); process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
++const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href), browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
++const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN', reducedMotion: 'reduce', hasTouch: true });
++await context.addInitScript(expected => { if (location.origin === expected) { localStorage.setItem('pi-locale', 'zh-CN'); localStorage.setItem('pi-theme', 'light'); } }, origin);
++await context.route(/^https?:\/\//, async route => { const request = route.request(), url = new URL(request.url()); if (url.origin !== origin || !['GET', 'HEAD'].includes(request.method()) || url.pathname.includes('/exports/')) { result.blocked.push({ method: request.method(), path: url.pathname }); return route.abort('blockedbyclient'); } if (url.pathname.endsWith('/events')) return route.fulfill({ contentType: 'text/event-stream', body: ': read-only snapshot\n\n' }); return route.continue(); });
++const page = await context.newPage(); page.on('pageerror', error => result.errors.push(String(error)));
++const json = async path => { const response = await context.request.get(origin + '/api/t1/workbench/' + path); assert.equal(response.status(), 200); return response.json(); };
++const check = async (name, work) => { await work(); result.checks.push(name); console.log('PASS ' + name); };
++const snapshot = () => page.evaluate(() => ({ url: location.href, record: document.querySelector('.t1-evidence-card')?.getAttribute('data-record-id'), text: document.querySelector('.t1-quote-frame')?.textContent }));
++try {
++  const runs = (await json('runs')).runs, selected = runs.find(run => run.candidate_count > 0), other = runs.find(run => run.run_id !== selected.run_id); assert.ok(selected && other);
++  await page.goto(origin + '/?' + new URLSearchParams({ paper: selected.document_id, run: selected.run_id, view: 'records' })); await page.locator('.t1-evidence-card').waitFor(); await page.evaluate(() => document.fonts.ready); const before = await snapshot();
++  await check('reviewed_build_exact_run_navigation_and_preserved_existing_records', async () => {
++    assert.equal((await context.request.get(origin + '/_next/static/' + report.BUILD_ID + '/_buildManifest.js')).status(), 200);
++    assert.equal(await page.locator('[data-submission-list="sidebar"] [data-run-id]').count(), runs.length);
++    assert.equal(await page.locator(`[data-run-id="${selected.run_id}"]`).getAttribute('aria-current'), 'page');
++    await page.locator(`[data-run-menu-id="${other.run_id}"]`).click(); await page.getByRole('menuitem', { name: '删除这次抽取记录', exact: true }).click();
++    const dialog = page.getByRole('dialog', { name: '删除这次抽取记录', exact: true }); await dialog.waitFor(); assert.equal(await dialog.locator('[data-delete-run-id]').getAttribute('data-delete-run-id'), other.run_id); assert.deepEqual(await snapshot(), before);
++    await page.screenshot({ path: join(evidence, 'production-confirmation-desktop.png') }); await dialog.getByRole('button', { name: '保留这次记录', exact: true }).click(); assert.deepEqual(await snapshot(), before);
++  });
++  await check('history_and_sidebar_have_identical_legacy_submission_groups', async () => {
++    await page.getByRole('tab', { name: '任务与历史', exact: true }).click();
++    const groupIds = variant => page.locator(`[data-submission-list="${variant}"] [data-submission-group]`).evaluateAll(elements => elements.map(element => element.dataset.submissionGroup)); assert.deepEqual(await groupIds('sidebar'), await groupIds('history'));
++    assert.equal(await page.locator('[data-submission-list="history"] [data-submission-kind="unrecorded"]').count(), runs.filter(run => !run.submission).length);
++    await page.screenshot({ path: join(evidence, 'production-history-desktop.png') }); await page.getByRole('tab', { name: '抽取结果', exact: true }).click(); assert.deepEqual(await snapshot(), before);
++  });
++  await check('mobile_task_menu_and_centered_confirmation_are_readonly_and_fit_viewport', async () => {
++    await page.setViewportSize({ width: 390, height: 844 }); await page.locator('.t1-sidebar').waitFor({ state: 'detached' }); await page.getByRole('button', { name: '切换任务导航', exact: true }).click();
++    await page.locator(`[data-run-menu-id="${selected.run_id}"]`).tap(); await page.getByRole('dialog', { name: '任务操作', exact: true }).waitFor(); await page.getByRole('menuitem', { name: '删除这次抽取记录', exact: true }).tap();
++    const dialog = page.getByRole('dialog', { name: '删除这次抽取记录', exact: true }), rect = await dialog.boundingBox(); assert.ok(Math.abs(rect.x + rect.width / 2 - 195) <= 1 && Math.abs(rect.y + rect.height / 2 - 422) <= 1); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
++    await page.screenshot({ path: join(evidence, 'production-confirmation-mobile.png') }); await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' }); assert.deepEqual(await snapshot(), before);
++  });
++  assert.deepEqual(result.errors, []); assert.deepEqual(result.blocked, []); result.status = 'passed';
++} catch (error) { result.status = 'failed'; result.failure = String(error?.stack ?? error); throw error; }
++finally { report.production_readonly = result; await writeFile(join(evidence, 'report.json'), JSON.stringify(report, null, 2) + '\n'); await browser.close(); }
+--- baseline/code/apps/pi-web/t1/PaperTaskMenu.tsx
++++ current/code/apps/pi-web/t1/PaperTaskMenu.tsx
+@@ -1,48 +0,0 @@
+-"use client";
+-
+-import { SidebarMenu, type SidebarMenuAnchor, type SidebarMenuItem } from "@/components/SidebarMenu";
+-import { CloseIcon, MessageIcon } from "@/components/SidebarIcons";
+-import { useI18n } from "@/hooks/useI18n";
+-import type { WorkbenchPaper, WorkbenchRun } from "../../../packages/contracts/src/workbench";
+-import { cancellablePaperRuns } from "./task-actions";
+-
+-export interface PaperTaskMenuState {
+-  paperId: string;
+-  anchor: SidebarMenuAnchor;
+-  opener: HTMLButtonElement;
+-}
+-
+-export function PaperTaskMenu({ menu, paper, runs, cancelling, mobile, onClose, onCancel, onView }: {
+-  menu: PaperTaskMenuState | null;
+-  paper: WorkbenchPaper | undefined;
+-  runs: WorkbenchRun[];
+-  cancelling: ReadonlySet<string>;
+-  mobile: boolean;
+-  onClose(): void;
+-  onCancel(id: string): void;
+-  onView(): void;
+-}) {
+-  const { t, locale } = useI18n();
+-  const active = cancellablePaperRuns(menu?.paperId ?? "", runs);
+-  const items: SidebarMenuItem[] = [
+-    { type: "header", id: "paper", label: paper?.title ?? t("t1.taskActions") },
+-    { type: "item", id: "history", label: t("t1.viewTaskHistory"), icon: <MessageIcon size={14} />, onSelect: onView },
+-    { type: "separator", id: "tasks" },
+-    ...active.map((run): SidebarMenuItem => {
+-      const busy = cancelling.has(run.run_id);
+-      const created = run.created_at ? new Date(run.created_at).toLocaleString(locale, { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }) : t("t1.timeUnrecorded");
+-      return { type: "custom", id: run.run_id, content: <button
+-        type="button" role="menuitem" tabIndex={-1} data-sidebar-menu-item="" data-cancel-run-id={run.run_id}
+-        className="sidebar-menu-item t1-task-action" aria-disabled={busy || undefined} aria-busy={busy}
+-        title={[created, run.model_id, run.run_id].filter(Boolean).join(" · ")}
+-        onClick={() => { if (!busy) { onCancel(run.run_id); onClose(); } }}
+-      >
+-        <CloseIcon size={14} />
+-        <span className="t1-task-action-copy"><strong>{t(busy ? "t1.cancelling" : "t1.cancel")} · {t(`t1.${run.state}`)}</strong><time dateTime={run.created_at}>{created}</time><small>{[run.model_id, `#${run.run_id.slice(-8)}`].filter(Boolean).join(" · ")}</small></span>
+-      </button> };
+-    }),
+-    ...(!active.length ? [{ type: "custom" as const, id: "empty", content: <p className="t1-task-menu-empty">{t("t1.noCancellableTasks")}</p> }] : []),
+-  ];
+-  return <SidebarMenu open={menu !== null} anchor={menu?.anchor ?? null} returnFocusTo={menu?.opener} sheet={mobile}
+-    ariaLabel={t("t1.taskActions")} title={t("t1.taskActions")} cancelLabel={t("t1.close")} width={352} items={items} onClose={onClose} />;
+-}

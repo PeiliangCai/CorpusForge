@@ -9,7 +9,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from adapter import CODE, DoclingParseTextAdapter, ParseInput, ParserError
-from figure_assets import discover_figures, extract_catalog, original_image_objects, complete_bitmap_render_bounds, mechanically_check
+from figure_assets import discover_figures, extract_catalog, original_image_objects, original_caption_frames, supplemental_framed_captions, complete_bitmap_render_bounds, mechanically_check
 from structured import build_ir
 from pypdf import PdfWriter
 from pypdf.generic import ArrayObject, DictionaryObject, FloatObject, NameObject, NumberObject, DecodedStreamObject
@@ -17,9 +17,9 @@ import pypdfium2 as pdfium
 from PIL import Image
 
 
-def constructed_pdf(path, rotation=0, user_unit=1, second_image=False, note_before=False, split_caption=False):
-    writer = PdfWriter(); page = writer.add_blank_page(width=300, height=220)
-    page.cropbox.lower_left = (20, 10); page.cropbox.upper_right = (280, 210)
+def constructed_pdf(path, rotation=0, user_unit=1, second_image=False, note_before=False, split_caption=False, framed_caption=False, framed_multi=False):
+    writer = PdfWriter(); page = writer.add_blank_page(width=300, height=420 if framed_multi else 220)
+    page.cropbox.lower_left = (20, 10); page.cropbox.upper_right = (280, 410 if framed_multi else 210)
     page[NameObject('/Rotate')] = NumberObject(rotation)
     page[NameObject('/UserUnit')] = NumberObject(user_unit)
     font = DictionaryObject({NameObject('/Type'): NameObject('/Font'), NameObject('/Subtype'): NameObject('/Type1'), NameObject('/BaseFont'): NameObject('/Helvetica')})
@@ -29,10 +29,16 @@ def constructed_pdf(path, rotation=0, user_unit=1, second_image=False, note_befo
     image.set_data(bytes([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 0]))
     page[NameObject('/Resources')] = DictionaryObject({NameObject('/Font'): DictionaryObject({NameObject('/F1'): writer._add_object(font)}),
              NameObject('/XObject'): DictionaryObject({NameObject('/Im0'): writer._add_object(image)})})
-    stream = DecodedStreamObject(); stream.set_data(b'q 120 0 0 80 70 70 cm /Im0 Do Q\n' +
+    stream = DecodedStreamObject(); stream.set_data((b'q 120 0 0 80 70 110 cm /Im0 Do Q\n' if framed_multi else b'q 120 0 0 80 70 70 cm /Im0 Do Q\n') +
       (b'q 20 0 0 80 190 70 cm /Im0 Do Q\n' if second_image else b'') +
       (b'BT /F1 8 Tf 65 58 Td (Note: (a) no pleural invasion;) Tj 0 -10 Td (no metastasis is observed.) Tj ET\n' if note_before else b'') +
-      (b'BT /F1 9 Tf 75 33 Td (Fig. 1 CT source fixture.) Tj ET' if note_before else
+      (b'q .92 g .5 0 0 -.5 50 200 cm 40 190 240 162 re f Q\nBT /F1 10 Tf 75 94 Td (Fig. 1 Original title.) Tj 0 -12 Td (continued title) Tj ET\n'
+       b'BT /F1 7 Tf 75 68 Td (A: first literal note.) Tj 0 -19 Td (B: second literal note.) Tj 0 -19 Td (CT, literal abbreviation.) Tj ET\n'
+       b'BT /F1 9 Tf 75 13 Td (Following body paragraph.) Tj ET' if framed_multi else
+       b'q .92 g .5 0 0 -.5 50 200 cm 40 268 240 88 re f Q\nBT /F1 10 Tf 75 54 Td (Fig. 1 Original title.) Tj ET\n'
+       b'BT /F1 7 Tf 75 40 Td (A: first literal note.) Tj 0 -9 Td (B: second literal note.) Tj ET\n'
+       b'BT /F1 9 Tf 75 13 Td (Following body paragraph.) Tj ET' if framed_caption else
+       b'BT /F1 9 Tf 75 33 Td (Fig. 1 CT source fixture.) Tj ET' if note_before else
        b'BT /F1 8 Tf 65 55 Td (Fig. 1) Tj 0 -10 Td (First literal caption line.) Tj 0 -10 Td (Second literal caption line.) Tj ET' if split_caption else
        b'BT /F1 9 Tf 75 45 Td (Fig. 1 CT source fixture.) Tj ET'))
     page[NameObject('/Contents')] = writer._add_object(stream)
@@ -75,6 +81,64 @@ class FigureAssetTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_original_filled_caption_frame_retains_smaller_literal_notes_without_next_body_or_auto_approval(self):
+        path = self.root/'framed-caption.pdf'; constructed_pdf(path, framed_caption=True)
+        document, image_box = source_ir(path, 'framed-caption-fixture')
+        # A numbered Figure title may be classified as a section heading by the
+        # native layout model; only that literal title gets this exception.
+        next(u for u in document['structure']['units'] if u['kind'] == 'caption')['kind'] = 'section_header'
+        before = deepcopy(document); pdf_before = path.read_bytes()
+        catalog = extract_catalog(document, self.root/'framed-output')
+        figure = next(f for f in catalog['figures'] if f['figure_number'] == '1')
+        self.assertEqual([s['exact_quote'] for s in figure['caption_segments']],
+                         ['Fig. 1 Original title.', 'A: first literal note.', 'B: second literal note.'])
+        self.assertNotIn('Following body paragraph.', '\n'.join(s['exact_quote'] for s in figure['caption_segments']))
+        self.assertEqual(figure['verification']['status'], 'needs_review'); self.assertFalse(figure['verification']['human_approved'])
+        self.assertEqual(document, before); self.assertEqual(path.read_bytes(), pdf_before)
+        for actual, expected in zip(figure['regions'][0]['bbox'], image_box): self.assertAlmostEqual(actual, expected, delta=.01)
+
+    def test_framed_continuation_rejects_ambiguous_boxes_columns_labels_style_order_and_paragraph_boundaries(self):
+        path = self.root/'framed-boundaries.pdf'; constructed_pdf(path, framed_caption=True)
+        original, image_box = source_ir(path, 'framed-boundary-fixture')
+        pdf = pdfium.PdfDocument(path); page = pdf[0]
+        try: frames = original_caption_frames(page, original['pages'][0])
+        finally: page.close(); pdf.close()
+        self.assertEqual(len(frames), 1)
+        for kind in ['no-frame', 'ambiguous-frame', 'two-pictures', 'column', 'same-band', 'new-figure', 'new-table', 'font', 'order', 'paragraph', 'section']:
+            with self.subTest(kind=kind):
+                document = deepcopy(original); local_frames = deepcopy(frames)
+                label = next(b for b in document['blocks'] if b['text'].startswith('Fig. 1'))
+                first = next(b for b in document['blocks'] if b['text'].startswith('A:'))
+                second = next(b for b in document['blocks'] if b['text'].startswith('B:'))
+                caption = {'segments': [{'block_id': label['block_id'], 'physical_page': 1, 'start': 0,
+                           'end': len(label['text']), 'bbox': label['bbox']}]}  # Literal full source line.
+                components = [{'page': 1, 'bbox': image_box}]
+                if kind == 'no-frame': local_frames = []
+                elif kind == 'ambiguous-frame': local_frames += deepcopy(local_frames)
+                elif kind == 'two-pictures': components += deepcopy(components)
+                elif kind == 'column': first['bbox'][0] += 12
+                elif kind == 'same-band': second['bbox'][1:] = [first['bbox'][1], second['bbox'][2], first['bbox'][3]]
+                elif kind == 'new-figure': first['text'] = 'Fig. 2 competing title.'
+                elif kind == 'new-table': first['text'] = 'Table 2 competing title.'
+                elif kind == 'font': first['bbox'][3] += 8
+                elif kind == 'order': first['reading_order'] = label['reading_order'] - 1
+                elif kind == 'paragraph': first['bbox'][1] += 12; first['bbox'][3] += 12
+                elif kind == 'section':
+                    document['structure']['units'].append({'kind': 'section_header', 'source_segments': [{'block_id': first['block_id']}]})
+                before = deepcopy(document)
+                extra = supplemental_framed_captions(document, [caption], components, local_frames)[id(caption)]
+                self.assertEqual(extra, []); self.assertEqual(document, before)
+
+    def test_same_frame_multiple_paragraphs_and_wrapped_title_keep_literal_notes_and_abbreviations_only(self):
+        path = self.root/'framed-multiple.pdf'; constructed_pdf(path, framed_multi=True)
+        document, _ = source_ir(path, 'framed-multiple-fixture'); before = deepcopy(document)
+        catalog = extract_catalog(document, self.root/'framed-multiple-output')
+        figure = next(f for f in catalog['figures'] if f['figure_number'] == '1')
+        self.assertEqual([s['exact_quote'] for s in figure['caption_segments']],
+                         ['Fig. 1 Original title.', 'continued title', 'A: first literal note.', 'B: second literal note.', 'CT, literal abbreviation.'])
+        self.assertNotIn('Following body paragraph.', '\n'.join(s['exact_quote'] for s in figure['caption_segments']))
+        self.assertEqual(figure['verification']['status'], 'needs_review'); self.assertEqual(document, before)
 
     def test_split_caption_and_detector_panel_use_complete_original_bitmap_without_auto_confirmation(self):
         path = self.root/'split-caption.pdf'; constructed_pdf(path, split_caption=True)
@@ -297,6 +361,66 @@ class FigureAssetTests(unittest.TestCase):
                             self.assertNotEqual(region['sha256'], previous['regions'][0]['sha256'])
                         else: self.assertEqual(region['sha256'], previous['regions'][0]['sha256'])
                 finally: pdf.close()
+
+    def test_real_in04_complete_captions_and_whole_figures_do_not_gain_neighboring_prose(self):
+        root = CODE/'docs/acceptance/resume-2026-11-11'
+        if not (root/'source-document-ir.json').exists():
+            self.skipTest('Current IN04 source-bound regression artifacts are unavailable')
+        saved = json.loads((root/'source-document-ir.json').read_text()); document = deepcopy(saved)
+        # Relocate the frozen container's same-SHA uploaded PDF to its host copy.
+        document['source']['file_reference'] = 'evaluation/corpus/independent-sealed/IN04.pdf'
+        before = deepcopy(document); old = json.loads((root/'source-figure-catalog.json').read_text())
+        fresh = extract_catalog(document, self.root/'IN04-complete-caption')
+        self.assertEqual(document, before)
+        self.assertEqual(len(fresh['figures']), len(old['figures']))
+        for figure, previous in zip(fresh['figures'], old['figures']):
+            self.assertEqual(figure['figure_id'], previous['figure_id'])
+            self.assertEqual(figure['caption_segments'], previous['caption_segments'])
+            self.assertEqual([a['sha256'] for a in figure['regions']], [a['sha256'] for a in previous['regions']])
+            self.assertFalse(figure['verification']['human_approved'])
+        self.assertEqual(json.loads((root/'source-document-ir.json').read_text()), saved)
+
+    def test_real_in06_caption_frames_include_all_literal_notes_and_stop_before_following_paragraphs(self):
+        root = CODE/'docs/acceptance/resume-2026-11-11/in06/baseline'
+        if not (root/'parser-result.json').exists():
+            self.skipTest('Frozen IN06 pre-repair regression artifacts are unavailable')
+        document = json.loads((root/'parser-result.json').read_text())['document']; before = deepcopy(document)
+        old = json.loads((root/'figure-catalog.json').read_text()); fresh = extract_catalog(document, self.root/'IN06-framed-caption')
+        self.assertEqual(document, before); self.assertEqual(len(fresh['figures']), 3)
+        expected = {'1': (2, [9, 10, 11, 12]), '2': (2, [18, 19, 20, 21]), '3': (3, [0, 1, 2, 3])}
+        blocks = {b['block_id']: b for b in document['blocks']}
+        for figure, previous in zip(fresh['figures'], old['figures']):
+            page, lines = expected[figure['figure_number']]
+            wanted = [b for b in document['blocks'] if b['page'] == page and int(b['block_id'].rsplit('-l', 1)[-1]) in lines]
+            self.assertEqual([s['block_id'] for s in figure['caption_segments']], [b['block_id'] for b in wanted])
+            for segment in figure['caption_segments']:
+                self.assertEqual(segment['exact_quote'], blocks[segment['block_id']]['text'])
+                self.assertEqual(segment['bbox'], blocks[segment['block_id']]['bbox'])
+            text = '\n'.join(s['exact_quote'] for s in figure['caption_segments'])
+            for body_start in ['A thoraco-abdomino-pelvic', 'Additionally,', 'Following a multidisciplinary']:
+                self.assertNotIn(body_start, text)
+            self.assertEqual(figure['figure_id'], previous['figure_id'])
+            self.assertEqual([a['sha256'] for a in figure['regions']], [a['sha256'] for a in previous['regions']])
+            self.assertEqual(figure['verification']['status'], 'needs_review')
+            self.assertFalse(figure['verification']['human_approved'])
+
+    def test_real_in07_first_failed_multi_paragraph_captions_are_complete_without_changing_the_failed_baseline(self):
+        root = CODE/'docs/acceptance/resume-2026-11-11/in07/baseline'
+        if not (root/'parser-result.json').exists():
+            self.skipTest('Frozen failed IN07 independent first parser check is unavailable')
+        document = json.loads((root/'parser-result.json').read_text())['document']; before = deepcopy(document)
+        old = json.loads((root/'figure-catalog.json').read_text()); fresh = extract_catalog(document, self.root/'IN07-multiple-caption')
+        self.assertEqual(document, before); self.assertEqual(len(fresh['figures']), 3)
+        expected = {'1': (2, list(range(6))), '2': (2, list(range(6, 14))), '3': (3, list(range(4)))}
+        for figure, previous in zip(fresh['figures'], old['figures']):
+            page, lines = expected[figure['figure_number']]
+            wanted = [b for b in document['blocks'] if b['page'] == page and int(b['block_id'].rsplit('-l', 1)[-1]) in lines]
+            self.assertEqual([s['block_id'] for s in figure['caption_segments']], [b['block_id'] for b in wanted])
+            self.assertEqual([s['exact_quote'] for s in figure['caption_segments']], [b['text'] for b in wanted])
+            self.assertEqual(figure['figure_id'], previous['figure_id'])
+            self.assertEqual([a['sha256'] for a in figure['regions']], [a['sha256'] for a in previous['regions']])
+            self.assertEqual(figure['verification']['status'], 'needs_review')
+        self.assertEqual([len(f['caption_segments']) for f in old['figures']], [3, 2, 2])
 
 
 if __name__ == '__main__':

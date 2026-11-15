@@ -1,0 +1,71 @@
+{
+  "schema_version": "workbench-event-query-benchmark-1",
+  "measured_at": "2026-11-14T08:48:58.926Z",
+  "scope": "Local synchronous event-poll function on exposed real-task snapshots copied to an isolated in-memory SQLite database; no full-extraction speed claim.",
+  "production_database_opened_read_only": true,
+  "production_business_writes": 0,
+  "extra_paid_model_calls": 0,
+  "run_id": "run-f5dc6144-9308-4875-ac96-269a645b10ca",
+  "source_snapshot_bytes": 5262885,
+  "persisted_events": 237,
+  "event_payload_bytes": 429864,
+  "environment": {
+    "node": "v24.22.2",
+    "platform": "linux",
+    "architecture": "x64",
+    "cpu": "Intel(R) Xeon(R) 6982P-C",
+    "logical_cpus": 8
+  },
+  "equivalence_cursors": [
+    0,
+    232,
+    237,
+    238
+  ],
+  "exact_event_equivalence": true,
+  "results": [
+    {
+      "cursor": 237,
+      "returned_events": 0,
+      "before": {
+        "iterations": 50,
+        "mean_ms": 22.171171580000006,
+        "median_ms": 21.458602000000155,
+        "p95_ms": 25.057231,
+        "cpu_user_ms": 944.651,
+        "cpu_system_ms": 165.624
+      },
+      "after": {
+        "iterations": 50,
+        "mean_ms": 0.009560119999960079,
+        "median_ms": 0.00894499999958498,
+        "p95_ms": 0.011837999999897875,
+        "cpu_user_ms": 0.496,
+        "cpu_system_ms": 0
+      },
+      "mean_ratio_before_over_after": 2319.13109669048
+    },
+    {
+      "cursor": 232,
+      "returned_events": 5,
+      "before": {
+        "iterations": 50,
+        "mean_ms": 22.625378519999995,
+        "median_ms": 22.099239000000125,
+        "p95_ms": 27.120934999999918,
+        "cpu_user_ms": 970.728,
+        "cpu_system_ms": 160.995
+      },
+      "after": {
+        "iterations": 50,
+        "mean_ms": 0.02506161999998767,
+        "median_ms": 0.023532000000159314,
+        "p95_ms": 0.036195000000134314,
+        "cpu_user_ms": 1.278,
+        "cpu_system_ms": 0
+      },
+      "mean_ratio_before_over_after": 902.7899441461137
+    }
+  ],
+  "limitation": "Process scheduling, concurrent user activity, HTTP serialization and model/provider waits are outside this microbenchmark."
+}

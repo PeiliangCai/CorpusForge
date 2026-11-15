@@ -1,13 +1,15 @@
 import { Type, type Static } from 'typebox';
 import { EvidenceFragmentSchema, ContractError, type EvidenceSubmission, type SourceBinding } from '@t1/contracts';
 import type { SourceEvidenceUnit } from './source-evidence-units.js';
+import type { ExtractionDocument } from './article-scope.js';
+import { fragmentsForSourceSpans, resolveTableSupportCells } from './table-support.js';
 const closed = { additionalProperties: false } as const;
 export const FEATURE_NAME_RAW_CONTRACT_VERSION = 'feature-name-raw-exact-1';
 export const FEATURE_NAME_RAW_RULE = 'feature_name_raw must be an exact literal term in the selected, actually read evidence, or null. Preserve case, whitespace, line breaks, hyphens and Unicode characters; never paraphrase, translate, combine names or normalize spelling. Put a grouping suggestion in feature_category.';
 export const STATEMENT_SELECTOR_RULE = 'Choose exactly one nonempty source selector: source_unit_ids (prefer completeness=complete) or source_line_indices (whole original lines). For necessary context use at most one of context_unit_ids or context_line_indices. Omit the unused selectors; never send both alternatives.';
 export const SOURCE_UNIT_BOUNDARY_RULE = 'Inspect each source_units entry kind, completeness and boundary_reasons: entries include unverified paragraph fragments and table cells, not just complete sentences. Known missing sentence spans are rejected; uncertain boundaries require review. Grouping never proves completeness, medical meaning or an actual source read.';
 export const STRUCTURE_HINT_RULE = 'document_structure.headings[].native_title_display is processed display context, not read or citable original text. required_line_indices are references, not read receipts: explicitly read the needed originals. Native ordering and associations remain unverified.';
-export const TABLE_SUPPORT_RULE = 'Table rows/cells/captions cannot be primary descriptions. supporting_table_evidence may attach exact numeric values only when the primary visual sentence explicitly cites that numbered table. A structure/caption conflict blocks semantic support; document_structure.tables[].support_semantics=blocked_due_to_structure_conflict must not be used as support.';
+export const TABLE_SUPPORT_RULE = 'Table rows/cells/captions cannot be standalone primary descriptions. If a target visual sentence or its necessary context in the SAME original paragraph explicitly refers to values in a numbered table, reread the corresponding cell(s) and attach supporting_table_evidence with each metric/group/condition/unit and necessary footnote. Multiple explicitly discussed groups may have multiple values. Prefer cell_ids returned by the table read: the host copies exact values and row/column context. Never guess an unresolved match. A conflicting grid cannot supply semantic support.';
 export const statementIndexRule = (stage: 'batch' | 'summary') => stage === 'batch' ?
   'ALL *_line_indices and medical/numeric line_indices use the SAME batch-local source_lines[].line_index returned by read_document_blocks; never renumber per record.' :
   'ALL update *_line_indices and medical/numeric line_indices use immutable whole-document blocks[].line_index returned by read_document_blocks; never use batch-local or per-record indices.';
@@ -58,7 +60,8 @@ export const BatchLineEvidenceSchema = Type.Object({
 }, closed);
 export type BatchLineEvidence = Static<typeof BatchLineEvidenceSchema>;
 const supportingTableLines = (indexes: typeof batchLineIndexes) => Type.Array(Type.Object({ table_id: Type.String({ minLength: 1, maxLength: 200 }),
-  reference_line_indices: indexes, line_indices: indexes }, closed), { maxItems: 16, description: TABLE_SUPPORT_RULE });
+  reference_line_indices: indexes, line_indices: Type.Optional(indexes), cell_ids: Type.Optional(Type.Array(Type.String(), { minItems: 1, maxItems: 32, uniqueItems: true })),
+  context_line_indices: Type.Optional(indexes) }, closed), { maxItems: 16, description: TABLE_SUPPORT_RULE });
 /** A separate version keeps historical tool schemas/replays unchanged. */
 export const StatementEvidenceSchema = Type.Object({ ...BatchLineEvidenceSchema.properties,
   source_line_indices: Type.Optional(BatchLineEvidenceSchema.properties.source_line_indices),
@@ -92,7 +95,7 @@ export const StatementDocumentEvidenceSchema = Type.Object({ ...DocumentLineEvid
 }, closed);
 export type StatementDocumentEvidence = Static<typeof StatementDocumentEvidenceSchema>;
 export function expandBatchLineEvidence(value: BatchLineEvidence | StatementEvidence | StatementDocumentEvidence,
-  lines: ReadonlyArray<{ block_id: string; text: string }>, binding: SourceBinding, units?: readonly SourceEvidenceUnit[]): EvidenceSubmission {
+  lines: ReadonlyArray<{ block_id: string; text: string }>, binding: SourceBinding, units?: readonly SourceEvidenceUnit[], document?: ExtractionDocument): EvidenceSubmission {
   const select = (indexes: readonly number[]) => indexes.map(index => {
     const line = lines[index]; if (!Number.isInteger(index) || index < 0 || !line) throw new ContractError('source_line_index_out_of_range');
     return { block_id: line.block_id, exact_quote: line.text };
@@ -131,8 +134,17 @@ export function expandBatchLineEvidence(value: BatchLineEvidence | StatementEvid
       evidence: unitIds?.length ? narrowed(n.line_indices) : select(n.line_indices) })),
     provenance: { origin: value.origin, cited_references: value.cited_references ?? [], evidence: value.provenance_line_indices ?
       (unitIds?.length ? primaryOnly(value.provenance_line_indices) : select(value.provenance_line_indices)) : source },
-    translation_zh: null, ...(support ? { supporting_table_evidence: support.map(s => ({ table_id: s.table_id,
-      reference_fragments: primaryOnly(s.reference_line_indices), value_fragments: select(s.line_indices) })) } : {}),
+    translation_zh: null, ...(support ? { supporting_table_evidence: support.map(s => {
+      const reference = s.cell_ids?.length || s.context_line_indices?.length ? select(s.reference_line_indices) : primaryOnly(s.reference_line_indices);
+      if (s.cell_ids?.length) {
+        if (!document) throw new ContractError('supporting_table_source_required');
+        const resolved = resolveTableSupportCells(document, s.table_id, s.cell_ids);
+        return { table_id: s.table_id, reference_fragments: reference, value_fragments: fragmentsForSourceSpans(document, resolved.value_spans),
+          context_fragments: fragmentsForSourceSpans(document, resolved.context_spans), selected_cell_ids: s.cell_ids };
+      }
+      return { table_id: s.table_id, reference_fragments: reference, value_fragments: select(s.line_indices ?? []),
+        ...(s.context_line_indices?.length ? { context_fragments: select(s.context_line_indices) } : {}) };
+    }) } : {}),
     ...(value.updates_record_id ? { updates_record_id: value.updates_record_id } : {}) };
 }
 export function expandIndexedEvidence(value: IndexedEvidence, lines: ReadonlyArray<{ block_id: string; text: string }>, binding: SourceBinding) {

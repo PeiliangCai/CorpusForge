@@ -1,0 +1,393 @@
+{
+  "schema_version": "workbench-live-final-diagnostics-1",
+  "captured_at": "2026-11-14T08:54:43.332467+00:00",
+  "read_only": true,
+  "extra_paid_model_calls": 0,
+  "production_business_writes_by_engineering": 0,
+  "run_id": "run-f5dc6144-9308-4875-ac96-269a645b10ca",
+  "paper_id": "paper-b564629d-8201-4ac8-b8b5-e289fd630bb1",
+  "user_task": {
+    "created_at": "2026-11-14T08:16:58.203Z",
+    "execution_started_at": "2026-11-14T08:16:58.210Z",
+    "finished_at": "2026-11-14T08:33:46.084Z",
+    "total_ms": 1007881.0,
+    "state": "partial",
+    "queue_wait_ms": 7,
+    "strategy": "B0",
+    "model_profile": {
+      "profile_id": "model-5aa7649633b13e6c9c91f26cd5580846",
+      "provider": "agicto",
+      "model_id": "gpt-6-luna",
+      "api": "openai-responses",
+      "reasoning_effort": "medium",
+      "context_window": 1050000,
+      "max_output_tokens": 8192,
+      "configuration_source": "server"
+    },
+    "requests_unchanged_limit": 80,
+    "budget_halted": "experiment_request_limit"
+  },
+  "source": {
+    "file_sha256": "84fd59338ea6600130b04e36cdc56051e586e4de48c273318143a9d62e6be05e",
+    "pages": 29,
+    "blocks": 2970,
+    "code_points": 176463,
+    "parser_status": "partial",
+    "parser_metrics": {
+      "source_anchor_seconds": 7.056826,
+      "native_seconds": 36.56000716199924,
+      "mapping_seconds": 0.503113155000392,
+      "total_seconds": 44.11994737599889,
+      "native_metrics": {
+        "parser_version": "2.145.0",
+        "total_seconds": 36.56000716199924,
+        "cpu_user_seconds": 75.266316,
+        "cpu_system_seconds": 25.382783999999997,
+        "peak_rss_bytes_process_lifetime": 2320404480,
+        "first_call_in_process": true,
+        "configuration": {
+          "device": "cpu",
+          "threads": 4,
+          "ocr": false,
+          "table_structure": true,
+          "layout_model": "docling-project/docling-layout-heron@8f39ad3c0b4c58e9c2d2c84a38465abf757272d8",
+          "table_model": "docling-project/docling-models@fc0f2d45e2218ea24bce5045f58a389aed16dc23",
+          "remote_services": false,
+          "gpu_available": false
+        },
+        "pid": 38921,
+        "status": "success",
+        "document_result_cache_used": false,
+        "model_instance_reused": false,
+        "cache_policy": "Direct local parser API on original PDF bytes every call; no document library/result-cache lookup"
+      },
+      "host_metrics": {
+        "file_check_seconds": 0.002499,
+        "backend_init_seconds": 0.009352,
+        "first_text_seconds": 0.593213,
+        "total_seconds": 7.056826,
+        "cpu_user_seconds": 7.082416,
+        "cpu_system_seconds": 0.548906,
+        "peak_rss_bytes": 866316288,
+        "peak_rss_scope": "current_process_lifetime_linux_ru_maxrss",
+        "gpu_peak_memory_bytes": null,
+        "network_document_uploads": 0,
+        "llm_calls": 0
+      },
+      "remote_document_uploads": 0,
+      "llm_calls": 0
+    },
+    "same_pdf_paper_ids": [
+      "paper-9b9afd8c-736e-49f6-9f2d-68f7f1b9549b",
+      "paper-b564629d-8201-4ac8-b8b5-e289fd630bb1"
+    ]
+  },
+  "stage_timeline": [
+    {
+      "stage": "queued",
+      "started_at": "2026-11-14T08:16:58.208Z",
+      "ended_at": "2026-11-14T08:16:58.214Z",
+      "elapsed_ms": 6.0
+    },
+    {
+      "stage": "parsing",
+      "started_at": "2026-11-14T08:16:58.214Z",
+      "ended_at": "2026-11-14T08:17:50.593Z",
+      "elapsed_ms": 52379.0
+    },
+    {
+      "stage": "extracting",
+      "started_at": "2026-11-14T08:17:50.593Z",
+      "ended_at": "2026-11-14T08:30:41.666Z",
+      "elapsed_ms": 771073.0
+    },
+    {
+      "stage": "reconciling",
+      "started_at": "2026-11-14T08:30:41.666Z",
+      "ended_at": "2026-11-14T08:33:43.429Z",
+      "elapsed_ms": 181763.0
+    },
+    {
+      "stage": "partial",
+      "started_at": "2026-11-14T08:33:43.429Z",
+      "ended_at": "2026-11-14T08:33:46.084Z",
+      "elapsed_ms": 2655.0
+    }
+  ],
+  "parse_to_source_saved_ms": 50117.0,
+  "parse_split_limitations": "Parser-reported44.120s is source anchoring7.057s + native36.560s + mapping0.503s. The remaining parse-state interval also includes process startup/transport/checks/IR and asset work; old events cannot exactly split that remainder. File mtimes provide bounds, not a complete timing trace.",
+  "request_timing": {
+    "requests": 80,
+    "finished_requests": 80,
+    "known_request_ms": 926545.0,
+    "first_stream_event_wait_ms": 727442.0,
+    "requests_with_first_stream_event": 80,
+    "stream_between_first_last_ms": 175566.0,
+    "request_median_ms": 8350.0,
+    "max_request_ms": 55116.0,
+    "inter_request_gap_ms": 25500.0,
+    "median_inter_request_gap_ms": 198.0,
+    "by_phase": {
+      "batch": {
+        "requests": 72,
+        "known_request_ms": 746717.0,
+        "first_event_wait_ms": 655931.0,
+        "input_tokens": 690537,
+        "output_tokens": 17815
+      },
+      "whole-document-summary": {
+        "requests": 8,
+        "known_request_ms": 179828.0,
+        "first_event_wait_ms": 71511.0,
+        "input_tokens": 309563,
+        "output_tokens": 13461
+      }
+    },
+    "limitation": "Request and first-event waits combine supplier, gateway, network and inference time. Existing records cannot isolate model compute, supplier queueing or network latency. Inter-request gaps include host/SDK/tool work and scheduling; they are not a pure CPU measurement."
+  },
+  "fixed_input_retrieval": {
+    "requests": 46,
+    "by_tool": {
+      "get_document_context": 23,
+      "read_document_blocks": 23
+    },
+    "known_request_ms": 333614.0,
+    "meaning": "Model-requested deterministic input fetches; future host prefill can supply the identical projections on the first request, but this old run was not changed."
+  },
+  "tokens": {
+    "input": 1000100,
+    "output": 31276,
+    "actual_cost": null,
+    "billing_status": "unknown_gateway_billing",
+    "user_initiated_existing_run_requests": 80,
+    "engineering_extra_requests": 0
+  },
+  "coverage": {
+    "physical_pages": 29,
+    "parser_status": "partial",
+    "all_source_blocks": 2970,
+    "assigned_source_blocks": 2970,
+    "task_scope_source_blocks": 2970,
+    "task_processing_complete": false,
+    "task_processing_blockers": [
+      "source_glyph_quarantine_unresolved",
+      "summary_incomplete",
+      "whole_document_summary_incomplete"
+    ],
+    "dispatched_source_blocks": 2929,
+    "source_blocks_read": 2929,
+    "explicitly_completed_source_blocks": 2929,
+    "source_block_processing_complete": false,
+    "whole_document_summary_complete": false,
+    "full_document_extraction_completed": false
+  },
+  "source_glyph_gap_blocks": 41,
+  "final_candidates": 13,
+  "figure_associations": {
+    "no_explicit_reference": 12,
+    "paired": 1
+  },
+  "figure_entries": 9,
+  "numbered_figures": 6,
+  "mechanically_checked_whole_figures": 3,
+  "unassigned_regions": 3,
+  "asset_checks": [
+    {
+      "figure_id": "figure-f3d2f882937db582eea042ba",
+      "number": "2",
+      "verification": "mechanically_checked",
+      "asset_id": "figure-f3d2f882937db582eea042ba-0",
+      "status": 200,
+      "bytes": "461281",
+      "elapsed_ms": 22.079
+    },
+    {
+      "figure_id": "figure-150c651a804ac08bd1027463",
+      "number": "5",
+      "verification": "mechanically_checked",
+      "asset_id": "figure-150c651a804ac08bd1027463-0",
+      "status": 200,
+      "bytes": "527636",
+      "elapsed_ms": 21.928
+    },
+    {
+      "figure_id": "figure-0869e4d4c48e55f71186ff94",
+      "number": "6",
+      "verification": "mechanically_checked",
+      "asset_id": "figure-0869e4d4c48e55f71186ff94-0",
+      "status": 200,
+      "bytes": "382147",
+      "elapsed_ms": 24.888
+    },
+    {
+      "figure_id": "region-5217a7e0a2285009ec823e56",
+      "number": null,
+      "verification": "needs_review",
+      "asset_id": "region-5217a7e0a2285009ec823e56-0",
+      "status": 200,
+      "bytes": "113811",
+      "elapsed_ms": 42.6
+    },
+    {
+      "figure_id": "region-8f3f94463a5697ffa085f203",
+      "number": null,
+      "verification": "needs_review",
+      "asset_id": "region-8f3f94463a5697ffa085f203-0",
+      "status": 200,
+      "bytes": "161980",
+      "elapsed_ms": 21.699
+    },
+    {
+      "figure_id": "region-cbbd86fcab9bdf773cbf983d",
+      "number": null,
+      "verification": "needs_review",
+      "asset_id": "region-cbbd86fcab9bdf773cbf983d-0",
+      "status": 200,
+      "bytes": "430912",
+      "elapsed_ms": 30.283
+    }
+  ],
+  "summary_error": {
+    "observed_error": "schema_validation_failed",
+    "visible_update_entries_lower_bound": 6,
+    "model_schema_max_updates": 3,
+    "original_update_count_known": false,
+    "reason_count_unknown": "The old safe diagnostic retained only the first6 updates, without total array length.",
+    "unique_failure_cause_proven": false,
+    "event_seq": 211,
+    "offline_reproduction": "source-prefill.test.ts replays a six-update shape on installed SDK; same max3 schema rejects it, then bounded same-session correction succeeds.",
+    "change": "Explicit <=3 updates prompt and safe array_lengths/schema_array_violations diagnostics; schema, budget and source guards unchanged."
+  },
+  "extraction_process_resources": {
+    "cpu_user_seconds": 291.290541,
+    "cpu_system_seconds": 28.996507,
+    "peak_sampled_rss_bytes": 888573952,
+    "rss_sampling_ms": 100,
+    "scope": "current_Node_process_only_cached_parser_IR",
+    "parser_native_inference_repeated": false,
+    "gpu_used": false,
+    "matrix_concurrency": 1,
+    "measurements_shared_with_other_document_jobs": false
+  },
+  "current_service_read_checks": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "status": 200,
+      "elapsed_ms": 16.91,
+      "response_bytes": 146
+    },
+    {
+      "method": "GET",
+      "path": "/api/workbench/runs",
+      "status": 200,
+      "elapsed_ms": 25.06,
+      "response_bytes": 6914
+    }
+  ],
+  "production_database_snapshot": {
+    "tables": {
+      "events": {
+        "rows": 5,
+        "sha256": "0cce36023a57a5d15170afecc3948a61f8f6e060ca0370d92295d93c088976a4"
+      },
+      "records": {
+        "rows": 1,
+        "sha256": "f76d61870bf7a125fce7418afc751fa4603d923dc1cffe6305dd35b5d5e6e89a"
+      },
+      "runs": {
+        "rows": 1,
+        "sha256": "d9b9fdf5eff6120aae042947b77a3f01d4df2c4111cf9090b344a6631a18bbc4"
+      },
+      "s4_batches": {
+        "rows": 23,
+        "sha256": "70f3a229922cd466b25259d57177b5c872c50a3f08b3ba6971282f5bc49ede92"
+      },
+      "s4_events": {
+        "rows": 251,
+        "sha256": "48c517519f2cf2ff570f4ee4c0184ff13b9f5914d7221d875a9565a011a69906"
+      },
+      "s4_runs": {
+        "rows": 8,
+        "sha256": "c46227b149fca5bc4599c5c0af95309bd84f055c1ded0a0067bfe6d2c98366f4"
+      },
+      "s4_versions": {
+        "rows": 291,
+        "sha256": "c110f57ca8c92998ace2525b7c5f7a50ffbb370d85d535003acc0880ff731c6f"
+      },
+      "workbench_annotations": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_deleted_runs": {
+        "rows": 2,
+        "sha256": "f064f733a448f79f2682066b591ccdf0b3e17eb24afa383574219418d122f5f2"
+      },
+      "workbench_deleted_sources": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_exports": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_model_profiles": {
+        "rows": 1,
+        "sha256": "a125b996c6cdd75bf3a7a6b306e56df669cff6c683630308b27054575ff130cd"
+      },
+      "workbench_papers": {
+        "rows": 8,
+        "sha256": "491adf741bc63295b16b04418441d7a769352a33dbf9073a4253dae22549239b"
+      },
+      "workbench_requests": {
+        "rows": 3,
+        "sha256": "d3b173007c600b2da8063355d3ea412a85217c19b628c72d298acaedaaeec2fe"
+      },
+      "workbench_retentions": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_reviews": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_runs": {
+        "rows": 8,
+        "sha256": "b04d40728d4e16289e119fd7715df2cfec5e7aa1fea08bcd757fb3276a820d6c"
+      }
+    },
+    "table_count": 17,
+    "active_runs": [],
+    "run_count": 8,
+    "paper_count": 8
+  },
+  "environment_sha256": {
+    ".env": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+    "deploy/local/workbench.env": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea"
+  },
+  "service_identity": {
+    "backend_pid": 33530,
+    "frontend_pid": 33584,
+    "backend_port": 3210,
+    "frontend_port": 30141,
+    "frontend_dist": "apps/pi-web/build/two-layer-catalog-validated-20261114",
+    "BUILD_ID": "DcG1glAOPcj0mod8YXzIX"
+  },
+  "limits": [
+    "No backend restart, user-task cancellation/replay or input/model/allowance mutation performed.",
+    "No fresh provider experiment. Local fixtures and previously exposed real-task artifacts only.",
+    "Source glyph gaps and incomplete summary retain partial; no full-text or medical correctness approval.",
+    "No independent IN materials read; S6/S7 acceptance unchanged."
+  ],
+  "resource_measurement_limitations": "Node CPU/RSS cover the entire backend process during extraction, including HTTP/SSE work; they are not per-run isolated CPU costs and overlap request waits. Native parser peak RSS is process-lifetime peak. The cumulative /proc I/O counters likewise cannot be wholly attributed to this task.",
+  "backend_process_cumulative_io_observed_at": "2026-11-14T08:58:36.860729+00:00",
+  "backend_process_cumulative_io": {
+    "rchar": 118390439960,
+    "wchar": 938585706,
+    "syscr": 28116233,
+    "syscw": 206552,
+    "read_bytes": 886149120,
+    "write_bytes": 155897856,
+    "cancelled_write_bytes": 8192
+  }
+}

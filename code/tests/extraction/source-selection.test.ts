@@ -60,6 +60,42 @@ test('a reference-looking body sentence without a source References heading is n
   assert.equal(select(f, 'F').kept_block_ids.length, 2);
 });
 
+test('complete native References entries support bare DOI tails and a single author followed by a colon, without changing source', () => {
+  for (const lines of [
+    ['1. Smith A, Roe B: Literal title.', 'J Med. 2024, 2:1-8. 10.1234/example.2024'],
+    ['1. Sharma M: Literal title. J Med. 2018, 7:1684-5.'],
+  ]) {
+    const f = makeEvidenceFixture(['CT shows a nodule.', 'References', ...lines]);
+    f.document.structure.units.push(unit(f, lines.map((_, i) => i + 2), { kind: 'list_item' }));
+    const before = JSON.stringify(f.document), b0 = select(f, 'B0'), positive = select(f, 'F');
+    assert.deepEqual(b0.excluded_block_ids, f.document.blocks.slice(2).map(b => b.block_id));
+    assert.deepEqual(positive.excluded_block_ids, b0.excluded_block_ids);
+    assert.equal(b0.bibliography_scope_rule_version, 'explicit-bibliography-task-scope-2');
+    assert.equal(JSON.stringify(f.document), before);
+  }
+});
+
+test('new citation formats never widen raw fallback or uncertain section, source, author and publication boundaries', () => {
+  const text = '1. Smith A: Literal title. J Med. 2024, 2:1-8. 10.1234/example.2024';
+  for (const kind of ['no-heading', 'raw-only', 'partial', 'cross-page', 'partial-block', 'mixed-prose', 'year', 'institution', 'incomplete-DOI', 'new-section'] as const) {
+    const lines = kind === 'cross-page' ? [{ text: 'References', page: 1 }, { text: '1. Smith A: Literal title.', page: 1 }, { text: 'J Med. 2024, 2:1-8. 10.1234/example.2024', page: 2 }] :
+      [kind === 'no-heading' ? 'General body notes' : 'References', kind === 'year' ? text.replace('2024,', '19911,') :
+        kind === 'institution' ? text.replace('Smith A:', 'The World Health Organization:') : kind === 'mixed-prose' ? text + ' CT shows a 6 mm mass.' :
+          kind === 'incomplete-DOI' ? text.replace('10.1234/example.2024', '10.1234/') : text];
+    if (kind === 'new-section') lines.splice(1, 0, 'Discussion');
+    const f = makeEvidenceFixture(lines), indices = kind === 'cross-page' ? [1, 2] : [kind === 'new-section' ? 2 : 1];
+    if (kind !== 'raw-only') {
+      const native = unit(f, indices, { kind: 'list_item' });
+      if (kind === 'partial') native.mapping.status = 'partial';
+      if (kind === 'partial-block') native.source_segments[0]!.end -= 8;
+      f.document.structure.units.push(native);
+    }
+    const before = JSON.stringify(f.document);
+    assert.deepEqual(select(f, 'B0').excluded_block_ids, [], kind); assert.deepEqual(select(f, 'F').excluded_block_ids, [], kind);
+    assert.equal(JSON.stringify(f.document), before, kind);
+  }
+});
+
 test('unmapped table pages, captions and uncertain mappings default to retained source context', () => {
   const f = makeEvidenceFixture(['References', '1. Smith A. J Med. 2024;2:1-8.', '© 2024 Publisher.']);
   f.document.structure.units.push(unit(f, [], { kind: 'table', mapping: { ...unit(f, []).mapping, status: 'unmapped' } }));

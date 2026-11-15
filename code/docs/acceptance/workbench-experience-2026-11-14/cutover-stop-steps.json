@@ -1,0 +1,34 @@
+{
+  "status": "old_services_gracefully_stopped_without_active_tasks",
+  "steps": [
+    {
+      "at": "2026-11-14T09:03:57.045082+00:00",
+      "check": "GET /api/workbench/runs",
+      "active_runs": []
+    },
+    {
+      "at": "2026-11-14T09:03:57.045173+00:00",
+      "action": "SIGTERM old frontend wrapper33577; child33584 graceful close"
+    },
+    {
+      "at": "2026-11-14T09:03:57.169610+00:00",
+      "check": "GET /api/workbench/runs",
+      "active_runs": []
+    },
+    {
+      "at": "2026-11-14T09:03:57.444506+00:00",
+      "check": "GET /api/workbench/runs",
+      "active_runs": []
+    },
+    {
+      "at": "2026-11-14T09:03:57.444618+00:00",
+      "action": "SIGTERM old backend33530 after fresh0active"
+    },
+    {
+      "at": "2026-11-14T09:03:57.544845+00:00",
+      "check": "both real service listeners released",
+      "backend3210": false,
+      "frontend30141": false
+    }
+  ]
+}

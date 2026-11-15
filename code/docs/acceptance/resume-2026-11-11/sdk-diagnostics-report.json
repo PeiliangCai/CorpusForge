@@ -1,0 +1,57 @@
+{
+  "schema_version": "t1-SDK-error-observability-repair-1",
+  "reported_at_utc": "2026-11-11T10:51:51.955074+00:00",
+  "trigger": "IN06 preserved firstHTTP200 response failed before any observable provider event; original48-characterSDK message was retained only by SHA256 and cannot be recovered.",
+  "original_failure_not_fixed_or_retried": true,
+  "original_error": {
+    "application_code": "model_response_failed",
+    "SDK_classification": "unclassified_sdk_error",
+    "raw_message_characters": 48,
+    "raw_message_sha256": "c1c604bb7e48326f82d2c9cc9e842fcbcd895ef6cbc2ea75f45d84f9b2b9ac6e",
+    "exact_message_and_stack": "not retained by former implementation",
+    "HTTP_status": 200,
+    "provider_event_count": 0,
+    "returned_model": "unknown",
+    "usage": "missing;32768input/8192output reservation retained",
+    "source": "in06/model-regression/first-failed-batch.json",
+    "later_identified_exact_literal": "Service load is too high, please try again later",
+    "later_identification_basis": "Known IN07 safe message48characters produces exactly the originally stored SHA256; original body/stack still unavailable."
+  },
+  "read_only_installed_SDK_investigation": {
+    "static_48_character_literal_and_known_JS_runtime_message_hash_matches": 0,
+    "SDK_before_observer_paths": [
+      "node_modules/openai/core/streaming.mjs throws for event:error or parsed data.error before yielding it",
+      "Pi openai-responses-shared.js observer occurs only after OpenAI SDK yields an event",
+      "Pi openai-responses.js catches and normalizes exception to errorMessage; underlying exception type/stack not exposed"
+    ],
+    "actual_original_failure_class": "unknown; local mechanism reproduction is not original wire-body replay or proof of temporary capacity/transport"
+  },
+  "change_scope": [
+    "packages/agent/src/extraction-sdk-diagnostic.ts",
+    "packages/agent/src/extraction-pi.ts",
+    "tests/extraction/sdk-error-diagnostics.test.ts"
+  ],
+  "behavior": "Alongside retained raw-message SHA/length/classification, persist up to512Unicode-code-point redacted SDK error-message characters and explicit-prefix-only exception hint. Replace configured key before truncation; omit Authorization,token/credential values,URLs and request/response payload markers.",
+  "bounded_working_text_code_points": 8192,
+  "output_message_code_points": 512,
+  "no_underlying_exception_type_or_stack_invented": true,
+  "no_raw_prompt_or_complete_response_capture": true,
+  "unknown_errors_still_stop": true,
+  "retry_classification_or_limits_changed": false,
+  "model_prompt_input_parser_identity_rules_changed": false,
+  "validation": {
+    "new_tests": 6,
+    "selected_total_tests_passed": 21,
+    "typecheck": "passed",
+    "tests_log": "sdk-diagnostics-tests.log",
+    "typecheck_log": "sdk-diagnostics-typecheck.log",
+    "installed_SDK_HTTP200_top_error_before_observer_local_reproduction": "one physical loopback request, no observed model/usage, remains failed/no automatic retry; useful synthetic error survives, synthetic secrets/URL/payload do not"
+  },
+  "source_freeze": "diagnostic-source-freeze.json",
+  "new_external_model_calls": 0,
+  "current_effective_API_allowance": 0,
+  "medical_quality_approved": false,
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3,
+  "later_exact_error_literal_correlation": "in06/model-regression/diagnostic-correlation.json"
+}

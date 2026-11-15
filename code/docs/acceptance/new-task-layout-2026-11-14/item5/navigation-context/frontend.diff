@@ -1,0 +1,750 @@
+--- a/code/apps/pi-web/t1/T1Workbench.tsx
++++ b/code/apps/pi-web/t1/T1Workbench.tsx
+@@ -41,7 +41,7 @@
+ import { runPresentation } from "./run-presentation";
+ import { TaskCompletionNotes } from "./TaskCompletionNotes";
+ import { TableSupport } from "./TableSupport";
+-import { initialWorkbenchSelection, resultRunForPaper } from "./result-navigation";
++import { hasWorkbenchTaskContext, initialWorkbenchSelection, workbenchSelectionParams } from "./result-navigation";
+ import type { Scope } from "../../../packages/contracts/src/index";
+ import type { WorkbenchCapabilities, WorkbenchExportKind, WorkbenchPaper, WorkbenchPaperDetail, WorkbenchRun, WorkbenchRunDetail, WorkbenchScopeCatalog, WorkbenchModels } from "../../../packages/contracts/src/workbench";
+ 
+@@ -69,7 +69,7 @@
+   const [page, setPage] = useState(1), [revision, setRevision] = useState(0), [recordQuery, setRecordQuery] = useState("");
+   const [recordRole, setRecordRole] = useState("all"), [retentionView, setRetentionView] = useState("kept");
+   const [loading, setLoading] = useState(true), [error, setError] = useState(""), [detailError, setDetailError] = useState("");
+-  const [activeTab, setActiveTab] = useState("newTask"), [tabIds, setTabIds] = useState(["newTask", "records", "figures", "tasks"]);
++  const [activeTab, setActiveTab] = useState("newTask"), [tabIds, setTabIds] = useState(["newTask"]);
+   const [submissionRevision, setSubmissionRevision] = useState(0);
+   const [showSource, setShowSource] = useState(false), [showSidebar, setShowSidebar] = useState(true), [showNotes, setShowNotes] = useState(false);
+   const [menu, setMenu] = useState<SidebarMenuAnchor | null>(null), [toast, setToast] = useState<SidebarToastData | null>(null);
+@@ -86,8 +86,8 @@
+   const refreshRunRef = useRef<{ id: string; load: () => Promise<void> } | null>(null);
+   const refreshPaperRef = useRef<{ id: string; load: () => Promise<void> } | null>(null);
+   const refreshWorkspaceRef = useRef<(() => Promise<void>) | null>(null);
+-  const selectionRef = useRef({ paperId, runId, historyId });
+-  selectionRef.current = { paperId, runId, historyId };
++  const selectionRef = useRef({ paperId, runId, historyId, activeTab });
++  selectionRef.current = { paperId, runId, historyId, activeTab };
+   const refreshingRef = useRef(false), runsReadVersion = useRef(0);
+   const runMutationVersions = useRef(new Map<string, number>());
+   const [refreshing, setRefreshing] = useState(false), [refreshMessage, setRefreshMessage] = useState<{ failed: boolean; text: string } | null>(null);
+@@ -98,15 +98,18 @@
+   const sourceMax = useCallback(() => getRightPanelMaxWidth({ viewportWidth: window.innerWidth, sidebarOpen: showSidebar, sidebarWidth: sidebarWidth.current }), [showSidebar]);
+   const sidebar = useResizablePanel({ ariaLabel: t("t1.resizeNav"), cssVariable: "--t1-sidebar-width", defaultWidth: 224, getMaxWidth: sidebarMax, growthDirection: "right", minWidth: 180, maxWidth: 480, storageKey: "t1:pi-web:sidebar-width", widthRef: sidebarWidth });
+   const source = useResizablePanel({ ariaLabel: t("t1.resizeSource"), cssVariable: "--t1-source-width", defaultWidth: 520, getMaxWidth: sourceMax, growthDirection: "left", minWidth: 300, maxWidth: 1000, storageKey: "t1:pi-web:source-width", widthRef: sourceWidth });
+-  const tabs: Tab[] = tabIds.map(id => ({ id, label: t(`t1.${id}`), filePath: t(`t1.${id}`) }));
+   const selectedRun = runs.find(run => run.run_id === runId);
++  const currentPaper = detail?.paper.id === paperId ? detail : null;
++  const hasTaskContext = hasWorkbenchTaskContext({ paperId, runId, historyId }, papers, runs)
++    && (!historyId || !currentPaper || currentPaper.outputs.some(output => output.id === historyId));
++  const taskView = hasTaskContext && (activeTab === "records" || activeTab === "figures");
++  const tabs: Tab[] = tabIds.filter(id => hasTaskContext || id !== "records" && id !== "figures").map(id => ({ id, label: t(`t1.${id}`), filePath: t(`t1.${id}`) }));
+   const taskGroups = groupSubmittedRuns(runs), selectedGroup = taskGroups.find(group => group.runs.some(run => run.run_id === runId));
+   const batchId = selectedRun?.submission?.kind === "batch" ? selectedRun.submission.batch_id : undefined;
+   const batchResults = useBatchResults(batchId, selectedGroup?.runs ?? [], revision, errorText);
+   refreshBatchRef.current = batchId ? () => batchResults.reload() : null;
+-  const currentRun = runId && batchId ? batchResults.details[runId] ?? null : runDetail?.run.run_id === runId ? runDetail : null;
++  const currentRun = !selectedRun ? null : runId && batchId ? batchResults.details[runId] ?? null : runDetail?.run.run_id === runId ? runDetail : null;
+   const displayedRun = batchId && selectedGroup ? submissionRun(selectedGroup) : currentRun?.run ?? selectedRun;
+-  const currentPaper = detail?.paper.id === paperId ? detail : null;
+   const selectedOutput = runId ? currentRun?.output : currentPaper?.outputs.find(item => item.id === historyId);
+   const records = (batchId ? selectedGroup?.runs.flatMap(run => batchResults.details[run.run_id]?.output.records ?? []) : selectedOutput?.records)?.filter(record => !record.deleted) ?? [];
+   const query = recordQuery.trim().toLocaleLowerCase();
+@@ -118,21 +121,21 @@
+   const selectedRecordId = record ? resultRecordKey(record) : undefined;
+   const recordDetail = batchId && record ? batchResults.details[record.run_id] : currentRun;
+   const operationRunId = recordDetail?.run.run_id ?? runId;
+-  const { events, progressEvents, connection } = useRunEvents(operationRunId, true);
++  const { events, progressEvents, connection } = useRunEvents(taskView ? operationRunId : null, true);
+   const output = recordDetail?.output ?? selectedOutput;
+   // Source panels and writes follow the selected record's exact child run.
+-  const sourceDetail = runId ? recordDetail : historyId ? null : currentPaper;
++  const sourceDetail = selectedRun && recordDetail?.run.document_id === recordDetail?.paper.id ? recordDetail : null;
+   const loadingRun = Boolean((batchId ? batchResults.loading : runId && !currentRun || historyId && paperId && !currentPaper) && !detailError);
+   const unavailableHistory = Boolean(historyId && (!paperId || currentPaper && !output));
+   const missingHistoricalSource = Boolean(historyId && output);
+   const recordPosition = record ? visibleRecords.indexOf(record) : -1;
+   const firstSourcePage = record?.fragments[0]?.physical_page;
+-  const paper = recordDetail?.paper ?? (runId ? papers.find(item => item.id === (record?.run_id ? selectedGroup?.runs.find(run => run.run_id === record.run_id)?.document_id : paperId)) : currentPaper?.paper ?? papers.find(item => item.id === paperId));
++  const paper = recordDetail?.paper ?? (hasTaskContext ? papers.find(item => item.id === (record?.run_id ? selectedGroup?.runs.find(run => run.run_id === record.run_id)?.document_id ?? paperId : paperId)) : undefined);
+   const figures = sourceDetail?.figures ?? [];
+   const sourceStatus = sourceDetail?.source_status ?? (sourceDetail && "source_verified" in sourceDetail && sourceDetail.source_verified ? "valid" : "not_parsed");
+   const sourceIssues = sourceDetail?.source_issues ?? [];
+   const sourceBlocked = sourceStatus === "missing" || sourceStatus === "mismatch";
+-  const pdfUrl = sourceDetail?.pdf_url;
++  const pdfUrl = taskView && !sourceBlocked ? sourceDetail?.pdf_url : undefined;
+   const units = sourceDetail?.source_units ?? [];
+   const editable = Boolean(operationRunId && recordDetail && capabilities?.persisted_review);
+   const paperRuns = runs.filter(run => run.document_id === paperId);
+@@ -142,6 +145,12 @@
+   useEffect(() => { if (mobile) setShowSidebar(false); }, [mobile]);
+   useEffect(() => { setRecordQuery(""); setRecordRole("all"); setRetentionView("kept"); }, [paperId, runId, historyId]);
+   useEffect(() => { setShowNotes(false); setEditor(null); setExportError(""); }, [paperId, runId, historyId]);
++  useEffect(() => { if (!taskView) { setShowSource(false); setShowNotes(false); setEditor(null); } }, [taskView]);
++  useEffect(() => {
++    if (initialized.current && !loading && (runId || historyId) && !hasTaskContext) clearTaskSelection();
++    // A task can disappear through another page's deletion or a fresh list read.
++    // Clear its context without selecting another paper or resetting the draft.
++  }, [hasTaskContext, runId, historyId, loading]);
+   // Follow a newly selected record once; polling and version updates must not
+   // steal a page the reviewer selected manually.
+   useEffect(() => {
+@@ -179,12 +188,23 @@
+   }
+   const currentErrorText = useRef(errorText);
+   useEffect(() => { currentErrorText.current = errorText; });
+-  function openTab(id: string) { setTabIds(current => current.includes(id) ? current : [...current, id]); setActiveTab(id); }
++  function openTab(id: string) {
++    if ((id === "records" || id === "figures") && !hasTaskContext) return;
++    setTabIds(current => current.includes(id) ? current : [...current, id]); setActiveTab(id);
++  }
+   function newTask() { setShowSource(false); setActionError(""); openTab("newTask"); if (mobile) setShowSidebar(false); }
+   function chooseModel(id: string) { setModelProfileId(id); try { localStorage.setItem("t1:extraction-model-profile", id); } catch { /* In-memory selection still works. */ } }
+   function selectRun(run: WorkbenchRun) {
+     if (deletedRuns.current.has(run.run_id)) return;
+-    setRestoreFile(null); setPaperId(run.document_id); setRunId(run.run_id); setHistoryId(""); setRecordId(""); setPage(1); setActionError(""); openTab("records"); if (mobile) setShowSidebar(false);
++    setRestoreFile(null); setPaperId(run.document_id); setRunId(run.run_id); setHistoryId(""); setRecordId(""); setPage(1); setActionError("");
++    setTabIds(current => current.includes("records") ? current : [...current, "records"]); setActiveTab("records"); if (mobile) setShowSidebar(false);
++  }
++  function clearTaskSelection() {
++    setPaperId(""); setRunId(null); setHistoryId(""); setRecordId(""); setRunDetail(null); setDetail(null); setPage(1);
++    setShowSource(false); setShowNotes(false); setEditor(null); setRestoreFile(null); setDetailError(""); setActionError("");
++    const globalTab = selectionRef.current.activeTab === "tasks" ? "tasks" : "newTask";
++    selectionRef.current = { paperId: "", runId: null, historyId: "", activeTab: globalTab };
++    setTabIds(current => [...new Set([...current.filter(id => id === "newTask" || id === "tasks"), globalTab])]); setActiveTab(globalTab);
+   }
+   const visibleRun = (run: WorkbenchRun) => !deletedRuns.current.has(run.run_id) && !(run.submission?.kind === "batch" && deletedBatches.current.has(run.submission.batch_id));
+   const cleanPaper = (paper: WorkbenchPaper) => ({ ...paper, output_ids: paper.output_ids.filter(id => !deletedRuns.current.has(id)) });
+@@ -198,7 +218,7 @@
+     setDeleteError(""); setDeleteTarget({ runId: run.run_id, paperId: run.document_id, title: run.submission?.kind === "batch" ? group?.taskTitle ?? t("t1.taskBatch") : taskDisplayTitle(run, papers.find(paper => paper.id === run.document_id)), createdAt: run.created_at, modelId: run.model_id, opener,
+       ...(run.submission?.kind === "batch" ? { batchId: run.submission.batch_id, members: (group?.runs ?? [run]).map(member => ({ runId: member.run_id, paperId: member.document_id, filename: originalRunFilename(member, papers.find(paper => paper.id === member.document_id)) })) } : {}) });
+   }
+-  function sourcePage(value: number) { setPage(value); setShowSource(true); if (window.matchMedia("(max-width: 900px)").matches && pdfUrl) window.open(`${pdfUrl}#page=${value}`, "_blank", "noopener,noreferrer"); }
++  function sourcePage(value: number) { if (!taskView || !pdfUrl) return; setPage(value); setShowSource(true); if (window.matchMedia("(max-width: 900px)").matches) window.open(`${pdfUrl}#page=${value}`, "_blank", "noopener,noreferrer"); }
+   const refresh = () => setRevision(value => value + 1);
+   const reloadCurrent = async () => { if (batchId) await batchResults.reload(operationRunId ?? undefined); else await refreshRunRef.current?.load(); };
+ 
+@@ -249,7 +269,14 @@
+         if (!initialized.current) {
+           const selected = initialWorkbenchSelection(new URLSearchParams(window.location.search), listed.papers, tasks.runs);
+           setPaperId(selected.paperId); setRunId(selected.runId); setHistoryId(selected.historyId); setRecordId(selected.recordId); setActiveTab(selected.activeTab);
++          setTabIds([selected.activeTab]);
++          // Even a normalized empty selection may equal the initial React
++          // values, so its URL effect would not run after the first list read.
++          window.history.replaceState(null, "", `/?${workbenchSelectionParams(selected)}`);
+           initialized.current = true;
++        } else if (version === runsReadVersion.current && (selectionRef.current.runId || selectionRef.current.historyId)
++          && !hasWorkbenchTaskContext(selectionRef.current, listed.papers, tasks.runs.filter(visibleRun))) {
++          clearTaskSelection();
+         }
+         // Keep the saved task lists usable, while reporting a partial refresh as a failure.
+         if (rawChoices.error) throw rawChoices.error;
+@@ -269,7 +296,6 @@
+       flight = api<WorkbenchPaperDetail>(`workbench/papers/${encodeURIComponent(paperId)}`, { signal: controller.signal }).then(value => {
+       if (controller.signal.aborted) return;
+       const cleaned = cleanPaperDetail(value); setDetail(cleaned);
+-      if (!selectionRef.current.runId && !selectionRef.current.historyId) setHistoryId(cleaned.outputs.find(item => item.strategy === "B0")?.id ?? cleaned.outputs[0]?.id ?? "");
+       }).catch(cause => { if (!controller.signal.aborted && !refreshingRef.current) setDetailError(errorText(cause)); throw cause; }).finally(() => { flight = null; });
+       return flight;
+     }
+@@ -290,8 +316,12 @@
+           const mutationVersion = runMutationVersions.current.get(runId!) ?? 0;
+           try {
+             const value = await api<RunDetail>(`workbench/runs/${encodeURIComponent(runId!)}`, { signal: controller.signal });
+-            if (!controller.signal.aborted && !deletedRuns.current.has(runId!) && mutationVersion === (runMutationVersions.current.get(runId!) ?? 0)) { setRunDetail(value); setDetailError(""); setPapers(current => current.map(paper => paper.id === value.paper.id ? cleanPaper(value.paper) : paper)); }
+-          } catch (cause) { if (!controller.signal.aborted && !refreshingRef.current && !cancellingRef.current.has(runId!) && !deletedRuns.current.has(runId!)) setDetailError(errorText(cause)); throw cause; }
++            if (value.run.run_id !== runId || value.output.id !== runId || value.run.document_id !== value.paper.id || value.output.records.some(record => record.run_id !== runId)) throw new Error(t("t1.selectedRunUnavailable"));
++            if (!controller.signal.aborted && selectionRef.current.runId === runId && !deletedRuns.current.has(runId!) && mutationVersion === (runMutationVersions.current.get(runId!) ?? 0)) { setRunDetail(value); setDetailError(""); setPapers(current => current.map(paper => paper.id === value.paper.id ? cleanPaper(value.paper) : paper)); }
++          } catch (cause) {
++            if (!controller.signal.aborted && selectionRef.current.runId === runId && cause instanceof WorkbenchError && cause.code === "workbench_run_not_found") { clearTaskSelection(); return; }
++            if (!controller.signal.aborted && !refreshingRef.current && !cancellingRef.current.has(runId!) && !deletedRuns.current.has(runId!)) setDetailError(errorText(cause)); throw cause;
++          }
+         } while (dirty && !controller.signal.aborted);
+       })();
+       try { await flight; } finally { flight = null; }
+@@ -304,13 +334,9 @@
+   }, [runId, revision]);
+   useEffect(() => {
+     if (!initialized.current) return;
+-    const params = new URLSearchParams();
+-    if (paperId) params.set("paper", paperId);
+-    if (runId) params.set("run", runId); else if (historyId) params.set("history", historyId);
+-    if (recordId) params.set("record", recordId);
+-    params.set("view", activeTab);
++    const params = workbenchSelectionParams({ paperId: taskView ? paperId : "", runId: taskView ? runId : null, historyId: taskView ? historyId : "", recordId: taskView ? recordId : "", activeTab });
+     window.history.replaceState(null, "", `/?${params}`);
+-  }, [paperId, runId, historyId, recordId, activeTab]);
++  }, [paperId, runId, historyId, recordId, activeTab, taskView]);
+   const lastEvent = events.at(-1)?.seq ?? 0;
+   useEffect(() => {
+     if (!lastEvent) return;
+@@ -385,9 +411,7 @@
+       setRunDetail(current => current && ids.has(current.run.run_id) ? null : current);
+       const selected = selectionRef.current;
+       if (selected.runId && ids.has(selected.runId) || selected.historyId && ids.has(selected.historyId)) {
+-        const fallback = resultRunForPaper(target.paperId, remaining);
+-        setPaperId(fallback?.document_id ?? target.paperId); setRunId(fallback?.run_id ?? null); setHistoryId(""); setRecordId(""); setDetailError(""); setActionError("");
+-        if (!fallback) newTask();
++        clearTaskSelection();
+       }
+   }
+   async function deleteRun(target: RunDeleteTarget) {
+@@ -419,10 +443,11 @@
+     return t(`t1.${runPresentation(run.state, run).statusKey}`);
+   }
+   const selectedEditorRecord = editor?.record ? records.find(item => item.id === editor.record && item.run_id === editor.run) ?? null : null;
+-  const workspaceTitle = activeTab === "newTask" ? t("t1.newTask") : displayedRun && activeTab !== "figures" ? batchId ? selectedGroup?.taskTitle ?? t("t1.taskBatch") : taskDisplayTitle(displayedRun, paper) : paper?.title ?? t("t1.newTask");
++  const workspaceTitle = activeTab === "newTask" || activeTab === "tasks" ? t(`t1.${activeTab}`) : taskView ? displayedRun ? batchId ? selectedGroup?.taskTitle ?? t("t1.taskBatch") : taskDisplayTitle(displayedRun, paper) : paper?.title ?? t("t1.historical") : t("t1.title");
++  const sourceActions = pdfUrl && <><button className="t1-button t1-source-toggle" aria-pressed={showSource} onClick={() => setShowSource(value => !value)}><EyeIcon size={15} />{t(showSource ? "t1.hideOriginal" : "t1.showOriginal")}</button><a className="t1-button t1-mobile-source" href={`${pdfUrl}#page=${page}`} target="_blank" rel="noreferrer"><OpenInNewTabIcon size={14} />{t("t1.openOriginal")}</a></>;
+ 
+   return <div className="t1-workbench" ref={sidebar.panelRef} data-source-open={showSource && Boolean(pdfUrl)}>
+-    <header className="t1-topbar"><div className="t1-brand"><span>T1</span><strong>{t("t1.title")}</strong></div>
++    <header className="t1-topbar"><div className="t1-brand"><button type="button" className="t1-nav-toggle" onClick={() => setShowSidebar(value => !value)} aria-label={t("t1.toggleNav")} title={t("t1.toggleNav")} aria-expanded={showSidebar}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></svg></button><span>T1</span><strong>{t("t1.title")}</strong></div>
+       <div className="t1-top-actions"><select aria-label={t("t1.language")} value={locale} onChange={e => setLocale(e.target.value as typeof locale)}>{supportedLocales.map(item => <option value={item.id} key={item.id}>{item.label}</option>)}</select><button onClick={() => void refreshWorkspace()} disabled={loading || refreshing} aria-busy={refreshing} aria-label={t(refreshing ? "t1.refreshing" : "t1.refresh")} title={t(refreshing ? "t1.refreshing" : "t1.refresh")}><RefreshIcon size={16} /></button><button aria-label={t("t1.theme")} title={t("t1.theme")} onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); setMenu({ kind: "rect", rect, align: "end" }); }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M20.8 13.2A9 9 0 0 1 10.8 3.1 9 9 0 1 0 20.8 13.2Z" /></svg></button></div>
+     </header>
+     <span className="t1-sr-only" role="status" aria-live="polite">{refreshing ? t("t1.refreshing") : ""}</span>
+@@ -433,22 +458,22 @@
+     <div className="t1-body" ref={source.panelRef}>
+       {showSidebar && <><aside className="t1-sidebar" aria-label={t("t1.submittedTasks")}><div className="t1-sidebar-heading"><strong>{t("t1.submittedTasks")}</strong><span>{taskGroups.length}</span><button className="t1-sidebar-close" aria-label={t("t1.close")} onClick={() => setShowSidebar(false)}><CloseIcon size={18} /></button></div>
+         <button className="t1-new-task" onClick={newTask}><PlusIcon size={16} />{t("t1.newTask")}</button>
+-        <div className="t1-paper-list-region" aria-busy={refreshing}><SubmissionRunList variant="sidebar" runs={runs} papers={papers} selectedId={runId ?? historyId} menuRunId={taskMenu?.runId} onSelect={selectRun} onMenu={openRunMenu} statusLabel={runLabel} />{refreshing && <div className="t1-refresh-overlay" aria-hidden="true" />}</div>
++        <div className="t1-paper-list-region" aria-busy={refreshing}><SubmissionRunList variant="sidebar" runs={runs} papers={papers} selectedId={taskView ? runId ?? historyId : null} menuRunId={taskMenu?.runId} onSelect={selectRun} onMenu={openRunMenu} statusLabel={runLabel} />{refreshing && <div className="t1-refresh-overlay" aria-hidden="true" />}</div>
+         <div className="t1-sidebar-bottom"><button onClick={() => openTab("tasks")}><MessageIcon size={15} />{t("t1.tasks")}</button><DetailDisclosure title={t("t1.aboutWorkbench")}><p>Pi Web 0.15.0 · T1 Pi SDK 1.4.0</p></DetailDisclosure></div>
+         <SidebarToast toast={toast} onDismiss={() => setToast(null)} dismissLabel={t("t1.close")} /></aside><div className="t1-resize" {...sidebar.separatorProps} /></>}
+-      <main className="t1-main"><div className="t1-workspace-bar"><button onClick={() => setShowSidebar(value => !value)} aria-label={t("t1.toggleNav")} title={t("t1.toggleNav")} aria-expanded={showSidebar}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></svg></button><span title={workspaceTitle}>{workspaceTitle}</span><button className="t1-source-toggle" aria-pressed={showSource} onClick={() => setShowSource(value => !value)}><EyeIcon size={15} />{t(showSource ? "t1.hideOriginal" : "t1.showOriginal")}</button>{pdfUrl && <a className="t1-mobile-source" href={`${pdfUrl}#page=${page}`} target="_blank" rel="noreferrer"><OpenInNewTabIcon size={14} />{t("t1.openOriginal")}</a>}</div>
++      <main className="t1-main"><div className="t1-workspace-bar"><span title={workspaceTitle}>{workspaceTitle}</span></div>
+         <TabBar tabs={tabs} activeTabId={activeTab} onSelectTab={setActiveTab} onCloseTab={id => { const next = tabIds.filter(tab => tab !== id); setTabIds(next); if (activeTab === id) setActiveTab(next[0] ?? ""); }} onReorderTab={(from, to, after) => setTabIds(current => movePanelTab(current, from, to, after))} />
+         <div className="t1-content-region" aria-busy={refreshing}><div className="t1-content" data-view={activeTab} data-source-blocked={sourceBlocked}>
+           {loading && <p className="t1-status" role="status">{t("t1.loading")}</p>}
+           {error && <div className="t1-alert" role="alert">{error}<button onClick={refresh}>{t("t1.retry")}</button></div>}
+           {cleanupTarget && !deleteTarget && <div className="t1-alert t1-cleanup-recovery" role="alert"><span>{t("t1.runCleanupPending")} · {cleanupTarget.title}</span><button className="t1-button" onClick={() => { setDeleteTarget(cleanupTarget); setDeleteError(t("t1.runCleanupPending")); }}>{t("t1.retryCleanup")}</button></div>}
+-          {batchId && Object.entries(batchResults.errors).map(([id, text]) => <div className="t1-alert" role="alert" key={id}>{t("t1.batchMemberReadFailed", { name: selectedGroup?.runs.find(run => run.run_id === id)?.original_filename ?? id })} · {text}<button className="t1-button" onClick={() => void batchResults.reload(id)}>{t("t1.retry")}</button></div>)}
+-          {actionError && <div className="t1-alert" role="alert">{actionError}</div>}
+-          {detailError && activeTab !== "newTask" && <div className="t1-alert" role="alert">{detailError}<button onClick={refresh}>{t("t1.retry")}</button></div>}
+-          {sourceBlocked && activeTab !== "newTask" && <div className="t1-alert" role="alert">{t("t1.sourceProblem")}{[...new Set(sourceIssues.map(sourceIssueText))].map((issue, i) => <p key={i}>{issue}</p>)}<DetailDisclosure key={operationRunId} title={t("t1.sourceVersion")}>{sourceIssues.join(" · ")}</DetailDisclosure></div>}
+-          {sourceBlocked && activeTab !== "newTask" && paper && <section className="t1-source-recovery"><p>{t("t1.restoreHelp")}</p><label className="t1-field">{t("t1.selectRestorePdf")}<input type="file" accept="application/pdf,.pdf" aria-label={t("t1.selectRestorePdf")} onChange={e => setRestoreFile(e.target.files?.[0] ?? null)} /></label><button className="t1-primary" disabled={!restoreFile || restoreBusy} onClick={() => void restoreOriginal()}>{t("t1.restorePdf")}</button></section>}
++          {taskView && batchId && Object.entries(batchResults.errors).map(([id, text]) => <div className="t1-alert" role="alert" key={id}>{t("t1.batchMemberReadFailed", { name: selectedGroup?.runs.find(run => run.run_id === id)?.original_filename ?? id })} · {text}<button className="t1-button" onClick={() => void batchResults.reload(id)}>{t("t1.retry")}</button></div>)}
++          {actionError && taskView && <div className="t1-alert" role="alert">{actionError}</div>}
++          {detailError && taskView && <div className="t1-alert" role="alert">{detailError}<button onClick={refresh}>{t("t1.retry")}</button></div>}
++          {sourceBlocked && taskView && <div className="t1-alert" role="alert">{t("t1.sourceProblem")}{[...new Set(sourceIssues.map(sourceIssueText))].map((issue, i) => <p key={i}>{issue}</p>)}<DetailDisclosure key={operationRunId} title={t("t1.sourceVersion")}>{sourceIssues.join(" · ")}</DetailDisclosure></div>}
++          {sourceBlocked && taskView && paper && <section className="t1-source-recovery"><p>{t("t1.restoreHelp")}</p><label className="t1-field">{t("t1.selectRestorePdf")}<input type="file" accept="application/pdf,.pdf" aria-label={t("t1.selectRestorePdf")} onChange={e => setRestoreFile(e.target.files?.[0] ?? null)} /></label><button className="t1-primary" disabled={!restoreFile || restoreBusy} onClick={() => void restoreOriginal()}>{t("t1.restorePdf")}</button></section>}
+           {capabilities?.controlled_fixture && <p className="t1-fixture-banner">{t("t1.fixture")}</p>}
+-          {!activeTab && <div className="t1-empty">{["newTask", "records", "figures", "tasks"].map(id => <button key={id} onClick={() => openTab(id)}>{t(`t1.${id}`)}</button>)}</div>}
++          {!activeTab && <div className="t1-empty">{(hasTaskContext ? ["newTask", "records", "figures", "tasks"] : ["newTask", "tasks"]).map(id => <button key={id} onClick={() => openTab(id)}>{t(`t1.${id}`)}</button>)}</div>}
+           <section className="t1-new-task-panel" hidden={activeTab !== "newTask"}><div className="t1-heading"><h1>{t("t1.newTask")}</h1><span className="t1-badge">B0</span></div>
+             <BatchSubmission key={submissionRevision} scope={scope} catalog={catalog} onScopeChange={setScope} canUpload={Boolean(capabilities?.paper_upload)} canStart={Boolean(capabilities?.extraction_start)} runs={runs} modelProfile={selectedModel} modelRequired={Boolean(capabilities?.model_selection)} errorText={errorText}
+               modelSelection={(capabilities?.model_selection && models || modelRuntime) ? <section className="t1-task-card t1-model-configuration" aria-label={t("t1.modelConfiguration")}>
+@@ -468,7 +493,7 @@
+                 {state && <div className="t1-task-progress" role="status" data-state={state} data-status={presentation.statusKey}><button className="t1-status-button" onClick={() => setShowNotes(true)}><span className="t1-status-dot" />{t(`t1.${presentation.statusKey}`)}</button>{runId && (batchId ? selectedGroup?.runs.some(canCancelRun) : canCancelRun({ state })) && <button className="t1-button" disabled={cancelling.has(runId)} aria-busy={cancelling.has(runId)} onClick={() => void cancelRun(runId)}>{t(cancelling.has(runId) ? "t1.cancelling" : "t1.cancel")}</button>}</div>}
+                 {presentation.sourceLimited && <button className="t1-source-limits-chip" onClick={() => setShowNotes(true)}>{t("t1.sourceLimitsBadge")}</button>}
+               </div>
+-              <div className="t1-results-actions"><button className="t1-button t1-notes-toggle" aria-haspopup="dialog" aria-expanded={showNotes} onClick={() => setShowNotes(true)}><MessageIcon size={14} />{t("t1.notes")}</button>
++              <div className="t1-results-actions">{hasTaskContext && <button className="t1-button" onClick={() => openTab("figures")}>{t("t1.figures")}</button>}{sourceActions}<button className="t1-button t1-notes-toggle" aria-haspopup="dialog" aria-expanded={showNotes} onClick={() => setShowNotes(true)}><MessageIcon size={14} />{t("t1.notes")}</button>
+                 {runId && currentRun && <details className="t1-exports"><summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5" /></svg>{t("t1.exportTitle")}<ChevronIcon size={12} /></summary><div className="t1-export-options" aria-label={t("t1.exportFormat")}>{(batchId ? ["retained_package" as const] : exportKinds).map(kind => <button key={kind} disabled={Boolean(download) || (batchId ? batchResults.loading || Object.keys(batchResults.errors).length > 0 : sourceBlocked) || !capabilities?.retained_export || keptCount === 0} onClick={() => void downloadExport(kind)}>{t(`t1.${kind}`)}</button>)}</div></details>}
+               </div>
+             </div>
+@@ -501,12 +526,12 @@
+               </>}
+             </section>
+           </>}
+-          {activeTab === "figures" && <><div className="t1-heading"><h1>{t("t1.figures")}</h1></div><p className="t1-lead">{t("t1.independentFigure")}</p>{batchId && recordDetail && <p className="t1-record-provenance">{t("t1.resultPaper")} · {originalRunFilename(recordDetail.run, recordDetail.paper)} <small>#{recordDetail.run.run_id.slice(-8)}</small></p>}{figures.length ? figures.map(figure => <FigureView key={`${operationRunId}:${figure.id}`} figure={figure} onPage={sourcePage} />) : <p className="t1-empty">{t(loadingRun ? "t1.loadingSelectedRun" : missingHistoricalSource ? "t1.historicalSourceUnavailable" : unavailableHistory ? "t1.selectedRunUnavailable" : runId && !currentRun ? "t1.runSourceUnavailable" : "t1.noFigures")}</p>}</>}
+-          {activeTab === "tasks" && <><div className="t1-heading"><h1>{t("t1.tasks")}</h1><span className="t1-badge">{t("t1.submittedTaskCount", { count: taskGroups.length })}</span></div><p className="t1-lead">{t("t1.groupedTasksHelp")}</p><label className="t1-record-search"><SearchIcon size={14} /><input type="search" aria-label={t("t1.findTask")} placeholder={t("t1.findTask")} value={taskQuery} onChange={event => setTaskQuery(event.target.value)} /></label><SubmissionRunList query={taskQuery} variant="history" runs={runs} papers={papers} selectedId={runId ?? historyId} menuRunId={taskMenu?.runId} onSelect={selectRun} onMenu={openRunMenu} statusLabel={runLabel} /></>}
++          {activeTab === "figures" && <><div className="t1-heading t1-results-heading"><h1>{t("t1.figures")}</h1><div className="t1-results-actions">{hasTaskContext && <button className="t1-button" onClick={() => openTab("records")}>{t("t1.extractionResults")}</button>}{sourceActions}</div></div><p className="t1-lead">{t("t1.independentFigure")}</p>{batchId && recordDetail && <p className="t1-record-provenance">{t("t1.resultPaper")} · {originalRunFilename(recordDetail.run, recordDetail.paper)} <small>#{recordDetail.run.run_id.slice(-8)}</small></p>}{figures.length ? figures.map(figure => <FigureView key={`${operationRunId}:${figure.id}`} figure={figure} onPage={sourcePage} />) : <p className="t1-empty">{t(loadingRun ? "t1.loadingSelectedRun" : missingHistoricalSource ? "t1.historicalSourceUnavailable" : unavailableHistory ? "t1.selectedRunUnavailable" : runId && !currentRun ? "t1.runSourceUnavailable" : "t1.noFigures")}</p>}</>}
++          {activeTab === "tasks" && <><div className="t1-heading"><h1>{t("t1.tasks")}</h1><span className="t1-badge">{t("t1.submittedTaskCount", { count: taskGroups.length })}</span></div><p className="t1-lead">{t("t1.groupedTasksHelp")}</p><label className="t1-record-search"><SearchIcon size={14} /><input type="search" aria-label={t("t1.findTask")} placeholder={t("t1.findTask")} value={taskQuery} onChange={event => setTaskQuery(event.target.value)} /></label><SubmissionRunList query={taskQuery} variant="history" runs={runs} papers={papers} selectedId={null} menuRunId={taskMenu?.runId} onSelect={selectRun} onMenu={openRunMenu} statusLabel={runLabel} /></>}
+ 
+         </div>{refreshing && <div className="t1-refresh-overlay" aria-hidden="true" />}</div>
+       </main>
+-      {showSource && paper && pdfUrl && <><div className="t1-resize" {...source.separatorProps} /><aside className="t1-source" aria-label={t("t1.originalPdf")}><div className="t1-source-heading"><strong title={paper.filename ?? paper.title}><GenericFileIcon size={15} />{batchId ? paper.filename ?? paper.title : t("t1.originalPdf")}</strong><a href={`${pdfUrl}#page=${page}`} target="_blank" rel="noreferrer">{t("t1.openOriginal")}<OpenInNewTabIcon size={13} /></a></div>{sourceBlocked ? <p className="t1-alert">{t("t1.sourceProblem")}</p> : <PdfSource key={`${paper.id}:${paper.sha256}`} url={pdfUrl} sha256={paper.sha256} page={page} pages={paper.pages} onPage={sourcePage} />}<div className="t1-source-footer"><small>{t("t1.sourceUnchanged")}</small><DetailDisclosure key={paper.id} title={t("t1.sourceVersion")}><code>SHA256 {paper.sha256}</code></DetailDisclosure></div></aside></>}
++      {taskView && showSource && paper && pdfUrl && <><div className="t1-resize" {...source.separatorProps} /><aside className="t1-source" aria-label={t("t1.originalPdf")}><div className="t1-source-heading"><strong title={paper.filename ?? paper.title}><GenericFileIcon size={15} />{batchId ? paper.filename ?? paper.title : t("t1.originalPdf")}</strong><a href={`${pdfUrl}#page=${page}`} target="_blank" rel="noreferrer">{t("t1.openOriginal")}<OpenInNewTabIcon size={13} /></a></div>{sourceBlocked ? <p className="t1-alert">{t("t1.sourceProblem")}</p> : <PdfSource key={`${paper.id}:${paper.sha256}`} url={pdfUrl} sha256={paper.sha256} page={page} pages={paper.pages} onPage={sourcePage} />}<div className="t1-source-footer"><small>{t("t1.sourceUnchanged")}</small><DetailDisclosure key={paper.id} title={t("t1.sourceVersion")}><code>SHA256 {paper.sha256}</code></DetailDisclosure></div></aside></>}
+       {refreshing && <RefreshIndicator label={t("t1.refreshing")} />}
+     </div>
+     <WorkbenchNotes open={showNotes} title={t(editor ? "t1.editTitle" : "t1.notes")} onClose={() => { setShowNotes(false); setEditor(null); }}>
+--- a/code/apps/pi-web/t1/result-navigation.ts
++++ b/code/apps/pi-web/t1/result-navigation.ts
+@@ -2,31 +2,36 @@
+ 
+ const views = ["newTask", "records", "figures", "tasks"];
+ 
+-/** Prefer saved evidence when opening a paper, without altering an explicit run/history link. */
+-export function resultRunForPaper(paperId: string, runs: WorkbenchRun[]) {
+-  return runs.find(run => run.document_id === paperId && run.candidate_count > 0)
+-    ?? runs.find(run => run.document_id === paperId);
++export function hasWorkbenchTaskContext(selection: { runId: string | null; historyId: string; paperId: string }, papers: readonly WorkbenchPaper[], runs: readonly WorkbenchRun[]) {
++  if (selection.runId) return runs.some(run => run.run_id === selection.runId);
++  return Boolean(selection.historyId && papers.some(paper => paper.id === selection.paperId && paper.output_ids.includes(selection.historyId)));
+ }
+ 
++/** Global pages never inherit a paper. Task pages require an explicit existing
++ * run or saved history identity; an orphaned PDF cannot create task context. */
+ export function initialWorkbenchSelection(params: URLSearchParams, papers: WorkbenchPaper[], runs: WorkbenchRun[]) {
++  const view = params.get("view"), globalView = view === "newTask" || view === "tasks";
+   const requestedRunId = params.get("run"), requestedHistoryId = requestedRunId ? "" : params.get("history") ?? "";
+-  const linkedRun = runs.find(run => run.run_id === (requestedRunId || requestedHistoryId));
++  const linkedRun = globalView ? undefined : runs.find(run => run.run_id === (requestedRunId || requestedHistoryId));
+   const linkedPaper = papers.find(paper => paper.id === params.get("paper"));
+-  const paper = papers.find(paper => paper.id === linkedRun?.document_id)
+-    ?? linkedPaper
+-    ?? (requestedRunId || requestedHistoryId ? undefined :
+-      papers.find(paper => runs.some(run => run.document_id === paper.id && run.candidate_count > 0))
+-      ?? papers.find(paper => paper.output_ids.length > 0)
+-      ?? papers[0]);
+-  const historyId = linkedRun || requestedRunId ? "" : requestedHistoryId;
+-  const run = linkedRun ?? (requestedRunId || historyId ? undefined : resultRunForPaper(paper?.id ?? "", runs));
+-  const runId = requestedRunId || run?.run_id || null;
+-  const view = params.get("view");
++  const historyId = !globalView && !linkedRun && !requestedRunId && linkedPaper?.output_ids.includes(requestedHistoryId) ? requestedHistoryId : "";
++  const hasContext = Boolean(linkedRun || historyId);
+   return {
+-    paperId: paper?.id ?? "",
+-    runId,
++    paperId: linkedRun?.document_id ?? (historyId ? linkedPaper!.id : ""),
++    runId: linkedRun?.run_id ?? null,
+     historyId,
+-    recordId: params.get("record") ?? "",
+-    activeTab: views.includes(view ?? "") ? view! : runId || historyId || paper?.output_ids.length ? "records" : "newTask",
++    recordId: hasContext ? params.get("record") ?? "" : "",
++    activeTab: globalView ? view! : hasContext ? views.includes(view ?? "") ? view! : "records" : "newTask",
+   };
+ }
++
++export function workbenchSelectionParams(selection: { paperId: string; runId: string | null; historyId: string; recordId: string; activeTab: string }) {
++  const params = new URLSearchParams();
++  if ((selection.activeTab === "records" || selection.activeTab === "figures") && (selection.runId || selection.historyId)) {
++    if (selection.paperId) params.set("paper", selection.paperId);
++    if (selection.runId) params.set("run", selection.runId); else params.set("history", selection.historyId);
++    if (selection.recordId) params.set("record", selection.recordId);
++  }
++  params.set("view", selection.activeTab);
++  return params;
++}
+--- a/code/apps/pi-web/t1/result-navigation.test.ts
++++ b/code/apps/pi-web/t1/result-navigation.test.ts
+@@ -1,12 +1,12 @@
+ import assert from "node:assert/strict";
+ import test from "node:test";
+-import { initialWorkbenchSelection, resultRunForPaper } from "./result-navigation";
++import { hasWorkbenchTaskContext, initialWorkbenchSelection, workbenchSelectionParams } from "./result-navigation";
+ import type { WorkbenchPaper, WorkbenchRun } from "../../../packages/contracts/src/workbench";
+ 
+ const papers = [
+   { id: "empty", output_ids: [] },
+   { id: "paper-a", output_ids: ["old-a", "new-empty-a"] },
+-  { id: "paper-b", output_ids: ["b"] },
++  { id: "paper-b", output_ids: ["b", "archived-b"] },
+ ] as WorkbenchPaper[];
+ const runs = [
+   { run_id: "new-empty-a", document_id: "paper-a", candidate_count: 0 },
+@@ -14,11 +14,10 @@
+   { run_id: "old-a", document_id: "paper-a", candidate_count: 7 },
+ ] as WorkbenchRun[];
+ 
+-test("opening the workbench surfaces retained evidence instead of an empty upload screen", () => {
++test("a fresh workbench opens creation without selecting an arbitrary saved paper or task", () => {
+   assert.deepEqual(initialWorkbenchSelection(new URLSearchParams(), papers, runs), {
+-    paperId: "paper-a", runId: "old-a", historyId: "", recordId: "", activeTab: "records",
++    paperId: "", runId: null, historyId: "", recordId: "", activeTab: "newTask",
+   });
+-  assert.equal(resultRunForPaper("paper-a", runs)?.run_id, "old-a");
+ });
+ 
+ test("an exact run and record deep link takes precedence over paper defaults", () => {
+@@ -29,29 +28,31 @@
+   assert.equal(selected.activeTab, "figures");
+ });
+ 
+-test("historical links and an explicit new-task view remain selectable", () => {
++test("only an explicitly listed historical output creates a history context", () => {
+   const selected = initialWorkbenchSelection(new URLSearchParams("paper=paper-b&history=archived-b&record=record-2"), papers, runs);
+   assert.equal(selected.runId, null);
+   assert.equal(selected.historyId, "archived-b");
+   assert.equal(selected.paperId, "paper-b");
+   assert.equal(selected.activeTab, "records");
+-  assert.equal(initialWorkbenchSelection(new URLSearchParams("view=newTask"), papers, runs).activeTab, "newTask");
++  assert.equal(initialWorkbenchSelection(new URLSearchParams("paper=paper-b&history=unknown-history"), papers, runs).historyId, "");
+ });
+ 
+-test("a new workspace still opens upload and a paper without results is not substituted", () => {
++test("a saved PDF without an explicit task does not open its latest result or original source", () => {
+   assert.equal(initialWorkbenchSelection(new URLSearchParams(), [], []).activeTab, "newTask");
+   const selected = initialWorkbenchSelection(new URLSearchParams("paper=empty"), papers, runs);
+-  assert.equal(selected.paperId, "empty");
++  assert.equal(selected.paperId, "");
+   assert.equal(selected.runId, null);
+   assert.equal(selected.activeTab, "newTask");
++  assert.equal(initialWorkbenchSelection(new URLSearchParams("paper=paper-a&view=records"), papers, runs).runId, null);
+ });
+ 
+-test("an explicit unavailable run never opens a different run of the same paper", () => {
++test("an unavailable explicit run clears all task selection instead of falling back to that paper", () => {
+   const selected = initialWorkbenchSelection(new URLSearchParams("paper=paper-a&run=deleted-run&record=old-record"), papers, runs);
+-  assert.equal(selected.runId, "deleted-run");
++  assert.equal(selected.runId, null);
+   assert.equal(selected.historyId, "");
+-  assert.equal(selected.paperId, "paper-a");
+-  assert.equal(selected.activeTab, "records");
++  assert.equal(selected.paperId, "");
++  assert.equal(selected.recordId, "");
++  assert.equal(selected.activeTab, "newTask");
+ });
+ 
+ test("a known history id resolves to the real run and its own source snapshot", () => {
+@@ -65,7 +66,32 @@
+   for (const query of ["run=deleted-run", "history=unknown-output"]) {
+     const selected = initialWorkbenchSelection(new URLSearchParams(query), papers, runs);
+     assert.equal(selected.paperId, "");
+-    assert.equal(selected.activeTab, "records");
++    assert.equal(selected.activeTab, "newTask");
+   }
+ });
+ 
++test("global creation and history URLs discard even otherwise valid task parameters", () => {
++  for (const view of ["newTask", "tasks"]) {
++    assert.deepEqual(initialWorkbenchSelection(new URLSearchParams(`paper=paper-a&run=old-a&history=archived-b&record=record-4&view=${view}`), papers, runs), {
++      paperId: "", runId: null, historyId: "", recordId: "", activeTab: view,
++    });
++  }
++});
++
++test("refresh validation recognizes only the explicit remaining run/history, never other tasks on its paper", () => {
++  const selection = { paperId: "paper-a", runId: "old-a", historyId: "" };
++  assert.equal(hasWorkbenchTaskContext(selection, papers, runs), true);
++  assert.equal(hasWorkbenchTaskContext(selection, papers, runs.filter(run => run.run_id !== "old-a")), false);
++  assert.equal(hasWorkbenchTaskContext({ paperId: "paper-b", runId: null, historyId: "archived-b" }, papers, runs), true);
++  assert.equal(hasWorkbenchTaskContext({ paperId: "empty", runId: null, historyId: "archived-b" }, papers, runs), false);
++  assert.equal(hasWorkbenchTaskContext({ paperId: "paper-a", runId: null, historyId: "" }, papers, runs), false);
++});
++
++test("first-load URL normalization clears stale task parameters even when the empty selection matches initial state", () => {
++  for (const query of ["paper=empty&view=newTask", "paper=paper-a&run=deleted&record=old&view=records", "paper=paper-a&view=figures"]) {
++    assert.equal(workbenchSelectionParams(initialWorkbenchSelection(new URLSearchParams(query), papers, runs)).toString(), "view=newTask");
++  }
++  assert.equal(workbenchSelectionParams(initialWorkbenchSelection(new URLSearchParams("paper=paper-b&run=old-a&record=exact&view=records"), papers, runs)).toString(), "paper=paper-a&run=old-a&record=exact&view=records");
++  assert.equal(workbenchSelectionParams({ paperId: "paper-a", runId: "old-a", historyId: "", recordId: "exact", activeTab: "tasks" }).toString(), "view=tasks");
++});
++
+--- a/code/apps/pi-web/t1/RunProgress.tsx
++++ b/code/apps/pi-web/t1/RunProgress.tsx
+@@ -24,7 +24,7 @@
+   const queuedAt = run?.created_at ? Date.parse(run.created_at) : NaN;
+   const queueMs = progress.stage === "queued" && now !== null && Number.isFinite(queuedAt) ? Math.max(0, now - queuedAt) : progress.queueWaitMs;
+   const active = !progress.ended, determinate = progress.percent !== undefined;
+-  const percentKey = progress.unit === "paragraphs" ? "t1.progressParagraphPercent" : "t1.progressSourcePercent", countKey = progress.unit === "paragraphs" ? "t1.progressParagraphCount" : "t1.progressSourceCount";
++  const percentKey = progress.unit === "source_blocks" ? "t1.progressSourcePercent" : "t1.progressParagraphPercent", countKey = progress.unit === "source_blocks" ? "t1.progressSourceCount" : "t1.progressParagraphCount";
+   const stageLabel = t(`t1.${progress.ended || progress.finalizing ? presentation.statusKey : `progress_${progress.stage}`}`);
+   return <section className="t1-run-progress" data-progress-stage={progress.stage} data-progress-outcome={progress.success ? "complete" : progress.ended ? "incomplete" : "active"} aria-label={t("t1.extractionProgress")}>
+     <div className="t1-progress-heading"><button className="t1-progress-title" onClick={onDetails}><span className="t1-status-dot" />{stageLabel}</button>
+--- a/code/apps/pi-web/t1/run-progress.ts
++++ b/code/apps/pi-web/t1/run-progress.ts
+@@ -17,11 +17,11 @@
+     const live = (state: unknown) => activeStage(state) && state !== "completed";
+     return [...previous.filter(item => item.type !== "state" || live(item.detail?.state ?? item.stage) !== live(detail.state ?? event.stage)), { type: event.type, timestamp: event.timestamp, stage: event.stage, detail: { state: detail.state } }];
+   }
+-  if (event.type === "coverage_inventory") return [...previous.filter(item => item.type !== "coverage_inventory"), { type: event.type, timestamp: event.timestamp, detail: { dispatched_blocks: detail.dispatched_blocks, progress_unit: detail.progress_unit, total_paragraphs: detail.total_paragraphs } }];
++  if (event.type === "coverage_inventory") return [...previous.filter(item => item.type !== "coverage_inventory"), { type: event.type, timestamp: event.timestamp, detail: { dispatched_blocks: detail.dispatched_blocks, progress_unit: detail.progress_unit, total_paragraphs: detail.total_paragraphs, total_content_units: detail.total_content_units } }];
+   if (event.type !== "batch" || !Array.isArray(detail.assigned_block_ids)) return previous;
+   const ids = detail.assigned_block_ids.filter((id): id is string => typeof id === "string");
+   const sameBatch = (item: ProgressEvent) => item.type === "batch" && (typeof detail.batch_id === "string" ? item.detail?.batch_id === detail.batch_id : JSON.stringify(item.detail?.assigned_block_ids) === JSON.stringify(ids));
+-  return [...previous.filter(item => !sameBatch(item)), { type: event.type, timestamp: event.timestamp, detail: { batch_id: detail.batch_id, assigned_block_ids: ids, status: detail.status, explicit_completion_received: detail.explicit_completion_received, completed_paragraph_ids: detail.completed_paragraph_ids } }];
++  return [...previous.filter(item => !sameBatch(item)), { type: event.type, timestamp: event.timestamp, detail: { batch_id: detail.batch_id, assigned_block_ids: ids, status: detail.status, explicit_completion_received: detail.explicit_completion_received, completed_paragraph_ids: detail.completed_paragraph_ids, completed_content_unit_ids: detail.completed_content_unit_ids } }];
+ }
+ 
+ /** Counts are source work completed by the host. A summary reread is never completion. */
+@@ -42,14 +42,14 @@
+ 
+   let completed = count(telemetry?.completed), total = count(telemetry?.total);
+   const inventory = [...events].reverse().find(event => event.type === "coverage_inventory");
+-  const unit = telemetry?.unit ?? (saved.progress_unit === "paragraphs" || inventory?.detail?.progress_unit === "paragraphs" ? "paragraphs" : "source_blocks");
+-  if (total === undefined) total = count(unit === "paragraphs" ? saved.dispatched_paragraphs : saved.dispatched_source_blocks);
+-  if (completed === undefined) completed = count(unit === "paragraphs" ? saved.explicitly_completed_paragraphs : saved.explicitly_completed_source_blocks);
+-  const eventTotal = count(unit === "paragraphs" ? inventory?.detail?.total_paragraphs : inventory?.detail?.dispatched_blocks);
++  const unit = telemetry?.unit ?? (saved.progress_unit === "content_units" || inventory?.detail?.progress_unit === "content_units" ? "content_units" : saved.progress_unit === "paragraphs" || inventory?.detail?.progress_unit === "paragraphs" ? "paragraphs" : "source_blocks");
++  if (total === undefined) total = count(unit === "content_units" ? saved.dispatched_content_units : unit === "paragraphs" ? saved.dispatched_paragraphs : saved.dispatched_source_blocks);
++  if (completed === undefined) completed = count(unit === "content_units" ? saved.explicitly_completed_content_units : unit === "paragraphs" ? saved.explicitly_completed_paragraphs : saved.explicitly_completed_source_blocks);
++  const eventTotal = count(unit === "content_units" ? inventory?.detail?.total_content_units : unit === "paragraphs" ? inventory?.detail?.total_paragraphs : inventory?.detail?.dispatched_blocks);
+   if (total === undefined) total = eventTotal;
+   const ids = new Set<string>();
+   for (const event of events) if (event.type === "batch" && event.detail?.status === "completed" && event.detail.explicit_completion_received !== false && Array.isArray(event.detail.assigned_block_ids)) {
+-    const done = unit === "paragraphs" ? event.detail.completed_paragraph_ids : event.detail.assigned_block_ids;
++    const done = unit === "content_units" ? event.detail.completed_content_unit_ids : unit === "paragraphs" ? event.detail.completed_paragraph_ids : event.detail.assigned_block_ids;
+     if (Array.isArray(done)) for (const id of done) if (typeof id === "string") ids.add(id);
+   }
+   if (total !== undefined && (eventTotal === undefined || eventTotal === total) && (inventory || ids.size > 0) && ids.size <= total) {
+@@ -69,6 +69,17 @@
+     executionElapsedMs: count(telemetry?.execution_elapsed_ms), queueWaitMs: count(telemetry?.queue_wait_ms ?? run?.queue_wait_ms) };
+ }
+ 
++export const contentUnitKinds = ["paragraph", "caption", "heading", "table_row", "figure_text", "list_item", "footnote", "text_item", "source_fragment"] as const;
++/** Display only recorded classification counts; legacy totals cannot tell us
++ * how many natural body paragraphs, figure labels or fallback fragments exist. */
++export function contentUnitComposition(progress: unknown) {
++  const value = object(progress), totals = object(value.unit_counts), done = object(value.completed_unit_counts);
++  return contentUnitKinds.flatMap(kind => {
++    const total = count(totals[kind]), completed = count(done[kind]);
++    return total === undefined || total === 0 ? [] : [{ kind, total, completed: completed !== undefined && completed <= total ? completed : undefined }];
++  });
++}
++
+ export function progressDuration(milliseconds: number) {
+   const seconds = Math.max(0, Math.floor(milliseconds / 1000)), minutes = Math.floor(seconds / 60), hours = Math.floor(minutes / 60);
+   return hours ? `${hours}:${String(minutes % 60).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}` : `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+--- a/code/apps/pi-web/t1/run-progress.test.ts
++++ b/code/apps/pi-web/t1/run-progress.test.ts
+@@ -1,10 +1,29 @@
+ import assert from "node:assert/strict";
+ import test from "node:test";
+ import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
+-import { progressDuration, retainProgressEvent, runProgress, type ProgressEvent } from "./run-progress";
++import { contentUnitComposition, progressDuration, retainProgressEvent, runProgress, type ProgressEvent } from "./run-progress";
+ 
+ const event = (type: string, detail: Record<string, unknown>): ProgressEvent => ({ type, detail, timestamp: "2026-11-14T08:00:00Z" });
+ const run = (state: string, progress?: WorkbenchRun["progress"]) => ({ state, candidate_count: 13, progress } as WorkbenchRun);
++
++test("classified content groups use their own completion receipts and do not borrow legacy paragraph or line counts", () => {
++  let events: readonly ProgressEvent[] = [];
++  for (const value of [event("coverage_inventory", { progress_unit: "content_units", total_content_units: 3, total_paragraphs: 2158, dispatched_blocks: 4484 }),
++    event("batch", { batch_id: "one", status: "completed", assigned_block_ids: ["raw-a", "raw-b"], completed_content_unit_ids: ["body-1"], completed_paragraph_ids: ["wrong-1", "wrong-2"] }),
++    event("batch", { batch_id: "two", status: "completed", assigned_block_ids: ["raw-c"], completed_content_unit_ids: ["body-1", "figure-1"] }),
++    event("summary_read", { completed_content_unit_ids: ["fake"] })]) events = retainProgressEvent(events, value);
++  const result = runProgress(run("extracting"), "extracting", {}, events);
++  assert.equal(result.unit, "content_units"); assert.equal(result.completed, 2); assert.equal(result.total, 3); assert.equal(result.percent, 66);
++  const saved = runProgress(run("partial"), "partial", { progress_unit: "content_units", dispatched_content_units: 3, explicitly_completed_content_units: 1, dispatched_paragraphs: 2158 }, []);
++  assert.equal(saved.completed, 1); assert.equal(saved.total, 3); assert.equal(saved.success, false);
++});
++
++test("content composition displays recorded categories only and cannot infer natural paragraphs from old totals", () => {
++  assert.deepEqual(contentUnitComposition({ unit: "paragraphs", total: 2158 }), []);
++  assert.deepEqual(contentUnitComposition({ unit: "content_units", unit_counts: { paragraph: 10, figure_text: 40, heading: 2, source_fragment: 3, caption: -1, footnote: 0, text_item: 1.5 }, completed_unit_counts: { paragraph: 5, figure_text: 41 } }), [
++    { kind: "paragraph", total: 10, completed: 5 }, { kind: "heading", total: 2, completed: undefined }, { kind: "figure_text", total: 40, completed: undefined }, { kind: "source_fragment", total: 3, completed: undefined },
++  ]);
++});
+ 
+ test("new content units use cumulative completed parents, never raw lines, sentence parts or supplemental reads", () => {
+   const events = [event("coverage_inventory", { progress_unit: "paragraphs", total_paragraphs: 2, dispatched_blocks: 9 }),
+--- a/code/apps/pi-web/t1/messages.mjs
++++ b/code/apps/pi-web/t1/messages.mjs
+@@ -178,9 +178,21 @@
+   progressSourceStage: ["Source extraction stage", "原文抽取阶段", "原文擷取階段"],
+   progressSourcePercent: ["Source extraction · {completed} / {total} lines · {percent}%", "原文抽取阶段 · {completed} / {total} 行 · {percent}%", "原文擷取階段 · {completed} / {total} 行 · {percent}%"],
+   progressSourceCount: ["Source extraction · {completed} / {total} lines", "原文抽取阶段 · {completed} / {total} 行", "原文擷取階段 · {completed} / {total} 行"],
+-  progressParagraphPercent: ["Source extraction · {completed} / {total} content units · {percent}%", "原文抽取阶段 · {completed} / {total} 内容块 · {percent}%", "原文擷取階段 · {completed} / {total} 內容塊 · {percent}%"],
+-  progressParagraphCount: ["Source extraction · {completed} / {total} content units", "原文抽取阶段 · {completed} / {total} 内容块", "原文擷取階段 · {completed} / {total} 內容塊"],
+-  progressParagraphHelp: ["Body text uses paragraphs; captions, headings and tables stay separate. A long paragraph counts only after all its sentence parts finish.", "正文按段落组织，图注、标题和表格单独处理；长段的全部句子分片完成后才计入。", "正文按段落組織，圖說、標題和表格單獨處理；長段的全部句子分片完成後才計入。"],
++  progressParagraphPercent: ["Source extraction · {completed} / {total} content units · {percent}%", "原文抽取阶段 · {completed} / {total} 内容单元 · {percent}%", "原文擷取階段 · {completed} / {total} 內容單元 · {percent}%"],
++  progressParagraphCount: ["Source extraction · {completed} / {total} content units", "原文抽取阶段 · {completed} / {total} 内容单元", "原文擷取階段 · {completed} / {total} 內容單元"],
++  progressParagraphHelp: ["Content units may include body passages, headings, captions, figure text, table rows and fallback fragments. Their total is not a natural-paragraph count. A long parent unit counts only after all its parts finish.", "内容单元可包含正文句段、标题、图注、图内文字、表格行及回退片段，总数不等于正文自然段数；长内容组的全部分片完成后才计入。", "內容單元可包含正文句段、標題、圖說、圖內文字、表格列及回退片段，總數不等於正文自然段數；長內容組的全部分片完成後才計入。"],
++  progressCompositionUnrecorded: ["This task has no recorded content composition. Its total cannot be used to infer a body-paragraph count.", "此任务未记录内容组成，不能从总内容数推算正文段落数。", "此任務未記錄內容組成，不能從總內容數推算正文段落數。"],
++  progressUnitSubmitted: ["{total} submitted", "已提交 {total}", "已提交 {total}"],
++  progressUnitProcessed: ["{completed} / {total} processed", "已处理 {completed} / {total}", "已處理 {completed} / {total}"],
++  "inputUnit.paragraph": ["Body passages", "正文句段", "正文句段"],
++  "inputUnit.caption": ["Captions", "图注", "圖說"],
++  "inputUnit.heading": ["Headings", "标题", "標題"],
++  "inputUnit.table_row": ["Table rows", "表格行", "表格列"],
++  "inputUnit.figure_text": ["Figure text groups", "图内文字组", "圖內文字組"],
++  "inputUnit.list_item": ["List items", "列表项", "清單項目"],
++  "inputUnit.footnote": ["Footnotes", "脚注", "註腳"],
++  "inputUnit.text_item": ["Other text units", "其它文本单元", "其他文字單元"],
++  "inputUnit.source_fragment": ["Fallback fragments", "回退片段", "回退片段"],
+   progressLegacyLinesHelp: ["This earlier run retains its original source-line counts.", "本历史运行保留当时的原文行统计。", "本歷史執行保留當時的原文行統計。"],
+   progressScopeGap: ["{count} source units with uncertain article membership were not dispatched.", "另有 {count} 块原文的论文归属尚未确定，未派发处理。", "另有 {count} 塊原文的論文歸屬尚未確定，未派發處理。"],
+   tableSupport: ["Values from the cited table", "引用表格的补充值", "引用表格的補充值"],
+@@ -188,7 +200,8 @@
+   tableSupportContext: ["Metric, group, unit and source notes", "指标、组别、单位及原注", "指標、組別、單位及原註"],
+   tableSupportSharedContext: ["Shared table context and original notes", "公共表格语境及原注", "共用表格語境及原註"],
+   tableNumber: ["Table {number}", "表 {number}", "表 {number}"],
+-  progressBatchCount: ["{completed} / {total} extraction windows", "抽取窗口 {completed} / {total}", "擷取視窗 {completed} / {total}"],
++  progressBatchCount: ["Processing batches {completed} / {total}", "处理批次 {completed} / {total}", "處理批次 {completed} / {total}"],
++  progressBatchHelp: ["A processing batch groups multiple content units within the input length limits; a long paragraph can be split. One batch can include multiple model exchanges and is not a request count.", "处理批次按输入长度组织多段内容，长段可拆分；一批可包含多轮模型交互，批次数不等于模型请求次数。", "處理批次按輸入長度組織多段內容，長段可拆分；一批可包含多輪模型互動，批次數不等於模型請求次數。"],
+   progressUnknownTotal: ["The current stage has no known total yet.", "当前阶段总工作量尚不确定。", "目前階段總工作量尚不確定。"],
+   progressNoCount: ["Processing counts were not recorded.", "处理数量未记录。", "處理數量未記錄。"],
+   progressSummaryHelp: ["The system reconciles automatically and ends the run after completion checks and saving. No per-record confirmation is required.", "系统自动汇总核验，完成检查并保存后自动结束，无需逐条确认保留。", "系統自動彙整核驗，完成檢查並儲存後自動結束，無需逐條確認保留。"],
+--- a/code/apps/pi-web/t1/workbench.css
++++ b/code/apps/pi-web/t1/workbench.css
+@@ -231,6 +231,9 @@
+ /* Compact Pi Web chrome; navigation and content are divided by single rules. */
+ .t1-topbar { height: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 18px; background: var(--bg-panel); border-bottom: 1px solid var(--border); }
+ .t1-brand, .t1-top-actions { display: flex; align-items: center; gap: 10px; }
++.t1-nav-toggle { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 30px; height: 30px; padding: 4px; border: 0; border-radius: 5px; background: transparent; color: var(--text-muted); }
++.t1-nav-toggle:hover { background: var(--bg-hover); color: var(--text); }
++.t1-nav-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+ .t1-brand > span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--t1-action-bg); color: var(--t1-action-text); font-size: 11px; font-weight: 700; letter-spacing: -.5px; }
+ .t1-brand strong { font-size: 12px; font-weight: 600; }
+ .t1-brand small { color: var(--text-dim); font-size: 10px; }
+@@ -279,6 +282,7 @@
+ .t1-workspace-bar > span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 11px; }
+ .t1-workspace-bar button { min-height: 28px; font-size: 11px; white-space: nowrap; }
+ .t1-mobile-source { display: none; align-items: center; gap: 5px; font-size: 10px; white-space: nowrap; }
++.t1-results-actions .t1-mobile-source { display: none; }
+ .t1-workbench .tabbar-scroll { padding: 0 10px; border-bottom: 1px solid var(--border); background: var(--t1-surface) !important; gap: 4px; }
+ .t1-workbench .tabbar-scroll [role="tab"] { min-width: 76px !important; border-right: 0 !important; border-bottom: 2px solid transparent; padding-left: 8px !important; padding-right: 4px !important; background: transparent !important; font-size: 11px !important; transition: none !important; }
+ .t1-workbench .tabbar-scroll [aria-selected="true"] { border-bottom-color: var(--accent); }
+@@ -431,6 +435,10 @@
+ .t1-notes-section { padding: 20px 0; border-bottom: 1px solid var(--border); }
+ .t1-notes-section h3 { font-size: 12px; font-weight: 600; margin: 0 0 10px; }
+ .t1-notes-section h4 { font-size: 11px; font-weight: 500; color: var(--text); margin: 16px 0 5px; }
++.t1-unit-composition { display: grid; gap: 5px; margin: 12px 0; }
++.t1-unit-composition > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; }
++.t1-unit-composition dt { color: var(--text-muted); }
++.t1-unit-composition dd { margin: 0; font-variant-numeric: tabular-nums; }
+ .t1-notes-section p { color: var(--text-muted); margin: 6px 0; overflow-wrap: anywhere; }
+ .t1-notes-section .t1-note-detail { font-size: 11px; }
+ .t1-notes-section .t1-notes-warning { color: var(--t1-warning); }
+@@ -570,7 +578,7 @@
+ }
+ @media (max-width: 1280px) { .t1-scope-layers { grid-template-columns: 1fr; } .t1-brand small { display: none; } }
+ @media (max-width: 1150px) { .t1-source { width: 360px; } .t1-task-picker time { display: none; } }
+-@media (max-width: 900px) { .t1-source, .t1-source-toggle, .t1-resize { display: none !important; } .t1-mobile-source { display: flex; } }
++@media (max-width: 900px) { .t1-source, .t1-source-toggle, .t1-resize { display: none !important; } .t1-results-actions .t1-mobile-source { display: inline-flex; } }
+ @media (max-width: 640px) {
+   .t1-workbench { --top-bar-height: 33px; }
+   .t1-topbar { height: 44px; padding: 0 11px; gap: 8px; }
+--- a/code/apps/pi-web/t1/TaskCompletionNotes.tsx
++++ b/code/apps/pi-web/t1/TaskCompletionNotes.tsx
+@@ -4,6 +4,7 @@
+ import { useI18n } from "@/hooks/useI18n";
+ import { runPresentation } from "./run-presentation";
+ import { taskCompletionDetails } from "./task-completion";
++import { contentUnitComposition } from "./run-progress";
+ 
+ export function TaskCompletionNotes({ entries }: { entries: readonly { run: WorkbenchRun; coverage: unknown; label?: string; gaps?: WorkbenchSourceGap[]; pdfUrl?: string }[] }) {
+   const { t } = useI18n();
+@@ -11,10 +12,13 @@
+     <h3>{t("t1.completionDetails")}</h3><p>{t("t1.completionAutomaticHelp")}</p>
+     {entries.map(({ run, coverage, label }) => {
+       const presentation = runPresentation(run.state, coverage ?? run, run.result_ready, run.task_completion), details = taskCompletionDetails(run, coverage);
++      const composition = contentUnitComposition(run.progress), contentUnits = run.progress?.unit && run.progress.unit !== "source_blocks";
+       return <div key={run.run_id} data-completion-run={run.run_id}>
+         {label && <h4>{label}</h4>}<p>{t(`t1.${presentation.statusKey}`)}</p>
+         <p>{t(`t1.${details.summaryComplete === true ? "completionSummaryDone" : details.summaryComplete === false ? "completionSummaryPending" : "completionSummaryUnknown"}`)}</p>
+-        {run.progress?.unit && <p>{t(run.progress.unit === "paragraphs" ? "t1.progressParagraphHelp" : "t1.progressLegacyLinesHelp")}</p>}
++        {run.progress?.unit && <p>{t(contentUnits ? "t1.progressParagraphHelp" : "t1.progressLegacyLinesHelp")}</p>}
++        {contentUnits && (composition.length ? <dl className="t1-unit-composition">{composition.map(({ kind, total, completed }) => <div key={kind}><dt>{t(`t1.inputUnit.${kind}`)}</dt><dd>{completed === undefined ? t("t1.progressUnitSubmitted", { total }) : t("t1.progressUnitProcessed", { completed, total })}</dd></div>)}</dl> : <p>{t("t1.progressCompositionUnrecorded")}</p>)}
++        {run.progress?.total_batches !== undefined && <p>{t("t1.progressBatchHelp")}</p>}
+         {run.task_completion?.rule_origin === "legacy_evidence_projection" && <p>{t("t1.completionLegacyProjection")}</p>}
+         {presentation.finalizing && <p>{t("t1.taskFinalizingHint")}</p>}
+         {details.reasonKeys.length > 0 && <ul>{details.reasonKeys.map(key => <li key={key}>{t(`t1.${key}`)}</li>)}</ul>}
+--- a/code/apps/pi-web/e2e/navigation-context.mjs
++++ b/code/apps/pi-web/e2e/navigation-context.mjs
+@@ -0,0 +1,122 @@
++/** Isolated browser APIs only. Runtime services, user tasks and providers never receive writes. */
++import assert from 'node:assert/strict';
++import { readFile, writeFile } from 'node:fs/promises';
++import { createHash } from 'node:crypto';
++import { dirname, join, resolve } from 'node:path';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..'), origin = process.env.T1_NAV_ORIGIN ?? 'http://127.0.0.1:30158', phase = process.env.T1_NAV_PHASE ?? 'dev';
++const evidence = join(code, 'docs/acceptance/new-task-layout-2026-11-14/item5/navigation-context');
++const dist = process.env.T1_NAV_DIST, BUILD_ID = dist ? (await readFile(join(code, dist, 'BUILD_ID'), 'utf8')).trim() : 'isolated-dev';
++const result = { status: 'running', phase, origin, BUILD_ID, dist, checks: [], errors: [], blocked: [], mock_mutations: [], production_business_writes: 0, paid_calls: 0, production_exports: 0 };
++process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
++process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
++const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href), browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
++const batchId = '11111111-1111-4111-8111-111111111111';
++const scope = { catalog_version: 'navigation-fixture', matching_policy_version: 'fixture', cancers: { mode: 'all', ids: [] }, image_types: { mode: 'all', ids: [] }, features: { mode: 'all', binding_ids: [] } };
++const profile = { profile_id: 'chosen-profile', provider: 'fixture', model_id: 'fixture-model', api: 'openai-responses', reasoning_effort: 'medium', context_window: 32768, max_output_tokens: 4096, configuration_source: 'server' };
++const catalog = { catalog_version: scope.catalog_version, cancers: [{ id: 'lung', name: '肺癌' }], image_types: [{ id: 'ct', name: 'CT', cancer_ids: ['lung'] }], features: [], bindings: [], default_scope: scope, restricted_available: true, development_only: false };
++const pdf = await readFile(join(code, 'evaluation/corpus/development-candidates/L01.pdf')), sha = createHash('sha256').update(pdf).digest('hex');
++const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/b3sAAAAASUVORK5CYII=', 'base64');
++const fragment = (text, run, page = 1) => ({ block_id: run + '-block', text_version: run + '-text', start: 0, end: text.length, exact_quote: text, occurrence: 1, physical_page: page, bbox: [0, 0, 10, 10], location_precision: 'block' });
++function seed() {
++  const run = (id, paper, title) => ({ run_id: id, document_id: paper, state: 'completed', fixture: true, candidate_count: 1, created_at: '2026-11-15T00:00:00Z', model_id: profile.model_id, model_profile: profile, scope, task_title: title, original_filename: paper + '.pdf', submission: { kind: 'single' }, result_ready: true, task_processing_complete: true });
++  const runs = [run('single-a', 'paper-a', '单篇任务A'), run('single-b', 'paper-a', '同论文任务B'), { ...run('member-a', 'paper-a', '批量任务C'), submission: { kind: 'batch', batch_id: batchId } }, { ...run('member-b', 'paper-b', '批量任务C'), submission: { kind: 'batch', batch_id: batchId } }];
++  const papers = ['orphan', 'paper-a', 'paper-b'].map(id => ({ id, title: id === 'orphan' ? '例子2.pdf' : id + '来源名称', filename: id + '.pdf', sha256: sha, language: 'en', pages: 12, note: '', uploaded: true, output_ids: runs.filter(run => run.document_id === id).map(run => run.run_id) }));
++  return { runs, papers, requests: [], writes: [], missing: '', hold: '', gate: null };
++}
++async function scenario(name, work, viewport = { width: 1440, height: 1000 }) {
++  if (process.env.T1_NAV_CASES && !process.env.T1_NAV_CASES.split(',').includes(name)) return;
++  const context = await browser.newContext({ viewport, locale: 'zh-CN', reducedMotion: 'reduce' }), state = seed();
++  await context.addInitScript(expected => { if (location.origin === expected) { localStorage.setItem('pi-locale', 'zh-CN'); localStorage.setItem('pi-theme', 'light'); localStorage.setItem('t1:extraction-model-profile', 'chosen-profile'); } }, origin);
++  const json = (route, value, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(value) });
++  const detail = run => ({ run, paper: state.papers.find(paper => paper.id === run.document_id), output: { id: run.run_id, strategy: 'B0', origin: 'controlled_fixture', state: run.state, scope, records: run.candidate_count ? [{ id: 'same-id', run_id: run.run_id, version: 1, fragments: [fragment('ONLY ' + run.run_id + ' original text', run.run_id)], context: [], association: 'paired', figure_ids: ['same-figure'], proposed_figure_ids: [], reasons: [], review_status: 'pending', text_fingerprint: run.run_id, evidence_role: 'primary_candidate', retention: { status: 'kept', revision: 0, origin: 'default', record_version: 1 } }] : [], coverage: { task_processing_complete: run.task_processing_complete } }, source_units: [], figures: [{ id: 'same-figure', number: '1', verification: 'needs_review', caption: [fragment('ONLY ' + run.run_id + ' caption', run.run_id)], assets: [{ id: 'same-asset', url: '/api/t1/workbench/runs/' + run.run_id + '/figures/same-asset', sha256: run.run_id, page: 1, width: 100, height: 100 }] }], source_issues: state.missing === run.run_id ? ['pdf_source_file_missing'] : [], source_status: state.missing === run.run_id ? 'missing' : 'valid', text_version: run.run_id + '-text', pdf_url: '/api/t1/workbench/papers/' + run.document_id + '/pdf' });
++  const remove = ids => { state.runs = state.runs.filter(run => !ids.includes(run.run_id)); state.papers = state.papers.map(paper => ({ ...paper, output_ids: paper.output_ids.filter(id => !ids.includes(id)) })); };
++  await context.route('**/*', async route => {
++    const request = route.request(), url = new URL(request.url()), path = url.pathname, method = request.method(), base = '/api/t1/workbench';
++    if (url.origin !== origin) { result.blocked.push({ name, method, path }); return route.abort('blockedbyclient'); }
++    if (!path.startsWith('/api/')) return route.continue();
++    state.requests.push({ method, path });
++    if (method === 'GET' && path === base + '/capabilities') return json(route, { schema_version: 't1-workbench-capabilities-1', read_only: false, paper_upload: true, extraction_start: true, persisted_review: true, persisted_retention: true, retained_export: true, model_selection: true, backend_pi_sdk: '1.4.0', max_concurrent_runs: 2 });
++    if (method === 'GET' && path === base + '/catalog') return json(route, catalog);
++    if (method === 'GET' && path === base + '/models') return json(route, { provider: 'fixture', default_profile_id: profile.profile_id, profiles: [profile] });
++    if (method === 'GET' && path === base + '/papers') return json(route, { papers: state.papers });
++    if (method === 'GET' && path === base + '/runs') return state.failRuns ? json(route, { error: 'fixture_lists_unavailable' }, 503) : json(route, { runs: state.runs });
++    if (method === 'GET' && path.endsWith('/events')) return route.fulfill({ contentType: 'text/event-stream', body: ': isolated fixture\n\n' });
++    if (method === 'GET' && path.endsWith('/pdf')) return route.fulfill({ contentType: 'application/pdf', body: pdf });
++    if (method === 'GET' && path.endsWith('/figures/same-asset')) return route.fulfill({ contentType: 'image/png', body: png });
++    const runId = path.match(/^\/api\/t1\/workbench\/runs\/([^/]+)$/)?.[1], paperId = path.match(/^\/api\/t1\/workbench\/papers\/([^/]+)$/)?.[1];
++    if (method === 'GET' && runId) {
++      if (state.hold === runId) await state.gate;
++      const run = state.runs.find(run => run.run_id === runId); return run && state.notFound !== runId ? json(route, detail(run)) : json(route, { error: 'workbench_run_not_found' }, 404);
++    }
++    if (method === 'GET' && paperId) return json(route, { paper: state.papers.find(paper => paper.id === paperId), outputs: state.runs.filter(run => run.document_id === paperId).map(run => detail(run).output), source_units: [], figures: [], source_status: 'not_parsed' });
++    if (method === 'DELETE' && (runId || path === base + '/batches/' + batchId)) { state.writes.push({ method, path }); remove(runId ? [runId] : state.runs.filter(run => run.submission.kind === 'batch').map(run => run.run_id)); return json(route, { deleted: true }); }
++    if (method === 'POST' && path === base + '/papers') { state.writes.push({ method, path }); return json(route, { paper: { ...state.papers[0], id: 'draft-paper', title: 'draft.pdf', filename: 'draft.pdf' } }, 201); }
++    result.blocked.push({ name, method, path }); return route.abort('blockedbyclient');
++  });
++  const page = await context.newPage(); page.setDefaultTimeout(12000); page.on('pageerror', error => result.errors.push({ name, error: String(error) }));
++  const go = async (params = '') => { await page.goto(origin + '/?' + params); await page.locator('.t1-status[role="status"]').waitFor({ state: 'hidden' }); await page.getByRole('tab').first().waitFor(); };
++  const choose = async id => { if (!await page.locator('.t1-sidebar').isVisible()) await page.locator('.t1-nav-toggle').click(); await page.locator('[data-submission-list="sidebar"] [data-run-id="' + id + '"]').click(); await page.waitForFunction(id => document.querySelector('.t1-evidence-card')?.getAttribute('data-source-run-id') === id, id); };
++  const deleteTask = async id => { if (!await page.locator('.t1-sidebar').isVisible()) await page.locator('.t1-nav-toggle').click(); await page.locator('[data-submission-list="sidebar"] [data-run-menu-id="' + id + '"]').click(); await page.getByRole('menuitem', { name: '删除任务', exact: true }).click(); const dialog = page.getByRole('dialog', { name: '删除任务', exact: true }); await dialog.waitFor(); await dialog.getByRole('button', { name: '确认删除任务', exact: true }).click(); await dialog.waitFor({ state: 'hidden' }); };
++  const globalPage = async view => { if (view === 'newTask') { if (!await page.locator('.t1-sidebar').isVisible()) await page.locator('.t1-nav-toggle').click(); await page.locator('.t1-new-task').click(); } else { if (!await page.locator('.t1-sidebar').isVisible()) await page.locator('.t1-nav-toggle').click(); await page.locator('.t1-sidebar-bottom > button').click(); } await page.waitForFunction(view => new URL(location.href).searchParams.get('view') === view && !new URL(location.href).searchParams.has('paper') && !new URL(location.href).searchParams.has('run'), view); };
++  try { await work({ page, state, go, choose, deleteTask, remove, globalPage }); result.checks.push({ name, status: 'passed' }); console.log('PASS ' + name); }
++  catch (error) { result.checks.push({ name, status: 'failed', error: String(error) }); console.log('FAIL ' + name + ' ' + error); await page.screenshot({ path: join(evidence, phase + '-failed-' + name + '.png') }); }
++  finally { result.mock_mutations.push(...state.writes); await context.close(); }
++}
++async function assertGlobal(page, label) { assert.equal(await page.locator('.t1-workspace-bar > span').innerText(), label); assert.equal(await page.locator('.t1-source-toggle,.t1-mobile-source,.t1-source').count(), 0); assert.equal(await page.locator('.t1-evidence-card').count(), 0); }
++try {
++  if (dist) assert.equal((await fetch(origin + '/_next/static/' + BUILD_ID + '/_buildManifest.js')).status, 200);
++  await scenario('fresh_and_stale_global_urls', async ({ page, state, go }) => {
++    for (const query of ['', 'paper=orphan&view=newTask', 'paper=orphan&view=records', 'paper=orphan&view=figures', 'paper=paper-a&run=deleted&record=stale&view=records', 'paper=paper-a&run=single-a&view=newTask', 'paper=paper-a&run=single-a&view=tasks']) {
++      await go(query); const expected = query.endsWith('view=tasks') ? '任务与历史' : '创建任务'; await assertGlobal(page, expected); assert.equal(await page.getByRole('tab').count(), 1); assert.ok(!new URL(page.url()).searchParams.has('paper')); assert.ok(!new URL(page.url()).searchParams.has('run')); assert.ok(!new URL(page.url()).searchParams.has('record'));
++    }
++    assert.equal(state.requests.filter(request => /\/papers\/[^/]+$/.test(request.path)).length, 0); await page.screenshot({ path: join(evidence, phase + '-global-history.png') });
++    state.failRuns = true; await go('paper=paper-a&run=single-a&record=saved&view=records'); assert.equal(new URL(page.url()).searchParams.get('run'), 'single-a'); assert.ok(await page.locator('.t1-alert').count());
++    state.failRuns = false; await page.getByRole('button', { name: '刷新工作台', exact: true }).click(); await page.waitForFunction(() => document.querySelector('.t1-evidence-card')?.getAttribute('data-source-run-id') === 'single-a'); assert.equal(new URL(page.url()).searchParams.get('run'), 'single-a');
++  });
++  await scenario('exact_single_context_global_hierarchy_and_draft', async ({ page, go, choose, globalPage }) => {
++    await go(); await page.locator('.t1-task-title-field input').fill('未提交草稿'); await page.locator('input[type="file"][multiple]').first().setInputFiles({ name: 'draft.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n% draft fixture\n%%EOF\n') }); await page.locator('.t1-file-list [data-upload-state="uploaded"]').waitFor();
++    await choose('single-a'); assert.equal(await page.locator('.t1-workspace-bar > span').innerText(), '单篇任务A'); assert.equal(await page.locator('.t1-source-toggle').count(), 1); assert.equal(await page.locator('.t1-workspace-bar button').count(), 0); assert.equal(await page.locator('.t1-brand .t1-nav-toggle').count(), 1);
++    await page.locator('.t1-source-toggle').click(); await page.locator('.t1-source').waitFor(); await globalPage('tasks'); await assertGlobal(page, '任务与历史');
++    await globalPage('newTask'); await assertGlobal(page, '创建任务'); assert.equal(await page.locator('.t1-task-title-field input').inputValue(), '未提交草稿'); assert.equal(await page.locator('.t1-file-list [data-upload-state="uploaded"]').count(), 1); await page.screenshot({ path: join(evidence, phase + '-creation-desktop.png') });
++    await page.reload(); await page.locator('.t1-new-task-panel:not([hidden])').waitFor(); assert.equal(await page.getByRole('tab').count(), 1); await assertGlobal(page, '创建任务');
++  });
++  await scenario('single_batch_figures_and_original_follow_exact_child', async ({ page, go, choose, globalPage }) => {
++    await go('paper=orphan&run=single-a&view=records'); await page.locator('.t1-evidence-card').waitFor(); assert.equal(await page.getByRole('tab').count(), 1); assert.equal(new URL(page.url()).searchParams.get('paper'), 'paper-a');
++    await choose('member-a'); await page.waitForFunction(() => document.querySelectorAll('.t1-index-list button').length === 2); await page.locator('[data-index-run-id="member-b"]').click(); await page.waitForFunction(() => document.querySelector('.t1-evidence-card')?.getAttribute('data-source-run-id') === 'member-b'); assert.equal(await page.locator('.t1-evidence-card').getAttribute('data-source-paper-id'), 'paper-b');
++    await page.locator('.t1-results-actions').getByRole('button', { name: '原 Figure 目录', exact: true }).click(); await page.locator('.t1-content[data-view="figures"]').waitFor(); assert.equal(await page.locator('.t1-workspace-bar > span').innerText(), '批量任务C'); assert.ok((await page.locator('.t1-figure img').getAttribute('src')).includes('/runs/member-b/figures/'));
++    await page.locator('.t1-source-toggle').click(); await page.locator('.t1-source').waitFor(); assert.ok((await page.locator('.t1-source-heading a').getAttribute('href')).includes('/papers/paper-b/pdf')); await page.screenshot({ path: join(evidence, phase + '-batch-figures-desktop.png') });
++    await globalPage('newTask'); await assertGlobal(page, '创建任务'); await choose('single-b'); assert.equal(await page.locator('[data-batch-results]').count(), 0); assert.equal(await page.locator('.t1-workspace-bar > span').innerText(), '同论文任务B');
++  });
++  await scenario('deleting_current_never_selects_same_paper_sibling_and_all_tasks_leave_no_orphan_context', async ({ page, state, go, choose, deleteTask }) => {
++    await go(); await choose('single-a'); await deleteTask('single-a'); await page.locator('.t1-new-task-panel:not([hidden])').waitFor(); await assertGlobal(page, '创建任务'); assert.equal(await page.getByRole('tab', { name: '抽取结果', exact: true }).count(), 0); assert.equal(state.runs.length, 3); assert.ok(!new URL(page.url()).searchParams.has('paper'));
++    await choose('single-b'); await deleteTask('member-a'); assert.equal(await page.locator('.t1-evidence-card').getAttribute('data-source-run-id'), 'single-b'); assert.equal(state.runs.length, 1);
++    await deleteTask('single-b'); await page.locator('.t1-new-task-panel:not([hidden])').waitFor(); await assertGlobal(page, '创建任务'); assert.equal(state.runs.length, 0); assert.equal(state.papers.length, 3); await page.reload(); await page.locator('.t1-new-task-panel:not([hidden])').waitFor(); await assertGlobal(page, '创建任务'); assert.equal(await page.getByRole('tab').count(), 1); await page.screenshot({ path: join(evidence, phase + '-no-tasks.png') });
++  });
++  await scenario('external_delete_refresh_clears_context_without_touching_draft', async ({ page, go, choose, remove, globalPage }) => {
++    await go(); await page.locator('.t1-task-title-field input').fill('刷新保留草稿'); await choose('single-a'); remove(['single-a']); await page.getByRole('button', { name: '刷新工作台', exact: true }).click(); await page.locator('.t1-new-task-panel:not([hidden])').waitFor(); await assertGlobal(page, '创建任务'); assert.equal(await page.locator('.t1-task-title-field input').inputValue(), '刷新保留草稿'); assert.ok(!new URL(page.url()).searchParams.has('run'));
++    await choose('single-b'); await globalPage('tasks'); remove(['single-b', 'member-a', 'member-b']); await page.getByRole('button', { name: '刷新工作台', exact: true }).click(); await page.waitForFunction(() => document.querySelector('[data-submission-list="history"] [data-submission-group]') === null); await assertGlobal(page, '任务与历史'); assert.equal(await page.getByRole('tab', { name: '抽取结果', exact: true }).count(), 0);
++  });
++  await scenario('missing_source_and_not_found_do_not_expose_another_original', async ({ page, state, go, globalPage }) => {
++    state.missing = 'single-a'; await go('run=single-a&view=records'); await page.locator('.t1-evidence-card').waitFor(); assert.equal(await page.locator('.t1-source-toggle,.t1-mobile-source').count(), 0); assert.ok((await page.locator('.t1-alert').allTextContents()).some(text => /来源|原文/.test(text)));
++    await globalPage('tasks'); await assertGlobal(page, '任务与历史'); assert.equal(await page.locator('.t1-source-recovery,.t1-alert').count(), 0);
++    await globalPage('newTask'); await assertGlobal(page, '创建任务'); assert.equal(await page.locator('.t1-source-recovery,.t1-alert').count(), 0);
++    state.notFound = 'single-b'; await go('run=single-b&view=records'); await page.locator('.t1-new-task-panel:not([hidden])').waitFor(); await assertGlobal(page, '创建任务'); assert.ok(!new URL(page.url()).searchParams.has('run'));
++  });
++  await scenario('mobile_navigation_is_global_and_source_action_stays_with_results', async ({ page, go, choose, globalPage }) => {
++    await go(); await assertGlobal(page, '创建任务'); assert.equal(await page.locator('.t1-nav-toggle').isVisible(), true); await choose('member-a'); assert.equal(await page.locator('.t1-results-actions .t1-mobile-source').isVisible(), true); assert.equal(await page.locator('.t1-brand .t1-mobile-source').count(), 0); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)); await page.screenshot({ path: join(evidence, phase + '-results-mobile.png') });
++    await globalPage('newTask'); await assertGlobal(page, '创建任务'); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)); await page.screenshot({ path: join(evidence, phase + '-creation-mobile.png') });
++  }, { width: 390, height: 844 });
++  await scenario('content_composition_and_processing_batches_remain_truthful_for_new_and_legacy_runs', async ({ page, state, go }) => {
++    for (const unit of ['content_units', 'paragraphs']) {
++      Object.assign(state.runs[0], { state: 'extracting', task_processing_complete: undefined, result_ready: false, progress: { schema_version: 't1-workbench-progress-1', stage: 'extracting', unit, completed: unit === 'paragraphs' ? 100 : 28, total: unit === 'paragraphs' ? 2158 : 55, completed_batches: 4, total_batches: 39, candidate_records: 1, telemetry: 'events', ...(unit === 'content_units' ? { unit_counts: { paragraph: 10, figure_text: 40, heading: 2, source_fragment: 3 }, completed_unit_counts: { paragraph: 5, figure_text: 20, heading: 2, source_fragment: 1 } } : {}) } });
++      await go('run=single-a&view=records'); await page.locator('.t1-evidence-card').waitFor(); assert.match(await page.locator('.t1-progress-detail').innerText(), /内容单元/); assert.match(await page.locator('.t1-progress-detail').innerText(), /处理批次 4 \/ 39/); assert.doesNotMatch(await page.locator('.t1-progress-detail').innerText(), /抽取窗口|自然段/);
++      await page.locator('.t1-notes-toggle').click(); const dialog = page.getByRole('dialog', { name: '说明', exact: true }); await dialog.waitFor(); assert.match(await dialog.innerText(), /批次数不等于模型请求次数/);
++      if (unit === 'content_units') { assert.equal(await dialog.locator('.t1-unit-composition > div').count(), 4); assert.match(await dialog.locator('.t1-unit-composition').innerText(), /正文句段\s+已处理 5 \/ 10/); assert.match(await dialog.locator('.t1-unit-composition').innerText(), /图内文字组\s+已处理 20 \/ 40/); }
++      else { assert.equal(await dialog.locator('.t1-unit-composition').count(), 0); assert.match(await dialog.innerText(), /未记录内容组成，不能从总内容数推算正文段落数/); }
++      await page.screenshot({ path: join(evidence, phase + '-composition-' + unit + '.png') }); await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' });
++    }
++  });
++  result.status = result.checks.every(check => check.status === 'passed') && !result.errors.length && !result.blocked.length ? 'passed' : 'failed';
++} finally { await browser.close(); await writeFile(join(evidence, 'browser-' + phase + '.json'), JSON.stringify({ ...result, completed_at_utc: new Date().toISOString() }, null, 2) + '\n'); console.log(JSON.stringify(result)); }
++if (result.status !== 'passed') process.exitCode = 1;

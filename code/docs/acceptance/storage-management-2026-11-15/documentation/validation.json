@@ -1,0 +1,163 @@
+{
+  "status": "passed",
+  "docx": {
+    "T1智能体开发计划.docx": {
+      "changed_parts": [
+        "word/document.xml"
+      ],
+      "changed_paragraphs": [
+        9,
+        73,
+        80,
+        83,
+        87,
+        90,
+        94,
+        98,
+        103
+      ],
+      "paragraph_count": 108,
+      "all_other_xml_and_zip_members_preserved": true
+    },
+    "T1开发执行说明.docx": {
+      "changed_parts": [
+        "word/document.xml"
+      ],
+      "changed_paragraphs": [
+        56,
+        92,
+        99,
+        102,
+        106,
+        109,
+        113,
+        117,
+        122
+      ],
+      "paragraph_count": 127,
+      "all_other_xml_and_zip_members_preserved": true
+    }
+  },
+  "json": {
+    "开发计划.json": {
+      "changed_paths": [
+        "/current_document_fingerprints/execution_guide_sha256",
+        "/current_document_fingerprints/history",
+        "/current_document_fingerprints/plan_sha256",
+        "/current_document_fingerprints/validation",
+        "/current_document_fingerprints/validation_status",
+        "/current_reuse_entry_removal/engineering_validation/boundary",
+        "/current_reuse_entry_removal/item_review_state",
+        "/current_run_isolation_and_model_consistency/acceptance_boundary",
+        "/current_run_isolation_and_model_consistency/item_review_state",
+        "/current_submission_task_feedback/requirements/3_submission_scoped_deletion",
+        "/current_submission_task_feedback/unchanged_boundaries/storage",
+        "/current_summary_completion/followup_extraction_wait_navigation_20261115/unchanged_boundaries",
+        "/current_summary_completion/followup_paragraph_glyph_tables_20261115/unchanged_limits_and_boundaries",
+        "/current_summary_completion/unchanged_boundaries",
+        "/current_task_records/run_actions/delete",
+        "/current_task_title_pdf_identity/item_review_state",
+        "/current_task_title_pdf_identity/pending_items/storage_management_auto_cleanup_batch_delete",
+        "/decisions/17/confirmed_basis",
+        "/decisions/17/detail",
+        "/decisions/17/options",
+        "/decisions/19/detail",
+        "/future_extensions/1/api",
+        "/future_extensions/1/build_id",
+        "/future_extensions/1/current_boundary",
+        "/future_extensions/1/engineering_state",
+        "/future_extensions/1/formal_review_record",
+        "/future_extensions/1/formal_review_scope",
+        "/future_extensions/1/implementation_authorization",
+        "/future_extensions/1/implementation_record",
+        "/future_extensions/1/implementation_started",
+        "/future_extensions/1/later_design_topics",
+        "/future_extensions/1/manual_cleanup_contract",
+        "/future_extensions/1/measurement_limits",
+        "/future_extensions/1/original_registration_fact",
+        "/future_extensions/1/recovery_policy",
+        "/future_extensions/1/scope/0",
+        "/future_extensions/1/scope/1",
+        "/future_extensions/1/scope/2",
+        "/future_extensions/1/scope/3",
+        "/future_extensions/1/status",
+        "/future_extensions/1/storage_roots",
+        "/future_extensions/1/ui_entry",
+        "/future_extensions/1/verification_boundary",
+        "/future_storage_management/acceptance_boundary",
+        "/future_storage_management/implementation_started",
+        "/future_storage_management/status",
+        "/scope/single_run_deletion",
+        "/tasks/17/work",
+        "/tasks/29/work"
+      ],
+      "unrelated_fields_and_stage_review_states_preserved": true
+    },
+    "当前版本.json": {
+      "changed_paths": [
+        "/current_document_fingerprints/execution_guide_sha256",
+        "/current_document_fingerprints/history",
+        "/current_document_fingerprints/plan_sha256",
+        "/current_document_fingerprints/validation",
+        "/current_document_fingerprints/validation_status",
+        "/current_reuse_entry_removal/engineering_validation/boundary",
+        "/current_reuse_entry_removal/item_review_state",
+        "/current_run_isolation_and_model_consistency/acceptance_boundary",
+        "/current_run_isolation_and_model_consistency/item_review_state",
+        "/current_submission_task_feedback/scope",
+        "/current_task_records/run_actions/delete",
+        "/current_task_title_pdf_identity/item_review_state",
+        "/execution_guide/confirmed_decisions/E08/rule",
+        "/future_storage_management/acceptance_boundary",
+        "/future_storage_management/implementation_started",
+        "/future_storage_management/status"
+      ],
+      "unrelated_fields_and_stage_review_states_preserved": true
+    },
+    "质量与性能验收契约.json": {
+      "changed_paths": [
+        "/current_document_fingerprints/execution_guide_sha256",
+        "/current_document_fingerprints/history",
+        "/current_document_fingerprints/plan_sha256",
+        "/current_document_fingerprints/validation",
+        "/current_document_fingerprints/validation_status",
+        "/future_acceptance_items/0/implementation_started",
+        "/future_acceptance_items/0/measurement",
+        "/future_acceptance_items/0/status"
+      ],
+      "unrelated_fields_and_stage_review_states_preserved": true
+    }
+  },
+  "csv": {
+    "开发任务清单.csv": {
+      "changed_rows": [
+        "T1-R13",
+        "T1-F02",
+        "T1-R31"
+      ],
+      "other_row_bytes_and_columns_preserved": true
+    },
+    "验收清单.csv": {
+      "changed_rows": [
+        "F09",
+        "T1-F02"
+      ],
+      "other_row_bytes_and_columns_preserved": true
+    },
+    "待讨论实现决策.csv": {
+      "changed_rows": [
+        "D18",
+        "D20"
+      ],
+      "other_row_bytes_and_columns_preserved": true
+    },
+    "开发阶段与验收.csv": {
+      "changed_rows": [
+        "S5"
+      ],
+      "other_row_bytes_and_columns_preserved": true
+    }
+  },
+  "application_tests": "not_run_by_documentation_owner",
+  "current_F02_status": "scoped_engineering_verified_deployed_pending_user_review"
+}

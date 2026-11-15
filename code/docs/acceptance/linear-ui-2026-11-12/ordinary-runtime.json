@@ -1,0 +1,123 @@
+{
+  "schema_version": "t1-linear-ui-ordinary-runtime-1",
+  "status": "passed",
+  "checked_at": "2026-11-11T16:43:12.074845+00:00",
+  "frontend": "http://127.0.0.1:30141",
+  "backend": "http://127.0.0.1:3210",
+  "frontend_HTTP": 200,
+  "backend_HTTP": 200,
+  "UI_dist": "apps/pi-web/build/linear-ui-final-next-20261112",
+  "BUILD_ID": "CZGDzqRNcIxnpa5kJ1sVe",
+  "services": {
+    "frontend": {
+      "pid": 82083,
+      "cwd": "/home/ecs-user/projects/t1-agent/code/apps/pi-web",
+      "selected_environment": {
+        "T1_NEXT_DIST_DIR": "build/linear-ui-final-next-20261112"
+      }
+    },
+    "backend": {
+      "pid": 68475,
+      "cwd": "/home/ecs-user/projects/t1-agent/code",
+      "selected_environment": {}
+    }
+  },
+  "backend_restarted": false,
+  "model_runtime": {
+    "provider": "agicto",
+    "model_id": "gpt-6-luna",
+    "reasoning_effort": "medium",
+    "limits": {
+      "requests": 80,
+      "input_tokens": 2000000,
+      "output_tokens": 120000,
+      "execution_seconds": 1800
+    }
+  },
+  "ordinary_model_enabled_for_explicit_user_Start": true,
+  "concurrent_slots": 2,
+  "at": "2026-11-11T16:43:11.989373+00:00",
+  "ordinary_tables": {
+    "events": {
+      "rows": 5,
+      "logical_sha256": "0cce36023a57a5d15170afecc3948a61f8f6e060ca0370d92295d93c088976a4"
+    },
+    "records": {
+      "rows": 1,
+      "logical_sha256": "f76d61870bf7a125fce7418afc751fa4603d923dc1cffe6305dd35b5d5e6e89a"
+    },
+    "runs": {
+      "rows": 1,
+      "logical_sha256": "d9b9fdf5eff6120aae042947b77a3f01d4df2c4111cf9090b344a6631a18bbc4"
+    },
+    "s4_batches": {
+      "rows": 5,
+      "logical_sha256": "366e375ebb6ee0c55a9b03b065933be9d27014e26cb597752904714ad4001dd8"
+    },
+    "s4_events": {
+      "rows": 67,
+      "logical_sha256": "4b941cfee62301a4ea60ed5fcf258b51ce07cb2697037f295fc53364fb77ef11"
+    },
+    "s4_runs": {
+      "rows": 9,
+      "logical_sha256": "fdff5bf01c4d611899b46ac0ae0301f5484d07dfe9743f7e92823aa80d528ecf"
+    },
+    "s4_versions": {
+      "rows": 262,
+      "logical_sha256": "cb1df409a6d115e139ca34608344af7179e47fe3e29729e0cdf793cc0724cb6b"
+    },
+    "workbench_annotations": {
+      "rows": 0,
+      "logical_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_deleted_sources": {
+      "rows": 0,
+      "logical_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_exports": {
+      "rows": 3,
+      "logical_sha256": "ba7eb6d2da6133f520abbd7e8101fe19f133f64743abb9fbe873d49ead338a69"
+    },
+    "workbench_papers": {
+      "rows": 6,
+      "logical_sha256": "dab83f9a279b579c48976f5c789b5ce291ff8bc9596238f594e08169d9a4c7d5"
+    },
+    "workbench_retentions": {
+      "rows": 0,
+      "logical_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_reviews": {
+      "rows": 0,
+      "logical_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_runs": {
+      "rows": 9,
+      "logical_sha256": "92b22fcf2482104319dd823a549fd19af532ad2240b46db34787b57162902428"
+    }
+  },
+  "table_count": 14,
+  "all_14_table_rows_and_logical_hashes_unchanged": true,
+  "changed_tables": [],
+  "database_integrity": "ok",
+  "private_env_sha256": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+  "private_env_bytes_unchanged": true,
+  "public_config_sha256": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea",
+  "public_config_bytes_unchanged": true,
+  "frozen_artifacts_verified": 37,
+  "changed_frozen_artifacts": [],
+  "active_tasks": 0,
+  "new_model_calls": 0,
+  "ordinary_write_or_export_requests": 0,
+  "ordinary_readonly_browser": "ordinary-readonly-browser.json",
+  "ordinary_readonly_checks_passed": 3,
+  "ordinary_POST_review_retention_upload_or_export_requests": 0,
+  "Start_clicked": false,
+  "new_paid_model_calls": 0,
+  "new_retention_table_rows": 0,
+  "old_UI_rollback_dist_retained": "apps/pi-web/build/retention-final-next-20261111",
+  "old_delivery_docker_image_updated": false,
+  "full_S2_S6_S7_gates_or_medical_quality_promoted": false,
+  "formal_reviews_this_task": 2,
+  "previous_task_closed_formal_reviews": 2,
+  "earlier_task_closed_formal_reviews": 3
+}

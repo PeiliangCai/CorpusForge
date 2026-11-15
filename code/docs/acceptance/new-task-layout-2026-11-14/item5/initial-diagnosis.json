@@ -1,0 +1,1208 @@
+{
+  "recorded_at_utc": "2026-11-15T04:58:32.910879+00:00",
+  "production_business_writes": 0,
+  "paid_calls": 0,
+  "sources": [
+    {
+      "database_snapshot": "docs/acceptance/new-task-layout-2026-11-14/item5/initial-readonly.sqlite",
+      "runs": [
+        {
+          "id": "run-2a789d39-5297-426e-a0b0-c2bd8117c66b",
+          "title": "例子.pdf",
+          "filename": "例子.pdf",
+          "state": "partial",
+          "finished_at": "2026-11-15T02:16:15.935Z",
+          "error": null,
+          "complete": false,
+          "blockers": [
+            "source_glyph_quarantine_unresolved"
+          ],
+          "dispatched": 2929,
+          "completed": 2929,
+          "summary": true,
+          "glyph_gaps": 41,
+          "unprocessed": 41,
+          "failed": 0,
+          "runner_error": null,
+          "requests": 54,
+          "summary_attempts": [
+            {
+              "attempt": 0,
+              "status": "completed",
+              "error": null,
+              "requests": 8
+            }
+          ],
+          "final_events": [
+            {
+              "run_id": "run-2a789d39-5297-426e-a0b0-c2bd8117c66b",
+              "seq": 175,
+              "type": "state",
+              "timestamp": "2026-11-15T02:13:47.826Z",
+              "detail": {
+                "state": "reconciling"
+              }
+            },
+            {
+              "run_id": "run-2a789d39-5297-426e-a0b0-c2bd8117c66b",
+              "seq": 203,
+              "type": "document_summary",
+              "timestamp": "2026-11-15T02:15:52.243Z",
+              "detail": {
+                "summary": "完成本批11条记录的逐条语义审阅；未发现完全重复源句。血管周细胞记录为先前“coverage不足”的描述及随后研究所述松散相关，保留二者并建立上下文更新链接，不合并或消解原差异。血管形态、细胞缩小、坏死与凋亡的比较、肿瘤血管/基质特征、组织学区域差异及EMT形态转换为可能的视觉描述，均保留完整原句、限定语及来源归属（来源未明者标明不确定）。衰老细胞句含形态特征但谓语主要是流行/关联，标为混合；PET葡萄糖摄取句是关联和方法背景。未从纸文推断疾病或影像模态，也未发现同纸不同版本或明确冲突需改写。",
+                "strategy": "baseline",
+                "candidate_record_ids_read": [
+                  "ev-41d3dae8874db296c9f7e654b1127e2cf3bb4cd0",
+                  "ev-4dcd22566088cc76b9d471f1f8a8c715e0a82751",
+                  "ev-553a814f7e5f638e1eb1b97385e5aa16e57bdd9a",
+                  "ev-75cd3fef8b77806fb70bcb8944b353716cc0d933",
+                  "ev-8abf639c1807dbd790834aa0e05fef65b54f6fa1",
+                  "ev-baeb561a002661d4d1250e7cbe680aea55af319e",
+                  "ev-bffd96d24f29eca34baedf7e6b1ceb3c81e5b87c",
+                  "ev-d7e75da0c0e6aab9fc120eb09db8a302bf3e6756",
+                  "ev-e1ceb72f7bda21fcea76d720e9edfbf59a4e8893",
+                  "ev-e9a3388cdc0804847f22e920b6c43e9e8a690fc2",
+                  "ev-fa3da5b9ec6e55ca5655bcf3b9e6ac620c3ee70f"
+                ],
+                "reviews": [
+                  "ev-41d3dae8874db296c9f7e654b1127e2cf3bb4cd0",
+                  "ev-4dcd22566088cc76b9d471f1f8a8c715e0a82751",
+                  "ev-553a814f7e5f638e1eb1b97385e5aa16e57bdd9a",
+                  "ev-75cd3fef8b77806fb70bcb8944b353716cc0d933",
+                  "ev-8abf639c1807dbd790834aa0e05fef65b54f6fa1",
+                  "ev-baeb561a002661d4d1250e7cbe680aea55af319e",
+                  "ev-bffd96d24f29eca34baedf7e6b1ceb3c81e5b87c",
+                  "ev-d7e75da0c0e6aab9fc120eb09db8a302bf3e6756",
+                  "ev-e1ceb72f7bda21fcea76d720e9edfbf59a4e8893",
+                  "ev-e9a3388cdc0804847f22e920b6c43e9e8a690fc2",
+                  "ev-fa3da5b9ec6e55ca5655bcf3b9e6ac620c3ee70f"
+                ],
+                "semantic_audit_case_ids_reviewed": [],
+                "complete": false,
+                "completion_blockers": [
+                  {
+                    "code": "summary_requires_all_candidate_context_read",
+                    "record_ids": [
+                      "ev-41d3dae8874db296c9f7e654b1127e2cf3bb4cd0",
+                      "ev-553a814f7e5f638e1eb1b97385e5aa16e57bdd9a",
+                      "ev-bffd96d24f29eca34baedf7e6b1ceb3c81e5b87c"
+                    ]
+                  },
+                  {
+                    "code": "primary_assessment_coverage_incomplete",
+                    "assessment_policy_version": "model-primary-assessment-1",
+                    "record_ids": [
+                      "ev-41d3dae8874db296c9f7e654b1127e2cf3bb4cd0",
+                      "ev-553a814f7e5f638e1eb1b97385e5aa16e57bdd9a",
+                      "ev-bffd96d24f29eca34baedf7e6b1ceb3c81e5b87c"
+                    ]
+                  }
+                ],
+                "saved_updates": [
+                  {
+                    "record_id": "ev-41d3dae8874db296c9f7e654b1127e2cf3bb4cd0",
+                    "action": "new_version",
+                    "issues": [],
+                    "versions": [
+                      {
+                        "version": 3,
+                        "status": "active"
+                      }
+                    ]
+                  },
+                  {
+                    "record_id": "ev-553a814f7e5f638e1eb1b97385e5aa16e57bdd9a",
+                    "action": "new_version",
+                    "issues": [],
+                    "versions": [
+                      {
+                        "version": 3,
+                        "status": "active"
+                      }
+                    ]
+                  },
+                  {
+                    "record_id": "ev-baeb561a002661d4d1250e7cbe680aea55af319e",
+                    "action": "proposed_update",
+                    "issues": [
+                      "feature_revision_requires_review"
+                    ],
+                    "versions": [
+                      {
+                        "version": 3,
+                        "status": "proposed"
+                      }
+                    ]
+                  }
+                ],
+                "atomic_submission": true,
+                "medical_approval": false
+              }
+            },
+            {
+              "run_id": "run-2a789d39-5297-426e-a0b0-c2bd8117c66b",
+              "seq": 211,
+              "type": "document_summary",
+              "timestamp": "2026-11-15T02:16:13.727Z",
+              "detail": {
+                "summary": "本批11条现有记录均已按当前版本复核；记录分别包含血管形态定义、肿瘤血管/基质关联、细胞形态描述、组织学区域异质性等。名单中也有衰老特征后接患病组织中的丰度/患病率句，以及葡萄糖摄取和PET方法句；两者谓语或主旨偏向关联和方法，不应仅凭形态词或影像技术名称作为独立视觉描述。周细胞记录分别保留历史上被描述为缺乏覆盖、以及后续研究发现松散相关的完整陈述，视为上下文差异，不作合并。未发现需要据同纸内容推断疾病或模态之处；相关归属仍以源文本明确引用或不明确为准。更新后版本的语义判断已包含在本次审阅中。",
+                "strategy": "baseline",
+                "candidate_record_ids_read": [
+                  "ev-41d3dae8874db296c9f7e654b1127e2cf3bb4cd0",
+                  "ev-4dcd22566088cc76b9d471f1f8a8c715e0a82751",
+                  "ev-553a814f7e5f638e1eb1b97385e5aa16e57bdd9a",
+                  "ev-75cd3fef8b77806fb70bcb8944b353716cc0d933",
+                  "ev-8abf639c1807dbd790834aa0e05fef65b54f6fa1",
+                  "ev-baeb561a002661d4d1250e7cbe680aea55af319e",
+                  "ev-bffd96d24f29eca34baedf7e6b1ceb3c81e5b87c",
+                  "ev-d7e75da0c0e6aab9fc120eb09db8a302bf3e6756",
+                  "ev-e1ceb72f7bda21fcea76d720e9edfbf59a4e8893",
+                  "ev-e9a3388cdc0804847f22e920b6c43e9e8a690fc2",
+                  "ev-fa3da5b9ec6e55ca5655bcf3b9e6ac620c3ee70f"
+                ],
+                "reviews": [
+                  "ev-41d3dae8874db296c9f7e654b1127e2cf3bb4cd0",
+                  "ev-4dcd22566088cc76b9d471f1f8a8c715e0a82751",
+                  "ev-553a814f7e5f638e1eb1b97385e5aa16e57bdd9a",
+                  "ev-75cd3fef8b77806fb70bcb8944b353716cc0d933",
+                  "ev-8abf639c1807dbd790834aa0e05fef65b54f6fa1",
+                  "ev-baeb561a002661d4d1250e7cbe680aea55af319e",
+                  "ev-bffd96d24f29eca34baedf7e6b1ceb3c81e5b87c",
+                  "ev-d7e75da0c0e6aab9fc120eb09db8a302bf3e6756",
+                  "ev-e1ceb72f7bda21fcea76d720e9edfbf59a4e8893",
+                  "ev-e9a3388cdc0804847f22e920b6c43e9e8a690fc2",
+                  "ev-fa3da5b9ec6e55ca5655bcf3b9e6ac620c3ee70f"
+                ],
+                "semantic_audit_case_ids_reviewed": [],
+                "complete": true,
+                "completion_blockers": [],
+                "saved_updates": [],
+                "atomic_submission": true,
+                "medical_approval": false
+              }
+            },
+            {
+              "run_id": "run-2a789d39-5297-426e-a0b0-c2bd8117c66b",
+              "seq": 212,
+              "type": "state",
+              "timestamp": "2026-11-15T02:16:15.795Z",
+              "detail": {
+                "state": "partial"
+              }
+            },
+            {
+              "run_id": "run-2a789d39-5297-426e-a0b0-c2bd8117c66b",
+              "seq": 213,
+              "type": "run_result_saved",
+              "timestamp": "2026-11-15T02:16:15.977Z",
+              "detail": {
+                "coverage_saved": true,
+                "finalization_complete": true,
+                "controlled_fixture": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+          "title": "测试2",
+          "filename": "例子.pdf",
+          "state": "partial",
+          "finished_at": "2026-11-15T02:46:36.851Z",
+          "error": null,
+          "complete": false,
+          "blockers": [
+            "source_glyph_quarantine_unresolved"
+          ],
+          "dispatched": 2929,
+          "completed": 2929,
+          "summary": true,
+          "glyph_gaps": 41,
+          "unprocessed": 41,
+          "failed": 0,
+          "runner_error": null,
+          "requests": 58,
+          "summary_attempts": [
+            {
+              "attempt": 0,
+              "status": "completed",
+              "error": null,
+              "requests": 5
+            }
+          ],
+          "final_events": [
+            {
+              "run_id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+              "seq": 9,
+              "type": "state",
+              "timestamp": "2026-11-15T02:36:02.400Z",
+              "detail": {
+                "state": "extracting"
+              }
+            },
+            {
+              "run_id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+              "seq": 187,
+              "type": "state",
+              "timestamp": "2026-11-15T02:45:28.987Z",
+              "detail": {
+                "state": "reconciling"
+              }
+            },
+            {
+              "run_id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+              "seq": 206,
+              "type": "document_summary",
+              "timestamp": "2026-11-15T02:46:34.845Z",
+              "detail": {
+                "summary": "逐条检查本批11条记录及已重读原文。没有发现同源重复；低血管化与高血管化陈述涉及不同肿瘤，不构成冲突。完整谓述保留形态、比较、条件及不确定性，均作为未批准视觉证据建议；不少描述属于细胞生物学或组织病理而非影像观察，癌种/模态适用性不明。引用文献是既往研究归属，不是本文病例或图像观察。",
+                "strategy": "baseline",
+                "candidate_record_ids_read": [
+                  "ev-095e8967d12882b956afd3c7559e027a3882df66",
+                  "ev-0c5ca51ca4584ab2b922bf3e26cd552e74db7117",
+                  "ev-7d9545a44fd44ee834014001a6966576e38035a4",
+                  "ev-8722f7c4981b77d74adacbece1d2d0900ee99f65",
+                  "ev-ab4c3f3bc9e165a9806ba1c941fc2b7a784e5d40",
+                  "ev-bf9e33cea22d454852260373e9b7c115607bbee1",
+                  "ev-d96b195f4eef9e624c162de533630f200c728937",
+                  "ev-e258e761f8e23dc6da61a190b7c748a07da71f01",
+                  "ev-f156cfe0148fc9543b4987db91ea026afc474f17",
+                  "ev-f688cbbeeb9d8a2ad052ffc902315679638eda68",
+                  "ev-ff32fd4b6317f7019ed7af4470259d3be45e8bdc"
+                ],
+                "reviews": [
+                  "ev-095e8967d12882b956afd3c7559e027a3882df66",
+                  "ev-0c5ca51ca4584ab2b922bf3e26cd552e74db7117",
+                  "ev-7d9545a44fd44ee834014001a6966576e38035a4",
+                  "ev-8722f7c4981b77d74adacbece1d2d0900ee99f65",
+                  "ev-ab4c3f3bc9e165a9806ba1c941fc2b7a784e5d40",
+                  "ev-bf9e33cea22d454852260373e9b7c115607bbee1",
+                  "ev-d96b195f4eef9e624c162de533630f200c728937",
+                  "ev-e258e761f8e23dc6da61a190b7c748a07da71f01",
+                  "ev-f156cfe0148fc9543b4987db91ea026afc474f17",
+                  "ev-f688cbbeeb9d8a2ad052ffc902315679638eda68",
+                  "ev-ff32fd4b6317f7019ed7af4470259d3be45e8bdc"
+                ],
+                "semantic_audit_case_ids_reviewed": [],
+                "complete": true,
+                "completion_blockers": [],
+                "saved_updates": [],
+                "atomic_submission": true,
+                "medical_approval": false
+              }
+            },
+            {
+              "run_id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+              "seq": 207,
+              "type": "state",
+              "timestamp": "2026-11-15T02:46:36.712Z",
+              "detail": {
+                "state": "partial"
+              }
+            },
+            {
+              "run_id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+              "seq": 208,
+              "type": "run_result_saved",
+              "timestamp": "2026-11-15T02:46:36.890Z",
+              "detail": {
+                "coverage_saved": true,
+                "finalization_complete": true,
+                "controlled_fixture": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "run-9b272402-f873-44e8-adeb-442da132410f",
+          "title": "测试2",
+          "filename": "例子2.pdf",
+          "state": "partial",
+          "finished_at": "2026-11-15T02:40:25.171Z",
+          "error": null,
+          "complete": false,
+          "blockers": [
+            "source_glyph_quarantine_unresolved"
+          ],
+          "dispatched": 1686,
+          "completed": 1686,
+          "summary": true,
+          "glyph_gaps": 1,
+          "unprocessed": 1,
+          "failed": 0,
+          "runner_error": null,
+          "requests": 35,
+          "summary_attempts": [
+            {
+              "attempt": 0,
+              "status": "completed",
+              "error": null,
+              "requests": 2
+            }
+          ],
+          "final_events": [
+            {
+              "run_id": "run-9b272402-f873-44e8-adeb-442da132410f",
+              "seq": 9,
+              "type": "state",
+              "timestamp": "2026-11-15T02:35:41.462Z",
+              "detail": {
+                "state": "extracting"
+              }
+            },
+            {
+              "run_id": "run-9b272402-f873-44e8-adeb-442da132410f",
+              "seq": 107,
+              "type": "state",
+              "timestamp": "2026-11-15T02:40:16.047Z",
+              "detail": {
+                "state": "reconciling"
+              }
+            },
+            {
+              "run_id": "run-9b272402-f873-44e8-adeb-442da132410f",
+              "seq": 111,
+              "type": "document_summary",
+              "timestamp": "2026-11-15T02:40:25.098Z",
+              "detail": {
+                "summary": "当前批次未提供候选记录或语义审计案例（records=0，audit cases=0），因此无同文重复/冲突、适用性、指代或后续条件可核对；未新增证据更新。文章范围提示有1个隔离源块且另有1个未纳入处理的块，本次不对其内容作推断。",
+                "strategy": "baseline",
+                "candidate_record_ids_read": [],
+                "reviews": [],
+                "semantic_audit_case_ids_reviewed": [],
+                "complete": true,
+                "completion_blockers": [],
+                "saved_updates": [],
+                "atomic_submission": true,
+                "medical_approval": false
+              }
+            },
+            {
+              "run_id": "run-9b272402-f873-44e8-adeb-442da132410f",
+              "seq": 112,
+              "type": "state",
+              "timestamp": "2026-11-15T02:40:25.104Z",
+              "detail": {
+                "state": "partial"
+              }
+            },
+            {
+              "run_id": "run-9b272402-f873-44e8-adeb-442da132410f",
+              "seq": 113,
+              "type": "run_result_saved",
+              "timestamp": "2026-11-15T02:40:25.200Z",
+              "detail": {
+                "coverage_saved": true,
+                "finalization_complete": true,
+                "controlled_fixture": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "run-0ff275e5-ddee-458b-ae89-410bb4c0da88",
+          "title": "例子2.pdf",
+          "filename": "例子2.pdf",
+          "state": "cancelled",
+          "finished_at": "2026-11-15T04:52:56.240Z",
+          "error": null,
+          "complete": false,
+          "blockers": [
+            "selected_input_processing_incomplete",
+            "source_glyph_quarantine_unresolved",
+            "summary_incomplete",
+            "run_cancelled"
+          ],
+          "dispatched": 1686,
+          "completed": 127,
+          "summary": false,
+          "glyph_gaps": 1,
+          "unprocessed": 1560,
+          "failed": 0,
+          "runner_error": {
+            "type": "ContractError",
+            "code": "run_cancelled"
+          },
+          "requests": 4,
+          "summary_attempts": [],
+          "final_events": [
+            {
+              "run_id": "run-0ff275e5-ddee-458b-ae89-410bb4c0da88",
+              "seq": 3,
+              "type": "state",
+              "timestamp": "2026-11-15T04:52:04.693Z",
+              "detail": {
+                "state": "parsing"
+              }
+            },
+            {
+              "run_id": "run-0ff275e5-ddee-458b-ae89-410bb4c0da88",
+              "seq": 9,
+              "type": "state",
+              "timestamp": "2026-11-15T04:52:30.234Z",
+              "detail": {
+                "state": "extracting"
+              }
+            },
+            {
+              "run_id": "run-0ff275e5-ddee-458b-ae89-410bb4c0da88",
+              "seq": 20,
+              "type": "state",
+              "timestamp": "2026-11-15T04:52:56.163Z",
+              "detail": {
+                "state": "cancelled"
+              }
+            },
+            {
+              "run_id": "run-0ff275e5-ddee-458b-ae89-410bb4c0da88",
+              "seq": 22,
+              "type": "extraction_error",
+              "timestamp": "2026-11-15T04:52:56.174Z",
+              "detail": {
+                "type": "ContractError",
+                "code": "run_cancelled",
+                "budget_halted": null,
+                "document_timeout": false
+              }
+            },
+            {
+              "run_id": "run-0ff275e5-ddee-458b-ae89-410bb4c0da88",
+              "seq": 23,
+              "type": "run_result_saved",
+              "timestamp": "2026-11-15T04:52:56.276Z",
+              "detail": {
+                "coverage_saved": true,
+                "finalization_complete": true,
+                "controlled_fixture": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "run-308a056f-9053-4b39-9dbd-2f20ae065252",
+          "title": null,
+          "filename": "例子.pdf",
+          "state": "cancelled",
+          "finished_at": "2026-11-15T04:54:13.920Z",
+          "error": "parser_aborted",
+          "complete": null,
+          "blockers": null,
+          "dispatched": null,
+          "completed": null,
+          "summary": null,
+          "glyph_gaps": 0,
+          "unprocessed": 0,
+          "failed": 0,
+          "final_events": [
+            {
+              "run_id": "run-308a056f-9053-4b39-9dbd-2f20ae065252",
+              "seq": 1,
+              "type": "state",
+              "timestamp": "2026-11-15T04:53:59.777Z",
+              "detail": {
+                "state": "queued",
+                "medical_quality_approved": false
+              }
+            },
+            {
+              "run_id": "run-308a056f-9053-4b39-9dbd-2f20ae065252",
+              "seq": 3,
+              "type": "state",
+              "timestamp": "2026-11-15T04:53:59.782Z",
+              "detail": {
+                "state": "parsing"
+              }
+            },
+            {
+              "run_id": "run-308a056f-9053-4b39-9dbd-2f20ae065252",
+              "seq": 5,
+              "type": "state",
+              "timestamp": "2026-11-15T04:54:13.915Z",
+              "detail": {
+                "state": "cancelled"
+              }
+            },
+            {
+              "run_id": "run-308a056f-9053-4b39-9dbd-2f20ae065252",
+              "seq": 7,
+              "type": "run_result_saved",
+              "timestamp": "2026-11-15T04:54:13.921Z",
+              "detail": {
+                "coverage_saved": false,
+                "finalization_complete": true,
+                "controlled_fixture": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "run-05f90580-aa8b-4a49-95c8-ce11bf7bc65d",
+          "title": null,
+          "filename": "例子2.pdf",
+          "state": "cancelled",
+          "finished_at": "2026-11-15T04:54:13.912Z",
+          "error": "parser_aborted",
+          "complete": null,
+          "blockers": null,
+          "dispatched": null,
+          "completed": null,
+          "summary": null,
+          "glyph_gaps": 0,
+          "unprocessed": 0,
+          "failed": 0,
+          "final_events": [
+            {
+              "run_id": "run-05f90580-aa8b-4a49-95c8-ce11bf7bc65d",
+              "seq": 1,
+              "type": "state",
+              "timestamp": "2026-11-15T04:53:59.951Z",
+              "detail": {
+                "state": "queued",
+                "medical_quality_approved": false
+              }
+            },
+            {
+              "run_id": "run-05f90580-aa8b-4a49-95c8-ce11bf7bc65d",
+              "seq": 3,
+              "type": "state",
+              "timestamp": "2026-11-15T04:53:59.956Z",
+              "detail": {
+                "state": "parsing"
+              }
+            },
+            {
+              "run_id": "run-05f90580-aa8b-4a49-95c8-ce11bf7bc65d",
+              "seq": 5,
+              "type": "state",
+              "timestamp": "2026-11-15T04:54:13.907Z",
+              "detail": {
+                "state": "cancelled"
+              }
+            },
+            {
+              "run_id": "run-05f90580-aa8b-4a49-95c8-ce11bf7bc65d",
+              "seq": 7,
+              "type": "run_result_saved",
+              "timestamp": "2026-11-15T04:54:13.914Z",
+              "detail": {
+                "coverage_saved": false,
+                "finalization_complete": true,
+                "controlled_fixture": false
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "database_snapshot": "runtime-data/backups/batch-followup-20261115-before/t1.sqlite",
+      "runs": [
+        {
+          "id": "run-2a789d39-5297-426e-a0b0-c2bd8117c66b",
+          "title": "例子.pdf",
+          "filename": "例子.pdf",
+          "state": "partial",
+          "finished_at": "2026-11-15T02:16:15.935Z",
+          "error": null,
+          "complete": false,
+          "blockers": [
+            "source_glyph_quarantine_unresolved"
+          ],
+          "dispatched": 2929,
+          "completed": 2929,
+          "summary": true,
+          "glyph_gaps": 41,
+          "unprocessed": 41,
+          "failed": 0,
+          "runner_error": null,
+          "requests": 54,
+          "summary_attempts": [
+            {
+              "attempt": 0,
+              "status": "completed",
+              "error": null,
+              "requests": 8
+            }
+          ],
+          "final_events": [
+            {
+              "run_id": "run-2a789d39-5297-426e-a0b0-c2bd8117c66b",
+              "seq": 175,
+              "type": "state",
+              "timestamp": "2026-11-15T02:13:47.826Z",
+              "detail": {
+                "state": "reconciling"
+              }
+            },
+            {
+              "run_id": "run-2a789d39-5297-426e-a0b0-c2bd8117c66b",
+              "seq": 203,
+              "type": "document_summary",
+              "timestamp": "2026-11-15T02:15:52.243Z",
+              "detail": {
+                "summary": "完成本批11条记录的逐条语义审阅；未发现完全重复源句。血管周细胞记录为先前“coverage不足”的描述及随后研究所述松散相关，保留二者并建立上下文更新链接，不合并或消解原差异。血管形态、细胞缩小、坏死与凋亡的比较、肿瘤血管/基质特征、组织学区域差异及EMT形态转换为可能的视觉描述，均保留完整原句、限定语及来源归属（来源未明者标明不确定）。衰老细胞句含形态特征但谓语主要是流行/关联，标为混合；PET葡萄糖摄取句是关联和方法背景。未从纸文推断疾病或影像模态，也未发现同纸不同版本或明确冲突需改写。",
+                "strategy": "baseline",
+                "candidate_record_ids_read": [
+                  "ev-41d3dae8874db296c9f7e654b1127e2cf3bb4cd0",
+                  "ev-4dcd22566088cc76b9d471f1f8a8c715e0a82751",
+                  "ev-553a814f7e5f638e1eb1b97385e5aa16e57bdd9a",
+                  "ev-75cd3fef8b77806fb70bcb8944b353716cc0d933",
+                  "ev-8abf639c1807dbd790834aa0e05fef65b54f6fa1",
+                  "ev-baeb561a002661d4d1250e7cbe680aea55af319e",
+                  "ev-bffd96d24f29eca34baedf7e6b1ceb3c81e5b87c",
+                  "ev-d7e75da0c0e6aab9fc120eb09db8a302bf3e6756",
+                  "ev-e1ceb72f7bda21fcea76d720e9edfbf59a4e8893",
+                  "ev-e9a3388cdc0804847f22e920b6c43e9e8a690fc2",
+                  "ev-fa3da5b9ec6e55ca5655bcf3b9e6ac620c3ee70f"
+                ],
+                "reviews": [
+                  "ev-41d3dae8874db296c9f7e654b1127e2cf3bb4cd0",
+                  "ev-4dcd22566088cc76b9d471f1f8a8c715e0a82751",
+                  "ev-553a814f7e5f638e1eb1b97385e5aa16e57bdd9a",
+                  "ev-75cd3fef8b77806fb70bcb8944b353716cc0d933",
+                  "ev-8abf639c1807dbd790834aa0e05fef65b54f6fa1",
+                  "ev-baeb561a002661d4d1250e7cbe680aea55af319e",
+                  "ev-bffd96d24f29eca34baedf7e6b1ceb3c81e5b87c",
+                  "ev-d7e75da0c0e6aab9fc120eb09db8a302bf3e6756",
+                  "ev-e1ceb72f7bda21fcea76d720e9edfbf59a4e8893",
+                  "ev-e9a3388cdc0804847f22e920b6c43e9e8a690fc2",
+                  "ev-fa3da5b9ec6e55ca5655bcf3b9e6ac620c3ee70f"
+                ],
+                "semantic_audit_case_ids_reviewed": [],
+                "complete": false,
+                "completion_blockers": [
+                  {
+                    "code": "summary_requires_all_candidate_context_read",
+                    "record_ids": [
+                      "ev-41d3dae8874db296c9f7e654b1127e2cf3bb4cd0",
+                      "ev-553a814f7e5f638e1eb1b97385e5aa16e57bdd9a",
+                      "ev-bffd96d24f29eca34baedf7e6b1ceb3c81e5b87c"
+                    ]
+                  },
+                  {
+                    "code": "primary_assessment_coverage_incomplete",
+                    "assessment_policy_version": "model-primary-assessment-1",
+                    "record_ids": [
+                      "ev-41d3dae8874db296c9f7e654b1127e2cf3bb4cd0",
+                      "ev-553a814f7e5f638e1eb1b97385e5aa16e57bdd9a",
+                      "ev-bffd96d24f29eca34baedf7e6b1ceb3c81e5b87c"
+                    ]
+                  }
+                ],
+                "saved_updates": [
+                  {
+                    "record_id": "ev-41d3dae8874db296c9f7e654b1127e2cf3bb4cd0",
+                    "action": "new_version",
+                    "issues": [],
+                    "versions": [
+                      {
+                        "version": 3,
+                        "status": "active"
+                      }
+                    ]
+                  },
+                  {
+                    "record_id": "ev-553a814f7e5f638e1eb1b97385e5aa16e57bdd9a",
+                    "action": "new_version",
+                    "issues": [],
+                    "versions": [
+                      {
+                        "version": 3,
+                        "status": "active"
+                      }
+                    ]
+                  },
+                  {
+                    "record_id": "ev-baeb561a002661d4d1250e7cbe680aea55af319e",
+                    "action": "proposed_update",
+                    "issues": [
+                      "feature_revision_requires_review"
+                    ],
+                    "versions": [
+                      {
+                        "version": 3,
+                        "status": "proposed"
+                      }
+                    ]
+                  }
+                ],
+                "atomic_submission": true,
+                "medical_approval": false
+              }
+            },
+            {
+              "run_id": "run-2a789d39-5297-426e-a0b0-c2bd8117c66b",
+              "seq": 211,
+              "type": "document_summary",
+              "timestamp": "2026-11-15T02:16:13.727Z",
+              "detail": {
+                "summary": "本批11条现有记录均已按当前版本复核；记录分别包含血管形态定义、肿瘤血管/基质关联、细胞形态描述、组织学区域异质性等。名单中也有衰老特征后接患病组织中的丰度/患病率句，以及葡萄糖摄取和PET方法句；两者谓语或主旨偏向关联和方法，不应仅凭形态词或影像技术名称作为独立视觉描述。周细胞记录分别保留历史上被描述为缺乏覆盖、以及后续研究发现松散相关的完整陈述，视为上下文差异，不作合并。未发现需要据同纸内容推断疾病或模态之处；相关归属仍以源文本明确引用或不明确为准。更新后版本的语义判断已包含在本次审阅中。",
+                "strategy": "baseline",
+                "candidate_record_ids_read": [
+                  "ev-41d3dae8874db296c9f7e654b1127e2cf3bb4cd0",
+                  "ev-4dcd22566088cc76b9d471f1f8a8c715e0a82751",
+                  "ev-553a814f7e5f638e1eb1b97385e5aa16e57bdd9a",
+                  "ev-75cd3fef8b77806fb70bcb8944b353716cc0d933",
+                  "ev-8abf639c1807dbd790834aa0e05fef65b54f6fa1",
+                  "ev-baeb561a002661d4d1250e7cbe680aea55af319e",
+                  "ev-bffd96d24f29eca34baedf7e6b1ceb3c81e5b87c",
+                  "ev-d7e75da0c0e6aab9fc120eb09db8a302bf3e6756",
+                  "ev-e1ceb72f7bda21fcea76d720e9edfbf59a4e8893",
+                  "ev-e9a3388cdc0804847f22e920b6c43e9e8a690fc2",
+                  "ev-fa3da5b9ec6e55ca5655bcf3b9e6ac620c3ee70f"
+                ],
+                "reviews": [
+                  "ev-41d3dae8874db296c9f7e654b1127e2cf3bb4cd0",
+                  "ev-4dcd22566088cc76b9d471f1f8a8c715e0a82751",
+                  "ev-553a814f7e5f638e1eb1b97385e5aa16e57bdd9a",
+                  "ev-75cd3fef8b77806fb70bcb8944b353716cc0d933",
+                  "ev-8abf639c1807dbd790834aa0e05fef65b54f6fa1",
+                  "ev-baeb561a002661d4d1250e7cbe680aea55af319e",
+                  "ev-bffd96d24f29eca34baedf7e6b1ceb3c81e5b87c",
+                  "ev-d7e75da0c0e6aab9fc120eb09db8a302bf3e6756",
+                  "ev-e1ceb72f7bda21fcea76d720e9edfbf59a4e8893",
+                  "ev-e9a3388cdc0804847f22e920b6c43e9e8a690fc2",
+                  "ev-fa3da5b9ec6e55ca5655bcf3b9e6ac620c3ee70f"
+                ],
+                "semantic_audit_case_ids_reviewed": [],
+                "complete": true,
+                "completion_blockers": [],
+                "saved_updates": [],
+                "atomic_submission": true,
+                "medical_approval": false
+              }
+            },
+            {
+              "run_id": "run-2a789d39-5297-426e-a0b0-c2bd8117c66b",
+              "seq": 212,
+              "type": "state",
+              "timestamp": "2026-11-15T02:16:15.795Z",
+              "detail": {
+                "state": "partial"
+              }
+            },
+            {
+              "run_id": "run-2a789d39-5297-426e-a0b0-c2bd8117c66b",
+              "seq": 213,
+              "type": "run_result_saved",
+              "timestamp": "2026-11-15T02:16:15.977Z",
+              "detail": {
+                "coverage_saved": true,
+                "finalization_complete": true,
+                "controlled_fixture": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+          "title": "测试2",
+          "filename": "例子.pdf",
+          "state": "partial",
+          "finished_at": "2026-11-15T02:46:36.851Z",
+          "error": null,
+          "complete": false,
+          "blockers": [
+            "source_glyph_quarantine_unresolved"
+          ],
+          "dispatched": 2929,
+          "completed": 2929,
+          "summary": true,
+          "glyph_gaps": 41,
+          "unprocessed": 41,
+          "failed": 0,
+          "runner_error": null,
+          "requests": 58,
+          "summary_attempts": [
+            {
+              "attempt": 0,
+              "status": "completed",
+              "error": null,
+              "requests": 5
+            }
+          ],
+          "final_events": [
+            {
+              "run_id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+              "seq": 9,
+              "type": "state",
+              "timestamp": "2026-11-15T02:36:02.400Z",
+              "detail": {
+                "state": "extracting"
+              }
+            },
+            {
+              "run_id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+              "seq": 187,
+              "type": "state",
+              "timestamp": "2026-11-15T02:45:28.987Z",
+              "detail": {
+                "state": "reconciling"
+              }
+            },
+            {
+              "run_id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+              "seq": 206,
+              "type": "document_summary",
+              "timestamp": "2026-11-15T02:46:34.845Z",
+              "detail": {
+                "summary": "逐条检查本批11条记录及已重读原文。没有发现同源重复；低血管化与高血管化陈述涉及不同肿瘤，不构成冲突。完整谓述保留形态、比较、条件及不确定性，均作为未批准视觉证据建议；不少描述属于细胞生物学或组织病理而非影像观察，癌种/模态适用性不明。引用文献是既往研究归属，不是本文病例或图像观察。",
+                "strategy": "baseline",
+                "candidate_record_ids_read": [
+                  "ev-095e8967d12882b956afd3c7559e027a3882df66",
+                  "ev-0c5ca51ca4584ab2b922bf3e26cd552e74db7117",
+                  "ev-7d9545a44fd44ee834014001a6966576e38035a4",
+                  "ev-8722f7c4981b77d74adacbece1d2d0900ee99f65",
+                  "ev-ab4c3f3bc9e165a9806ba1c941fc2b7a784e5d40",
+                  "ev-bf9e33cea22d454852260373e9b7c115607bbee1",
+                  "ev-d96b195f4eef9e624c162de533630f200c728937",
+                  "ev-e258e761f8e23dc6da61a190b7c748a07da71f01",
+                  "ev-f156cfe0148fc9543b4987db91ea026afc474f17",
+                  "ev-f688cbbeeb9d8a2ad052ffc902315679638eda68",
+                  "ev-ff32fd4b6317f7019ed7af4470259d3be45e8bdc"
+                ],
+                "reviews": [
+                  "ev-095e8967d12882b956afd3c7559e027a3882df66",
+                  "ev-0c5ca51ca4584ab2b922bf3e26cd552e74db7117",
+                  "ev-7d9545a44fd44ee834014001a6966576e38035a4",
+                  "ev-8722f7c4981b77d74adacbece1d2d0900ee99f65",
+                  "ev-ab4c3f3bc9e165a9806ba1c941fc2b7a784e5d40",
+                  "ev-bf9e33cea22d454852260373e9b7c115607bbee1",
+                  "ev-d96b195f4eef9e624c162de533630f200c728937",
+                  "ev-e258e761f8e23dc6da61a190b7c748a07da71f01",
+                  "ev-f156cfe0148fc9543b4987db91ea026afc474f17",
+                  "ev-f688cbbeeb9d8a2ad052ffc902315679638eda68",
+                  "ev-ff32fd4b6317f7019ed7af4470259d3be45e8bdc"
+                ],
+                "semantic_audit_case_ids_reviewed": [],
+                "complete": true,
+                "completion_blockers": [],
+                "saved_updates": [],
+                "atomic_submission": true,
+                "medical_approval": false
+              }
+            },
+            {
+              "run_id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+              "seq": 207,
+              "type": "state",
+              "timestamp": "2026-11-15T02:46:36.712Z",
+              "detail": {
+                "state": "partial"
+              }
+            },
+            {
+              "run_id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+              "seq": 208,
+              "type": "run_result_saved",
+              "timestamp": "2026-11-15T02:46:36.890Z",
+              "detail": {
+                "coverage_saved": true,
+                "finalization_complete": true,
+                "controlled_fixture": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "run-9b272402-f873-44e8-adeb-442da132410f",
+          "title": "测试2",
+          "filename": "例子2.pdf",
+          "state": "partial",
+          "finished_at": "2026-11-15T02:40:25.171Z",
+          "error": null,
+          "complete": false,
+          "blockers": [
+            "source_glyph_quarantine_unresolved"
+          ],
+          "dispatched": 1686,
+          "completed": 1686,
+          "summary": true,
+          "glyph_gaps": 1,
+          "unprocessed": 1,
+          "failed": 0,
+          "runner_error": null,
+          "requests": 35,
+          "summary_attempts": [
+            {
+              "attempt": 0,
+              "status": "completed",
+              "error": null,
+              "requests": 2
+            }
+          ],
+          "final_events": [
+            {
+              "run_id": "run-9b272402-f873-44e8-adeb-442da132410f",
+              "seq": 9,
+              "type": "state",
+              "timestamp": "2026-11-15T02:35:41.462Z",
+              "detail": {
+                "state": "extracting"
+              }
+            },
+            {
+              "run_id": "run-9b272402-f873-44e8-adeb-442da132410f",
+              "seq": 107,
+              "type": "state",
+              "timestamp": "2026-11-15T02:40:16.047Z",
+              "detail": {
+                "state": "reconciling"
+              }
+            },
+            {
+              "run_id": "run-9b272402-f873-44e8-adeb-442da132410f",
+              "seq": 111,
+              "type": "document_summary",
+              "timestamp": "2026-11-15T02:40:25.098Z",
+              "detail": {
+                "summary": "当前批次未提供候选记录或语义审计案例（records=0，audit cases=0），因此无同文重复/冲突、适用性、指代或后续条件可核对；未新增证据更新。文章范围提示有1个隔离源块且另有1个未纳入处理的块，本次不对其内容作推断。",
+                "strategy": "baseline",
+                "candidate_record_ids_read": [],
+                "reviews": [],
+                "semantic_audit_case_ids_reviewed": [],
+                "complete": true,
+                "completion_blockers": [],
+                "saved_updates": [],
+                "atomic_submission": true,
+                "medical_approval": false
+              }
+            },
+            {
+              "run_id": "run-9b272402-f873-44e8-adeb-442da132410f",
+              "seq": 112,
+              "type": "state",
+              "timestamp": "2026-11-15T02:40:25.104Z",
+              "detail": {
+                "state": "partial"
+              }
+            },
+            {
+              "run_id": "run-9b272402-f873-44e8-adeb-442da132410f",
+              "seq": 113,
+              "type": "run_result_saved",
+              "timestamp": "2026-11-15T02:40:25.200Z",
+              "detail": {
+                "coverage_saved": true,
+                "finalization_complete": true,
+                "controlled_fixture": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c",
+          "title": "测试33",
+          "filename": "例子.pdf",
+          "state": "partial",
+          "finished_at": "2026-11-15T04:16:22.148Z",
+          "error": null,
+          "complete": false,
+          "blockers": [
+            "source_glyph_quarantine_unresolved"
+          ],
+          "dispatched": 2929,
+          "completed": 2929,
+          "summary": true,
+          "glyph_gaps": 41,
+          "unprocessed": 41,
+          "failed": 0,
+          "final_events": [
+            {
+              "run_id": "run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c",
+              "seq": 192,
+              "type": "state",
+              "timestamp": "2026-11-15T04:14:01.255Z",
+              "detail": {
+                "state": "reconciling"
+              }
+            },
+            {
+              "run_id": "run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c",
+              "seq": 211,
+              "type": "document_summary",
+              "timestamp": "2026-11-15T04:16:07.446Z",
+              "detail": {
+                "summary": "已完成全篇候选核对：9条候选各自均有原文支持；没有相同来源片段的重复记录，也没有相互矛盾的描述。细胞形态、肿瘤浸润及血管形态陈述含实际形态谓词，建议作为视觉证据待审；Figure 5关于信号相互作用的句子是示意图背景而非目标病灶描述。来源归属依原文引用处理，未据图号推断外部来源；候选不建立具体疾病/影像模态适用性。保留完整句义、比较、限定与不确定性；不另改动原始证据文本。",
+                "strategy": "baseline",
+                "candidate_record_ids_read": [
+                  "ev-040533a9c922df87ac17776ff8cd4462050a430f",
+                  "ev-497ef3ce73d15391e25ff212b771109d18dc3971",
+                  "ev-6b16524defe97709c3ed4592fb693bbbcaa4e8bc",
+                  "ev-74d28e2c2cd673a61cd4a63962b8cc0744af4826",
+                  "ev-898f4cc754a3e5593a399d6dab75085a9768ae96",
+                  "ev-9536690e69790990632e2cdda68393e7b8efdc64",
+                  "ev-9a731f9b3bdd5fd465c91f8a385cac7dc1e8edd8",
+                  "ev-bb180169b30695b212e745f3cfc7965a9ae7c55e",
+                  "ev-d0a8be47c073d495bb40f984f58efdf6b502edc3",
+                  "ev-f2983d7b04e150dbc935c147c9dd38977954d794"
+                ],
+                "reviews": [
+                  "ev-040533a9c922df87ac17776ff8cd4462050a430f",
+                  "ev-497ef3ce73d15391e25ff212b771109d18dc3971",
+                  "ev-6b16524defe97709c3ed4592fb693bbbcaa4e8bc",
+                  "ev-74d28e2c2cd673a61cd4a63962b8cc0744af4826",
+                  "ev-898f4cc754a3e5593a399d6dab75085a9768ae96",
+                  "ev-9536690e69790990632e2cdda68393e7b8efdc64",
+                  "ev-d0a8be47c073d495bb40f984f58efdf6b502edc3",
+                  "ev-f2983d7b04e150dbc935c147c9dd38977954d794",
+                  "ev-bb180169b30695b212e745f3cfc7965a9ae7c55e"
+                ],
+                "semantic_audit_case_ids_reviewed": [],
+                "complete": false,
+                "completion_blockers": [
+                  {
+                    "code": "primary_assessment_coverage_incomplete",
+                    "assessment_policy_version": "model-primary-assessment-1",
+                    "record_ids": [
+                      "ev-9a731f9b3bdd5fd465c91f8a385cac7dc1e8edd8"
+                    ]
+                  }
+                ],
+                "saved_updates": [],
+                "atomic_submission": true,
+                "medical_approval": false
+              }
+            },
+            {
+              "run_id": "run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c",
+              "seq": 216,
+              "type": "document_summary",
+              "timestamp": "2026-11-15T04:16:20.341Z",
+              "detail": {
+                "summary": "已补审新增候选：该句完整谓词描述肿瘤区域在分化、增殖、血管性、炎症和/或侵袭性方面的组织学差异，建议作为形态视觉证据待审；其开头承接克隆异质性的语境，引用归属和具体疾病/模态适用性不据此推定。整批已完成候选语义评估，无需改写或新增源文更新。",
+                "strategy": "baseline",
+                "candidate_record_ids_read": [
+                  "ev-040533a9c922df87ac17776ff8cd4462050a430f",
+                  "ev-497ef3ce73d15391e25ff212b771109d18dc3971",
+                  "ev-6b16524defe97709c3ed4592fb693bbbcaa4e8bc",
+                  "ev-74d28e2c2cd673a61cd4a63962b8cc0744af4826",
+                  "ev-898f4cc754a3e5593a399d6dab75085a9768ae96",
+                  "ev-9536690e69790990632e2cdda68393e7b8efdc64",
+                  "ev-9a731f9b3bdd5fd465c91f8a385cac7dc1e8edd8",
+                  "ev-bb180169b30695b212e745f3cfc7965a9ae7c55e",
+                  "ev-d0a8be47c073d495bb40f984f58efdf6b502edc3",
+                  "ev-f2983d7b04e150dbc935c147c9dd38977954d794"
+                ],
+                "reviews": [
+                  "ev-040533a9c922df87ac17776ff8cd4462050a430f",
+                  "ev-497ef3ce73d15391e25ff212b771109d18dc3971",
+                  "ev-6b16524defe97709c3ed4592fb693bbbcaa4e8bc",
+                  "ev-74d28e2c2cd673a61cd4a63962b8cc0744af4826",
+                  "ev-898f4cc754a3e5593a399d6dab75085a9768ae96",
+                  "ev-9536690e69790990632e2cdda68393e7b8efdc64",
+                  "ev-d0a8be47c073d495bb40f984f58efdf6b502edc3",
+                  "ev-f2983d7b04e150dbc935c147c9dd38977954d794",
+                  "ev-bb180169b30695b212e745f3cfc7965a9ae7c55e",
+                  "ev-9a731f9b3bdd5fd465c91f8a385cac7dc1e8edd8"
+                ],
+                "semantic_audit_case_ids_reviewed": [],
+                "complete": true,
+                "completion_blockers": [],
+                "saved_updates": [],
+                "atomic_submission": true,
+                "medical_approval": false
+              }
+            },
+            {
+              "run_id": "run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c",
+              "seq": 217,
+              "type": "state",
+              "timestamp": "2026-11-15T04:16:22.038Z",
+              "detail": {
+                "state": "partial"
+              }
+            },
+            {
+              "run_id": "run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c",
+              "seq": 218,
+              "type": "run_result_saved",
+              "timestamp": "2026-11-15T04:16:22.188Z",
+              "detail": {
+                "coverage_saved": true,
+                "finalization_complete": true,
+                "controlled_fixture": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "run-5376d10a-912a-4415-aa29-57118cd30e82",
+          "title": "测试33",
+          "filename": "例子2.pdf",
+          "state": "partial",
+          "finished_at": "2026-11-15T04:08:13.543Z",
+          "error": null,
+          "complete": false,
+          "blockers": [
+            "source_glyph_quarantine_unresolved"
+          ],
+          "dispatched": 1686,
+          "completed": 1686,
+          "summary": true,
+          "glyph_gaps": 1,
+          "unprocessed": 1,
+          "failed": 0,
+          "final_events": [
+            {
+              "run_id": "run-5376d10a-912a-4415-aa29-57118cd30e82",
+              "seq": 9,
+              "type": "state",
+              "timestamp": "2026-11-15T04:03:31.690Z",
+              "detail": {
+                "state": "extracting"
+              }
+            },
+            {
+              "run_id": "run-5376d10a-912a-4415-aa29-57118cd30e82",
+              "seq": 107,
+              "type": "state",
+              "timestamp": "2026-11-15T04:08:01.971Z",
+              "detail": {
+                "state": "reconciling"
+              }
+            },
+            {
+              "run_id": "run-5376d10a-912a-4415-aa29-57118cd30e82",
+              "seq": 111,
+              "type": "document_summary",
+              "timestamp": "2026-11-15T04:08:13.469Z",
+              "detail": {
+                "summary": "本批次无候选记录、严格同源组或语义审计案例（记录数为0）。因此没有可进行的同文重复/冲突核对、疾病/模态适用性判断或代词及后续条件消歧；未读取原文，也未新增证据更新。",
+                "strategy": "baseline",
+                "candidate_record_ids_read": [],
+                "reviews": [],
+                "semantic_audit_case_ids_reviewed": [],
+                "complete": true,
+                "completion_blockers": [],
+                "saved_updates": [],
+                "atomic_submission": true,
+                "medical_approval": false
+              }
+            },
+            {
+              "run_id": "run-5376d10a-912a-4415-aa29-57118cd30e82",
+              "seq": 112,
+              "type": "state",
+              "timestamp": "2026-11-15T04:08:13.476Z",
+              "detail": {
+                "state": "partial"
+              }
+            },
+            {
+              "run_id": "run-5376d10a-912a-4415-aa29-57118cd30e82",
+              "seq": 113,
+              "type": "run_result_saved",
+              "timestamp": "2026-11-15T04:08:13.571Z",
+              "detail": {
+                "coverage_saved": true,
+                "finalization_complete": true,
+                "controlled_fixture": false
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

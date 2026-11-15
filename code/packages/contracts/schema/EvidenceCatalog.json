@@ -19,7 +19,8 @@
       "enum": [
         "approved",
         "development_only",
-        "unavailable"
+        "unavailable",
+        "operator_configured"
       ]
     },
     "fixture": {
@@ -68,7 +69,8 @@
                   "enum": [
                     "approved",
                     "development_only",
-                    "unavailable"
+                    "unavailable",
+                    "operator_configured"
                   ]
                 }
               },
@@ -82,8 +84,12 @@
             "enum": [
               "approved",
               "development_only",
-              "unavailable"
+              "unavailable",
+              "operator_configured"
             ]
+          },
+          "description": {
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -133,7 +139,8 @@
                   "enum": [
                     "approved",
                     "development_only",
-                    "unavailable"
+                    "unavailable",
+                    "operator_configured"
                   ]
                 }
               },
@@ -147,8 +154,12 @@
             "enum": [
               "approved",
               "development_only",
-              "unavailable"
+              "unavailable",
+              "operator_configured"
             ]
+          },
+          "description": {
+            "type": "string"
           },
           "cancer_ids": {
             "type": "array",
@@ -208,7 +219,8 @@
                   "enum": [
                     "approved",
                     "development_only",
-                    "unavailable"
+                    "unavailable",
+                    "operator_configured"
                   ]
                 }
               },
@@ -232,7 +244,8 @@
             "enum": [
               "approved",
               "development_only",
-              "unavailable"
+              "unavailable",
+              "operator_configured"
             ]
           }
         },
@@ -300,7 +313,8 @@
             "enum": [
               "approved",
               "development_only",
-              "unavailable"
+              "unavailable",
+              "operator_configured"
             ]
           }
         },

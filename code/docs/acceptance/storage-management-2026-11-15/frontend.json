@@ -1,0 +1,185 @@
+{
+  "status": "passed",
+  "method": "Actual T1Workbench, StorageManagement, GlobalToasts and CSS bundled with esbuild; all requests fulfilled by Playwright without a listening server.",
+  "checks": [
+    {
+      "name": "stale_expired_busy_clear_selection_keep_upload_and_do_not_auto_retry",
+      "status": "passed"
+    },
+    {
+      "name": "cleaned_draft_keeps_file_title_scope_and_requires_explicit_reupload_with_new_key",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "screenshots": [
+    "storage-stale-preview.png",
+    "storage-busy.png",
+    "storage-draft-needs-reupload.png"
+  ],
+  "paid_calls": 0,
+  "production_business_writes": 0,
+  "production_deletions": 0,
+  "prior_mainline_validation": {
+    "status": "passed",
+    "method": "Actual T1Workbench, StorageManagement, GlobalToasts and CSS bundled with esbuild; all requests fulfilled by Playwright without a listening server.",
+    "checks": [
+      {
+        "name": "desktop_selection_confirmation_bounds_focus_and_success",
+        "status": "passed"
+      },
+      {
+        "name": "mobile_bounded_scroll_confirmation_and_partial_counts",
+        "status": "passed"
+      },
+      {
+        "name": "stale_expired_busy_clear_selection_keep_upload_and_do_not_auto_retry",
+        "status": "passed"
+      },
+      {
+        "name": "empty_and_unavailable_preview_are_idle_and_read_failure_recovers",
+        "status": "passed"
+      }
+    ],
+    "screenshots": [
+      "storage-desktop-preview.png",
+      "storage-desktop-confirm.png",
+      "storage-desktop-success.png",
+      "storage-mobile-confirm-scroll.png",
+      "storage-mobile-partial.png",
+      "storage-stale-preview.png",
+      "storage-busy.png",
+      "storage-empty-protected.png"
+    ],
+    "note": "Mainline verification before the narrow draft recovery change. The current run covers related scenarios only."
+  },
+  "source_files": [
+    {
+      "path": "code/apps/pi-web/t1/StorageManagement.tsx",
+      "sha256": "5bb3fe446a8e211848fcaba58b9767c1814e36825cc5ad8aa3dd5105bb449d22",
+      "prior_content_preserved": false
+    },
+    {
+      "path": "code/apps/pi-web/t1/BatchSubmission.tsx",
+      "sha256": "00d353dc1ffc3e7c2ed88826dad96a33a195e9a21211e462ea11697b17bd84c2",
+      "prior_content_preserved": true
+    },
+    {
+      "path": "code/apps/pi-web/t1/T1Workbench.tsx",
+      "sha256": "5d2833b5990c74bead31e07d5a96f1b82b01f6f1691fdfd56635a7ac78e7a27d",
+      "prior_content_preserved": true
+    },
+    {
+      "path": "code/apps/pi-web/t1/api.ts",
+      "sha256": "a44904bfddb44d86273fa6ae52cb34599ff896f5fbcf22872acb33eacdca08e4",
+      "prior_content_preserved": true
+    },
+    {
+      "path": "code/apps/pi-web/t1/gateway-policy.ts",
+      "sha256": "dca7af20a8664404ca57d4841fa73187453c8fc8cdf4bc6163ffe292fba04a45",
+      "prior_content_preserved": true
+    },
+    {
+      "path": "code/apps/pi-web/t1/messages.mjs",
+      "sha256": "bd346df02a83598ad7ec4f516bc8d287ac47af18574b3bace2da20321cd0b328",
+      "prior_content_preserved": true
+    },
+    {
+      "path": "code/apps/pi-web/t1/workbench.css",
+      "sha256": "d87326976cedd6f308fb0bc7cdc2b03e37ecc349b426c241da22b9623ed5ab4b",
+      "prior_content_preserved": true
+    },
+    {
+      "path": "code/apps/pi-web/t1/storage-gateway.test.ts",
+      "sha256": "e84a65d0ad0e2f2f4d29f84a53761aca48cf2f8c00165031945b6939a14bf1da",
+      "prior_content_preserved": false
+    },
+    {
+      "path": "code/apps/pi-web/e2e/storage-management.mjs",
+      "sha256": "b0a0019a39a9eb12cc10eeeed1af1f6e11777189e1222e523d1750f20486ef5f",
+      "prior_content_preserved": false
+    },
+    {
+      "path": "code/apps/pi-web/e2e/storage-management-readonly.mjs",
+      "sha256": "a603d88a07c36e0bd426212a888c3864846a7c964bac6d5f80903f84f9e07fe2",
+      "prior_content_preserved": false,
+      "purpose": "Permanent bounded live GET/HEAD verification helper; application source unchanged"
+    }
+  ],
+  "source_status": "Frontend application source remained frozen across the isolated build, same-build browser checks and backend-owner deployment. The live check reads only GET/HEAD and never opens storage preview or cleanup.",
+  "validation": [
+    {
+      "command": "PATH=code/.tools/node/bin:$PATH code/node_modules/.bin/tsx --tsconfig code/apps/pi-web/tsconfig.json --test code/apps/pi-web/t1/storage-gateway.test.ts code/apps/pi-web/t1/gateway-submission.test.ts code/apps/pi-web/lib/t1-workflow.test.mjs",
+      "status": "passed",
+      "exit_code": 0,
+      "tests": 9,
+      "stage": "mainline"
+    },
+    {
+      "command": "PATH=code/.tools/node/bin:$PATH code/apps/pi-web/node_modules/.bin/tsc --noEmit --incremental false",
+      "cwd": "code/apps/pi-web",
+      "status": "passed",
+      "exit_code": 0,
+      "stage": "after draft recovery"
+    },
+    {
+      "command": "PATH=code/.tools/node/bin:$PATH code/apps/pi-web/node_modules/.bin/eslint t1/StorageManagement.tsx t1/BatchSubmission.tsx t1/T1Workbench.tsx t1/api.ts t1/gateway-policy.ts t1/storage-gateway.test.ts t1/messages.mjs",
+      "cwd": "code/apps/pi-web",
+      "status": "passed",
+      "exit_code": 0,
+      "stage": "after draft recovery"
+    },
+    {
+      "command": "PATH=code/.tools/node/bin:$PATH node --check code/apps/pi-web/e2e/storage-management.mjs",
+      "status": "passed",
+      "exit_code": 0,
+      "stage": "production-origin helper syntax"
+    },
+    {
+      "command": "PATH=code/.tools/node/bin:$PATH T1_STORAGE_ORIGIN=http://127.0.0.1:30157 T1_STORAGE_BUILD_ID=mYxCBdDdcBK7amEeDhlnC node code/apps/pi-web/e2e/storage-management.mjs",
+      "status": "passed",
+      "exit_code": 0,
+      "unique_scenarios": 5,
+      "stage": "same isolated production build; actual Next page/static assets, every business API mocked",
+      "report": "same-build-browser.json"
+    },
+    {
+      "command": "PATH=code/.tools/node/bin:$PATH T1_STORAGE_BUILD_ID=mYxCBdDdcBK7amEeDhlnC T1_STORAGE_SUMMARY_PHASE=before-backend-reference-fix node code/apps/pi-web/e2e/storage-management-readonly.mjs",
+      "status": "passed",
+      "exit_code": 0,
+      "stage": "live production GET/HEAD entry verification only; no preview or cleanup",
+      "report": "live-readonly.json",
+      "summary_phase": "before-backend-reference-fix"
+    }
+  ],
+  "formal_review": {
+    "planning_check": {
+      "used_at_that_time": 1,
+      "maximum": 3,
+      "owner": "root Astra session",
+      "result": "continue"
+    },
+    "latest_root_reported_used": 3,
+    "maximum": 3,
+    "note": "Root owns the authoritative final count. Third review concerns the backend raw-text reference fix; frontend source and BUILD_ID do not change."
+  },
+  "notes": [
+    "Mainline browser cases passed before the narrow draft recovery addition; only the two affected cases were then rerun.",
+    "The esbuild fixture reports the pre-existing duplicate pdfReadFailed translation key. This storage change does not edit that key.",
+    "Source patch is scoped to this task and preserves pre-existing tracked and untracked frontend edits.",
+    "The production React scheduling required the test clock to resume after the toast automatically entered its leaving state, so its 180ms exit effect could finish. Only the helper changed; the reproduced initial clock timeout is retained in production-clock-fixture-reproduction.json. The corrected full same-build run passed all five scenarios.",
+    "The live desktop and 390px entry screenshots use the actual deployed build without mocking business APIs. The captured storage summary is explicitly before the backend raw-text reference fix; backend-owner evidence supplies the final post-fix summary. No page checks need repetition for that backend-only change."
+  ],
+  "scoped_diff": "frontend.patch",
+  "production_build": {
+    "BUILD_ID": "mYxCBdDdcBK7amEeDhlnC",
+    "dist": "code/build/storage-management-validated-20261115",
+    "builder": "storage_management_backend owner",
+    "live_deployment": true,
+    "same_build_browser_report": "same-build-browser.json",
+    "deployer": "storage_management_backend owner under root authorization",
+    "live_readonly_report": "live-readonly.json",
+    "application_source_changed_after_build": false
+  }
+}

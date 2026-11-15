@@ -1,0 +1,1009 @@
+--- /dev/null
++++ b/apps/server/src/storage-management.ts
+@@ -0,0 +1,409 @@
++import { createHash, randomUUID } from 'node:crypto';
++import { constants, closeSync, fstatSync, lstatSync, openSync, unlinkSync } from 'node:fs';
++import { lstat, readdir, statfs } from 'node:fs/promises';
++import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
++import { ContractError } from '@t1/contracts';
++import type { ExtractionStore } from '@t1/agent';
++import type { WorkbenchStorageCandidate, WorkbenchStorageCategory, WorkbenchStorageCleanupInput,
++  WorkbenchStorageCleanupResult, WorkbenchStoragePart, WorkbenchStoragePreview, WorkbenchStorageSummary } from '../../../packages/contracts/src/workbench.js';
++
++const HOUR = 3600_000, PREVIEW_MS = 10 * 60_000;
++const MAX_PREVIEWS = 32, MAX_RECEIPTS = 128, MAX_FILES = 100_000;
++const sha = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
++const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
++const runId = new RegExp(`^run-${uuid}$`, 'u'), exportId = new RegExp(`^export-${uuid}$`, 'u');
++const inside = (parent: string, child: string) => { const value = relative(parent, child); return value === '' || value !== '..' && !value.startsWith('..' + sep) && !isAbsolute(value); };
++const categories: WorkbenchStorageCategory[] = ['pdf', 'parse', 'figures', 'exports', 'other'];
++const parts = () => categories.map(kind => ({ kind, bytes: 0, files: 0 }));
++type Protection = WorkbenchStorageSummary['protected_reasons'][number]['code'];
++interface Identity { dev: number; ino: number; size: number; mtime: number; ctime: number; mode: number; nlink: number }
++const identity = (value: NonNullable<ReturnType<typeof lstatSync>>): Identity => ({ dev: Number(value.dev), ino: Number(value.ino), size: Number(value.size),
++  mtime: Number(value.mtimeMs), ctime: Number(value.ctimeMs), mode: Number(value.mode), nlink: Number(value.nlink) });
++const sameDirectory = (a: Identity, b: Identity) => a.dev === b.dev && a.ino === b.ino && a.mode === b.mode;
++const sameFile = (a: Identity, b: Identity) => sameDirectory(a, b) && a.size === b.size && a.mtime === b.mtime && a.ctime === b.ctime && a.nlink === b.nlink;
++interface OwnedFile { path: string; identity: Identity; category: WorkbenchStorageCategory; owner: string; kind: WorkbenchStorageCandidate['kind']; known: boolean; regular: boolean; link: boolean }
++interface Paper { id: string; title: string; pdf: { path: string; sha256: string }; uploaded: boolean; uploaded_at?: string; last_uploaded_at?: string; paths: Set<string> }
++interface References {
++  hash: string; papers: Paper[]; strong: Set<string>; all: Set<string>; hashes: Set<string>; allHashes: Set<string>; strings: Set<string>;
++  immutable: Set<string>; knownRuns: Set<string>;
++}
++interface CandidatePlan { value: WorkbenchStorageCandidate; files: OwnedFile[] }
++interface Scan { summary: WorkbenchStorageSummary; version: string; candidates: CandidatePlan[]; directories: Record<string, Identity>; referenceHash: string }
++interface StoredPlan { preview: WorkbenchStoragePreview; candidates: CandidatePlan[]; directories: Record<string, Identity>; referenceHash: string;
++  selection?: string[]; removed_paper_ids?: string[]; results?: WorkbenchStorageCleanupResult['results']; done_files?: string[];
++  receipt?: Omit<WorkbenchStorageCleanupResult, 'summary'> }
++interface Host {
++  codeRoot: string; directory: string; store: ExtractionStore;
++  busy(): boolean;
++  exclusive<T>(operation: () => Promise<T>): Promise<T>;
++  papersRemoved(ids: string[]): void;
++  /** Isolated tests may control the clock without changing production retention policy. */
++  now?: () => number;
++}
++
++/** Explicitly requested cleanup only. No timer or startup hook removes storage. */
++export class WorkbenchStorage {
++  private readonly clock: () => number;
++  private cleaning = false;
++  constructor(private readonly host: Host) {
++    this.clock = host.now ?? Date.now;
++    host.store.db.exec(`CREATE TABLE IF NOT EXISTS workbench_storage_operations(
++      id TEXT PRIMARY KEY,created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,status TEXT NOT NULL,payload_json TEXT NOT NULL)`);
++  }
++
++  private roots() {
++    return [resolve(this.host.directory, 'pdf'), resolve(this.host.directory, 'runs'), resolve(this.host.directory, 'figure-reviews'),
++      resolve(this.host.directory, 'exports'), resolve(this.host.codeRoot, 'runtime-data/s3-native-artifacts')];
++  }
++
++  /** Every persisted JSON column participates, including legacy versions, reviews and exports.
++   * An unreadable/unknown JSON value fails the entire eligibility decision closed. */
++  private references(): References {
++    const { db } = this.host.store, rows: unknown[] = [], papers: Paper[] = [];
++    const managedRoots = this.roots();
++    // Every path inside these five fixed roots necessarily contains one of
++    // these complete components. Avoid normalizing every large prose string.
++    const managedComponent = /(?:^|\/)(?:pdf|runs|figure-reviews|exports|s3-native-artifacts)(?:\/|$)/u;
++    const strong = new Set<string>(), all = new Set<string>(), hashes = new Set<string>(), allHashes = new Set<string>(), strings = new Set<string>();
++    const immutable = new Set<string>(), knownRuns = new Set<string>();
++    const collect = (value: unknown, paths: Set<string>, identityHashes: Set<string>, identities?: Set<string>) => {
++      const stack: Array<{ value: unknown; key: string }> = [{ value, key: '' }]; let visited = 0;
++      while (stack.length) {
++        if (++visited > 1_000_000) throw new Error('reference_inventory_limit');
++        const { value: item, key } = stack.pop()!;
++        if (typeof item === 'string') {
++          identities?.add(item);
++          if (/^[a-f0-9]{64}$/u.test(item)) identityHashes.add(item);
++          if (item && !item.includes('\0')) {
++            const explicit = ['path', 'file_reference', 'directory'].includes(key) || key.endsWith('_path');
++            if (!explicit && !managedComponent.test(item)) continue;
++            const path = resolve(this.host.codeRoot, item);
++            // Native source text can literally be '/'. Only explicit reference
++            // fields may protect an ancestor outside the five managed roots.
++            if (explicit || managedRoots.some(root => inside(root, path))) paths.add(path);
++          }
++        } else if (item && typeof item === 'object') for (const [key, value] of Object.entries(item)) stack.push({ key, value });
++      }
++    };
++    const tables = db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all();
++    for (const tableRow of tables) {
++      const table = tableRow.name as string;
++      if (!/^[A-Za-z0-9_]+$/u.test(table)) throw new Error('unknown_reference_table');
++      if (table === 'workbench_storage_operations') continue;
++      const values = db.prepare(`SELECT * FROM "${table}" ORDER BY rowid`).all();
++      rows.push([table, values]);
++      const tombstone = ['workbench_deleted_runs', 'workbench_deleted_batches', 'workbench_deleted_sources', 'workbench_requests'].includes(table);
++      for (const row of values) {
++        const parsed: Record<string, unknown> = {};
++        for (const [key, value] of Object.entries(row)) parsed[key] = key.endsWith('_json') && typeof value === 'string' ? JSON.parse(value) : value;
++        if (table === 'workbench_deleted_runs' && typeof row.run_id === 'string') knownRuns.add(row.run_id);
++        if (table === 'workbench_runs') {
++          const payload = parsed.payload_json as Record<string, unknown>;
++          if (!payload || payload.id !== row.id || payload.paper_id !== row.paper_id || typeof payload.directory !== 'string') throw new Error('invalid_run_reference');
++          knownRuns.add(row.id as string);
++          if (payload.directory) strong.add(resolve(this.host.codeRoot, payload.directory));
++          // The CPU parser stores its native JSON separately from the run directory.
++          strong.add(resolve(this.host.codeRoot, 'runtime-data/s3-native-artifacts', row.id as string));
++        }
++        if (table === 'workbench_papers') {
++          const value = parsed.payload_json as Record<string, unknown>, pdf = value?.pdf as Paper['pdf'] | undefined;
++          if (!value || value.id !== row.id || !pdf || typeof pdf.path !== 'string' || !/^[a-f0-9]{64}$/u.test(pdf.sha256)) throw new Error('invalid_paper_reference');
++          const paths = new Set<string>(); collect(value, paths, allHashes);
++          for (const path of paths) all.add(path);
++          const paper: Paper = { id: row.id as string, title: typeof value.title === 'string' ? value.title : 'PDF', pdf, uploaded: value.uploaded === true, paths,
++            ...(typeof value.uploaded_at === 'string' ? { uploaded_at: value.uploaded_at } : {}), ...(typeof value.last_uploaded_at === 'string' ? { last_uploaded_at: value.last_uploaded_at } : {}) };
++          papers.push(paper);
++          if (!paper.uploaded) for (const path of paths) immutable.add(path);
++        } else if (!tombstone) {
++          collect(parsed, strong, hashes, strings); collect(parsed, all, allHashes);
++          if (table === 'workbench_exports') {
++            const directory = (parsed.payload_json as { directory?: unknown } | undefined)?.directory;
++            if (typeof directory !== 'string' || !directory) throw new Error('invalid_export_reference');
++            for (const path of [resolve(this.host.codeRoot, directory), resolve(this.host.codeRoot, directory) + '.tar.gz']) { strong.add(path); all.add(path); }
++          }
++        }
++      }
++    }
++    return { hash: sha(rows), papers, strong, all, hashes, allHashes, strings, immutable, knownRuns };
++  }
++
++  private recognition(path: string, knownRuns: Set<string>): Pick<OwnedFile, 'category' | 'known' | 'owner' | 'kind'> {
++    const [pdf, runs, reviews, exports, native] = this.roots();
++    const result = (category: WorkbenchStorageCategory, known: boolean, owner: string, kind: WorkbenchStorageCandidate['kind']) => ({ category, known, owner, kind });
++    if (inside(pdf!, path)) { const rel = relative(pdf!, path); return result('pdf', /^[a-f0-9]{64}\.pdf$/u.test(rel), rel, 'orphan_pdf'); }
++    if (inside(runs!, path)) {
++      const [id = '', ...rest] = relative(runs!, path).split(sep), name = rest.join('/');
++      const image = /^figure-assets\/(?:catalog\.json|(?:figure|region)-[a-f0-9]{24}-p\d+-\d+\.png)$/u.test(name);
++      const generated = /^(?:document-ir|figure-catalog|figure-discovery-input|article-scope|source-selection|batch-plan|paragraph-plan|source-invalidated|request-ledger|result|delivery|whole-document-summary)\.json$/u.test(name)
++        || /^batch-\d+-attempt-\d+\.json$/u.test(name) || /^whole-document-summary-attempt-\d+\.json$/u.test(name)
++        || /^(?:docling-standard-cpu|mineru-basic-onnx-cpu)-\d+-\d+\.stderr\.log$/u.test(name);
++      return result(image ? 'figures' : generated ? 'parse' : 'other', runId.test(id) && (image || generated), id, image ? 'orphan_figures' : 'orphan_parse');
++    }
++    if (inside(reviews!, path)) {
++      const rel = relative(reviews!, path).replaceAll(sep, '/');
++      return result('figures', new RegExp(`^[a-f0-9]{64}/${uuid}\\.json$`, 'u').test(rel), rel.split('/')[0]!, 'orphan_figures');
++    }
++    if (inside(exports!, path)) {
++      const [id = '', ...rest] = relative(exports!, path).split(sep), name = rest.join('/');
++      const archive = id.endsWith('.tar.gz') && exportId.test(id.slice(0, -7)) && !rest.length;
++      const generated = /^(?:records|background-records|table-support)\.(?:jsonl|csv)$/u.test(name)
++        || /^(?:delivery|coverage|source-glyph-audit|sample-audit|reviews|manifest|human-annotations|retention)\.json$/u.test(name)
++        || name === 'source-record-versions.jsonl' || /^(?:figures|review-materials)\/[a-f0-9]{32}\.png$/u.test(name);
++      return result('exports', archive || exportId.test(id) && generated, archive ? id.slice(0, -7) : id, 'orphan_export');
++    }
++    if (inside(native!, path)) {
++      const [id = '', ...rest] = relative(native!, path).split(sep);
++      return result('parse', runId.test(id) && knownRuns.has(id) && rest.length === 1 && /^(?:docling-standard-cpu|mineru-basic-onnx-cpu)-[a-f0-9]{64}\.json$/u.test(rest[0]!), id, 'orphan_parse');
++    }
++    return result('other', false, '', 'orphan_parse');
++  }
++
++  private referenced(path: string, references: ReadonlySet<string>) {
++    for (const reference of references) if (inside(reference, path)) return true;
++    return false;
++  }
++
++  private async scan(ignoreCleaning = false): Promise<Scan> {
++    const now = this.clock(), directories: Record<string, Identity> = {}, files: OwnedFile[] = [];
++    let complete = true, refs: References | undefined, referenceError = false;
++    try { refs = this.references(); } catch { referenceError = true; }
++    const knownRuns = refs?.knownRuns ?? new Set<string>();
++    // Every component is checked; even a configured root symlink is never traversed.
++    const ancestors = async (path: string): Promise<boolean> => {
++      const parent = dirname(path);
++      if (parent !== path && !await ancestors(parent)) return false;
++      try { const info = await lstat(path); if (!info.isDirectory() || info.isSymbolicLink()) { complete = false; return false; }
++        directories[path] = identity(info); return true;
++      } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') complete = false; return false; }
++    };
++    const walk = async (path: string, depth: number): Promise<void> => {
++      if (depth > 32 || files.length >= MAX_FILES) { complete = false; return; }
++      let entries;
++      try { entries = await readdir(path, { withFileTypes: true }); } catch { complete = false; return; }
++      for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
++        if (files.length >= MAX_FILES) { complete = false; return; }
++        const child = resolve(path, entry.name);
++        try {
++          const info = await lstat(child);
++          if (info.isDirectory() && !info.isSymbolicLink()) { directories[child] = identity(info); await walk(child, depth + 1); }
++          else files.push({ path: child, identity: identity(info), regular: info.isFile(), link: info.isSymbolicLink() || info.nlink > 1,
++            ...this.recognition(child, knownRuns) });
++        } catch { complete = false; }
++      }
++    };
++    for (const root of this.roots()) {
++      if (await ancestors(root)) await walk(root, 0);
++      else {
++        // Missing optional roots are empty. A present unsafe root disables eligibility.
++        try { await lstat(root); complete = false; } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') complete = false; }
++      }
++    }
++    if (refs) try { if (this.references().hash !== refs.hash) complete = false; } catch { referenceError = true; }
++    const busy = this.host.busy() || this.cleaning && !ignoreCleaning;
++    const strong = new Set(refs?.strong), recent = new Set<string>(), immutable = refs?.immutable ?? new Set<string>();
++    const fileMap = new Map(files.map(file => [file.path, file]));
++    const unused: Paper[] = [], dates = new Map<string, number>();
++    for (const paper of refs?.papers ?? []) {
++      const pdf = resolve(this.host.codeRoot, paper.pdf.path), file = fileMap.get(pdf);
++      const timestamps = [paper.uploaded_at, paper.last_uploaded_at].filter((value): value is string => Boolean(value)).map(Date.parse);
++      if (file) timestamps.push(file.identity.mtime, file.identity.ctime);
++      const last = timestamps.length && timestamps.every(Number.isFinite) ? Math.max(...timestamps) : NaN;
++      dates.set(paper.id, last);
++      const used = !paper.uploaded || refs!.strings.has(paper.id) || refs!.hashes.has(paper.pdf.sha256);
++      const isRecent = !Number.isFinite(last) || now - last < 24 * HOUR;
++      if (used || isRecent) for (const path of paper.paths) { strong.add(path); if (!used && isRecent) recent.add(path); }
++      else unused.push(paper);
++    }
++    // A recent/retained/shared owner's PDF also protects older unused duplicates.
++    let changed = true;
++    while (changed) {
++      changed = false;
++      for (let index = unused.length - 1; index >= 0; index--) {
++        const paper = unused[index]!;
++        if (this.referenced(resolve(this.host.codeRoot, paper.pdf.path), strong)) {
++          for (const path of paper.paths) strong.add(path);
++          unused.splice(index, 1); changed = true;
++        }
++      }
++    }
++    const parent = new Map(unused.map(paper => [paper.id, paper.id]));
++    const find = (id: string): string => { const value = parent.get(id)!; return value === id ? id : find(value); };
++    const pathOwner = new Map<string, string>();
++    for (const paper of unused) for (const path of paper.paths) { const other = pathOwner.get(path); if (other) parent.set(find(paper.id), find(other)); else pathOwner.set(path, paper.id); }
++    const groups = new Map<string, Paper[]>();
++    for (const paper of unused) { const id = find(paper.id); groups.set(id, [...groups.get(id) ?? [], paper]); }
++    const candidateMap = new Map<string, CandidatePlan>(), protectedReasons = new Map<Protection, { code: Protection; bytes: number; files: number }>();
++    const summary: WorkbenchStorageSummary = { schema_version: 't1-storage-summary-1', observed_at: new Date(now).toISOString(), scope: 'managed_workbench_files',
++      total_bytes: 0, protected_bytes: 0, reclaimable_bytes: 0, unknown_bytes: 0, file_count: 0, categories: parts(), protected_reasons: [], disk: null,
++      cleanup_available: complete && !referenceError && !busy, policy: { automatic_cleanup: false, recent_upload_protection_hours: 24 },
++      ...(referenceError ? { unavailable_reason: 'storage_reference_unavailable' as const } : !complete ? { unavailable_reason: 'storage_scope_unavailable' as const } : busy ? { unavailable_reason: 'storage_busy' as const } : {}) };
++    const seen = new Set<string>();
++    for (const file of files) {
++      const inode = `${file.identity.dev}:${file.identity.ino}`; if (seen.has(inode)) continue; seen.add(inode);
++      const bytes = file.regular ? file.identity.size : 0;
++      summary.total_bytes += bytes; summary.file_count++;
++      const category = summary.categories.find(part => part.kind === file.category)!; category.bytes += bytes; category.files++;
++      let protection: Protection | undefined;
++      if (file.link || !file.regular) protection = 'unsafe_link';
++      else if (this.referenced(file.path, immutable)) protection = 'immutable_source';
++      else if (this.referenced(file.path, recent)) protection = 'recent_upload';
++      else if (this.referenced(file.path, strong) || file.category === 'pdf' && refs?.hashes.has(basename(file.path, '.pdf'))) protection = 'referenced';
++      else if (busy && file.known) protection = 'active_work';
++      // Orphan PDFs without a paper row still receive the same upload grace.
++      else if (file.category === 'pdf' && now - Math.max(file.identity.mtime, file.identity.ctime) < 24 * HOUR) protection = 'recent_upload';
++      if (protection) {
++        summary.protected_bytes += bytes;
++        const item = protectedReasons.get(protection) ?? { code: protection, bytes: 0, files: 0 }; item.bytes += bytes; item.files++; protectedReasons.set(protection, item);
++      } else if (!file.known || !complete || referenceError) summary.unknown_bytes += bytes;
++      else {
++        const owner = pathOwner.get(file.path), group = owner ? groups.get(find(owner)) : undefined;
++        const key = group ? 'upload:' + group.map(paper => paper.id).sort().join(',') : `${file.kind}:${dirname(file.path) === this.roots()[4] ? 'native' : file.owner}:${file.kind === 'orphan_pdf' ? file.path : ''}`;
++        let plan = candidateMap.get(key);
++        if (!plan) {
++          const name = group ? group.map(paper => paper.title).join(' / ') : `${file.kind === 'orphan_pdf' ? 'PDF ' : ''}${file.owner.slice(0, 90)}`;
++          const date = group ? Math.max(...group.map(paper => dates.get(paper.id)!)) : NaN;
++          plan = { value: { id: 'storage-' + sha(key).slice(0, 32), kind: group ? 'unused_upload' : file.kind, name, bytes: 0, files: 0,
++            paper_ids: group?.map(paper => paper.id).sort() ?? [], ...(Number.isFinite(date) ? { last_uploaded_at: new Date(date).toISOString() } : {}),
++            detail: group ? 'unused_upload_and_unreferenced_artifacts' : 'unreferenced_generated_files', parts: parts() }, files: [] };
++          candidateMap.set(key, plan);
++        }
++        plan.files.push(file); plan.value.bytes += bytes; plan.value.files++;
++        const part = plan.value.parts.find(part => part.kind === file.category)!; part.bytes += bytes; part.files++;
++        summary.reclaimable_bytes += bytes;
++      }
++    }
++    summary.protected_reasons = [...protectedReasons.values()];
++    try { const disk = await statfs(this.host.directory); summary.disk = { total_bytes: Number(disk.blocks) * Number(disk.bsize), available_bytes: Number(disk.bavail) * Number(disk.bsize) }; } catch { /* Disk capacity is optional, never estimated from file sizes. */ }
++    const candidates = summary.cleanup_available ? [...candidateMap.values()].sort((a, b) => a.value.id.localeCompare(b.value.id)) : [];
++    return { summary, candidates, directories, referenceHash: refs?.hash ?? '',
++      version: sha({ references: refs?.hash, files: files.map(file => [file.path, file.identity]), directories: Object.entries(directories).map(([path, value]) => [path, value.dev, value.ino, value.mode]), complete, referenceError, busy }) };
++  }
++
++  async summary() { return (await this.scan()).summary; }
++
++  private prune() {
++    const { db } = this.host.store, now = this.clock();
++    // Interrupted executions remain explicit retry receipts, not automatic cleanup jobs.
++    db.prepare("DELETE FROM workbench_storage_operations WHERE status='preview' AND expires_at<=?").run(now);
++    db.prepare("DELETE FROM workbench_storage_operations WHERE status='complete' AND created_at<?").run(now - 7 * 24 * HOUR);
++    for (const [status, limit] of [['preview', MAX_PREVIEWS], ['complete', MAX_RECEIPTS], ['executing', MAX_RECEIPTS]] as const)
++      db.prepare(`DELETE FROM workbench_storage_operations WHERE id IN (SELECT id FROM workbench_storage_operations WHERE status=? ORDER BY created_at DESC,rowid DESC LIMIT -1 OFFSET ?)`)
++        .run(status, limit);
++  }
++
++  async preview(body: unknown): Promise<WorkbenchStoragePreview> {
++    if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length) throw new ContractError('invalid_storage_request');
++    const scan = await this.scan(), now = this.clock();
++    const preview: WorkbenchStoragePreview = { schema_version: 't1-storage-preview-1', summary: scan.summary, preview_id: 'storage-preview-' + randomUUID(),
++      version: scan.version, created_at: new Date(now).toISOString(), expires_at: new Date(now + PREVIEW_MS).toISOString(), candidates: scan.candidates.map(plan => plan.value) };
++    const payload: StoredPlan = { preview, candidates: scan.candidates, directories: scan.directories, referenceHash: scan.referenceHash };
++    this.host.store.atomic(() => {
++      this.host.store.db.prepare('INSERT INTO workbench_storage_operations VALUES(?,?,?,?,?)').run(preview.preview_id, now, now + PREVIEW_MS, 'preview', JSON.stringify(payload));
++      this.prune();
++    });
++    return preview;
++  }
++
++  private input(body: unknown): WorkbenchStorageCleanupInput {
++    if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).sort().join(',') !== 'candidate_ids,preview_id,version') throw new ContractError('invalid_storage_request');
++    const value = body as WorkbenchStorageCleanupInput;
++    if (typeof value.preview_id !== 'string' || !new RegExp(`^storage-preview-${uuid}$`, 'u').test(value.preview_id) || typeof value.version !== 'string' || !/^[a-f0-9]{64}$/u.test(value.version)) throw new ContractError('invalid_storage_request');
++    if (!Array.isArray(value.candidate_ids) || !value.candidate_ids.length || value.candidate_ids.length > 10_000 || value.candidate_ids.some(id => typeof id !== 'string' || !/^storage-[a-f0-9]{32}$/u.test(id))
++      || new Set(value.candidate_ids).size !== value.candidate_ids.length) throw new ContractError('invalid_storage_selection');
++    return { ...value, candidate_ids: [...value.candidate_ids].sort() };
++  }
++
++  /** Walk parent descriptors from '/' with O_NOFOLLOW. The final unlink is relative
++   * to the checked parent descriptor, so replacing a pathname cannot redirect it. */
++  private remove(file: OwnedFile, directories: Record<string, Identity>): 'removed' | 'already_missing' {
++    const path = resolve(file.path), root = this.roots().find(root => inside(root, path) && root !== path);
++    if (!root || !inside(this.host.codeRoot, root)) throw new ContractError('storage_file_changed');
++    const components = dirname(path).split(sep).filter(Boolean); let descriptor = openSync(sep, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW), current: string = sep;
++    try {
++      const rootIdentity = directories[sep]; if (!rootIdentity || !sameDirectory(identity(fstatSync(descriptor)), rootIdentity)) throw new ContractError('storage_file_changed');
++      for (const component of components) {
++        current = resolve(current, component);
++        const expected = directories[current]; if (!expected) throw new ContractError('storage_file_changed');
++        const next = openSync(`/proc/self/fd/${descriptor}/${component}`, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
++        closeSync(descriptor); descriptor = next;
++        if (!sameDirectory(identity(fstatSync(descriptor)), expected)) throw new ContractError('storage_file_changed');
++      }
++      const target = `/proc/self/fd/${descriptor}/${basename(path)}`;
++      let value;
++      try { value = lstatSync(target); } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return 'already_missing'; throw error; }
++      if (!value.isFile() || value.isSymbolicLink() || value.nlink !== 1 || !sameFile(identity(value), file.identity)) throw new ContractError('storage_file_changed');
++      unlinkSync(target); return 'removed';
++    } finally { closeSync(descriptor); }
++  }
++
++  async cleanup(body: unknown): Promise<WorkbenchStorageCleanupResult> {
++    const input = this.input(body), stored = this.host.store.db.prepare('SELECT status,expires_at,payload_json FROM workbench_storage_operations WHERE id=?').get(input.preview_id);
++    if (!stored) throw new ContractError('storage_preview_expired');
++    const plan = JSON.parse(stored.payload_json as string) as StoredPlan;
++    if (input.version !== plan.preview.version) throw new ContractError('storage_preview_stale');
++    if (plan.selection && JSON.stringify(plan.selection) !== JSON.stringify(input.candidate_ids)) throw new ContractError('storage_selection_conflict');
++    if (stored.status === 'complete' && plan.receipt) return { ...plan.receipt, already_executed: true, summary: await this.summary() };
++    if (stored.status === 'preview' && Number(stored.expires_at) <= this.clock()) throw new ContractError('storage_preview_expired');
++    if (input.candidate_ids.some(id => !plan.candidates.some(candidate => candidate.value.id === id))) throw new ContractError('invalid_storage_selection');
++    return this.host.exclusive(async () => {
++      this.cleaning = true;
++      try {
++        if (stored.status === 'preview') {
++          const fresh = await this.scan(true);
++          if (!fresh.summary.cleanup_available) throw new ContractError(fresh.summary.unavailable_reason ?? 'storage_preview_stale');
++          if (fresh.version !== input.version) throw new ContractError('storage_preview_stale');
++          this.host.store.atomic(() => {
++            if (this.host.busy() || this.references().hash !== plan.referenceHash) throw new ContractError('storage_preview_stale');
++            const selected = plan.candidates.filter(candidate => input.candidate_ids.includes(candidate.value.id));
++            plan.selection = input.candidate_ids; plan.removed_paper_ids = selected.flatMap(candidate => candidate.value.paper_ids); plan.results = []; plan.done_files = [];
++            // Commit logical removal and the recovery plan before touching any bytes.
++            // A crash leaves unreferenced files; it cannot leave a live paper pointing at deleted bytes.
++            for (const id of plan.removed_paper_ids) {
++              this.host.store.db.prepare('DELETE FROM workbench_papers WHERE id=?').run(id);
++              this.host.store.db.prepare('INSERT INTO workbench_deleted_sources VALUES(?,?) ON CONFLICT(paper_id) DO NOTHING').run(id, new Date(this.clock()).toISOString());
++            }
++            this.save(input.preview_id, 'executing', plan);
++          });
++          this.host.papersRemoved(plan.removed_paper_ids!);
++        }
++        const done = new Set(plan.done_files), results = plan.results ?? [];
++        for (const candidate of plan.candidates.filter(candidate => input.candidate_ids.includes(candidate.value.id))) {
++          if (results.some(result => result.id === candidate.value.id)) continue;
++          const result: WorkbenchStorageCleanupResult['results'][number] = { id: candidate.value.id, status: 'already_missing', removed_bytes: 0, removed_files: 0 };
++          this.host.store.atomic(() => {
++            let refs: References | undefined;
++            try { refs = this.references(); } catch { result.status = 'protected'; result.error = 'storage_reference_changed'; }
++            for (const file of candidate.files) {
++              if (done.has(file.path)) continue;
++              if (!refs || this.host.busy() || this.referenced(file.path, refs.all) || file.category === 'pdf' && refs.allHashes.has(basename(file.path, '.pdf'))) {
++                result.status = 'protected'; result.error = 'storage_reference_changed'; continue;
++              }
++              try {
++                if (this.remove(file, plan.directories) === 'removed') { result.removed_bytes += file.identity.size; result.removed_files++; }
++                done.add(file.path);
++              } catch (error) {
++                result.status = 'failed'; result.error = error instanceof ContractError ? error.code : 'storage_remove_failed';
++              }
++            }
++            if (result.status !== 'failed' && result.status !== 'protected' && result.removed_files) result.status = 'removed';
++            results.push(result); plan.results = results; plan.done_files = [...done]; this.save(input.preview_id, 'executing', plan);
++          });
++        }
++        const receipt: Omit<WorkbenchStorageCleanupResult, 'summary'> = { schema_version: 't1-storage-cleanup-1', preview_id: input.preview_id,
++          status: results.some(result => result.status === 'failed' || result.status === 'protected') ? 'partial' : 'complete', already_executed: false,
++          removed_bytes: results.reduce((total, result) => total + result.removed_bytes, 0), removed_files: results.reduce((total, result) => total + result.removed_files, 0),
++          removed_paper_ids: plan.removed_paper_ids ?? [], results };
++        plan.receipt = receipt;
++        // Completed receipts need no path manifest. Keep bounded idempotency without
++        // retaining a second inventory of every previously scanned file.
++        const completed: StoredPlan = { ...plan, preview: { ...plan.preview, candidates: [] }, candidates: [], directories: {}, referenceHash: '', done_files: [] };
++        this.host.store.atomic(() => { this.save(input.preview_id, 'complete', completed); this.prune(); });
++        return { ...receipt, summary: (await this.scan(true)).summary };
++      } finally { this.cleaning = false; }
++    });
++  }
++
++  private save(id: string, status: string, plan: StoredPlan) {
++    this.host.store.db.prepare('UPDATE workbench_storage_operations SET status=?,payload_json=? WHERE id=?').run(status, JSON.stringify(plan), id);
++  }
++}
+--- a/apps/server/src/workflow.ts
++++ b/apps/server/src/workflow.ts
+@@ -19,6 +19,7 @@
+ import { workbenchRunProgress, type ProgressCoverage } from './workbench-progress.js';
+ import { TASK_COMPLETION_RULE_VERSION, type WorkbenchTaskCompletion } from '../../../packages/contracts/src/workbench.js';
+ import { LegacyCompletionProjection, type LegacyCompletionMetadata } from './workflow-completion.js';
++import { WorkbenchStorage } from './storage-management.js';
+ 
+ const CODE = fileURLToPath(new URL('../../../', import.meta.url));
+ export const MAX_PDF_BYTES = 50 * 1024 * 1024;
+@@ -50,7 +51,7 @@
+   cancers: [], image_types: [], features: [], bindings: [] };
+ interface SourceSnapshot { document: ExtractionDocument; ir: Artifact; catalog?: FigureAssetCatalog; catalog_artifact?: Artifact; figure_history?: Artifact[] }
+ interface PaperRow { id: string; title: string; filename: string; pdf: Artifact; uploaded: boolean; language: string; pages: number;
+-  note: string; latest_source?: SourceSnapshot }
++  note: string; latest_source?: SourceSnapshot; uploaded_at?: string; last_uploaded_at?: string }
+ interface RunRow { id: string; paper_id: string; created_at: string; origin: WorkbenchOutput['origin']; controlled: boolean;
+   task_title?: string; original_filename?: string;
+   scope_catalog?: EvidenceCatalog;
+@@ -80,6 +81,8 @@
+   /** Internal fixture may shorten the clock; production gets 30 min after taking an execution slot. */
+   runTimeoutMs?: number;
+   discover?: typeof discoverPdfFigures;
++  /** Isolated storage tests only; production always uses the wall clock. */
++  storageNow?: () => number;
+ }
+ export class WorkflowConflict extends ContractError {
+   constructor(readonly current_version: number) { super('evidence_version_conflict'); }
+@@ -119,6 +122,9 @@
+   private readonly batchAdmissions = new Map<string, Promise<unknown>>();
+   private readonly legacyCompletion: LegacyCompletionProjection;
+   private readonly modelProfiles?: WorkbenchModelsStore;
++  readonly storage: WorkbenchStorage;
++  private storageCleanup = false;
++  private storageMutations = 0;
+   constructor(readonly store: ExtractionStore, readonly options: WorkflowOptions = {}) {
+     this.codeRoot = resolve(options.codeRoot ?? CODE); this.directory = resolve(this.codeRoot, options.directory ?? 'runtime-data/workbench');
+     this.legacyCompletion = new LegacyCompletionProjection(this.codeRoot);
+@@ -139,7 +145,31 @@
+     store.db.exec(`CREATE TABLE IF NOT EXISTS workbench_requests(operation TEXT NOT NULL,request_id TEXT NOT NULL,payload_sha256 TEXT NOT NULL,result_id TEXT NOT NULL,
+       PRIMARY KEY(operation,request_id))`);
+     if (options.runner?.default_model_profile) this.modelProfiles = new WorkbenchModelsStore(store, options.runner.default_model_profile);
+-  }
++    this.storage = new WorkbenchStorage({ codeRoot: this.codeRoot, directory: this.directory, store,
++      busy: () => this.storageBusy(), now: options.storageNow,
++      exclusive: async operation => {
++        if (this.storageCleanup || this.storageBusy()) throw new ContractError('storage_busy');
++        this.storageCleanup = true;
++        try { return await operation(); }
++        finally { this.storageCleanup = false; if (this.cleanupRetryRequested) void this.resumePendingRunCleanup().catch(() => {}); }
++      },
++      papersRemoved: ids => { for (const key of this.sourceUnitCache.keys()) if (ids.some(id => key.startsWith(id + ':'))) this.sourceUnitCache.delete(key); },
++    });
++  }
++  private storageBusy() {
++    if (this.shuttingDown || this.storageMutations > 0 || this.active.size > 0 || this.preparingPapers.size > 0 || this.deletingPapers.size > 0
++      || this.pdfOperations.size > 0 || this.runWrites.size > 0 || this.directCleanupCount > 0 || Boolean(this.cleanupFlight) || this.batchAdmissions.size > 0 || this.requests.size > 0) return true;
++    try { return this.runRows().some(row => !terminals.has(this.store.snapshot(row.id).state)); }
++    catch { return true; } // Missing or unreadable run state can never grant cleanup admission.
++  }
++  private assertStorageWritable() { if (this.storageCleanup) throw new ContractError('storage_busy'); }
++  private async withStorageMutation<T>(operation: () => Promise<T>): Promise<T> {
++    this.assertStorageWritable(); this.storageMutations++;
++    try { return await operation(); } finally { this.storageMutations--; }
++  }
++  async storageSummary() { await this.initialize(); return this.storage.summary(); }
++  async storagePreview(body: unknown) { await this.initialize(); return this.storage.preview(body); }
++  async storageCleanupSelection(body: unknown) { await this.initialize(); return this.storage.cleanup(body); }
+   async initialize() { return this.initialized ??= this.initializeOnce(); }
+   private async initializeOnce() {
+     await mkdir(this.directory, { recursive: true, mode: 0o700 });
+@@ -356,6 +386,7 @@
+   }
+   /** Deletion never races a pending source check, export, or human write. */
+   private async withRunWrite<T>(id: string, operation: () => Promise<T>): Promise<T> {
++    this.assertStorageWritable();
+     const row = this.run(id);
+     if (this.deletingPapers.has(row.paper_id)) throw new ContractError('paper_deletion_in_progress');
+     this.runWrites.set(id, (this.runWrites.get(id) ?? 0) + 1);
+@@ -368,13 +399,16 @@
+   }
+   async upload(bytes: Buffer, filename: string, title?: string, requestId?: string) {
+     await this.initialize();
++    return this.withStorageMutation(() => this.performUpload(bytes, filename, title, requestId));
++  }
++  private async performUpload(bytes: Buffer, filename: string, title?: string, requestId?: string) {
+     if (!filename || filename.length > 240 || /[\x00-\x1f/\\]/u.test(filename) || !/\.pdf$/iu.test(filename)) throw new ContractError('invalid_pdf_filename');
+     if (!bytes.length || bytes.length > MAX_PDF_BYTES) throw new ContractError('pdf_size_out_of_bounds');
+     if (!bytes.subarray(0, 8).toString('ascii').startsWith('%PDF-') || !bytes.subarray(Math.max(0, bytes.length - 2048)).includes(Buffer.from('%%EOF'))) throw new ContractError('invalid_pdf_bytes');
+     if (title !== undefined && (title.length > 500 || /[\x00-\x1f]/u.test(title))) throw new ContractError('invalid_paper_title');
+     const hash = digest(bytes);
+     return this.submission('upload', requestId, { sha256: hash, filename, title: title?.trim() || '' },
+-      id => ({ paper: this.summary(this.paper(id)), reused: true }), async remember => {
++      id => { const paper = this.paper(id); this.savePaper({ ...paper, last_uploaded_at: now() }); return { paper: this.summary(paper), reused: true }; }, async remember => {
+     const id = 'paper-' + randomUUID(), path = this.pdfContentPath(hash);
+     return this.withPdfFile(path, async () => {
+     const saved = this.store.db.prepare("SELECT payload_json FROM workbench_papers WHERE json_extract(payload_json,'$.pdf.sha256')=? ORDER BY rowid LIMIT 1").get(hash);
+@@ -385,7 +419,7 @@
+         await this.requireSource(candidate);
+         if (this.deletingPapers.has(candidate.id)) throw new ContractError('paper_deletion_in_progress');
+         const current = this.paper(candidate.id);
+-        this.store.atomic(() => remember(current.id));
++        this.store.atomic(() => { this.savePaper({ ...current, last_uploaded_at: now() }); remember(current.id); });
+         return { paper: this.summary(current), reused: true };
+       };
+       const candidatePath = resolve(this.codeRoot, candidate.pdf.path);
+@@ -395,13 +429,16 @@
+     try { await writeFile(path, bytes, { flag: 'wx', mode: 0o600 }); }
+     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'EEXIST' || digest(await readFile(path)) !== hash) throw error; }
+     const row: PaperRow = { id, title: title?.trim() || filename, filename, pdf: { path: relative(this.codeRoot, path), sha256: hash }, uploaded: true,
+-      language: 'und', pages: 0, note: 'Uploaded PDF; parsing and medical content remain unverified.' };
++      language: 'und', pages: 0, note: 'Uploaded PDF; parsing and medical content remain unverified.', uploaded_at: now(), last_uploaded_at: now() };
+     this.store.atomic(() => { this.savePaper(row); remember(id); }); return { paper: this.summary(row), reused: false };
+     });
+     });
+   }
+   async restorePdf(id: string, bytes: Buffer) {
+-    await this.initialize(); const paper = this.paper(id);
++    await this.initialize(); return this.withStorageMutation(() => this.performRestorePdf(id, bytes));
++  }
++  private async performRestorePdf(id: string, bytes: Buffer) {
++    const paper = this.paper(id);
+     if (bytes.length > MAX_PDF_BYTES || digest(bytes) !== paper.pdf.sha256) throw new ContractError('restore_requires_identical_pdf');
+     const path = resolve(this.codeRoot, paper.pdf.path), rel = relative(this.codeRoot, path);
+     if (!rel || rel.startsWith('..') || isAbsolute(rel)) throw new ContractError('source_file_outside_code');
+@@ -409,6 +446,7 @@
+     if (this.deletingPapers.has(id)) throw new ContractError('paper_deletion_in_progress');
+     this.paper(id); // The paper may have been removed while waiting for this PDF.
+     await mkdir(dirname(path), { recursive: true, mode: 0o700 }); await writeFile(path, bytes, { mode: 0o600 });
++    this.savePaper({ ...this.paper(id), last_uploaded_at: now() });
+     return { restored: true, sha256: paper.pdf.sha256 };
+     });
+   }
+@@ -568,6 +606,7 @@
+     const title = taskTitle(requestedTaskTitle), filename = originalFilename(requestedFilename);
+     if (modelProfileId !== undefined && (typeof modelProfileId !== 'string' || !/^model-[a-f0-9]{32}$/u.test(modelProfileId))) throw new ContractError('invalid_model_profile_id');
+     await this.initialize();
++    this.assertStorageWritable();
+     // Replaying a committed request is read-only even after the server restarts,
+     // an allowance closes, or a catalogue changes. The original scope is immutable.
+     // Keep the exact legacy payload when metadata is absent so old keys still replay after an upgrade.
+@@ -972,6 +1011,7 @@
+    * scan: its caller may be the coordinator that just released that work. */
+   private resumePendingRunCleanup(): Promise<void> {
+     this.cleanupRetryRequested = true;
++    if (this.storageCleanup) return Promise.resolve();
+     if (this.cleanupFlight) return this.cleanupFlight;
+     if (this.directCleanupCount) return Promise.resolve();
+     this.cleanupFlight = Promise.resolve().then(async () => {
+@@ -996,6 +1036,9 @@
+   /** Validate every source before deleting any member, then tombstone the entire task atomically. */
+   async deleteBatch(id: string) {
+     await this.initialize();
++    return this.withStorageMutation(() => this.performDeleteBatch(id));
++  }
++  private async performDeleteBatch(id: string) {
+     return this.withBatchAdmission({ kind: 'batch', batch_id: id }, () => this.withDirectRunCleanup(async () => {
+       const rows = this.batchRows(id), saved = this.store.db.prepare('SELECT payload_json FROM workbench_deleted_batches WHERE batch_id=?').get(id);
+       const deletion: BatchDeletion = saved ? JSON.parse(saved.payload_json as string) : { members: rows.map(row => ({ run_id: row.id, paper_id: row.paper_id })) };
+@@ -1098,6 +1141,9 @@
+   }
+   async deleteRun(id: string) {
+     await this.initialize();
++    return this.withStorageMutation(() => this.performDeleteRun(id));
++  }
++  private async performDeleteRun(id: string) {
+     const tombstone = this.store.db.prepare('SELECT paper_id,payload_json FROM workbench_deleted_runs WHERE run_id=?').get(id);
+     const savedPlan = tombstone ? JSON.parse(tombstone.payload_json as string) as RunCleanupPlan : undefined;
+     if (tombstone && savedPlan?.status === 'complete') return { deleted: true, run_id: id, paper_id: tombstone.paper_id as string, already_deleted: true };
+@@ -1117,6 +1163,9 @@
+   }
+   async deletePaper(id: string) {
+     await this.initialize();
++    return this.withStorageMutation(() => this.performDeletePaper(id));
++  }
++  private async performDeletePaper(id: string) {
+     if (this.deletingPapers.has(id)) throw new ContractError('paper_deletion_in_progress');
+     const paper = this.paper(id), runs = this.runRows().filter(r => r.paper_id === id);
+     if (this.preparingPapers.has(id) || runs.some(r => this.active.has(r.id) || this.runWrites.has(r.id) || !terminals.has(this.store.snapshot(r.id).state))) throw new ContractError('cancel_active_runs_before_deleting_paper');
+--- a/apps/server/src/app.ts
++++ b/apps/server/src/app.ts
+@@ -23,6 +23,8 @@
+     if (['batch_scope_frozen', 'batch_model_frozen', 'batch_task_title_frozen'].includes(code)) return reply.code(409).send({ error: code });
+     if (code === 'submission_result_deleted') return reply.code(410).send({ error: code });
+     if (code === 'submission_busy') return reply.code(429).send({ error: code });
++    if (['storage_preview_stale', 'storage_busy', 'storage_selection_conflict', 'storage_scope_unavailable', 'storage_reference_unavailable'].includes(code)) return reply.code(409).send({ error: code });
++    if (code === 'storage_preview_expired') return reply.code(410).send({ error: code });
+     if (['cancel_active_runs_before_deleting_paper', 'paper_deletion_in_progress', 'paper_busy_before_deleting_run', 'batch_task_deletion_required'].includes(code)) return reply.code(409).send({ error: code });
+     return reply.code(code === 'run_not_found' || code.endsWith('_not_found') || code === 'workbench_figure_not_available' ? 404 : 400).send({ error: code });
+   });
+@@ -47,6 +49,9 @@
+     app.addHook('onReady', () => workflow.initialize());
+     app.addContentTypeParser('application/pdf', { parseAs: 'buffer', bodyLimit: MAX_PDF_BYTES }, (_request, body, done) => done(null, body));
+     app.get('/api/workbench/catalog', async () => workflow.scopeCatalog());
++    app.get('/api/workbench/storage', async () => workflow.storageSummary());
++    app.post('/api/workbench/storage/preview', async request => workflow.storagePreview(request.body));
++    app.post('/api/workbench/storage/cleanup', { bodyLimit: 1024 * 1024 }, async request => workflow.storageCleanupSelection(request.body));
+     app.post('/api/workbench/models', async request => workflow.addModel(request.body));
+     const decoded = (value: string | string[] | undefined) => { if (typeof value !== 'string') return undefined; try { return decodeURIComponent(value); } catch { throw new ContractError('invalid_upload_header'); } };
+     const requestId = (value: string | string[] | undefined) => { if (value === undefined) return undefined;
+--- a/packages/contracts/src/workbench.ts
++++ b/packages/contracts/src/workbench.ts
+@@ -61,6 +61,35 @@
+   uploaded?: boolean; filename?: string;
+ }
+ export interface WorkbenchUpload { paper: WorkbenchPaper; reused: boolean }
++/** File sizes within the managed application roots; disk capacity is separate. No filesystem paths are exposed. */
++export type WorkbenchStorageCategory = 'pdf' | 'parse' | 'figures' | 'exports' | 'other';
++export interface WorkbenchStoragePart { kind: WorkbenchStorageCategory; bytes: number; files: number }
++export interface WorkbenchStorageSummary {
++  schema_version: 't1-storage-summary-1'; observed_at: string; scope: 'managed_workbench_files';
++  total_bytes: number; protected_bytes: number; reclaimable_bytes: number; unknown_bytes: number; file_count: number;
++  categories: WorkbenchStoragePart[];
++  protected_reasons: Array<{ code: 'referenced' | 'recent_upload' | 'active_work' | 'immutable_source' | 'unsafe_link'; bytes: number; files: number }>;
++  disk: { total_bytes: number; available_bytes: number } | null;
++  cleanup_available: boolean;
++  unavailable_reason?: 'storage_busy' | 'storage_scope_unavailable' | 'storage_reference_unavailable';
++  policy: { automatic_cleanup: false; recent_upload_protection_hours: number };
++}
++export interface WorkbenchStorageCandidate {
++  id: string; kind: 'unused_upload' | 'orphan_pdf' | 'orphan_parse' | 'orphan_figures' | 'orphan_export';
++  name: string; bytes: number; files: number; paper_ids: string[]; last_uploaded_at?: string;
++  detail: 'unused_upload_and_unreferenced_artifacts' | 'unreferenced_generated_files'; parts: WorkbenchStoragePart[];
++}
++export interface WorkbenchStoragePreview {
++  schema_version: 't1-storage-preview-1'; summary: WorkbenchStorageSummary;
++  preview_id: string; version: string; created_at: string; expires_at: string; candidates: WorkbenchStorageCandidate[];
++}
++export interface WorkbenchStorageCleanupInput { preview_id: string; version: string; candidate_ids: string[] }
++export interface WorkbenchStorageCleanupResult {
++  schema_version: 't1-storage-cleanup-1'; preview_id: string; status: 'complete' | 'partial'; already_executed: boolean;
++  removed_bytes: number; removed_files: number; removed_paper_ids: string[];
++  results: Array<{ id: string; status: 'removed' | 'already_missing' | 'failed' | 'protected'; removed_bytes: number; removed_files: number; error?: string }>;
++  summary: WorkbenchStorageSummary;
++}
+ export interface WorkbenchPaperDetail {
+   paper: WorkbenchPaper; text_version: string; pdf_url: string; source_verified: boolean;
+   figures: WorkbenchFigure[]; outputs: WorkbenchOutput[]; read_only: boolean;
+--- /dev/null
++++ b/apps/server/test/storage-management.test.ts
+@@ -0,0 +1,356 @@
++import test, { mock } from 'node:test';
++import assert from 'node:assert/strict';
++import { createHash, randomUUID } from 'node:crypto';
++import fs from 'node:fs/promises';
++import nativeFs, { type PathLike } from 'node:fs';
++import { syncBuiltinESMExports } from 'node:module';
++import { mkdtemp, mkdir, readFile, writeFile, access, rm, symlink, link } from 'node:fs/promises';
++import { resolve, relative, dirname } from 'node:path';
++import { ExtractionStore, RunStore } from '@t1/agent';
++import { ContractError } from '@t1/contracts';
++import { WorkbenchWorkflow, type WorkflowOptions } from '../src/workflow.js';
++import { buildApp } from '../src/app.js';
++import type { WorkbenchStoragePreview } from '../../../packages/contracts/src/workbench.js';
++
++const HOUR = 3600_000, bytes = Buffer.from('%PDF-1.4\nIsolated storage engineering fixture\n%%EOF');
++const hash = (value: Uint8Array | string) => createHash('sha256').update(value).digest('hex');
++const barrier = () => { let release!: () => void; const promise = new Promise<void>(accept => { release = accept; }); return { release, promise }; };
++async function fixture(options: WorkflowOptions = {}, recent = false) {
++  const root = await mkdtemp(resolve('runtime-data/storage-management-test-')), database = resolve(root, 'runtime-data/t1.sqlite');
++  const legacy = new RunStore(database), store = new ExtractionStore(database);
++  let clock = Date.now() + (recent ? 0 : 48 * HOUR);
++  const workflow = new WorkbenchWorkflow(store, { codeRoot: root, directory: 'runtime-data/workbench', sources: false, storageNow: () => clock, ...options });
++  const app = buildApp(legacy, undefined, workflow); await app.ready();
++  const file = async (path: string, value = '{}') => { const target = resolve(root, path); await mkdir(dirname(target), { recursive: true }); await writeFile(target, value); return target; };
++  const upload = async (suffix = '') => workflow.upload(suffix ? Buffer.from(bytes.toString() + suffix + '\n%%EOF') : bytes, 'fixture' + suffix + '.pdf');
++  const cleanup = (preview: WorkbenchStoragePreview, ids = preview.candidates.map(candidate => candidate.id)) => workflow.storageCleanupSelection({ preview_id: preview.preview_id, version: preview.version, candidate_ids: ids });
++  const close = async () => { await app.close(); legacy.close(); store.close(); await rm(root, { recursive: true, force: true }); };
++  const paper = (id: string) => JSON.parse(store.db.prepare('SELECT payload_json FROM workbench_papers WHERE id=?').get(id)!.payload_json as string);
++  const savePaper = (value: { id: string }) => store.db.prepare('INSERT INTO workbench_papers VALUES(?,?) ON CONFLICT(id) DO UPDATE SET payload_json=excluded.payload_json').run(value.id, JSON.stringify(value));
++  const seedRun = (paperId: string, directory?: string, state = 'completed') => {
++    const id = 'run-' + randomUUID(), row = paper(paperId);
++    const input = { schema_version: '1', run_id: id, document_id: paperId, file_sha256: row.pdf.sha256, fixture: false, scope: workflow.scopeCatalog().default_scope,
++      rule_version: 'storage-fixture-1', runtime_profile: { provider: 'fixture', model_id: 'no-model', endpoint: '', pi_version: '1.4.0', version: 'fixture-1' } } as const;
++    store.create(input, { controlled_storage_fixture: true }); store.db.prepare('UPDATE s4_runs SET state=? WHERE id=?').run(state, id);
++    store.db.prepare('INSERT INTO workbench_runs VALUES(?,?,?)').run(id, paperId, JSON.stringify({ id, paper_id: paperId, created_at: new Date().toISOString(),
++      origin: 'controlled_fixture', controlled: true, directory: directory ?? resolve(workflow.directory, 'runs', id) }));
++    return id;
++  };
++  return { root, store, workflow, app, file, upload, cleanup, close, paper, savePaper, seedRun, advance: (duration: number) => { clock += duration; } };
++}
++
++test('storage stats separate file size from disk space, count only managed roots and never expose paths', async () => {
++  const f = await fixture();
++  try {
++    const uploaded = await f.upload(), id = 'run-' + randomUUID();
++    await f.file(relative(f.root, resolve(f.workflow.directory, 'runs', id, 'document-ir.json')), 'parse');
++    await f.file(relative(f.root, resolve(f.workflow.directory, 'runs', id, 'pi-config', 'auth.json')), 'PRIVATE-FIXTURE-DO-NOT-EXPOSE');
++    await f.file('outside/backup.pdf', 'excluded');
++    const response = await f.app.inject('/api/workbench/storage'), summary = response.json();
++    assert.equal(response.statusCode, 200); assert.equal(summary.total_bytes, bytes.length + 5 + 'PRIVATE-FIXTURE-DO-NOT-EXPOSE'.length);
++    assert.equal(summary.total_bytes, summary.protected_bytes + summary.reclaimable_bytes + summary.unknown_bytes);
++    assert.ok(summary.disk.total_bytes > summary.total_bytes); assert.ok(summary.disk.available_bytes >= 0);
++    assert.equal(summary.policy.automatic_cleanup, false); assert.equal(summary.policy.recent_upload_protection_hours, 24);
++    const preview = await f.workflow.storagePreview({}); assert.ok(preview.candidates.some(candidate => candidate.paper_ids.includes(uploaded.paper.id)));
++    assert.ok(preview.candidates.some(candidate => candidate.kind === 'orphan_parse'));
++    const text = JSON.stringify(preview); assert.ok(!text.includes(f.root)); assert.ok(!text.includes('PRIVATE-FIXTURE')); assert.ok(!text.includes('auth.json'));
++    assert.equal(Date.parse(preview.expires_at) - Date.parse(preview.created_at), 10 * 60_000);
++  } finally { await f.close(); }
++});
++
++test('fresh uploads, idle browser drafts, legacy timestamps and repeated same-content uploads receive 24h protection', async () => {
++  const f = await fixture({}, true);
++  try {
++    const uploaded = await f.upload(); assert.equal((await f.workflow.storagePreview({})).candidates.length, 0);
++    f.advance(23 * HOUR); assert.equal((await f.workflow.storagePreview({})).candidates.length, 0);
++    f.advance(2 * HOUR); assert.equal((await f.workflow.storagePreview({})).candidates.length, 1);
++    const row = f.paper(uploaded.paper.id); delete row.uploaded_at; delete row.last_uploaded_at; f.savePaper(row);
++    assert.equal((await f.workflow.storagePreview({})).candidates.length, 1); // Legacy fallback uses the most recent filesystem timestamp.
++    const future = new Date(Date.now() + 30 * HOUR).toISOString(); row.last_uploaded_at = future; f.savePaper(row);
++    assert.equal((await f.workflow.storagePreview({})).candidates.length, 0);
++  } finally { await f.close(); }
++  const repeated = await fixture();
++  try {
++    await repeated.upload(); const preview = await repeated.workflow.storagePreview({}); assert.equal(preview.candidates.length, 1);
++    await repeated.upload(); await assert.rejects(repeated.cleanup(preview), /storage_preview_stale/);
++    const value = repeated.paper((await repeated.workflow.papers())[0]!.id); assert.ok(value.last_uploaded_at);
++  } finally { await repeated.close(); }
++});
++
++test('terminal and zero-result runs, legacy runs, historical versions, reviews and export references protect their sources', async () => {
++  const f = await fixture();
++  try {
++    const current = (await f.upload()).paper, run = f.seedRun(current.id);
++    const runDir = resolve(f.workflow.directory, 'runs', run), file = await f.file(relative(f.root, resolve(runDir, 'result.json')), 'saved-result');
++    const versionFile = await f.file(relative(f.root, resolve(f.workflow.directory, 'runs', 'run-' + randomUUID(), 'document-ir.json')), 'historical-ir');
++    f.store.db.prepare('INSERT INTO s4_versions VALUES(?,?,?,?)').run(run, 'record', 1, JSON.stringify({ source_version: { path: relative(f.root, versionFile) } }));
++    const reviewFile = await f.file(relative(f.root, resolve(f.workflow.directory, 'figure-reviews', 'a'.repeat(64), randomUUID() + '.json')), 'review');
++    f.store.db.prepare('INSERT INTO workbench_reviews VALUES(?,?,?,?)').run(run, 'record', 1, JSON.stringify({ evidence: { path: relative(f.root, reviewFile) } }));
++    const exp = 'export-' + randomUUID(), expDir = resolve(f.workflow.directory, 'exports', exp);
++    await f.file(relative(f.root, resolve(expDir, 'manifest.json')), 'export'); await f.file(relative(f.root, expDir + '.tar.gz'), 'archive');
++    f.store.db.prepare('INSERT INTO workbench_exports VALUES(?,?,?)').run(exp, run, JSON.stringify({ directory: relative(f.root, expDir) }));
++    const second = (await f.upload('legacy')).paper, secondRow = f.paper(second.id);
++    f.store.db.prepare('INSERT INTO runs VALUES(?,?,?)').run('legacy-run', JSON.stringify({ document_id: second.id, file_sha256: secondRow.pdf.sha256 }), 'completed');
++    assert.equal((await f.workflow.storagePreview({})).candidates.length, 0);
++    await access(file); await access(versionFile); await access(reviewFile); await access(expDir + '.tar.gz');
++  } finally { await f.close(); }
++});
++
++test('same-SHA legacy papers form one explicit candidate, and a live shared reference prevents cleanup', async () => {
++  const f = await fixture();
++  try {
++    const first = (await f.upload()).paper, sibling = { ...f.paper(first.id), id: 'paper-' + randomUUID(), title: 'Historical duplicate' }; f.savePaper(sibling);
++    const preview = await f.workflow.storagePreview({}); assert.equal(preview.candidates.length, 1);
++    assert.deepEqual(preview.candidates[0]!.paper_ids.sort(), [first.id, sibling.id].sort()); assert.equal(preview.candidates[0]!.bytes, bytes.length);
++    f.seedRun(sibling.id); await assert.rejects(f.cleanup(preview), /storage_preview_stale/);
++    assert.equal((await f.workflow.storagePreview({})).candidates.length, 0); assert.deepEqual(await f.workflow.pdf(first.id), bytes);
++  } finally { await f.close(); }
++  const removable = await fixture();
++  try {
++    const first = (await removable.upload()).paper, duplicate = { ...removable.paper(first.id), id: 'paper-' + randomUUID() }; removable.savePaper(duplicate);
++    const result = await removable.cleanup(await removable.workflow.storagePreview({}));
++    assert.equal(result.removed_files, 1); assert.equal(result.removed_paper_ids.length, 2); assert.equal((await removable.workflow.papers()).length, 0);
++  } finally { await removable.close(); }
++});
++
++test('known isolated orphan files are removed selectively; unknown neighbors and pi-config survive', async () => {
++  const f = await fixture();
++  try {
++    const id = 'run-' + randomUUID(), dir = resolve(f.workflow.directory, 'runs', id);
++    const known = await f.file(relative(f.root, resolve(dir, 'document-ir.json')), 'IR');
++    const unknown = await f.file(relative(f.root, resolve(dir, 'user-notes.txt')), 'keep');
++    const privateFile = await f.file(relative(f.root, resolve(dir, 'pi-config', 'models.json')), 'private');
++    const exportDir = resolve(f.workflow.directory, 'exports', 'export-' + randomUUID()); await f.file(relative(f.root, resolve(exportDir, 'manifest.json')), 'export');
++    const preview = await f.workflow.storagePreview({}), target = preview.candidates.find(candidate => candidate.kind === 'orphan_parse')!;
++    const result = await f.cleanup(preview, [target.id]); assert.equal(result.status, 'complete'); assert.equal(result.removed_bytes, 2);
++    await assert.rejects(access(known), /ENOENT/); await access(unknown); await access(privateFile); await access(resolve(exportDir, 'manifest.json'));
++    assert.ok(result.summary.reclaimable_bytes > 0); assert.equal(result.summary.unknown_bytes, 11);
++  } finally { await f.close(); }
++});
++
++test('unused upload cleanup includes its exclusively owned parsed sources and keeps other paper sources', async () => {
++  const f = await fixture();
++  try {
++    const paper = (await f.upload()).paper, row = f.paper(paper.id), id = 'run-' + randomUUID();
++    const ir = await f.file(relative(f.root, resolve(f.workflow.directory, 'runs', id, 'document-ir.json')), 'IR');
++    const figure = await f.file(relative(f.root, resolve(f.workflow.directory, 'runs', id, 'figure-assets', 'figure-' + 'b'.repeat(24) + '-p1-0.png')), 'image');
++    row.latest_source = { ir: { path: relative(f.root, ir), sha256: hash('IR') }, catalog: { figures: [{ regions: [{ path: relative(f.root, figure), sha256: hash('image') }] }] } }; f.savePaper(row);
++    const preview = await f.workflow.storagePreview({}); assert.equal(preview.candidates.length, 1); const candidate = preview.candidates[0]!;
++    assert.equal(candidate.kind, 'unused_upload'); assert.equal(candidate.files, 3); assert.equal(candidate.parts.find(part => part.kind === 'figures')!.bytes, 5);
++    const result = await f.cleanup(preview); assert.equal(result.removed_files, 3); assert.deepEqual(result.removed_paper_ids, [paper.id]);
++    await assert.rejects(access(ir), /ENOENT/); await assert.rejects(access(figure), /ENOENT/);
++    assert.equal((await f.workflow.papers()).length, 0);
++  } finally { await f.close(); }
++});
++
++test('native parser root requires a known workbench run identity and protects historical development artifacts', async () => {
++  const f = await fixture();
++  try {
++    const known = 'run-' + randomUUID(), unknown = 'run-' + randomUUID();
++    f.store.db.prepare('INSERT INTO workbench_deleted_runs VALUES(?,?,?,?)').run(known, 'deleted-paper', new Date().toISOString(), JSON.stringify({ status: 'complete', targets: [] }));
++    const owned = await f.file(`runtime-data/s3-native-artifacts/${known}/docling-standard-cpu-${'c'.repeat(64)}.json`, 'known-native');
++    const historical = await f.file(`runtime-data/s3-native-artifacts/${unknown}/docling-standard-cpu-${'d'.repeat(64)}.json`, 'historical-native');
++    const preview = await f.workflow.storagePreview({}); assert.equal(preview.candidates.length, 1); assert.equal(preview.summary.unknown_bytes, 'historical-native'.length);
++    const result = await f.cleanup(preview); assert.equal(result.removed_bytes, 'known-native'.length);
++    await assert.rejects(access(owned), /ENOENT/); await access(historical);
++  } finally { await f.close(); }
++});
++
++test('hard links are inode-deduplicated and protected; symbolic links are never followed', async () => {
++  const f = await fixture();
++  try {
++    const paper = (await f.upload()).paper, path = resolve(f.root, f.paper(paper.id).pdf.path), twin = resolve(f.workflow.directory, 'pdf', 'f'.repeat(64) + '.pdf');
++    await link(path, twin); const outside = await f.file('outside/source.json', 'outside');
++    const id = 'run-' + randomUUID(), dir = resolve(f.workflow.directory, 'runs', id); await mkdir(dir, { recursive: true }); await symlink(outside, resolve(dir, 'document-ir.json'));
++    const preview = await f.workflow.storagePreview({}); assert.equal(preview.candidates.length, 0);
++    assert.equal(preview.summary.total_bytes, bytes.length); assert.equal(preview.summary.protected_reasons.find(reason => reason.code === 'unsafe_link')!.files, 2);
++    assert.equal(await readFile(outside, 'utf8'), 'outside'); await access(twin);
++  } finally { await f.close(); }
++});
++
++test('symlinked scope roots fail closed and preview-time parent replacement cannot redirect deletion', async () => {
++  const f = await fixture();
++  try {
++    await f.upload(); const external = resolve(f.root, 'external'); await mkdir(external);
++    await symlink(external, resolve(f.workflow.directory, 'exports'));
++    const preview = await f.workflow.storagePreview({}); assert.equal(preview.summary.cleanup_available, false); assert.equal(preview.summary.unavailable_reason, 'storage_scope_unavailable'); assert.equal(preview.candidates.length, 0);
++    await rm(resolve(f.workflow.directory, 'exports')); const good = await f.workflow.storagePreview({}); assert.equal(good.candidates.length, 1);
++    const pdf = resolve(f.workflow.directory, 'pdf'); await fs.rename(pdf, pdf + '-original'); await symlink(external, pdf);
++    await assert.rejects(f.cleanup(good), /storage_scope_unavailable/); assert.deepEqual(await fs.readdir(external), []);
++    await rm(pdf); await fs.rename(pdf + '-original', pdf);
++  } finally { await f.close(); }
++});
++
++test('invalid persisted JSON and an incomplete filesystem scan never yield cleanup targets', async () => {
++  const f = await fixture(); let interceptor: ReturnType<typeof mock.method> | undefined;
++  try {
++    const paper = (await f.upload()).paper, original = f.paper(paper.id);
++    f.store.db.prepare('UPDATE workbench_papers SET payload_json=? WHERE id=?').run('{broken', paper.id);
++    let preview = await f.workflow.storagePreview({}); assert.equal(preview.summary.unavailable_reason, 'storage_reference_unavailable'); assert.equal(preview.candidates.length, 0);
++    f.savePaper(original);
++    const run = f.seedRun(paper.id), originalRun = f.store.db.prepare('SELECT payload_json FROM workbench_runs WHERE id=?').get(run)!.payload_json as string;
++    f.store.db.prepare('UPDATE workbench_runs SET payload_json=? WHERE id=?').run('{broken-run', run);
++    preview = await f.workflow.storagePreview({}); assert.equal(preview.summary.unavailable_reason, 'storage_reference_unavailable'); assert.equal(preview.candidates.length, 0);
++    f.store.db.prepare('UPDATE workbench_runs SET payload_json=? WHERE id=?').run(originalRun, run);
++    const actual = fs.readdir;
++    interceptor = mock.method(fs, 'readdir', async (...args: Parameters<typeof fs.readdir>) => {
++      if (String(args[0]) === resolve(f.workflow.directory, 'pdf')) throw Object.assign(new Error('fixture unreadable'), { code: 'EACCES' });
++      return actual(...args);
++    }); syncBuiltinESMExports();
++    preview = await f.workflow.storagePreview({}); assert.equal(preview.summary.unavailable_reason, 'storage_scope_unavailable'); assert.equal(preview.candidates.length, 0);
++  } finally { interceptor?.mock.restore(); syncBuiltinESMExports(); await f.close(); }
++});
++
++test('a newly admitted task invalidates an earlier preview and preparation/parsing/queued work reject cleanup', async () => {
++  const entered = barrier(), finish = barrier();
++  const f = await fixture({ runner: { controlled: true, provider: 'fixture', model_id: 'none', execute: async () => { throw new Error('should not execute model'); } },
++    parse: async () => { entered.release(); await finish.promise; throw new ContractError('isolated_parse_end'); } });
++  try {
++    const paper = (await f.upload()).paper, preview = await f.workflow.storagePreview({});
++    await f.workflow.start(paper.id, f.workflow.scopeCatalog().default_scope); await entered.promise;
++    await f.workflow.start(paper.id, f.workflow.scopeCatalog().default_scope);
++    const queued = await f.workflow.start(paper.id, f.workflow.scopeCatalog().default_scope);
++    assert.equal(f.store.snapshot(queued.run.run_id).state, 'queued');
++    const busy = await f.app.inject({ method: 'POST', url: '/api/workbench/storage/cleanup', payload: { preview_id: preview.preview_id, version: preview.version, candidate_ids: preview.candidates.map(candidate => candidate.id) } });
++    assert.equal(busy.statusCode, 409); assert.equal(busy.json().error, 'storage_busy');
++    assert.equal((await f.workflow.storagePreview({})).summary.unavailable_reason, 'storage_busy');
++    finish.release(); await f.workflow.waitForIdle(); await assert.rejects(f.cleanup(preview), /storage_preview_stale/);
++    assert.deepEqual(await f.workflow.pdf(paper.id), bytes);
++  } finally { finish.release(); await f.close(); }
++});
++
++test('pending uploads exclude cleanup, and the cleanup gate rejects upload, start, restore and paper deletion', async () => {
++  const f = await fixture(); const entered = barrier(), finish = barrier(); let interceptor: ReturnType<typeof mock.method> | undefined;
++  try {
++    await f.upload(); const preview = await f.workflow.storagePreview({}), write = fs.writeFile;
++    interceptor = mock.method(fs, 'writeFile', async (...args: Parameters<typeof fs.writeFile>) => { if (String(args[0]).endsWith('.pdf')) { entered.release(); await finish.promise; } return write(...args); }); syncBuiltinESMExports();
++    const uploading = f.upload('pending'); await entered.promise; await assert.rejects(f.cleanup(preview), /storage_busy/);
++    finish.release(); await uploading; interceptor.mock.restore(); syncBuiltinESMExports();
++    const fresh = await f.workflow.storagePreview({}), gateEntered = barrier(), gateFinish = barrier(); const read = fs.readdir;
++    interceptor = mock.method(fs, 'readdir', async (...args: Parameters<typeof fs.readdir>) => { if (String(args[0]) === resolve(f.workflow.directory, 'pdf')) { gateEntered.release(); await gateFinish.promise; } return read(...args); }); syncBuiltinESMExports();
++    const cleaning = f.cleanup(fresh); await gateEntered.promise;
++    await assert.rejects(f.upload('blocked'), /storage_busy/);
++    const paper = (await f.workflow.papers())[0]!;
++    await assert.rejects(f.workflow.start(paper.id, f.workflow.scopeCatalog().default_scope), /storage_busy/);
++    await assert.rejects(f.workflow.restorePdf(paper.id, bytes), /storage_busy/);
++    await assert.rejects(f.workflow.deletePaper(paper.id), /storage_busy/);
++    gateFinish.release(); assert.equal((await cleaning).status, 'complete');
++  } finally { finish.release(); interceptor?.mock.restore(); syncBuiltinESMExports(); await f.close(); }
++});
++
++test('start preparation before a run exists and the shared human/export write guard exclude cleanup', async () => {
++  const entered = barrier(), finish = barrier();
++  const f = await fixture({ runner: { controlled: true, provider: 'fixture', model_id: 'none', prepare: async () => { entered.release(); await finish.promise; throw new ContractError('isolated_prepare_end'); },
++    execute: async () => { throw new Error('no model'); } } });
++  try {
++    const paper = (await f.upload()).paper, preview = await f.workflow.storagePreview({});
++    const preparing = f.workflow.start(paper.id, f.workflow.scopeCatalog().default_scope).then(() => 'unexpected', error => String(error)); await entered.promise;
++    assert.equal((await f.workflow.runs()).length, 0); await assert.rejects(f.cleanup(preview), /storage_busy/);
++    finish.release(); assert.match(await preparing, /isolated_prepare_end/);
++    const run = f.seedRun(paper.id), unrelated = (await f.upload('unrelated')).paper; assert.ok(unrelated);
++    const available = await f.workflow.storagePreview({}), writeEntered = barrier(), writeFinish = barrier();
++    const writing = f.workflow['withRunWrite'](run, async () => { writeEntered.release(); await writeFinish.promise; }); await writeEntered.promise;
++    await assert.rejects(f.cleanup(available), /storage_busy/); writeFinish.release(); await writing;
++  } finally { finish.release(); await f.close(); }
++});
++
++test('preview expiry, changed file identity, forged selection and duplicate request semantics are explicit', async () => {
++  const f = await fixture();
++  try {
++    await f.upload(); const preview = await f.workflow.storagePreview({});
++    await assert.rejects(f.cleanup(preview, ['storage-' + 'f'.repeat(32)]), /invalid_storage_selection/);
++    f.advance(10 * 60_000); await assert.rejects(f.cleanup(preview), /storage_preview_expired/);
++    const fresh = await f.workflow.storagePreview({}), path = resolve(f.root, f.paper(fresh.candidates[0]!.paper_ids[0]!).pdf.path);
++    await writeFile(path, Buffer.from(bytes.toString() + 'changed')); await assert.rejects(f.cleanup(fresh), /storage_preview_stale/);
++    const current = await f.workflow.storagePreview({}), result = await f.cleanup(current); assert.equal(result.removed_files, 1); assert.equal(result.already_executed, false);
++    const repeat = await f.cleanup(current); assert.equal(repeat.already_executed, true); assert.equal(repeat.removed_bytes, result.removed_bytes);
++    assert.equal((await f.workflow.papers()).length, 0);
++  } finally { await f.close(); }
++});
++
++test('partial removal commits only its approved logical scope and leaves a safe explicit retry path', async () => {
++  const f = await fixture(); let interceptor: ReturnType<typeof mock.method> | undefined;
++  try {
++    const paper = (await f.upload()).paper, id = 'run-' + randomUUID(), row = f.paper(paper.id);
++    const ir = await f.file(relative(f.root, resolve(f.workflow.directory, 'runs', id, 'document-ir.json')), 'IR');
++    row.latest_source = { ir: { path: relative(f.root, ir), sha256: hash('IR') } }; f.savePaper(row);
++    const preview = await f.workflow.storagePreview({}), unlink = nativeFs.unlinkSync;
++    interceptor = mock.method(nativeFs, 'unlinkSync', (path: PathLike) => { if (String(path).endsWith('/document-ir.json')) throw Object.assign(new Error('fixture delete failed'), { code: 'EACCES' }); return unlink(path); }); syncBuiltinESMExports();
++    const result = await f.cleanup(preview); assert.equal(result.status, 'partial'); assert.equal(result.removed_bytes, bytes.length); assert.equal(result.removed_files, 1);
++    assert.deepEqual(result.removed_paper_ids, [paper.id]); assert.equal((await f.workflow.papers()).length, 0); await access(ir);
++    assert.equal((await f.cleanup(preview)).already_executed, true);
++    interceptor.mock.restore(); syncBuiltinESMExports();
++    const remaining = await f.workflow.storagePreview({}); assert.equal(remaining.candidates.length, 1); assert.equal(remaining.candidates[0]!.kind, 'orphan_parse');
++    assert.equal((await f.cleanup(remaining)).removed_bytes, 2); await assert.rejects(access(ir), /ENOENT/);
++  } finally { interceptor?.mock.restore(); syncBuiltinESMExports(); await f.close(); }
++});
++
++test('preview/receipt metadata is bounded and expired previews do not become scheduled cleanup', async () => {
++  const f = await fixture();
++  try {
++    await f.upload();
++    for (let index = 0; index < 35; index++) await f.workflow.storagePreview({});
++    assert.equal(f.store.db.prepare("SELECT COUNT(*) n FROM workbench_storage_operations WHERE status='preview'").get()!.n, 32);
++    f.advance(11 * 60_000); await f.workflow.storagePreview({});
++    assert.equal(f.store.db.prepare("SELECT COUNT(*) n FROM workbench_storage_operations WHERE status='preview'").get()!.n, 1);
++    assert.equal((await f.workflow.papers()).length, 1); assert.deepEqual(await f.workflow.pdf((await f.workflow.papers())[0]!.id), bytes);
++    for (let index = 0; index < 130; index++) f.store.db.prepare('INSERT INTO workbench_storage_operations VALUES(?,?,?,?,?)').run('old-receipt-' + index, Date.now(), Date.now(), 'complete', '{}');
++    await f.workflow.storagePreview({}); assert.equal(f.store.db.prepare("SELECT COUNT(*) n FROM workbench_storage_operations WHERE status='complete'").get()!.n, 128);
++  } finally { await f.close(); }
++});
++
++test('interrupted cleanup is never resumed on startup and explicit retry rechecks newly introduced same-SHA references', async () => {
++  const f = await fixture();
++  let restarted: WorkbenchWorkflow | undefined;
++  try {
++    const paper = (await f.upload()).paper, preview = await f.workflow.storagePreview({});
++    const row = f.store.db.prepare('SELECT payload_json FROM workbench_storage_operations WHERE id=?').get(preview.preview_id)!;
++    const plan = JSON.parse(row.payload_json as string);
++    plan.selection = preview.candidates.map(candidate => candidate.id).sort(); plan.removed_paper_ids = [paper.id]; plan.results = []; plan.done_files = [];
++    f.store.db.prepare('DELETE FROM workbench_papers WHERE id=?').run(paper.id);
++    f.store.db.prepare('UPDATE workbench_storage_operations SET status=?,payload_json=? WHERE id=?').run('executing', JSON.stringify(plan), preview.preview_id);
++    await f.app.close();
++    restarted = new WorkbenchWorkflow(f.store, { codeRoot: f.root, directory: f.workflow.directory, sources: false, storageNow: () => Date.now() + 48 * HOUR }); await restarted.initialize();
++    const path = plan.candidates[0].files[0].path as string; await access(path);
++    const newlyUploaded = (await restarted.upload(bytes, 'new-browser-draft.pdf')).paper;
++    const result = await restarted.storageCleanupSelection({ preview_id: preview.preview_id, version: preview.version, candidate_ids: plan.selection });
++    assert.equal(result.status, 'partial'); assert.equal(result.removed_files, 0); assert.equal(result.results[0]!.status, 'protected');
++    assert.deepEqual(await restarted.pdf(newlyUploaded.id), bytes); await access(path);
++  } finally { await restarted?.close(); await f.close(); }
++});
++
++test('a parent replaced after the final scan cannot redirect the descriptor-anchored unlink outside scope', async () => {
++  const f = await fixture(); let interceptor: ReturnType<typeof mock.method> | undefined;
++  try {
++    const id = 'run-' + randomUUID(), directory = resolve(f.workflow.directory, 'runs', id);
++    const path = await f.file(relative(f.root, resolve(directory, 'document-ir.json')), 'approved-file');
++    const outside = await f.file('outside/document-ir.json', 'foreign-file');
++    const preview = await f.workflow.storagePreview({}), open = nativeFs.openSync; let replaced = false;
++    interceptor = mock.method(nativeFs, 'openSync', (...args: Parameters<typeof nativeFs.openSync>) => {
++      if (!replaced && String(args[0]).endsWith('/' + id)) {
++        replaced = true; nativeFs.renameSync(directory, directory + '-moved'); nativeFs.symlinkSync(dirname(outside), directory);
++      }
++      return open(...args);
++    }); syncBuiltinESMExports();
++    const result = await f.cleanup(preview); assert.equal(replaced, true); assert.equal(result.status, 'partial'); assert.equal(result.removed_files, 0);
++    assert.equal(await readFile(outside, 'utf8'), 'foreign-file'); assert.equal(await readFile(resolve(directory + '-moved', 'document-ir.json'), 'utf8'), 'approved-file');
++    assert.ok(!JSON.stringify(result).includes('foreign-file')); assert.ok(!JSON.stringify(result).includes(path));
++  } finally { interceptor?.mock.restore(); syncBuiltinESMExports(); await f.close(); }
++});
++
++test('literal slash source text is not a root reference; unknown managed paths and explicit parent references stay protected', async () => {
++  const f = await fixture();
++  try {
++    const first = 'run-' + randomUUID(), second = 'run-' + randomUUID(), third = 'run-' + randomUUID();
++    const parent = resolve(f.workflow.directory, 'runs', first);
++    const byParent = await f.file(relative(f.root, resolve(parent, 'document-ir.json')), 'parent-protected');
++    const byUnknownKey = await f.file(relative(f.root, resolve(f.workflow.directory, 'runs', second, 'document-ir.json')), 'unknown-key-protected');
++    const orphan = await f.file(relative(f.root, resolve(f.workflow.directory, 'runs', third, 'document-ir.json')), 'genuine-orphan');
++    f.savePaper({ id: 'historical-source', title: 'Retained source', uploaded: false, pdf: { path: 'historical/retained.pdf', sha256: 'e'.repeat(64) },
++      latest_source: { document: { structure: { units: [{ native_text: '/' }, { native_text: '/ ordinary source text' }] } },
++        unknown_reference_key: relative(f.root, byUnknownKey), retained_context: { directory: parent } } } as { id: string });
++    const preview = await f.workflow.storagePreview({}); assert.equal(preview.candidates.length, 1); assert.equal(preview.candidates[0]!.bytes, 'genuine-orphan'.length);
++    assert.equal(preview.summary.protected_bytes, 'parent-protected'.length + 'unknown-key-protected'.length);
++    const result = await f.cleanup(preview); assert.equal(result.removed_files, 1); await assert.rejects(access(orphan), /ENOENT/); await access(byParent); await access(byUnknownKey);
++  } finally { await f.close(); }
++});

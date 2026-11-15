@@ -1,0 +1,1508 @@
+--- a/code/apps/pi-web/e2e/retention-readonly.mjs
++++ b/code/apps/pi-web/e2e/retention-readonly.mjs
+@@ -0,0 +1,41 @@
++/** Deployment smoke: only GET/HEAD, no exports or real-user mutations, no model calls. */
++import assert from 'node:assert/strict';
++import { readFile, writeFile } from 'node:fs/promises';
++import { dirname, join, resolve } from 'node:path';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..'), origin = 'http://127.0.0.1:30141';
++const evidence = join(code, 'docs/acceptance/retention-workflow-2026-11-11');
++process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
++process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
++const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
++const report = { schema_version: 't1-retention-ordinary-readonly-1', at: new Date().toISOString(), origin, paid_model_calls: 0,
++  write_requests: 0, exports_requested: 0, Start_clicked: false, checks: [], errors: [], blocked: [] };
++const browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
++const context = await browser.newContext({ viewport: { width: 1512, height: 1050 }, locale: 'zh-CN' });
++await context.addInitScript(expectedOrigin => { if (location.origin !== expectedOrigin) return; try { localStorage.setItem('pi-theme', 'light'); localStorage.setItem('pi-locale', 'zh-CN'); } catch {} }, origin);
++await context.route(/^https?:\/\//, route => {
++  const request = route.request(), url = new URL(request.url());
++  if (url.origin !== origin || !['GET', 'HEAD'].includes(request.method()) || url.pathname.includes('/exports/')) { report.blocked.push({ method: request.method(), path: url.pathname }); return route.abort('blockedbyclient'); }
++  return route.continue();
++});
++context.on('page', page => page.on('pageerror', error => report.errors.push(String(error))));
++const json = async path => { const response = await context.request.get(origin + '/api/t1/' + path); assert.equal(response.status(), 200); return response.json(); };
++const page = await context.newPage();
++try {
++  const caps = await json('workbench/capabilities'); assert.equal(caps.extraction_start, true); assert.equal(caps.persisted_retention, true); assert.equal(caps.retained_export, true);
++  const runs = (await json('workbench/runs')).runs, run = runs.find(run => run.document_id === 'L07' && run.candidate_count === 26);
++  assert.equal(runs.filter(run => !['completed', 'partial', 'failed', 'cancelled', 'interrupted'].includes(run.state)).length, 0);
++  const detail = await json('workbench/runs/' + encodeURIComponent(run.run_id)), record = detail.output.records.find(record => record.fragments.length >= 4 && record.passages.length === 1);
++  report.checks.push({ name: 'ordinary_manual_model_limits_and_retention_capabilities_preserved', status: 'passed', limits: caps.model_runtime.limits, concurrent_slots: caps.max_concurrent_runs });
++  await page.goto(origin + '/?' + new URLSearchParams({ paper: run.document_id, run: run.run_id, record: record.id, view: 'records' })); await page.locator('.t1-retention').waitFor();
++  assert.deepEqual(await page.locator('.t1-quote-frame [data-fragment-index]').allTextContents(), record.fragments.map(fragment => fragment.exact_quote));
++  assert.equal(await page.locator('.t1-quote-frame .t1-source-passage').count(), 1); assert.equal(await page.locator('.t1-retention input, .t1-retention textarea, .t1-review').count(), 0);
++  assert.equal(await page.locator('[data-count-kind="kept"] dd').innerText(), '26'); assert.equal(await page.locator('[data-count-kind="excluded"] dd').innerText(), '0');
++  assert.equal(await page.locator('.t1-exports button').count(), 3); assert.ok((await page.locator('.t1-exports').innerText()).includes('保留结果 JSONL'));
++  report.checks.push({ name: 'new_continuous_reading_and_keep_exclude_UI_served_on_30141', status: 'passed', record_id: record.id, source_fragments: record.fragments.length, displayed_paragraphs: 1, default_kept: 26, excluded: 0 });
++  const buildId = (await readFile(join(code, 'apps/pi-web/build/retention-final-next-20261111/BUILD_ID'), 'utf8')).trim();
++  assert.equal((await context.request.get(origin + '/_next/static/' + buildId + '/_buildManifest.js')).status(), 200);
++  report.checks.push({ name: 'final_build_static_manifest_and_readonly_network_boundary', status: 'passed', BUILD_ID: buildId });
++  assert.deepEqual(report.errors, []); assert.deepEqual(report.blocked, []); report.status = 'passed';
++} catch (error) { report.status = 'failed'; report.failure = error.stack ?? String(error); throw error; }
++finally { await writeFile(join(evidence, 'ordinary-readonly-browser.json'), JSON.stringify(report, null, 2) + '\n'); await browser.close(); }
+--- a/code/apps/pi-web/e2e/retention-workflow.mjs
++++ b/code/apps/pi-web/e2e/retention-workflow.mjs
+@@ -0,0 +1,139 @@
++/** Isolated saved-source browser curation. API requests are redirected to the runner-disabled 3211 test DB. */
++import assert from 'node:assert/strict';
++import { mkdir, readFile, writeFile } from 'node:fs/promises';
++import { dirname, join, resolve } from 'node:path';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++import { gunzipSync } from 'node:zlib';
++
++const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
++const origin = 'http://127.0.0.1:30151', backend = 'http://127.0.0.1:3211';
++const evidence = join(code, 'docs/acceptance/retention-workflow-2026-11-11/browser'); await mkdir(evidence, { recursive: true });
++process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
++process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
++const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
++const report = { schema_version: 't1-retention-browser-1', started_at: new Date().toISOString(), origin, backend,
++  data: 'Isolated DB importing existing pinned source outputs; no new medical extraction or real-user test writes',
++  model_runner_available: false, paid_model_calls: 0, production_write_requests: 0, source_wording_rewritten: false,
++  events_transport: 'Finite mocked SSE keepalive; persisted SSE replay is covered by the separate workflow regression',
++  checks: [], screenshots: [], errors: [], failedResponses: [], blockedRequests: [] };
++const browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
++const context = await browser.newContext({ viewport: { width: 1512, height: 1050 }, locale: 'zh-CN', reducedMotion: 'reduce' });
++await context.addInitScript(() => { try { localStorage.setItem('pi-theme', 'light'); localStorage.setItem('pi-locale', 'zh-CN'); } catch {} });
++let stalePage, staleSnapshot;
++const json = async path => { const response = await fetch(backend + '/api/' + path); assert.equal(response.status, 200, path); return response.json(); };
++await context.route(/^https?:\/\//, async route => {
++  const request = route.request(), url = new URL(request.url()), path = url.pathname;
++  if (url.origin !== origin) { report.blockedRequests.push({ method: request.method(), path, reason: 'external_origin' }); return route.abort('blockedbyclient'); }
++  if (!path.startsWith('/api/t1/')) return route.continue();
++  if (path.endsWith('/events')) return route.fulfill({ status: 200, contentType: 'text/event-stream', body: ': isolated snapshot check\n\n' });
++  const mutationAllowed = request.method() === 'POST' && /\/records\/[^/]+\/retention$/u.test(path);
++  if (!['GET', 'HEAD'].includes(request.method()) && !mutationAllowed || /\/exports\/(?!retained_)/u.test(path)) {
++    report.blockedRequests.push({ method: request.method(), path, reason: 'only_retention_mutations_and_retained_exports_allowed' }); return route.abort('blockedbyclient');
++  }
++  if (staleSnapshot && request.frame().page() === stalePage && path.endsWith('/runs/' + encodeURIComponent(staleSnapshot.run.run_id))) {
++    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(staleSnapshot) });
++  }
++  const response = await fetch(backend + path.replace(/^\/api\/t1/u, '/api') + url.search, { method: request.method(),
++    ...(request.postDataBuffer() ? { body: request.postDataBuffer() } : {}), headers: { 'content-type': await request.headerValue('content-type') ?? 'application/json' } });
++  const headers = Object.fromEntries(['content-type', 'content-disposition'].flatMap(name => response.headers.has(name) ? [[name, response.headers.get(name)]] : []));
++  return route.fulfill({ status: response.status, headers, body: Buffer.from(await response.arrayBuffer()) });
++});
++context.on('page', page => page.on('pageerror', error => report.errors.push(String(error))));
++context.on('response', response => { if (response.status() >= 400 && response.status() !== 409) report.failedResponses.push({ status: response.status(), path: new URL(response.url()).pathname }); });
++const page = await context.newPage();
++const persist = () => writeFile(join(evidence, 'report.json'), JSON.stringify(report, null, 2) + '\n');
++async function check(name, work) { try { const detail = await work(); report.checks.push({ name, status: 'passed', detail }); console.log('passed:', name); } catch (error) { report.checks.push({ name, status: 'failed', error: error.stack ?? String(error) }); throw error; } finally { await persist(); } }
++async function open(run, record, target = page) { await target.goto(`${origin}/?${new URLSearchParams({ paper: run.document_id, run: run.run_id, view: 'records', ...(record ? { record: record.id } : {}) })}`); await target.locator('.t1-evidence-card').waitFor(); await target.evaluate(() => document.fonts.ready); }
++async function choose(record) { await page.locator(`[data-index-record-id="${record.id}"]`).click(); await page.locator(`article[data-record-id="${record.id}"]`).waitFor(); }
++async function exact(record, target = page) { assert.deepEqual(await target.locator('.t1-quote-frame [data-fragment-index]').allTextContents(), record.fragments.map(fragment => fragment.exact_quote)); assert.equal(await target.locator('.t1-evidence-card').getAttribute('data-record-version'), String(record.version)); }
++async function mutate(target = page) {
++  const response = target.waitForResponse(response => response.url().endsWith('/retention') && response.request().method() === 'POST'); await target.locator('.t1-retention > button').click();
++  const saved = await response; assert.equal(saved.status(), 200); const value = await saved.json();
++  const current = await json('workbench/runs/' + encodeURIComponent(value.record.run_id)), count = current.output.records.filter(record => record.retention.status === 'excluded').length;
++  await target.waitForFunction(expected => document.querySelector('[data-count-kind="excluded"] dd')?.textContent === String(expected), count); return value;
++}
++async function view(which) { await page.locator('.t1-retention-views button').nth(which === 'kept' ? 0 : 1).click(); }
++async function capture(name) { await page.locator('.t1-content').evaluate(element => { element.scrollTop = 0; }); await page.screenshot({ path: join(evidence, name) }); report.screenshots.push(name); }
++async function theme(name) { await page.getByRole('button', { name: '界面主题', exact: true }).click(); await page.getByRole('menuitemradio', { name: name === 'dark' ? '深色' : '浅色', exact: true }).click(); await page.waitForFunction(value => document.documentElement.dataset.theme === value, name); }
++function archiveEntries(bytes) { const tar = gunzipSync(bytes), entries = new Map(); for (let offset = 0; offset + 512 <= tar.length;) { const raw = tar.subarray(offset, offset + 100).toString().replace(/\0.*$/s, ''); if (!raw) break; const size = parseInt(tar.subarray(offset + 124, offset + 136).toString().replace(/\0.*$/s, '').trim() || '0', 8); entries.set(raw.replace(/^\.\//u, ''), tar.subarray(offset + 512, offset + 512 + size)); offset += 512 + Math.ceil(size / 512) * 512; } return entries; }
++try {
++  const caps = await json('workbench/capabilities'); assert.equal(caps.extraction_start, false); assert.equal(caps.persisted_retention, true); assert.equal(caps.retained_export, true);
++  const run = (await json('workbench/runs')).runs.find(run => run.document_id === 'L07' && run.candidate_count === 26); assert.ok(run);
++  const detail = await json('workbench/runs/' + encodeURIComponent(run.run_id)), records = detail.output.records;
++  const current = () => json('workbench/runs/' + encodeURIComponent(run.run_id));
++  const sourceRecord = records.find(record => record.fragments.length >= 4 && record.passages.length === 1); assert.ok(sourceRecord);
++  report.run_id = run.run_id; report.original_records = records.length;
++  await check('continuous_source_paragraphs_keep_every_original_character_and_hide_raw_offsets_in_details', async () => {
++    await open(run, sourceRecord); await exact(sourceRecord);
++    assert.equal(await page.locator('.t1-quote-frame .t1-source-passage').count(), sourceRecord.passages.length);
++    assert.ok(sourceRecord.passages.length < sourceRecord.fragments.length);
++    assert.equal(await page.locator('.t1-quote-frame .t1-fragment-location details').first().getAttribute('open'), null);
++    assert.equal(await page.locator('.t1-quote-frame .t1-verbatim').first().evaluate(element => getComputedStyle(element).whiteSpace), 'normal');
++    const gapLayout = await page.locator('.t1-quote-frame .t1-verbatim').first().evaluate(element => {
++      const probe = document.createElement('span'); probe.innerHTML = '<span>A</span><span class="t1-literal-gap">\n</span><span>B</span>'; element.append(probe);
++      const result = { text: probe.textContent, whiteSpace: getComputedStyle(probe.children[1]).whiteSpace,
++        sameLine: probe.children[0].getBoundingClientRect().y === probe.children[2].getBoundingClientRect().y }; probe.remove(); return result;
++    });
++    assert.deepEqual(gapLayout, { text: 'A\nB', whiteSpace: 'normal', sameLine: true });
++    assert.equal(await page.locator('.t1-review, .t1-figure-verification').count(), 0);
++    assert.equal(await page.locator('.t1-retention input, .t1-retention textarea').count(), 0);
++    assert.equal(await page.locator('[data-count-kind="kept"] dd').innerText(), '26');
++    await capture('01-continuous-reading-light.png');
++    return { fragment_count: sourceRecord.fragments.length, displayed_paragraphs: sourceRecord.passages.length, quote_spelling_and_hyphens_preserved: true };
++  });
++  await check('exclude_and_restore_move_to_the_next_neighbour_and_persist_after_refresh_without_approval', async () => {
++    await choose(records[3]); const version = records[3].version, fingerprint = records[3].text_fingerprint;
++    await mutate(); await page.locator(`article[data-record-id="${records[4].id}"]`).waitFor();
++    let saved = (await current()).output.records.find(record => record.id === records[3].id);
++    assert.equal(saved.version, version); assert.equal(saved.text_fingerprint, fingerprint); assert.equal(saved.text_approved, false); assert.equal(saved.retention.status, 'excluded');
++    await page.reload(); await page.locator(`article[data-record-id="${records[4].id}"]`).waitFor();
++    for (const index of [5, 7]) { await choose(records[index]); await mutate(); }
++    await view('excluded'); await choose(records[5]); await mutate(); await page.locator(`article[data-record-id="${records[7].id}"]`).waitFor();
++    assert.equal(await page.locator('[data-count-kind="excluded"] dd').innerText(), '2'); await capture('02-excluded-restore.png');
++    await choose(records[3]); await mutate(); await page.locator(`article[data-record-id="${records[7].id}"]`).waitFor(); await mutate();
++    await view('kept'); await page.locator('.t1-evidence-card').waitFor(); assert.equal((await current()).output.records.filter(record => record.retention.status === 'excluded').length, 0);
++    return { same_evidence_version_and_fingerprint: true, middle_exclusion_next_neighbour: true, middle_restore_next_neighbour: true, refresh_persisted: true };
++  });
++  await check('two_tabs_cannot_overwrite_a_newer_retention_choice', async () => {
++    await choose(records[9]); staleSnapshot = await current(); stalePage = await context.newPage(); await open(run, records[9], stalePage);
++    await mutate();
++    const conflictResponse = stalePage.waitForResponse(response => response.url().endsWith('/retention') && response.request().method() === 'POST');
++    await stalePage.locator('.t1-retention > button').click(); assert.equal((await conflictResponse).status(), 409);
++    await stalePage.locator('.t1-retention [role="alert"]').waitFor(); staleSnapshot = null;
++    await stalePage.locator('.t1-retention [role="alert"] button').click(); await stalePage.waitForFunction(() => !document.querySelector('.t1-retention [role="alert"]'));
++    assert.equal((await current()).output.records.find(record => record.id === records[9].id).retention.status, 'excluded');
++    await stalePage.close(); stalePage = null; await page.reload(); await page.locator('.t1-evidence-card').waitFor();
++    return { stale_revision_HTTP: 409, newer_choice_preserved: true, reload_clears_conflict: true };
++  });
++  await check('only_retained_three_formats_are_exposed_and_downloads_omit_exclusions_without_medical_confirmation', async () => {
++    const labels = ['保留结果 JSONL', '保留结果 CSV', '保留结果证据包'], downloaded = [];
++    assert.equal(await page.locator('.t1-exports button').count(), 3);
++    for (const [index, label] of labels.entries()) {
++      const pending = page.waitForEvent('download'); await page.getByRole('button', { name: label, exact: true }).click(); const download = await pending;
++      const path = join(evidence, `retained-${index}.${index === 0 ? 'jsonl' : index === 1 ? 'csv' : 'tar.gz'}`); await download.saveAs(path); assert.equal(await download.failure(), null); downloaded.push(await readFile(path));
++    }
++    const rows = downloaded[0].toString().trim().split('\n').map(line => JSON.parse(line)); assert.equal(rows.length, 25); assert.ok(!rows.some(record => record.record_id === records[9].id));
++    assert.ok(rows.every(record => record.export_review_status === 'retained_unconfirmed' && record.human_confirmation === null && record.medical_quality_approved === false));
++    assert.match(downloaded[1].toString(), /retention_status,medical_quality_approved/);
++    const entries = archiveEntries(downloaded[2]), manifest = JSON.parse(entries.get('manifest.json').toString()); assert.equal(manifest.mode, 'retained'); assert.equal(manifest.record_count, 25); assert.equal(manifest.excluded_record_count, 1); assert.ok(entries.has('retention.json'));
++    return { formats: ['JSONL', 'CSV', 'evidence_package'], exported_records: 25, excluded: 1, no_medical_approval_created: true, no_whole_paper_gate: true };
++  });
++  await check('three_languages_and_dark_narrow_layout_preserve_source_text', async () => {
++    await choose(sourceRecord);
++    for (const locale of ['en', 'zh-TW', 'zh-CN']) { await page.locator('.t1-top-actions select').selectOption(locale); await exact(sourceRecord); assert.ok(!(await page.locator('.t1-exports').innerText()).includes('t1.')); }
++    await theme('dark'); await capture('03-continuous-reading-dark.png');
++    for (const width of [768, 390, 320]) { await page.setViewportSize({ width, height: 844 }); await page.waitForTimeout(100); await exact(sourceRecord); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth || document.querySelector('.t1-content').scrollWidth > document.querySelector('.t1-content').clientWidth + 1), false, `overflow at ${width}`); if (width === 390) await capture('04-mobile-dark.png'); }
++    await page.setViewportSize({ width: 390, height: 844 }); await theme('light'); await capture('05-mobile-light.png'); await page.setViewportSize({ width: 1512, height: 1050 });
++    return { locales: ['en', 'zh-TW', 'zh-CN'], widths: [1512, 768, 390, 320], source_translation: false };
++  });
++  await check('original_pdf_anchor_and_full_figure_remain_available_without_approval_forms', async () => {
++    await page.locator('.t1-locate').click(); const physicalPage = sourceRecord.fragments[0].physical_page;
++    await page.locator(`.t1-pdf-reader canvas[data-page="${physicalPage}"]`).waitFor(); await exact(sourceRecord); await capture('06-original-page-anchor.png'); await page.locator('.t1-source-toggle').click();
++    await page.getByRole('tab', { name: '原 Figure 目录', exact: true }).click(); await page.locator('.t1-figure').first().waitFor();
++    assert.equal(await page.locator('.t1-figure input, .t1-figure textarea').count(), 0); await capture('07-full-figure-reference.png');
++    return { exact_physical_page: physicalPage, PDF_SHA256: detail.paper.sha256, figure_approval_form_count: 0 };
++  });
++  assert.deepEqual(report.errors, []); assert.deepEqual(report.failedResponses, []); assert.deepEqual(report.blockedRequests, []);
++  report.status = 'passed'; report.completed_at = new Date().toISOString();
++} catch (error) { report.status = 'failed'; report.failure = error.stack ?? String(error); throw error; }
++finally { await persist(); await browser.close(); }
+--- a/code/apps/pi-web/t1/EvidenceSource.tsx
++++ b/code/apps/pi-web/t1/EvidenceSource.tsx
+@@ -2,24 +2,23 @@
+ import type { ReactNode } from "react";
+ import { ImagePreview } from "@/components/ImagePreview";
+ import { useI18n } from "@/hooks/useI18n";
+-import type { WorkbenchFigure, WorkbenchFragment } from "../../../packages/contracts/src/workbench";
+-export function Fragments({ fragments, onPage }: { fragments: WorkbenchFragment[]; onPage: (page: number) => void }) {
++import type { WorkbenchFigure, WorkbenchFragment, WorkbenchReadingPassage } from "../../../packages/contracts/src/workbench";
++export function Fragments({ fragments, passages, onPage }: { fragments: WorkbenchFragment[]; passages?: WorkbenchReadingPassage[]; onPage: (page: number) => void }) {
+   const { t } = useI18n();
+-  const passages: Array<{ page: number; items: Array<{ fragment: WorkbenchFragment; index: number }> }> = [];
+-  fragments.forEach((fragment, index) => {
+-    let passage = passages.at(-1);
+-    if (!passage || passage.page !== fragment.physical_page) {
+-      passage = { page: fragment.physical_page, items: [] };
+-      passages.push(passage);
+-    }
+-    passage.items.push({ fragment, index });
+-  });
+-  return <div className="t1-fragments">{passages.map((passage, i) => <div className="t1-source-passage" key={`${passage.page}:${i}`}>
+-    <div className="t1-fragment-location"><button onClick={() => onPage(passage.page)}>{t("t1.physicalPage", { page: passage.page })}</button><details><summary>{t("t1.sourceDetails")}</summary>{passage.items.map(({ fragment, index }) => <code key={index}>{index + 1} · {fragment.block_id} · {fragment.start}–{fragment.end} · {fragment.text_version}</code>)}</details></div>
+-    {passage.items.map(({ fragment, index }) => <div className="t1-fragment" key={`${fragment.block_id}:${fragment.start}:${index}`} data-fragment-index={index + 1}>
+-      <span className="t1-fragment-number" aria-label={t("t1.fragmentNumber", { number: index + 1 })}>{String(index + 1).padStart(2, "0")}</span>
+-      <p className="t1-verbatim" lang="">{fragment.exact_quote}</p>
+-    </div>)}
++  const indices = passages?.flatMap(passage => passage.fragment_indices);
++  const valid = indices?.length === fragments.length && indices.every((index, i) => index === i) && passages?.every(passage =>
++    passage.fragment_indices.length > 0 && passage.joins.length === passage.fragment_indices.length - 1 && passage.joins.every((join, i) => join.before_fragment === passage.fragment_indices[i + 1]));
++  const groups = valid ? passages! : fragments.map((_, index) => ({ fragment_indices: [index], joins: [] } as WorkbenchReadingPassage));
++  return <div className="t1-fragments">{groups.map((passage, i) => <div className="t1-source-passage" data-passage-index={i} key={i}>
++    <div className="t1-fragment-location"><div>{[...new Set(passage.fragment_indices.map(index => fragments[index].physical_page))].map(page => <button key={page} onClick={() => onPage(page)}>{t("t1.physicalPage", { page })}</button>)}</div><details><summary>{t("t1.sourceDetails")}</summary>{passage.fragment_indices.map(index => { const fragment = fragments[index]; return <code key={index}>{index + 1} · {fragment.block_id} · {fragment.start}–{fragment.end} · {fragment.text_version}</code>; })}</details></div>
++    <p className="t1-verbatim" lang="">{passage.fragment_indices.map((index, item) => {
++      const fragment = fragments[index], join = passage.joins[item - 1], previous = fragments[index - 1];
++      const closeWrap = join && /(?:[-\u00ad]|\p{Script=Han})$/u.test(previous.exact_quote) && (/[-\u00ad]$/u.test(previous.exact_quote) || /^\p{Script=Han}/u.test(fragment.exact_quote));
++      return <span className="t1-source-piece" key={index}>
++        {join?.source_whitespace !== undefined ? <span className="t1-literal-gap">{join.source_whitespace}</span> : join && join.kind !== "offset_contiguous" ? <span className={`t1-layout-separator${closeWrap ? " t1-layout-close" : ""}`} aria-hidden="true">{"\n"}</span> : null}
++        <span className="t1-source-fragment" data-fragment-index={index + 1} aria-label={t("t1.fragmentNumber", { number: index + 1 })}>{fragment.exact_quote}</span>
++      </span>;
++    })}</p>
+   </div>)}</div>;
+ }
+ export function FigureView({ figure, onPage, paired = false, review }: { figure: WorkbenchFigure; onPage: (page: number) => void; paired?: boolean; review?: ReactNode }) {
+@@ -33,6 +32,6 @@
+       <ImagePreview src={asset.url} alt={`Figure ${figure.number ?? "?"}`}><img src={asset.url} alt={`Figure ${figure.number ?? "?"}`} width={asset.width} height={asset.height} /></ImagePreview>
+       <button className="t1-link" onClick={() => onPage(asset.page)}>{t("t1.physicalPage", { page: asset.page })}</button>
+     </div>)}
+-    <div className="t1-caption"><span>{t("t1.caption")}</span><Fragments fragments={figure.caption} onPage={onPage} /></div>{review}
++    <div className="t1-caption"><span>{t("t1.caption")}</span><Fragments fragments={figure.caption} passages={figure.caption_passages} onPage={onPage} /></div>{review}
+   </section>;
+ }
+--- a/code/apps/pi-web/t1/FigureVerification.tsx
++++ b/code/apps/pi-web/t1/FigureVerification.tsx
+@@ -1,30 +0,0 @@
+-"use client";
+-import { useEffect, useState } from "react";
+-import { useI18n } from "@/hooks/useI18n";
+-import { api, jsonBody, WorkbenchError } from "./api";
+-
+-/** A per-Figure source check does not approve any record or medical pairing. */
+-export function FigureVerification({ runId, figureId, catalogSha, onSaved }: { runId: string; figureId: string; catalogSha: string; onSaved: () => Promise<void> }) {
+-  const { t } = useI18n();
+-  const draftKey = `t1:figure-check-draft:${encodeURIComponent(runId)}:${encodeURIComponent(figureId)}:${catalogSha}`;
+-  const stored = () => { try { return JSON.parse(sessionStorage.getItem(draftKey) ?? "{}") as { reviewer?: string; notes?: string }; } catch { return {}; } };
+-  const [panels, setPanels] = useState(false), [caption, setCaption] = useState(false), [reviewer, setReviewer] = useState(() => stored().reviewer ?? ""), [notes, setNotes] = useState(() => stored().notes ?? ""), [busy, setBusy] = useState(false), [error, setError] = useState("");
+-  useEffect(() => { try { sessionStorage.setItem(draftKey, JSON.stringify({ reviewer, notes })); } catch { /* optional browser storage */ } }, [draftKey, reviewer, notes]);
+-  async function verify() {
+-    setBusy(true); setError("");
+-    try {
+-      await api(`workbench/runs/${encodeURIComponent(runId)}/figures/${encodeURIComponent(figureId)}/verify`, jsonBody("POST", { expected_catalog_sha256: catalogSha, reviewer: reviewer.trim(), all_panels_included: panels, caption_figure_identity_checked: caption, notes: notes.trim() }));
+-      try { sessionStorage.removeItem(draftKey); } catch { /* optional storage */ }
+-      setPanels(false); setCaption(false); await onSaved();
+-    } catch (cause) { setError(cause instanceof WorkbenchError && cause.code.includes("source_glyph_fidelity_unverified") ? t("t1.sourceGlyphUnreliable") : cause instanceof WorkbenchError && cause.status === 409 ? t("t1.figureConflict") : cause instanceof Error ? cause.message : t("t1.requestFailed")); }
+-    finally { setBusy(false); }
+-  }
+-  return <details className="t1-figure-verification"><summary>{t("t1.verifyFigure")}</summary><p className="t1-footnote">{t("t1.verifyFigureHelp")}</p>
+-    <label className="t1-check"><input type="checkbox" checked={panels} onChange={e => setPanels(e.target.checked)} />{t("t1.allPanelsChecked")}</label>
+-    <label className="t1-check"><input type="checkbox" checked={caption} onChange={e => setCaption(e.target.checked)} />{t("t1.figureCaptionChecked")}</label>
+-    <label className="t1-field">{t("t1.reviewer")}<input aria-label={t("t1.reviewer")} value={reviewer} onChange={e => setReviewer(e.target.value)} maxLength={120} /></label>
+-    <label className="t1-field">{t("t1.figureNotes")}<textarea aria-label={t("t1.figureNotes")} value={notes} onChange={e => setNotes(e.target.value)} maxLength={4000} rows={2} /></label>
+-    <button className="t1-primary" disabled={busy || !panels || !caption || !reviewer.trim() || !notes.trim()} onClick={() => void verify()}>{t("t1.saveFigureCheck")}</button>
+-    {error && <div className="t1-alert" role="alert">{error}<button onClick={() => void onSaved()}>{t("t1.loadCurrent")}</button></div>}
+-  </details>;
+-}
+--- a/code/apps/pi-web/t1/RecordRetention.tsx
++++ b/code/apps/pi-web/t1/RecordRetention.tsx
+@@ -0,0 +1,27 @@
++"use client";
++import { useState } from "react";
++import { useI18n } from "@/hooks/useI18n";
++import type { WorkbenchRecord, WorkbenchRetentionInput } from "../../../packages/contracts/src/workbench";
++import { api, jsonBody, WorkbenchError } from "./api";
++
++/** Everyday curation is independent of the legacy medical/source approval record. */
++export function RecordRetention({ runId, record, onSaved }: { runId: string; record: WorkbenchRecord; onSaved: (changed?: boolean) => Promise<void> }) {
++  const { t } = useI18n(), excluded = record.retention?.status === "excluded";
++  const [busy, setBusy] = useState(false), [error, setError] = useState(""), [conflict, setConflict] = useState(false);
++  async function save() {
++    setBusy(true); setError("");
++    try {
++      const input: WorkbenchRetentionInput = { expected_version: record.version, expected_retention_revision: record.retention?.revision ?? 0, status: excluded ? "kept" : "excluded" };
++      await api(`workbench/runs/${encodeURIComponent(runId)}/records/${encodeURIComponent(record.id)}/retention`, jsonBody("POST", input));
++      await onSaved(true);
++    } catch (cause) {
++      const changed = cause instanceof WorkbenchError && cause.status === 409;
++      setConflict(changed); setError(changed ? t("t1.retentionConflict") : cause instanceof Error ? cause.message : t("t1.requestFailed"));
++    } finally { setBusy(false); }
++  }
++  return <section className="t1-retention" aria-label={t("t1.retentionTitle")}>
++    <div><strong>{t(excluded ? "t1.excluded" : record.retention?.origin === "default" ? "t1.defaultKept" : "t1.kept")}</strong><p>{t("t1.retentionHelp")}</p></div>
++    <button disabled={busy || conflict} onClick={() => void save()}>{t(excluded ? "t1.restoreKept" : "t1.excludeRecord")}</button>
++    {error && <div className="t1-alert" role="alert">{error}{conflict && <button onClick={() => void onSaved()}>{t("t1.loadCurrent")}</button>}</div>}
++  </section>;
++}
+--- a/code/apps/pi-web/t1/RecordReview.tsx
++++ b/code/apps/pi-web/t1/RecordReview.tsx
+@@ -1,42 +0,0 @@
+-"use client";
+-import { useEffect, useState } from "react";
+-import { useI18n } from "@/hooks/useI18n";
+-import type { WorkbenchRecord, WorkbenchReviewInput } from "../../../packages/contracts/src/workbench";
+-import { api, jsonBody, WorkbenchError } from "./api";
+-
+-export function RecordReview({ runId, record, canReviewFigures, onSaved }: { runId: string; record: WorkbenchRecord; canReviewFigures: boolean; onSaved: () => Promise<void> }) {
+-  const { t } = useI18n();
+-  const [reviewer, setReviewer] = useState(() => { try { return localStorage.getItem("t1:reviewer") ?? ""; } catch { return ""; } });
+-  const draftKey = `t1:review-draft:${encodeURIComponent(runId)}:${encodeURIComponent(record.id)}:${record.version}`;
+-  // A draft belongs to this exact version. Without one, show the saved note for
+-  // this version instead of losing it on reload or carrying an older note over.
+-  const [reason, setReason] = useState(() => { try { return sessionStorage.getItem(draftKey) ?? record.review_reason ?? ""; } catch { return record.review_reason ?? ""; } }), [checks, setChecks] = useState([false, false, false, false]);
+-  const [busy, setBusy] = useState(false), [error, setError] = useState(""), [conflict, setConflict] = useState(false);
+-  useEffect(() => { try { sessionStorage.setItem(draftKey, reason); } catch { /* in-memory draft remains usable */ } }, [draftKey, reason]);
+-  async function review(action: WorkbenchReviewInput["action"]) {
+-    setBusy(true); setError("");
+-    try {
+-      const input: WorkbenchReviewInput = { expected_version: record.version, action, reviewer: reviewer.trim(), reason,
+-        source_text_checked: checks[0], relevance_checked: checks[1], context_checked: checks[2], figure_pairing_checked: checks[3] };
+-      await api(`workbench/runs/${encodeURIComponent(runId)}/records/${encodeURIComponent(record.id)}/review`, jsonBody("POST", input));
+-      try { localStorage.setItem("t1:reviewer", reviewer.trim()); } catch { /* optional preference */ }
+-      try { sessionStorage.removeItem(draftKey); } catch { /* optional storage */ }
+-      setChecks([false, false, false, false]); await onSaved();
+-    } catch (cause) {
+-      const changed = cause instanceof WorkbenchError && cause.status === 409;
+-      setConflict(changed); setError(cause instanceof WorkbenchError && cause.code.includes("source_glyph_fidelity_unverified") ? t("t1.sourceGlyphUnreliable") : cause instanceof WorkbenchError && cause.code.includes("source_glyph_check_missing") ? t("t1.sourceGlyphLegacy") : changed ? t("t1.conflict") : cause instanceof Error ? cause.message : t("t1.requestFailed"));
+-    } finally { setBusy(false); }
+-  }
+-  return <section className="t1-review" aria-label={t("t1.reviewTitle")}><div className="t1-section-title"><h2>{t("t1.reviewTitle")}</h2>
+-    <div className="t1-review-status"><span className="t1-badge" data-status={record.text_approved ? "approved" : record.review_status === "rejected" ? "rejected" : "pending"}>{t(record.text_approved ? "t1.approved" : record.review_status === "rejected" ? "t1.rejected" : "t1.pending")}</span>{canReviewFigures && <span className="t1-badge" data-status={record.figures_approved ? "approved" : "pending"}>{t(record.figures_approved ? "t1.figuresApproved" : "t1.figuresPending")}</span>}</div></div>
+-    <label className="t1-field">{t("t1.reviewer")}<input aria-label={t("t1.reviewer")} value={reviewer} onChange={e => setReviewer(e.target.value)} autoComplete="name" maxLength={120} /></label>
+-    <label className="t1-field">{t("t1.reason")}<textarea aria-label={t("t1.reason")} value={reason} onChange={e => setReason(e.target.value)} maxLength={4000} rows={2} /></label>
+-    <p className="t1-field-hint">{t(record.review_reason && reason === record.review_reason ? "t1.savedReviewNote" : "t1.reviewNoteHelp")}</p>
+-    <div className="t1-review-checks">{["checkedSource", "checkedRelevance", "checkedContext", "checkedFigures"].map((key, index) => <label className="t1-check" key={key}><input type="checkbox" checked={checks[index]} disabled={busy || index === 3 && !canReviewFigures} onChange={e => setChecks(old => old.map((value, i) => i === index ? e.target.checked : value))} />{t(`t1.${key}`)}</label>)}</div>
+-    <div className="t1-actions"><button className="t1-primary" disabled={busy || conflict || !reviewer.trim() || !checks.slice(0, 3).every(Boolean)} onClick={() => void review("approve_text")}>{t("t1.approveText")}</button>
+-      <button disabled={busy || conflict || !reviewer.trim() || !record.text_approved || !checks[3] || !canReviewFigures} onClick={() => void review("approve_figures")}>{t("t1.approveFigures")}</button>
+-      <button disabled={busy || conflict || !reviewer.trim()} onClick={() => void review("reject")}>{t("t1.reject")}</button><button disabled={busy || conflict || !reviewer.trim()} onClick={() => void review("pending")}>{t("t1.markPending")}</button></div>
+-    <p className="t1-footnote">{t("t1.textFirst")}</p>
+-    {error && <div className="t1-alert" role="alert">{error}{conflict && <button onClick={() => { setConflict(false); setError(""); setChecks([false, false, false, false]); void onSaved(); }}>{t("t1.loadCurrent")}</button>}</div>}
+-  </section>;
+-}
+--- a/code/apps/pi-web/t1/ResultIndex.tsx
++++ b/code/apps/pi-web/t1/ResultIndex.tsx
+@@ -20,7 +20,7 @@
+     >
+       <span className="t1-index-item-top"><b>{String(records.indexOf(record) + 1).padStart(2, "0")}</b><span>{t(record.evidence_role === "background_suggestion" ? "t1.backgroundSuggestions" : "t1.primaryDescriptions")}</span></span>
+       <span className="t1-index-preview">{record.fragments.slice(0, 3).map((fragment, i) => <span key={i}>{i > 0 && <span className="t1-preview-gap" aria-hidden="true"> ⋯ </span>}<span aria-label={t("t1.fragmentNumber", { number: i + 1 })}>{fragment.exact_quote}</span></span>)}</span>
+-      <span className="t1-index-item-bottom"><span>{record.fragments[0] && t("t1.physicalPage", { page: record.fragments[0].physical_page })}</span><span className="t1-index-status" data-status={record.text_approved ? "approved" : record.review_status === "rejected" ? "rejected" : "pending"}>{t(record.text_approved ? "t1.textChecked" : record.review_status === "rejected" ? "t1.rejected" : "t1.needsReview")}</span></span>
++      <span className="t1-index-item-bottom"><span>{record.fragments[0] && t("t1.physicalPage", { page: record.fragments[0].physical_page })}</span><span className="t1-index-status" data-status={record.retention?.status ?? "kept"}>{t(record.retention?.status === "excluded" ? "t1.excluded" : "t1.kept")}</span></span>
+     </button>)}</div>
+   </nav>;
+ }
+--- a/code/apps/pi-web/t1/SameSourceMembers.tsx
++++ b/code/apps/pi-web/t1/SameSourceMembers.tsx
+@@ -16,7 +16,7 @@
+     <div className="t1-member-list">{group.members.map((member, i) => {
+       const current = records.find(item => item.id === member.record_id);
+       return <div key={member.record_id} className={member.record_id === record.id ? "selected" : ""}>
+-        <button aria-pressed={member.record_id === record.id} onClick={() => onSelect(member.record_id)}>{t("t1.member", { number: i + 1 })} · {t("t1.version", { version: member.record_version })} · {t(current?.text_approved ? "t1.approved" : "t1.pending")}</button>
++        <button aria-pressed={member.record_id === record.id} onClick={() => onSelect(member.record_id)}>{t("t1.member", { number: i + 1 })} · {t("t1.version", { version: member.record_version })} · {t(current?.retention?.status === "excluded" ? "t1.excluded" : "t1.kept")}</button>
+         <details><summary>{t("t1.memberDifferences")}</summary>{!!group.evidence_field_differences.length && <dl>{group.evidence_field_differences.map(field => <div key={field}><dt>{t(`t1.field.${field}`)}</dt><dd>{summary(member.evidence_fields[field])}</dd></div>)}</dl>}<details><summary>{t("t1.sourceVersion")}</summary><pre>{JSON.stringify(member.evidence_fields, null, 2)}</pre></details></details>
+       </div>;
+     })}</div>
+--- a/code/apps/pi-web/t1/SourceEditor.tsx
++++ b/code/apps/pi-web/t1/SourceEditor.tsx
+@@ -20,18 +20,18 @@
+ export function SourceEditor({ runId, record, units, onPage, onSaved, onClose }: { runId: string; record: WorkbenchRecord | null; units: WorkbenchSourceUnit[]; onPage: (page: number) => void; onSaved: () => Promise<void>; onClose: () => void }) {
+   const { t } = useI18n();
+   const [draft, setDraft] = useState<Draft>(() => readDraft(runId, record));
+-  const [search, setSearch] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState(""), [conflict, setConflict] = useState(false), [deleting, setDeleting] = useState(false);
++  const [search, setSearch] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState(""), [conflict, setConflict] = useState(false);
+   const storageKey = prefix(runId, record?.id ?? "new") + draft.version;
+   useEffect(() => { try { sessionStorage.setItem(storageKey, JSON.stringify(draft)); } catch { /* in-memory draft remains usable */ } }, [draft, storageKey]);
+   const updateLabel = (value: WorkbenchLabels) => setDraft(current => ({ ...current, labels: { ...current.labels, ...value } }));
+-  async function save(remove = false) {
+-    if (!draft.reviewer.trim()) { setError(t("t1.reviewerRequired")); return; }
+-    if (!remove && !draft.source.length) { setError(t("t1.selectionRequired")); return; }
++  async function save() {
++    if (!draft.reviewer.trim()) { setError(t("t1.editorNameRequired")); return; }
++    if (!draft.source.length) { setError(t("t1.selectionRequired")); return; }
+     setBusy(true); setError("");
+     try {
+       const path = `workbench/runs/${encodeURIComponent(runId)}/records${record ? `/${encodeURIComponent(record.id)}` : ""}`;
+       const input: WorkbenchRevisionInput = { ...(record ? { expected_version: draft.version } : {}), source_unit_ids: draft.source, context_unit_ids: draft.context, labels: { ...draft.labels, tags: (draft.tagsText ?? draft.labels.tags?.join(", ") ?? "").split(/[,，]/).map(tag => tag.trim()).filter(Boolean) }, reviewer: draft.reviewer.trim(), reason: draft.reason };
+-      await api(path, jsonBody(remove ? "DELETE" : record ? "PATCH" : "POST", input));
++      await api(path, jsonBody(record ? "PATCH" : "POST", input));
+       try { sessionStorage.removeItem(storageKey); } catch { /* optional storage */ }
+       await onSaved(); onClose();
+     } catch (cause) {
+@@ -61,10 +61,9 @@
+       <label className="t1-field">{t("t1.evidenceRole")}<select aria-label={t("t1.evidenceRole")} value={draft.labels.evidence_role ?? record?.evidence_role ?? "primary_candidate"} onChange={e => updateLabel({ evidence_role: e.target.value as WorkbenchLabels["evidence_role"] })}><option value="primary_candidate">{t("t1.primary")}</option><option value="background_suggestion">{t("t1.background")}</option></select></label>
+       <label className="t1-field">{t("t1.tags")}<input aria-label={t("t1.tags")} value={draft.tagsText ?? draft.labels.tags?.join(", ") ?? ""} onChange={e => setDraft(current => ({ ...current, tagsText: e.target.value }))} maxLength={1000} /></label></div>
+     <label className="t1-field">{t("t1.comment")}<textarea aria-label={t("t1.comment")} value={draft.labels.comment ?? ""} onChange={e => updateLabel({ comment: e.target.value })} maxLength={4000} rows={2} /></label>
+-    <label className="t1-field">{t("t1.reviewer")}<input aria-label={t("t1.reviewer")} value={draft.reviewer} onChange={e => setDraft(current => ({ ...current, reviewer: e.target.value }))} maxLength={120} /></label>
++    <label className="t1-field">{t("t1.editorName")}<input aria-label={t("t1.editorName")} value={draft.reviewer} onChange={e => setDraft(current => ({ ...current, reviewer: e.target.value }))} maxLength={120} /></label>
+     <label className="t1-field">{t("t1.reason")}<textarea aria-label={t("t1.reason")} value={draft.reason} onChange={e => setDraft(current => ({ ...current, reason: e.target.value }))} maxLength={4000} rows={2} /></label>
+     {error && <div className="t1-alert" role="alert">{error}{conflict && <button onClick={() => void loadCurrent().catch(cause => setError(cause instanceof Error ? cause.message : t("t1.requestFailed")))}>{t("t1.loadCurrent")}</button>}</div>}
+-    <div className="t1-actions"><button className="t1-primary" disabled={busy || conflict || !draft.reviewer.trim() || !draft.source.length} onClick={() => void save()}>{t(record ? "t1.saveRevision" : "t1.add")}</button>
+-      {record && !deleting && <button disabled={busy} onClick={() => setDeleting(true)}>{t("t1.deleteRecord")}</button>}{deleting && <button disabled={busy || conflict || !draft.reviewer.trim()} onClick={() => void save(true)}>{t("t1.confirmDelete")}</button>}</div>
++    <div className="t1-actions"><button className="t1-primary" disabled={busy || conflict || !draft.reviewer.trim() || !draft.source.length} onClick={() => void save()}>{t(record ? "t1.saveRevision" : "t1.add")}</button></div>
+   </section>;
+ }
+--- a/code/apps/pi-web/t1/T1Workbench.tsx
++++ b/code/apps/pi-web/t1/T1Workbench.tsx
+@@ -19,9 +19,8 @@
+ import { ScopeEditor, ScopeSummary } from "./ScopeEditor";
+ import { scopeProblems, type ScopeCatalog } from "./scope";
+ import { FigureView, Fragments } from "./EvidenceSource";
+-import { RecordReview } from "./RecordReview";
++import { RecordRetention } from "./RecordRetention";
+ import { SourceEditor } from "./SourceEditor";
+-import { FigureVerification } from "./FigureVerification";
+ import { SameSourceMembers } from "./SameSourceMembers";
+ import { ResultIndex } from "./ResultIndex";
+ import { ModelRuntimeNotice } from "./ModelRuntimeNotice";
+@@ -33,7 +32,7 @@
+ const PdfSource = dynamic(() => import("./PdfSource").then(module => module.PdfSource), { ssr: false });
+ const terminal = new Set(["completed", "partial", "failed", "cancelled", "interrupted"]);
+ type RunDetail = WorkbenchRunDetail;
+-const exportKinds: WorkbenchExportKind[] = ["candidate_jsonl", "candidate_csv", "candidate_package", "approved_jsonl", "approved_csv", "approved_package"];
++const exportKinds: WorkbenchExportKind[] = ["retained_jsonl", "retained_csv", "retained_package"];
+ 
+ export function T1Workbench() {
+   const { t, locale, setLocale, supportedLocales } = useI18n();
+@@ -44,7 +43,7 @@
+   const [paperId, setPaperId] = useState(""), [runId, setRunId] = useState<string | null>(null), [historyId, setHistoryId] = useState(""), [recordId, setRecordId] = useState("");
+   const [detail, setDetail] = useState<WorkbenchPaperDetail | null>(null), [runDetail, setRunDetail] = useState<RunDetail | null>(null);
+   const [page, setPage] = useState(1), [revision, setRevision] = useState(0), [recordQuery, setRecordQuery] = useState("");
+-  const [recordRole, setRecordRole] = useState("all");
++  const [recordRole, setRecordRole] = useState("all"), [retentionView, setRetentionView] = useState("kept");
+   const [loading, setLoading] = useState(true), [error, setError] = useState(""), [detailError, setDetailError] = useState("");
+   const [activeTab, setActiveTab] = useState("newTask"), [tabIds, setTabIds] = useState(["newTask", "records", "figures", "tasks"]);
+   const [showSource, setShowSource] = useState(false), [showSidebar, setShowSidebar] = useState(true);
+@@ -70,9 +69,10 @@
+   const legacyGlyphCheck = Boolean(output && output.fixture !== true && output.origin !== "controlled_fixture" && !glyphCoverage?.source_glyph_check_status);
+   const records = output?.records.filter(record => !record.deleted) ?? [];
+   const query = recordQuery.trim().toLocaleLowerCase();
+-  const visibleRecords = records.filter(item => (recordRole === "all" || (item.evidence_role ?? "primary_candidate") === recordRole) && (!query || [...item.fragments, ...item.context].some(fragment => fragment.exact_quote.toLocaleLowerCase().includes(query))));
+-  const approvedCount = records.filter(item => item.text_approved).length;
+-  const rejectedCount = records.filter(item => !item.text_approved && item.review_status === "rejected").length;
++  const retainedStatus = (item: typeof records[number]) => item.retention?.status ?? (item.review_status === "rejected" ? "excluded" : "kept");
++  const visibleRecords = records.filter(item => retainedStatus(item) === retentionView && (recordRole === "all" || (item.evidence_role ?? "primary_candidate") === recordRole) && (!query || [...item.fragments, ...item.context].some(fragment => fragment.exact_quote.toLocaleLowerCase().includes(query))));
++  const keptCount = records.filter(item => retainedStatus(item) === "kept").length;
++  const excludedCount = records.length - keptCount;
+   const backgroundCount = records.filter(item => item.evidence_role === "background_suggestion").length;
+   const record = visibleRecords.find(item => item.id === recordId) ?? visibleRecords[0];
+   const selectedRecordId = record?.id;
+@@ -89,7 +89,7 @@
+   const paperRuns = runs.filter(run => run.document_id === paperId);
+ 
+   useEffect(() => { if (mobile) setShowSidebar(false); }, [mobile]);
+-  useEffect(() => { setRecordQuery(""); setRecordRole("all"); }, [paperId, runId, historyId]);
++  useEffect(() => { setRecordQuery(""); setRecordRole("all"); setRetentionView("kept"); }, [paperId, runId, historyId]);
+   // Follow a newly selected record once; polling and version updates must not
+   // steal a page the reviewer selected manually.
+   useEffect(() => {
+@@ -277,35 +277,35 @@
+             <div className="t1-results-summary">
+             {output && <div className="t1-results-overview"><dl aria-label={t("t1.recordCountsHelp")}>
+               <div data-count-kind="candidates"><dt>{t("t1.savedCandidates")}</dt><dd>{records.length}</dd></div>
+-              <div data-count-kind="approved"><dt>{t("t1.textChecked")}</dt><dd>{approvedCount}</dd></div>
+-              <div data-count-kind="pending"><dt>{t("t1.needsReview")}</dt><dd>{records.length - approvedCount - rejectedCount}</dd></div>
+-              {rejectedCount > 0 && <div data-count-kind="rejected"><dt>{t("t1.recordsRejected")}</dt><dd>{rejectedCount}</dd></div>}
++              <div data-count-kind="kept"><dt>{t("t1.kept")}</dt><dd>{keptCount}</dd></div>
++              <div data-count-kind="excluded"><dt>{t("t1.excluded")}</dt><dd>{excludedCount}</dd></div>
+             </dl><p>{t("t1.recordCountsHelp")}</p></div>}
+             <div className="t1-output-toolbar"><details className="t1-task-picker"><summary><span>{t("t1.task")}</span>{selectedRun?.created_at && <time dateTime={selectedRun.created_at}>{new Date(selectedRun.created_at).toLocaleString(locale)}</time>}</summary><label>{t("t1.task")}<select aria-label={t("t1.task")} value={runId ? `run:${runId}` : `history:${historyId}`} onChange={e => { const value = e.target.value; setRecordId(""); if (value.startsWith("run:")) { setRunId(value.slice(4)); setHistoryId(""); } else { setRunId(null); setHistoryId(value.slice(8)); } }}>
+               {!paperRuns.length && !currentPaper?.outputs.length && <option value="history:">{t("t1.noTasks")}</option>}{paperRuns.map(run => <option key={run.run_id} value={`run:${run.run_id}`}>{run.created_at ? new Date(run.created_at).toLocaleString(locale) : t("t1.task")} · {t("t1.recordCount", { count: run.candidate_count })}{run.fixture ? ` · ${t("t1.controlledTask")}` : ""}</option>)}{currentPaper?.outputs.filter(item => item.origin === "historical_compatibility_replay" && !paperRuns.some(run => run.run_id === item.id)).map(item => <option key={item.id} value={`history:${item.id}`}>{t("t1.historical")} · {item.strategy} · {item.records.length}</option>)}</select></label></details>
+               {state && <div className="t1-task-progress" role="status" data-state={state} data-status={presentation.statusKey}><strong><span className="t1-status-dot" />{t(`t1.${presentation.statusKey}`)}</strong>{runId && !terminal.has(state) && <button onClick={() => void cancelRun(runId)}>{t("t1.cancel")}</button>}</div>}
+             </div></div>
+             {!records.length ? <div className="t1-empty"><p>{t(output ? "t1.noRecords" : "t1.noRun")}</p><button onClick={() => openTab("newTask")}>{t("t1.newTask")}</button></div> : <>
+-              <div className="t1-record-nav"><label className="t1-record-search"><SearchIcon size={15} /><input type="search" aria-label={t("t1.findRecord")} placeholder={t("t1.findRecord")} value={recordQuery} onChange={e => setRecordQuery(e.target.value)} /></label><label className="t1-role-filter"><span className="t1-sr-only">{t("t1.candidateRole")}</span><select aria-label={t("t1.candidateRole")} value={recordRole} onChange={e => { setRecordRole(e.target.value); setRecordId(""); }}><option value="all">{t("t1.allCandidates")} · {records.length}</option><option value="primary_candidate">{t("t1.primaryDescriptions")} · {records.length - backgroundCount}</option><option value="background_suggestion">{t("t1.backgroundSuggestions")} · {backgroundCount}</option></select></label><div className="t1-record-step"><label className="t1-record-selector"><span className="t1-sr-only">{t("t1.record")}</span><select aria-label={t("t1.record")} value={record?.id ?? ""} onChange={e => setRecordId(e.target.value)}>{!visibleRecords.length && <option value="">{t("t1.noMatchingRecords")}</option>}{visibleRecords.map(item => <option key={item.id} value={item.id}>{records.indexOf(item) + 1} · {item.text_approved ? "✓ " : ""}{item.fragments[0]?.exact_quote.slice(0, 82)}</option>)}</select></label><span className="t1-record-position">{recordPosition + 1} / {visibleRecords.length}</span><button aria-label={t("t1.previousRecord")} title={t("t1.previousRecord")} disabled={recordPosition <= 0} onClick={() => setRecordId(visibleRecords[recordPosition - 1].id)}><ChevronIcon size={15} className="t1-chevron-back" /></button><button aria-label={t("t1.nextRecord")} title={t("t1.nextRecord")} disabled={recordPosition < 0 || recordPosition >= visibleRecords.length - 1} onClick={() => setRecordId(visibleRecords[recordPosition + 1].id)}><ChevronIcon size={15} /></button></div></div>
++              <div className="t1-retention-views" aria-label={t("t1.retentionViews")}>{["kept", "excluded"].map(view => <button key={view} aria-pressed={retentionView === view} onClick={() => { setRetentionView(view); setRecordId(""); }}>{t(view === "kept" ? "t1.keptResults" : "t1.excluded")}<span>{view === "kept" ? keptCount : excludedCount}</span></button>)}</div>
++              <div className="t1-record-nav"><label className="t1-record-search"><SearchIcon size={15} /><input type="search" aria-label={t("t1.findRecord")} placeholder={t("t1.findRecord")} value={recordQuery} onChange={e => setRecordQuery(e.target.value)} /></label><label className="t1-role-filter"><span className="t1-sr-only">{t("t1.candidateRole")}</span><select aria-label={t("t1.candidateRole")} value={recordRole} onChange={e => { setRecordRole(e.target.value); setRecordId(""); }}><option value="all">{t("t1.allCandidates")} · {records.length}</option><option value="primary_candidate">{t("t1.primaryDescriptions")} · {records.length - backgroundCount}</option><option value="background_suggestion">{t("t1.backgroundSuggestions")} · {backgroundCount}</option></select></label><div className="t1-record-step"><label className="t1-record-selector"><span className="t1-sr-only">{t("t1.record")}</span><select aria-label={t("t1.record")} value={record?.id ?? ""} onChange={e => setRecordId(e.target.value)}>{!visibleRecords.length && <option value="">{t("t1.noMatchingRecords")}</option>}{visibleRecords.map(item => <option key={item.id} value={item.id}>{records.indexOf(item) + 1} · {item.fragments[0]?.exact_quote.slice(0, 82)}</option>)}</select></label><span className="t1-record-position">{recordPosition + 1} / {visibleRecords.length}</span><button aria-label={t("t1.previousRecord")} title={t("t1.previousRecord")} disabled={recordPosition <= 0} onClick={() => setRecordId(visibleRecords[recordPosition - 1].id)}><ChevronIcon size={15} className="t1-chevron-back" /></button><button aria-label={t("t1.nextRecord")} title={t("t1.nextRecord")} disabled={recordPosition < 0 || recordPosition >= visibleRecords.length - 1} onClick={() => setRecordId(visibleRecords[recordPosition + 1].id)}><ChevronIcon size={15} /></button></div></div>
+               {!visibleRecords.length && <p className="t1-empty t1-search-empty" role="status">{t("t1.noMatchingRecords")}</p>}
+               <div className="t1-results-layout"><ResultIndex records={records} visibleRecords={visibleRecords} selectedId={record?.id} onSelect={setRecordId} />
+-              {record && <article className="t1-evidence-card" data-record-id={record.id} data-record-version={record.version}><div className="t1-record-meta"><span className="t1-record-number">{String(records.indexOf(record) + 1).padStart(2, "0")}</span><strong title={t("t1.evidenceRoleHelp")}>{t(record.evidence_role === "background_suggestion" ? "t1.backgroundSuggestions" : "t1.primaryDescriptions")}</strong><div className="t1-record-status"><span className="t1-badge" data-status={record.text_approved ? "approved" : record.review_status === "rejected" ? "rejected" : "pending"}>{t(record.text_approved ? "t1.textChecked" : record.review_status === "rejected" ? "t1.rejected" : "t1.needsReview")}</span>{record.association === "paired" && record.figure_ids.length > 0 && <span className="t1-badge">{t(record.figures_approved ? "t1.figuresApproved" : "t1.figuresPending")}</span>}</div></div>
+-                <div className="t1-quote-frame"><div className="t1-section-title t1-evidence-title"><h2>{t(record.evidence_role === "background_suggestion" ? "t1.backgroundSource" : "t1.descriptionSource")}</h2>{firstSourcePage && <button className="t1-locate" onClick={() => sourcePage(firstSourcePage)}><EyeIcon size={14} />{t("t1.locateSource")}</button>}</div><p className="t1-field-hint">{t("t1.fragmentsSeparate")}</p><Fragments fragments={record.fragments} onPage={sourcePage} /></div>
+-                {!!record.context.length && <details className="t1-context"><summary>{t("t1.context", { count: record.context.length })}</summary><Fragments fragments={record.context} onPage={sourcePage} /></details>}
+-                <SameSourceMembers index={output?.same_source_review_index} record={record} records={records} onSelect={id => { setRecordQuery(""); setRecordRole("all"); setRecordId(id); }} />
++              {record && <article className="t1-evidence-card" data-record-id={record.id} data-record-version={record.version}><div className="t1-record-meta"><span className="t1-record-number">{String(records.indexOf(record) + 1).padStart(2, "0")}</span><strong title={t("t1.evidenceRoleHelp")}>{t(record.evidence_role === "background_suggestion" ? "t1.backgroundSuggestions" : "t1.primaryDescriptions")}</strong><div className="t1-record-status"><span className="t1-badge" data-status={retainedStatus(record)}>{t(retainedStatus(record) === "excluded" ? "t1.excluded" : "t1.kept")}</span></div></div>
++                <div className="t1-quote-frame"><div className="t1-section-title t1-evidence-title"><h2>{t(record.evidence_role === "background_suggestion" ? "t1.backgroundSource" : "t1.descriptionSource")}</h2>{firstSourcePage && <button className="t1-locate" onClick={() => sourcePage(firstSourcePage)}><EyeIcon size={14} />{t("t1.locateSource")}</button>}</div><p className="t1-field-hint">{t("t1.fragmentsSeparate")}</p><Fragments fragments={record.fragments} passages={record.passages} onPage={sourcePage} /></div>
++                {!!record.context.length && <details className="t1-context"><summary>{t("t1.context", { count: record.context.length })}</summary><Fragments fragments={record.context} passages={record.context_passages} onPage={sourcePage} /></details>}
++                <SameSourceMembers index={output?.same_source_review_index} record={record} records={records} onSelect={id => { setRecordQuery(""); setRecordRole("all"); setRetentionView(records.find(item => item.id === id)?.retention?.status ?? "kept"); setRecordId(id); }} />
+                 {record.labels?.comment && <aside className="t1-reviewer-comment"><strong>{t("t1.comment")}</strong><p>{record.labels.comment}</p></aside>}
+                 <details className="t1-association" data-pairing={record.association} key={`${record.id}:figures`}><summary><strong>{t(record.association === "paired" ? "t1.pairedFigureCount" : record.association === "pending" ? "t1.pendingPair" : record.association === "not_checked" ? "t1.notChecked" : "t1.noPair", { count: record.figure_ids.length })}</strong></summary>{record.reasons.map((reason, i) => <p key={i}>{reason}</p>)}{record.association === "paired" && record.figure_ids.map(id => { const figure = figures.find(item => item.id === id); return figure ? <FigureView key={id} figure={figure} onPage={sourcePage} paired /> : null; })}</details>
+-                <details className="t1-context"><summary>{t("t1.sourceVersion")}</summary><p>{t("t1.version", { version: record.version })}</p><code>{record.id} · {record.run_id} · {record.text_fingerprint}</code>{record.model_primary_assessment && <pre>{JSON.stringify(record.model_primary_assessment, null, 2)}</pre>}{record.labels && <pre>{JSON.stringify(record.labels, null, 2)}</pre>}</details>
+-                {editable && !sourceBlocked && <><RecordReview key={`${runId}:${record.id}:${record.version}`} runId={runId!} record={record} canReviewFigures={record.association === "paired" && record.figure_ids.length > 0} onSaved={reloadCurrent} /><button onClick={() => setEditor({ run: runId!, record: record.id })}>{t("t1.edit")}</button></>}
++                <details className="t1-context"><summary>{t("t1.sourceVersion")}</summary><p>{t("t1.version", { version: record.version })}</p><code>{record.id} · {record.run_id} · {record.text_fingerprint}</code>{record.model_primary_assessment && <pre>{JSON.stringify(record.model_primary_assessment, null, 2)}</pre>}{(record.review_reason || record.text_approved || record.review_status === "rejected") && <details className="t1-legacy-review"><summary>{t("t1.legacyReviewInfo")}</summary><p>{record.review_status}</p>{record.review_reason && <p>{record.review_reason}</p>}</details>}{record.labels && <pre>{JSON.stringify(record.labels, null, 2)}</pre>}</details>
++                {editable && capabilities?.persisted_retention && <RecordRetention key={`${runId}:${record.id}:${record.version}:${record.retention?.revision ?? 0}`} runId={runId!} record={record} onSaved={async changed => { if (changed) setRecordId(visibleRecords[recordPosition + 1]?.id ?? visibleRecords[recordPosition - 1]?.id ?? ""); await reloadCurrent(); }} />}{editable && !sourceBlocked && <details className="t1-source-edit"><summary>{t("t1.sourceCorrection")}</summary><button onClick={() => setEditor({ run: runId!, record: record.id })}>{t("t1.edit")}</button></details>}
+               </article>}</div>
+             </>}
+             {(runId || output?.scope) && <details className="t1-task-details" ref={taskDetailsRef}><summary>{t("t1.resultDetails")}{presentation.sourceLimited && <span className="t1-source-limits-inline">{t("t1.sourceLimitsTitle")}</span>}</summary><p className="t1-footnote">{t("t1.disclaimer")}</p>{presentation.sourceLimited && <p className="t1-notice t1-source-limits">{t("t1.sourceLimitsHint")}</p>}{runId && <><p className="t1-footnote">{t(`t1.${presentation.hintKey}`)}</p><p className="t1-stream-status">{t(`t1.${connection}`)}</p></>}{output?.scope && <><h2>{t("t1.runScope")}</h2><ScopeSummary scope={output.scope} data={catalog} /></>}</details>}
+             </section>
+             {editable && !sourceBlocked && <button onClick={() => setEditor({ run: runId!, record: null })}>{t("t1.add")}</button>}
+             {editor && editor.run === runId && (editor.record === null || selectedEditorRecord && editor.record === record?.id) && !sourceBlocked && <SourceEditor key={`${editor.run}:${editor.record ?? "new"}`} runId={editor.run} record={selectedEditorRecord} units={units} onPage={sourcePage} onSaved={reloadCurrent} onClose={() => setEditor(null)} />}
+-            {runId && currentRun && <section className="t1-exports"><h2>{t("t1.exportTitle")}</h2><p className="t1-footnote">{t("t1.exportHelp")}</p>{legacyGlyphCheck && <p className="t1-footnote" role="note">{t("t1.sourceGlyphExportHint")}</p>}<div className="t1-export-groups">{(["candidate", "approved"] as const).map(group => <div className="t1-export-group" key={group}><strong>{t(group === "candidate" ? "t1.candidateDownloads" : "t1.approvedDownloads")}</strong><div className="t1-actions">{exportKinds.filter(kind => kind.startsWith(group)).map(kind => <button key={kind} disabled={Boolean(download) || group === "approved" && (sourceBlocked || !capabilities?.approved_export)} onClick={() => void downloadExport(kind)}>{t(`t1.${kind}`)}</button>)}</div></div>)}</div>{download && <p role="status">{t("t1.downloading")}</p>}</section>}
++            {runId && currentRun && <section className="t1-exports"><h2>{t("t1.exportTitle")}</h2><p className="t1-footnote">{t("t1.exportHelp")}</p>{legacyGlyphCheck && <p className="t1-footnote" role="note">{t("t1.sourceGlyphExportHint")}</p>}<div className="t1-actions">{exportKinds.map(kind => <button key={kind} disabled={Boolean(download) || sourceBlocked || !capabilities?.retained_export || keptCount === 0} onClick={() => void downloadExport(kind)}>{t(`t1.${kind}`)}</button>)}</div>{download && <p role="status">{t("t1.downloading")}</p>}</section>}
+           </>}
+-          {activeTab === "figures" && <><div className="t1-heading"><h1>{t("t1.figures")}</h1></div><p className="t1-lead">{t("t1.independentFigure")}</p>{figures.length ? figures.map(figure => <FigureView key={figure.id} figure={figure} onPage={sourcePage} review={editable && !sourceBlocked && currentRun?.figure_catalog_sha256 ? <FigureVerification key={`${runId}:${figure.id}:${currentRun.figure_catalog_sha256}`} runId={runId!} figureId={figure.id} catalogSha={currentRun.figure_catalog_sha256} onSaved={reloadCurrent} /> : undefined} />) : <p className="t1-empty">{t("t1.noFigures")}</p>}</>}
++          {activeTab === "figures" && <><div className="t1-heading"><h1>{t("t1.figures")}</h1></div><p className="t1-lead">{t("t1.independentFigure")}</p>{figures.length ? figures.map(figure => <FigureView key={figure.id} figure={figure} onPage={sourcePage} />) : <p className="t1-empty">{t("t1.noFigures")}</p>}</>}
+           {activeTab === "tasks" && <><div className="t1-heading"><h1>{t("t1.tasks")}</h1></div><p className="t1-lead">{t("t1.separateTasks")}</p><div className="t1-run-list">{runs.length ? runs.map(run => <div className="t1-task-row" key={run.run_id}><button onClick={() => selectRun(run)}><strong>{papers.find(item => item.id === run.document_id)?.title ?? run.document_id}</strong><span>{runLabel(run)} · {run.candidate_count}{run.fixture && " · fixture"}</span><small>{run.created_at ? new Date(run.created_at).toLocaleString(locale) : ""}</small></button>{!terminal.has(run.state) && <button onClick={() => void cancelRun(run.run_id)}>{t("t1.cancel")}</button>}<details><summary>{t("t1.sourceVersion")}</summary><code>{run.run_id}</code></details></div>) : <p>{t("t1.noTasks")}</p>}</div>
+             {paper && <details className="t1-context"><summary>{t("t1.deletePaper")}</summary><p>{t("t1.deletePaperHelp")}</p><button onClick={() => setDeletePaperConfirm(true)}>{t("t1.deletePaper")}</button>{deletePaperConfirm && <button onClick={() => void deletePaper()}>{t("t1.confirmDeletePaper")}</button>}</details>}
+             <h2>{t("t1.events")}</h2><div className="t1-stream-status" role="status">{t(`t1.${connection}`)}</div>{events.length ? <ol className="t1-events">{events.map(event => <li key={event.seq}><span>#{event.seq} · {event.type}</span><p>{event.summary}</p><time>{event.timestamp}</time></li>)}</ol> : <p>{t("t1.noEvents")}</p>}
+--- a/code/apps/pi-web/t1/gateway-policy.ts
++++ b/code/apps/pi-web/t1/gateway-policy.ts
+@@ -1,6 +1,6 @@
+ /** Pure path allowlist, shared by the mandatory entry guard and T1-only gateway. */
+ const id = "[A-Za-z0-9_:.,-]{1,200}";
+-const pathPattern = new RegExp(`^/api/t1/(?:workbench/(?:capabilities|catalog|papers|runs|papers/${id}(?:/pdf|/figures/${id}|/runs)?|runs/${id}(?:/events|/cancel|/figures/${id}(?:/verify)?|/records(?:/${id}(?:/review)?)?|/exports/(?:candidate_jsonl|candidate_csv|approved_jsonl|approved_csv|candidate_package|approved_package))?)|runs/${id}(?:/records|/events)?)$`);
++const pathPattern = new RegExp(`^/api/t1/(?:workbench/(?:capabilities|catalog|papers|runs|papers/${id}(?:/pdf|/figures/${id}|/runs)?|runs/${id}(?:/events|/cancel|/figures/${id}(?:/verify)?|/records(?:/${id}(?:/review|/retention)?)?|/exports/(?:candidate_jsonl|candidate_csv|approved_jsonl|approved_csv|candidate_package|approved_package|retained_jsonl|retained_csv|retained_package))?)|runs/${id}(?:/records|/events)?)$`);
+ // encodeURIComponent encodes only these two characters from our allowed ID alphabet.
+ // Decode neither slashes, dots, percent signs nor fixed route names; remaining '%' fails the allowlist.
+ const normalizeIdEncoding = (path: string) => path.replace(/%3a/gi, ":").replace(/%2c/gi, ",");
+@@ -12,10 +12,10 @@
+ export function isT1ApiMethod(path: string, method: string): boolean {
+   path = normalizeIdEncoding(path);
+   if (!isT1ApiPath(path)) return false;
+-  if (method === "GET" || method === "HEAD") return !/\/(?:cancel|review|verify)$/.test(path);
++  if (method === "GET" || method === "HEAD") return !/\/(?:cancel|review|verify|retention)$/.test(path);
+   if (method === "PUT") return new RegExp(`^/api/t1/workbench/papers/${id}/pdf$`).test(path);
+   if (method === "DELETE" && new RegExp(`^/api/t1/workbench/papers/${id}$`).test(path)) return true;
+-  if (method === "POST") return new RegExp(`^/api/t1/workbench/(?:papers(?:/${id}/runs)?|runs/${id}/(?:cancel|figures/${id}/verify|records(?:/${id}/review)?))$`).test(path);
++  if (method === "POST") return new RegExp(`^/api/t1/workbench/(?:papers(?:/${id}/runs)?|runs/${id}/(?:cancel|figures/${id}/verify|records(?:/${id}/(?:review|retention))?))$`).test(path);
+   return (method === "PATCH" || method === "DELETE") && new RegExp(`^/api/t1/workbench/runs/${id}/records/${id}$`).test(path);
+ }
+ export function t1BackendPath(parts: string[]): string | null {
+--- a/code/apps/pi-web/t1/messages.mjs
++++ b/code/apps/pi-web/t1/messages.mjs
+@@ -1,14 +1,33 @@
+ /** T1 messages are part of each existing Pi Web locale package. Paper content is never translated. */
+ /** @type {Record<string, [string, string, string]>} */
+ const rows = {
++  editorName: ["Edited by", "修订人", "修訂人"],
++  editorNameRequired: ["Enter the editor name for this source revision.", "请填写此来源修订的修订人。", "請填寫此來源修訂的修訂人。"],
++  retained_jsonl: ["Kept JSONL", "保留结果 JSONL", "保留結果 JSONL"],
++  retained_csv: ["Kept CSV", "保留结果 CSV", "保留結果 CSV"],
++  retained_package: ["Kept evidence package", "保留结果证据包", "保留結果證據包"],
++
++  kept: ["Kept", "已保留", "已保留"],
++  excluded: ["Excluded", "已排除", "已排除"],
++  defaultKept: ["Kept by default", "默认保留", "預設保留"],
++  keptResults: ["Kept results", "保留结果", "保留結果"],
++  retentionViews: ["Keep/exclude view", "保留／排除视图", "保留／排除檢視"],
++  retentionTitle: ["Keep or exclude this record", "保留／排除此条", "保留／排除此條"],
++  retentionHelp: ["Exclude unwanted content; restore it from Excluded at any time.", "不需要的内容可排除，并在“已排除”中恢复。", "不需要的內容可排除，並在「已排除」中恢復。"],
++  excludeRecord: ["Exclude this record", "排除此条", "排除此條"],
++  restoreKept: ["Restore to kept results", "撤销排除", "撤銷排除"],
++  retentionConflict: ["The record or keep/exclude choice has changed. Reload before applying your choice.", "此条内容或保留／排除选择已变化，请读取最新内容后操作。", "此條內容或保留／排除選擇已變更，請讀取最新內容後操作。"],
++  sourceCorrection: ["Correct source selection or labels…", "修订来源或标签…", "修訂來源或標籤…"],
++  legacyReviewInfo: ["Historical confirmation (read only)", "历史确认记录（只读）", "歷史確認記錄（唯讀）"],
++
+   extractionResults: ["Extraction results", "抽取结果", "擷取結果"],
+-  resultsLead: ["Read the saved source passages and review each candidate against the paper.", "集中查看描述原文，逐条对照论文核对。", "集中檢視描述原文，逐條對照論文核對。"],
+-  savedCandidates: ["Saved candidates", "已保存候选", "已儲存候選"],
++  resultsLead: ["Read the source passages and exclude what you do not need. The rest is kept by default.", "通读描述原文，排除不需要的内容；其余默认保留。", "通讀描述原文，排除不需要的內容；其餘預設保留。"],
++  savedCandidates: ["Saved records", "已保存记录", "已儲存記錄"],
+   textChecked: ["Text approved", "文字已核", "文字已核"],
+   needsReview: ["Awaiting review", "待核对", "待核對"],
+   recordsRejected: ["Rejected", "已驳回", "已駁回"],
+-  recordCountsHelp: ["Counts refer to current candidate records; each requires individual review.", "按当前候选记录统计，仍须逐条核对。", "依目前候選記錄統計，仍須逐條核對。"],
+-  candidateIndex: ["Candidate index", "候选索引", "候選索引"],
++  recordCountsHelp: ["Records are kept by default. Excluded items remain available to restore. These counts do not certify medical quality.", "记录默认保留；已排除内容可随时恢复。数量不代表医学质量。", "記錄預設保留；已排除內容可隨時恢復。數量不代表醫學品質。"],
++  candidateIndex: ["Source index", "原文索引", "原文索引"],
+   candidateRole: ["Candidate role", "候选类型", "候選類型"],
+   allCandidates: ["All candidates", "全部候选", "全部候選"],
+   primaryDescriptions: ["Primary descriptions", "主描述", "主描述"],
+@@ -31,10 +50,10 @@
+   minutesShort: ["min", "分钟", "分鐘"],
+   secondsShort: ["s", "秒", "秒"],
+   queueOutsideExecutionLimit: ["Execution time includes PDF parsing. Waiting in the queue is counted separately.", "执行时长包含 PDF 解析；排队等待另计。", "執行時長包含 PDF 解析；佇列等待另計。"],
+-  sourceGlyphUnreliable: ["A source glyph cannot be verified from the PDF font. Compare the original page. This passage cannot be quoted or included in an approved export until its source is verified.", "PDF 字体无法可靠确认此处字形，请对照原页。源文字核验完成前，此片段不能引用或进入已审核导出。", "PDF 字型無法可靠確認此處字形，請對照原頁。來源文字核驗完成前，此片段不能引用或納入已審核匯出。"],
+-  sourceGlyphLegacy: ["This saved parsing predates the source glyph check. Candidates and original pages remain readable. Approved export runs a local check without a model; if source lines cannot be matched, re-parsing is required. Approvals do not transfer to a new source version.", "此历史解析尚未做新的源字形检查，候选和原页仍可阅读。已审核导出时自动进行本地检查，不调用模型；原文行无法对齐时须重新解析，新来源版本不会继承批准。", "此歷史解析尚未做新的來源字形檢查，候選和原頁仍可閱讀。已審核匯出時自動進行本機檢查，不呼叫模型；原文行無法對齊時須重新解析，新來源版本不會繼承批准。"],
+-  sourceGlyphExportHint: ["Historical source glyphs have not been checked. Approved export will check the identical PDF locally, without a model call.", "历史来源的字形尚未检查；已审核导出前会对同一 PDF 做本地核验，不调用模型。", "歷史來源的字形尚未檢查；已審核匯出前會對相同 PDF 做本機核驗，不呼叫模型。"],
+-  reviewGuide: ["Compare each candidate with the original. Confirm text and images separately.", "对照原件逐条核对；文字和图片分别确认。", "對照原件逐條核對；文字和圖片分別確認。"],
++  sourceGlyphUnreliable: ["A source glyph cannot be verified from the PDF font. Compare the original page. This passage cannot enter retained or approved exports until its source is verified.", "PDF 字体无法可靠确认此处字形，请对照原页。源文字核验完成前，此片段不能进入保留结果或已审核导出。", "PDF 字型無法可靠確認此處字形，請對照原頁。來源文字核驗完成前，此片段不能納入保留結果或已審核匯出。"],
++  sourceGlyphLegacy: ["This historical source predates glyph checks. Retained export checks the identical PDF locally without a model call; if source lines cannot be matched, re-parsing is required.", "此历史解析尚未做新的源字形检查；导出保留结果时会对同一 PDF 自动本地核验，不调用模型，无法对齐原文行时须重新解析。", "此歷史解析尚未做新的來源字形檢查；匯出保留結果時會對相同 PDF 自動本機核驗，不呼叫模型，無法對齊原文行時須重新解析。"],
++  sourceGlyphExportHint: ["Historical source glyphs have not been checked. Retained export checks the identical PDF locally without a model call.", "历史来源的字形尚未检查；导出保留结果前会对同一 PDF 做本地核验，不调用模型。", "歷史來源的字形尚未檢查；匯出保留結果前會對相同 PDF 做本機核驗，不呼叫模型。"],
++  reviewGuide: ["Read the source and exclude what you do not need. Everything else is kept by default.", "通读原文并排除不需要的内容，其余默认保留。", "通讀原文並排除不需要的內容，其餘預設保留。"],
+   controlledTask: ["Controlled replay", "受控回放", "受控回放"],
+   viewDetails: ["View details", "查看详情", "檢視詳情"],
+ 
+@@ -46,7 +65,7 @@
+   locateSource: ["Locate in PDF", "定位原文", "定位原文"],
+   savedReviewNote: ["This note is saved with the current version.", "此备注已随当前版本保存。", "此備註已隨目前版本儲存。"],
+   reviewNoteHelp: ["Your note is saved with the next review action; it is separate from the paper text.", "备注随下方审核操作一起保存，与论文原文分开记录。", "備註隨下方審核操作一起儲存，與論文原文分開記錄。"],
+-  evidenceRoleHelp: ["A primary candidate may describe an imaging feature. A background suggestion may supply context. Both need individual review.", "主候选可能描述影像特征；背景建议用于补充理解。两者都需要逐条核对。", "主候選可能描述影像特徵；背景建議用於補充理解。兩者都需要逐條核對。"],
++  evidenceRoleHelp: ["Primary descriptions and background suggestions retain their original roles. Keeping a record is a selection, not medical approval.", "主描述与补充背景保留原有角色；保留仅表示筛选选择，不代表医学批准。", "主描述與補充背景保留原有角色；保留僅表示篩選選擇，不代表醫學批准。"],
+   candidateDownloads: ["All saved candidates", "全部已保存候选", "全部已儲存候選"],
+   approvedDownloads: ["Individually approved versions", "逐条批准的当前版本", "逐條批准的目前版本"],
+   uploadedPaper: ["Uploaded PDF", "已上传 PDF", "已上傳 PDF"],
+@@ -55,7 +74,7 @@
+ 
+   "taskEndedIncomplete": ["Run ended · task processing incomplete", "运行已结束 · 任务处理未完成", "執行已結束 · 任務處理未完成"],
+   "taskEndedUnknown": ["Run ended · task completion needs checking", "运行已结束 · 处理完成情况待核", "執行已結束 · 處理完成情況待核"],
+-  "completedHint": ["The saved task scope is processed. Candidates still need individual review; full recall and medical correctness require independent checks.", "本次任务范围已处理完成；候选仍需逐条审核，全文召回和医学正确性仍待独立核验。", "本次任務範圍已處理完成；候選仍須逐條審核，全文召回和醫學正確性仍待獨立核驗。"],
++  completedHint: ["The saved task scope is processed. Keep/exclude choices do not certify full recall or medical correctness.", "本次任务范围已处理完成；保留／排除不代表全文召回或医学正确性已核验。", "本次任務範圍已處理完成；保留／排除不代表全文召回或醫學正確性已核驗。"],
+   "taskIncompleteHint": ["Task-scope processing is incomplete. Saved candidates and reviews remain available.", "本次任务范围尚有未完成处理；已保存候选与审核仍保留。", "本次任務範圍尚有未完成處理；已儲存候選與審核仍保留。"],
+   "taskUnknownHint": ["No explicit completion record is available for this task scope. Saved evidence remains available for review.", "尚未取得本次任务范围处理完成的明确记录；已保存成果仍可核对。", "尚未取得本次任務範圍處理完成的明確記錄；已儲存成果仍可核對。"],
+   "sourceLimitsTitle": ["Source parsing limitations", "解析来源仍有限制", "解析來源仍有限制"],
+@@ -73,13 +92,13 @@
+ 
+   "pdfMissing": ["The retained original PDF is missing. Restore the identical file to reconnect it.", "保留的原 PDF 已缺失；请补回同一文件恢复关联。", "保留的原 PDF 已遺失；請補回相同檔案恢復關聯。"],
+   "pdfChanged": ["The PDF bytes no longer match the registered SHA256. Restore the identical original.", "PDF 字节与登记 SHA256 不一致；请补回同一原文件。", "PDF 位元組與登記 SHA256 不一致；請補回相同原始檔案。"],
+-  "irProblem": ["The retained parsed source is missing or changed; it requires repair before new extraction or approved export.", "已保存解析来源缺失或变化；修复后才能新抽取或已审核导出。", "已儲存解析來源遺失或變更；修復後才能新擷取或已審核匯出。"],
++  irProblem: ["The retained parsed source is missing or changed. Repair it before new extraction or retained export.", "已保存解析来源缺失或变化；修复后才能新抽取或导出保留结果。", "已儲存解析來源遺失或變更；修復後才能新擷取或匯出保留結果。"],
+   "bindingProblem": ["Paper identity or source versions do not match. Stop and check the retained source.", "文献身份或来源版本不一致，请先核对保留的来源。", "文獻身分或來源版本不一致，請先核對保留的來源。"],
+   "restoreMismatch": ["The selected PDF is a different file. Its SHA256 must match the retained original.", "所选 PDF 不是同一文件，须与保留原件的 SHA256 完全一致。", "所選 PDF 不是相同檔案，須與保留原件的 SHA256 完全一致。"],
+   "activePaperDelete": ["Cancel the paper’s active tasks before deleting it.", "请先取消此论文仍在运行的任务，再删除论文。", "請先取消此論文仍在執行的任務，再刪除論文。"],
+ 
+   "sameSource": ["Same source text · {count} separate records", "同源原句 · {count} 条独立记录", "同源原句 · {count} 條獨立記錄"],
+-  "sameSourceHelp": ["The shared source is displayed once below. All members and attribution differences are retained. Review applies only to the selected record and version.", "下方集中显示共享原文，全部成员与归因差异均保留；审核仅针对所选成员的当前版本。", "下方集中顯示共享原文，全部成員與歸因差異均保留；審核僅針對所選成員的目前版本。"],
++  sameSourceHelp: ["A source index helps compare related records. Each member keeps its own source, role and keep/exclude choice.", "同源索引仅帮助比较相关记录；每个成员仍保留独立来源、角色和保留／排除选择。", "同源索引僅協助比較相關記錄；每個成員仍保留獨立來源、角色和保留／排除選擇。"],
+   "member": ["Member {number}", "成员 {number}", "成員 {number}"],
+   "restorePdf": ["Restore identical original PDF", "恢复同一原 PDF", "恢復相同原 PDF"],
+   "restoreHelp": ["Select the same PDF. Its full SHA256 must match before the source link can be restored. Other source-version issues still require repair.", "请选择同一 PDF；完整 SHA256 一致后才恢复关联。其他来源版本问题仍需修复。", "請選擇相同 PDF；完整 SHA256 一致後才恢復關聯。其他來源版本問題仍須修復。"],
+@@ -130,7 +149,7 @@
+   deleted: ["Deleted", "已删除", "已刪除"],
+   fixture: ["LOCAL ENGINEERING FIXTURE · no medical approval", "本地工程 fixture · 不作医学批准", "本機工程 fixture · 不作醫學批准"],
+   historical: ["Retained historical candidates", "历史导入候选", "歷史匯入候選"],
+-  disclaimer: ["Candidates and model suggestions require review. Reviewing one record does not approve other records or medical correctness.", "候选与模型建议均待核。单条审核不会批准其他记录，也不代表医学正确性。", "候選與模型建議均待核。單條審核不會批准其他記錄，也不代表醫學正確性。"],
++  disclaimer: ["Keeping a record is a selection, not medical approval. Source limitations and model suggestions remain visible.", "保留仅表示筛选选择，不代表医学批准；来源限制与模型建议照常保留。", "保留僅表示篩選選擇，不代表醫學批准；來源限制與模型建議照常保留。"],
+   uploadTitle: ["Upload one PDF", "逐篇上传 PDF", "逐篇上傳 PDF"],
+   uploadHelp: ["Text PDFs in Chinese or English, up to 50 MiB each. Choose and upload one paper at a time.", "支持中文或英文文本型 PDF，单篇不超过 50 MiB。每次选择并上传一篇。", "支援中文或英文文字型 PDF，單篇不超過 50 MiB。每次選擇並上傳一篇。"],
+   choosePdf: ["Choose PDF", "选择 PDF", "選擇 PDF"],
+@@ -164,7 +183,7 @@
+   runScope: ["Saved scope", "已保存范围", "已儲存範圍"],
+   events: ["Saved business events", "已保存业务事件", "已儲存業務事件"],
+   noEvents: ["No events received yet.", "尚未收到业务事件。", "尚未收到業務事件。"],
+-  completed: ["Task processing complete · candidates still require review", "任务处理完成 · 候选仍待人工审核", "任務處理完成 · 候選仍待人工審核"],
++  completed: ["Task processing complete", "任务处理完成", "任務處理完成"],
+   partial: ["Partially processed", "部分完成", "部分完成"],
+   queued: ["Queued", "排队中", "排程中"],
+   parsing: ["Parsing PDF", "解析中", "解析中"],
+@@ -181,11 +200,11 @@
+   primary: ["Primary candidate · awaiting review", "主候选 · 待核", "主候選 · 待核"],
+   background: ["Background suggestion · not a confirmed independent target", "背景建议 · 尚非已确认独立目标", "背景建議 · 尚非已確認獨立目標"],
+   verbatim: ["Verbatim paper evidence", "论文原文证据", "論文原文證據"],
+-  fragmentsSeparate: ["Each source fragment is shown separately. Gaps are not continuous paper text.", "各来源片段分别展示；片段之间不能视为连续原文。", "各來源片段分別顯示；片段之間不能視為連續原文。"],
++  fragmentsSeparate: ["Verified source line continuations flow as a passage. Separate passages indicate a source gap, paragraph boundary or unverified continuity. Original spelling and hyphens are preserved.", "已核对的同段排版行连续阅读；不同段落、来源缺口或连续关系未确认处仍分隔。原字符和连字符照原文保留。", "已核對的同段排版行連續閱讀；不同段落、來源缺口或連續關係未確認處仍分隔。原字元和連字號依原文保留。"],
+   physicalPage: ["Physical page {page} ↗", "第 {page} 物理页 ↗", "第 {page} 實體頁 ↗"],
+   context: ["Source context ({count} fragments)", "原文上下文（{count} 段）", "原文上下文（{count} 段）"],
+   paired: ["Explicitly associated full Figure · review separately", "明确关联的整幅 Figure · 另行核对", "明確關聯的整幅 Figure · 另行核對"],
+-  pendingPair: ["Figure association awaiting review · text can be approved separately", "配图待核 · 可单独批准文字", "配圖待核 · 可單獨批准文字"],
++  pendingPair: ["Figure association uncertain · text remains available", "配图关系待核 · 文字仍可保留", "配圖關係待核 · 文字仍可保留"],
+   noPair: ["No confirmed explicit Figure association", "尚未确认明确配图关系", "尚未確認明確配圖關係"],
+   notChecked: ["Figure association has not been checked", "配图尚未检查", "配圖尚未檢查"],
+   independentFigure: ["Independent source Figure · not automatically paired", "独立图源 · 不自动配对", "獨立圖源 · 不自動配對"],
+@@ -208,7 +227,7 @@
+   edit: ["Reselect source / edit labels", "重选原文／修订标签", "重選原文／修訂標籤"],
+   add: ["Add candidate from source", "从原文补录候选", "從原文補錄候選"],
+   editTitle: ["Source selection and annotations", "原文选择与人工注释", "原文選擇與人工註解"],
+-  sourceOnly: ["Select retained paper passages below: source evidence supplies this record, and context preserves conditions or negation. Text cannot be rewritten. A change creates a new version that needs review again.", "勾选下方保留的原文片段：主证据用于此条摘录，必要语境补足条件或否定。不能改写原文；修订会生成新版本，需重新审核。", "勾選下方保留的原文片段：主證據用於此條摘錄，必要語境補足條件或否定。不能改寫原文；修訂會產生新版本，須重新審核。"],
++  sourceOnly: ["Choose original source passages for this record and any necessary context. Text cannot be rewritten. A revision keeps the current keep/exclude choice.", "选择此条原文及必要语境，不能改写原文；修订生成新版本并保留当前保留／排除选择。", "選擇此條原文及必要語境，不能改寫原文；修訂產生新版本並保留目前保留／排除選擇。"],
+   sourceUnits: ["Source evidence units", "主证据来源单元", "主證據來源單元"],
+   contextUnits: ["Context units", "必要语境来源单元", "必要語境來源單元"],
+   sourceSearch: ["Find source text", "查找来源原文", "尋找來源原文"],
+@@ -222,16 +241,16 @@
+   draftRetained: ["An unsaved draft is retained for this record. Its original version remains the conflict guard.", "此条保留未提交草稿；仍使用打开时的原版本检查冲突。", "此條保留未提交草稿；仍使用開啟時的原版本檢查衝突。"],
+   deleteRecord: ["Delete this candidate", "删除此条候选", "刪除此條候選"],
+   confirmDelete: ["Confirm deletion of this record only", "确认仅删除此条记录", "確認僅刪除此條記錄"],
+-  exportTitle: ["Download this run", "下载本运行成果", "下載本執行成果"],
++  exportTitle: ["Download kept results", "导出保留结果", "匯出保留結果"],
+   candidate_jsonl: ["Candidate JSONL", "候选 JSONL", "候選 JSONL"],
+   candidate_csv: ["Candidate CSV", "候选 CSV", "候選 CSV"],
+   approved_jsonl: ["Approved JSONL", "已审核 JSONL", "已審核 JSONL"],
+   approved_csv: ["Approved CSV", "已审核 CSV", "已審核 CSV"],
+   candidate_package: ["Candidate evidence package", "候选证据包", "候選證據包"],
+   approved_package: ["Approved evidence package", "已审核证据包", "已審核證據包"],
+-  exportHelp: ["Approved downloads contain only individually approved current versions. Images require their own approval. Packages retain source and coverage metadata.", "已审核下载仅含逐条批准的当前版本；图片另需批准。证据包保留来源与覆盖元数据。", "已審核下載僅含逐條批准的目前版本；圖片另需批准。證據包保留來源與涵蓋中繼資料。"],
++  exportHelp: ["Downloads contain all current records you have not excluded, including background in its original role. No individual or whole-paper confirmation is required. Keeping content does not certify medical quality.", "直接导出本运行中未排除的当前记录；补充背景保留原有角色，无需逐条或整篇确认。保留不代表医学质量已获批准。", "直接匯出本執行中未排除的目前記錄；補充背景保留原有角色，無須逐條或整篇確認。保留不代表醫學品質已獲批准。"],
+   downloading: ["Preparing download…", "正在准备下载…", "正在準備下載…"],
+-  sourceProblem: ["Source verification failed. New extraction and approved exports are blocked; saved historical candidates remain visible.", "来源核验未通过；新抽取与已审核导出已停止，已保存的历史候选仍可查看。", "來源核驗未通過；新擷取與已審核匯出已停止，已儲存的歷史候選仍可檢視。"],
++  sourceProblem: ["Source verification failed. New extraction and retained exports are blocked; saved historical records remain visible.", "来源核验未通过；新抽取与保留结果导出已停止，已保存的历史记录仍可查看。", "來源核驗未通過；新擷取與保留結果匯出已停止，已儲存的歷史記錄仍可檢視。"],
+   originalPdf: ["Original PDF", "原 PDF", "原 PDF"],
+   openOriginal: ["Open original ↗", "单独打开原件 ↗", "另開原件 ↗"],
+   showOriginal: ["Show original", "查看原件", "檢視原件"],
+--- a/code/apps/pi-web/t1/workbench.css
++++ b/code/apps/pi-web/t1/workbench.css
+@@ -209,6 +209,21 @@
+ .t1-evidence-title { justify-content: space-between; margin-bottom: 4px; }
+ .t1-field-hint { margin: 0 0 5px; color: var(--text-dim); font-size: 10px; line-height: 1.85; }
+ .t1-source-passage + .t1-source-passage { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
++.t1-fragments > .t1-source-passage > .t1-verbatim { white-space: normal; }
++.t1-source-fragment { white-space: pre-wrap; }
++.t1-literal-gap { white-space: normal; }
++.t1-layout-separator { white-space: normal; }
++.t1-layout-close { font-size: 0; }
++.t1-fragment-location > div { display: flex; gap: 10px; flex-wrap: wrap; }
++.t1-retention-views { display: flex; gap: 6px; margin: 0 0 14px; }
++.t1-retention-views button { display: flex; align-items: center; gap: 9px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); border-radius: 6px; padding: 8px 12px; font-size: 12px; }
++.t1-retention-views button[aria-pressed="true"] { background: var(--t1-inset); color: var(--text); border-color: var(--accent); }
++.t1-retention-views button span { font-size: 10px; font-variant-numeric: tabular-nums; color: var(--text-dim); }
++.t1-retention { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
++.t1-retention strong { font-size: 12px; }
++.t1-retention p { color: var(--text-muted); font-size: 11px; line-height: 1.8; margin: 5px 0 0; }
++.t1-source-edit { font-size: 11px; margin-top: 14px; color: var(--text-muted); }
++.t1-source-edit button { margin-top: 8px; }
+ .t1-fragment-location { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 7px 0 4px; color: var(--text-dim); font-size: 10px; }
+ .t1-fragment-location button, .t1-link { padding: 0; border: 0; background: transparent; color: var(--accent); font-size: 10px; }
+ .t1-fragment-location details { min-width: 0; max-width: 100%; font-size: 9px; }
+--- a/code/apps/server/src/app.ts
++++ b/code/apps/server/src/app.ts
+@@ -2,9 +2,9 @@
+ import { catalog, RunStore } from '@t1/agent';
+ import { ContractError } from '@t1/contracts';
+ import { WorkbenchSources, WORKBENCH_CAPABILITIES } from './workbench.js';
+-import { MAX_PDF_BYTES, WorkbenchWorkflow, WorkflowConflict, WorkflowCatalogConflict } from './workflow.js';
++import { MAX_PDF_BYTES, WorkbenchWorkflow, WorkflowConflict, WorkflowCatalogConflict, WorkflowRetentionConflict } from './workflow.js';
+ import type { Scope } from '@t1/contracts';
+-import type { WorkbenchExportKind, WorkbenchRevisionInput, WorkbenchReviewInput, WorkbenchFigureCheckInput } from '../../../packages/contracts/src/workbench.js';
++import type { WorkbenchExportKind, WorkbenchRevisionInput, WorkbenchReviewInput, WorkbenchFigureCheckInput, WorkbenchRetentionInput } from '../../../packages/contracts/src/workbench.js';
+ 
+ export function buildApp(store: RunStore, sources = new WorkbenchSources(), workflow?: WorkbenchWorkflow) {
+   const app = Fastify({ logger: false, bodyLimit: 32768, forceCloseConnections: true });
+@@ -13,6 +13,7 @@
+   app.setErrorHandler((error, _request, reply) => {
+     const code = error instanceof ContractError ? error.code : 'request_failed';
+     if (error instanceof WorkflowConflict) return reply.code(409).send({ error: code, message: 'This record has a newer saved version. Reload before applying your changes.', current_version: error.current_version });
++    if (error instanceof WorkflowRetentionConflict) return reply.code(409).send({ error: code, message: 'The saved keep/exclude choice changed. Reload before applying your choice.', current_version: error.current_version, current_retention_revision: error.current_retention_revision });
+     if (error instanceof WorkflowCatalogConflict) return reply.code(409).send({ error: code, message: 'The Figure catalog has a newer version. Reload before confirming.', current_catalog_sha256: error.current_catalog_sha256 });
+     if ((error as { statusCode?: number }).statusCode === 413 || code === 'pdf_size_out_of_bounds') return reply.code(413).send({ error: 'pdf_size_out_of_bounds' });
+     return reply.code(code === 'run_not_found' || code.endsWith('_not_found') || code === 'workbench_figure_not_available' ? 404 : 400).send({ error: code });
+@@ -60,6 +61,7 @@
+     app.patch<{ Params: { runId: string; recordId: string }; Body: WorkbenchRevisionInput }>('/api/workbench/runs/:runId/records/:recordId', async request => workflow.revise(request.params.runId, request.params.recordId, request.body));
+     app.delete<{ Params: { runId: string; recordId: string }; Body: WorkbenchRevisionInput }>('/api/workbench/runs/:runId/records/:recordId', async request => workflow.deleteRecord(request.params.runId, request.params.recordId, request.body));
+     app.post<{ Params: { runId: string; recordId: string }; Body: WorkbenchReviewInput }>('/api/workbench/runs/:runId/records/:recordId/review', async request => workflow.reviewRecord(request.params.runId, request.params.recordId, request.body));
++    app.post<{ Params: { runId: string; recordId: string }; Body: WorkbenchRetentionInput }>('/api/workbench/runs/:runId/records/:recordId/retention', async request => workflow.retainRecord(request.params.runId, request.params.recordId, request.body));
+     app.get<{ Params: { runId: string; kind: WorkbenchExportKind } }>('/api/workbench/runs/:runId/exports/:kind', async (request, reply) => {
+       const output = await workflow.export(request.params.runId, request.params.kind); return reply.type(output.type).header('content-disposition', `attachment; filename="${output.filename}"`).header('x-content-type-options', 'nosniff').send(output.bytes);
+     });
+--- a/code/apps/server/src/reading-passages.ts
++++ b/code/apps/server/src/reading-passages.ts
+@@ -0,0 +1,72 @@
++import type { ExtractionDocument } from '@t1/agent';
++import type { WorkbenchFragment, WorkbenchReadingPassage } from '../../../packages/contracts/src/workbench.js';
++
++type Span = Pick<WorkbenchFragment, 'block_id' | 'text_version' | 'start' | 'end'>;
++const contains = (a: Span, b: Span) => a.block_id === b.block_id && a.text_version === b.text_version && a.start <= b.start && a.end >= b.end;
++const identity = (text: string) => [...text.matchAll(/\b(?:case|patient|lesion)\s*(?:no\.?\s*)?(\d+)\b|(?:病例|患者|病灶)\s*(\d+)/giu)]
++  .map(match => match[0].replace(/\s+/gu, '').toLowerCase());
++
++/** These groups are layout hints, never replacement text or a claim that an omitted paragraph is complete. */
++export function readingPassages(document: ExtractionDocument, fragments: readonly WorkbenchFragment[], units: readonly {
++  structure_unit_ids?: string[]; source_type: string; kind: string; segments: WorkbenchFragment[];
++}[]): WorkbenchReadingPassage[] {
++  const blocks = new Map(document.blocks.map(block => [block.block_id, block]));
++  const paragraphs = new Map<string, Span[]>();
++  for (const unit of units) {
++    if (!unit.structure_unit_ids?.length || !['body', 'figure_caption', 'footnote'].includes(unit.source_type) || unit.kind === 'table_cell') continue;
++    const key = unit.structure_unit_ids.join('\0'), segments = paragraphs.get(key) ?? [];
++    segments.push(...unit.segments); paragraphs.set(key, segments);
++  }
++  const groups = [...paragraphs.values()].map(segments => {
++    const sorted = [...segments].sort((a, b) => blocks.get(a.block_id)!.reading_order - blocks.get(b.block_id)!.reading_order || a.start - b.start);
++    const merged: Span[] = [];
++    for (const segment of sorted) {
++      const previous = merged.at(-1);
++      if (previous?.block_id === segment.block_id && previous.text_version === segment.text_version && segment.start <= previous.end) previous.end = Math.max(previous.end, segment.end);
++      else merged.push({ block_id: segment.block_id, text_version: segment.text_version, start: segment.start, end: segment.end });
++    }
++    return merged;
++  });
++  const checkedEdges: Array<{ left: Span; right: Span }> = [];
++  if (document.schema_version === '3') for (const edge of document.structure.organization?.continuation_recovery?.relations ?? []) {
++    if (edge.status !== 'engineering_checked') continue;
++    const left = document.structure.units.find(unit => unit.unit_id === edge.from_unit_id)?.source_segments.at(-1);
++    const right = document.structure.units.find(unit => unit.unit_id === edge.to_unit_id)?.source_segments[0];
++    if (left && right) checkedEdges.push({ left, right });
++  }
++  function join(a: WorkbenchFragment, b: WorkbenchFragment): WorkbenchReadingPassage['joins'][number] | null {
++    const x = blocks.get(a.block_id), y = blocks.get(b.block_id);
++    if (!x || !y || a.text_version !== document.text_version || b.text_version !== document.text_version ||
++      Array.from(x.text).slice(a.start, a.end).join('') !== a.exact_quote || Array.from(y.text).slice(b.start, b.end).join('') !== b.exact_quote) return null;
++    const leftCases = identity(a.exact_quote), rightCases = identity(b.exact_quote);
++    if (leftCases.length && rightCases.length && !leftCases.some(value => rightCases.includes(value))) return null;
++    const group = groups.find(segments => segments.some(segment => contains(segment, a)) && segments.some(segment => contains(segment, b)));
++    if (!group) return null;
++    if (a.block_id === b.block_id) {
++      if (a.end > b.start) return null;
++      const whitespace = Array.from(x.text).slice(a.end, b.start).join('');
++      if (!/^\s*$/u.test(whitespace)) return null;
++      return { before_fragment: 0, kind: whitespace ? 'source_whitespace' : 'offset_contiguous', ...(whitespace ? { source_whitespace: whitespace } : {}) };
++    }
++    const i = group.findIndex(segment => contains(segment, a)), j = group.findIndex(segment => contains(segment, b));
++    // Every non-whitespace source character between selected fragments must be selected.
++    if (j !== i + 1 || a.end !== group[i]!.end || b.start !== group[j]!.start) return null;
++    if (checkedEdges.some(edge => contains(edge.left, a) && edge.left.end === a.end && contains(edge.right, b) && edge.right.start === b.start)) {
++      return { before_fragment: 0, kind: 'checked_continuation' };
++    }
++    if (x.page !== y.page || y.reading_order !== x.reading_order + 1) return null;
++    const height = Math.max(x.bbox[3]! - x.bbox[1]!, y.bbox[3]! - y.bbox[1]!, 1);
++    const overlap = Math.min(x.bbox[2]!, y.bbox[2]!) - Math.max(x.bbox[0]!, y.bbox[0]!);
++    const width = Math.min(x.bbox[2]! - x.bbox[0]!, y.bbox[2]! - y.bbox[0]!);
++    if (Math.abs(x.bbox[0]! - y.bbox[0]!) > Math.max(30, height * 3) || overlap < Math.min(width * .7, 20) ||
++      y.bbox[1]! <= x.bbox[1]! || y.bbox[1]! - x.bbox[3]! > Math.max(14, height * 1.75)) return null;
++    return { before_fragment: 0, kind: 'line_wrap' };
++  }
++  const passages: WorkbenchReadingPassage[] = [];
++  fragments.forEach((fragment, index) => {
++    const connection = index > 0 ? join(fragments[index - 1]!, fragment) : null;
++    if (!connection) passages.push({ fragment_indices: [index], joins: [] });
++    else { const passage = passages.at(-1)!; passage.fragment_indices.push(index); passage.joins.push({ ...connection, before_fragment: index }); }
++  });
++  return passages;
++}
+--- a/code/apps/server/src/workbench.ts
++++ b/code/apps/server/src/workbench.ts
+@@ -7,7 +7,9 @@
+ import { assertParsedDocument } from '../../../packages/agent/src/parser.js';
+ import { allDeliveredRecords, assertFigureCatalog, buildEvidenceDelivery } from '../../../packages/agent/src/evidence-delivery.js';
+ import type { ExtractionDocument } from '../../../packages/agent/src/article-scope.js';
++import { buildSourceEvidenceUnits } from '../../../packages/agent/src/source-evidence-units.js';
+ import type { WorkbenchCapabilities, WorkbenchFigure, WorkbenchPaper, WorkbenchPaperDetail } from '../../../packages/contracts/src/workbench.js';
++import { readingPassages } from './reading-passages.js';
+ 
+ export interface Artifact { path: string; sha256: string }
+ export interface RegisteredPaper {
+@@ -130,8 +132,9 @@
+ 
+   async detail(id: string): Promise<WorkbenchPaperDetail> {
+     const row = await this.registered(id), { document, catalog } = await this.source(row);
++    const units = buildSourceEvidenceUnits(document);
+     const figures: WorkbenchFigure[] = catalog.figures.map(figure => ({ id: figure.figure_id, number: figure.figure_number,
+-      verification: figure.verification.status, caption: figure.caption_segments, human_approved: false,
++      verification: figure.verification.status, caption: figure.caption_segments, caption_passages: readingPassages(document, figure.caption_segments, units), human_approved: false,
+       assets: figure.verification.status === 'needs_review' ? [] : figure.regions.map(asset => ({ id: asset.asset_id,
+         url: `/api/t1/workbench/papers/${id}/figures/${asset.asset_id}`, sha256: asset.sha256,
+         page: asset.physical_page, width: asset.width_px, height: asset.height_px })) }));
+@@ -146,6 +149,8 @@
+         full_recall_claimed: false as const, medical_quality_approved: false as const,
+         records: allDeliveredRecords(delivery).map(record => ({ id: record.record_id, version: record.record_version, run_id: record.run_id,
+           fragments: record.original_fragments, context: record.context_fragments,
++          passages: readingPassages(document, record.original_fragments, units), context_passages: readingPassages(document, record.context_fragments, units),
++          retention: { status: record.review_status === 'rejected' ? 'excluded' as const : 'kept' as const, revision: 0, origin: 'default' as const, record_version: record.record_version },
+           association: record.figure_association.status, figure_ids: record.figure_association.figure_ids,
+           proposed_figure_ids: record.figure_association.proposed_figure_ids,
+           reasons: record.figure_association.reasons, review_status: record.review_status,
+--- a/code/apps/server/src/workflow.ts
++++ b/code/apps/server/src/workflow.ts
+@@ -11,8 +11,10 @@
+   allDeliveredRecords, assertFigureCatalog, validateEvidenceSubmission, exportEvidenceDelivery, buildSameSourceReviewIndex, evidenceDigest, confirmWholeFigure,
+   type ExtractionDocument, type StoredEvidenceVersion } from '@t1/agent';
+ import type { WorkbenchCapabilities, WorkbenchEvent, WorkbenchExportKind, WorkbenchLabels, WorkbenchOutput, WorkbenchPaper,
+-  WorkbenchPaperDetail, WorkbenchRecord, WorkbenchRevisionInput, WorkbenchReviewInput, WorkbenchRun, WorkbenchSourceUnit, WorkbenchFigureCheckInput } from '../../../packages/contracts/src/workbench.js';
++  WorkbenchPaperDetail, WorkbenchRecord, WorkbenchRevisionInput, WorkbenchReviewInput, WorkbenchRun, WorkbenchSourceUnit, WorkbenchFigureCheckInput,
++  WorkbenchRetention, WorkbenchRetentionInput } from '../../../packages/contracts/src/workbench.js';
+ import { WorkbenchSources, type Artifact } from './workbench.js';
++import { readingPassages } from './reading-passages.js';
+ 
+ const CODE = fileURLToPath(new URL('../../../', import.meta.url));
+ export const MAX_PDF_BYTES = 50 * 1024 * 1024;
+@@ -54,6 +56,9 @@
+ export class WorkflowCatalogConflict extends ContractError {
+   constructor(readonly current_catalog_sha256: string | null) { super('figure_catalog_version_conflict'); }
+ }
++export class WorkflowRetentionConflict extends ContractError {
++  constructor(readonly current_version: number, readonly current_retention_revision: number) { super('retention_revision_conflict'); }
++}
+ 
+ /** One coordinator owns short SQLite transactions. Parsing/model waits never hold a write transaction. */
+ export class WorkbenchWorkflow {
+@@ -74,6 +79,7 @@
+       CREATE TABLE IF NOT EXISTS workbench_runs(id TEXT PRIMARY KEY REFERENCES s4_runs(id),paper_id TEXT NOT NULL REFERENCES workbench_papers(id),payload_json TEXT NOT NULL);
+       CREATE TABLE IF NOT EXISTS workbench_annotations(run_id TEXT NOT NULL,record_id TEXT NOT NULL,version INTEGER NOT NULL,payload_json TEXT NOT NULL,PRIMARY KEY(run_id,record_id,version));
+       CREATE TABLE IF NOT EXISTS workbench_reviews(run_id TEXT NOT NULL,record_id TEXT NOT NULL,version INTEGER NOT NULL,payload_json TEXT NOT NULL,PRIMARY KEY(run_id,record_id,version));
++      CREATE TABLE IF NOT EXISTS workbench_retentions(run_id TEXT NOT NULL REFERENCES s4_runs(id),record_id TEXT NOT NULL,payload_json TEXT NOT NULL,PRIMARY KEY(run_id,record_id));
+       CREATE TABLE IF NOT EXISTS workbench_exports(id TEXT PRIMARY KEY,run_id TEXT NOT NULL,payload_json TEXT NOT NULL);`);
+     store.db.exec('CREATE TABLE IF NOT EXISTS workbench_deleted_sources(paper_id TEXT PRIMARY KEY,deleted_at TEXT NOT NULL)');
+   }
+@@ -119,7 +125,7 @@
+   capabilities(): WorkbenchCapabilities {
+     const runtime = this.options.runner?.controlled ? undefined : this.options.runner?.public_runtime;
+     return { schema_version: 't1-workbench-capabilities-1', read_only: false, paper_upload: true,
+-      extraction_start: Boolean(this.options.runner && (this.options.runner.available?.() ?? true)), persisted_review: true, approved_export: true,
++      extraction_start: Boolean(this.options.runner && (this.options.runner.available?.() ?? true)), persisted_review: true, approved_export: true, persisted_retention: true, retained_export: true,
+       backend_pi_sdk: '1.4.0', controlled_fixture: this.options.runner?.controlled ?? false, max_concurrent_runs: this.maxConcurrentRuns,
+       max_pdf_bytes: MAX_PDF_BYTES, ...(runtime ? { model_runtime: { provider: runtime.provider, model_id: runtime.model_id,
+         reasoning_effort: runtime.reasoning_effort, limits: { requests: runtime.limits.requests, input_tokens: runtime.limits.input_tokens,
+@@ -210,6 +216,24 @@
+   private review(runId: string, version: EvidenceVersion): DeliveryReview | undefined {
+     const row = this.store.db.prepare('SELECT payload_json FROM workbench_reviews WHERE run_id=? AND record_id=? AND version=?').get(runId, version.record.record_id, version.version);
+     return row ? JSON.parse(row.payload_json as string) : undefined;
++  }
++  private retention(runId: string, version: EvidenceVersion): WorkbenchRetention {
++    const recordId = version.record.record_id;
++    const saved = this.store.db.prepare('SELECT payload_json FROM workbench_retentions WHERE run_id=? AND record_id=?').get(runId, recordId);
++    if (saved) return JSON.parse(saved.payload_json as string);
++    // Only the latest explicit historical decision applies. A later pending/approve
++    // reverses a rejection, while editing labels/source alone never restores it.
++    const latest = this.store.db.prepare('SELECT payload_json FROM workbench_reviews WHERE run_id=? AND record_id=? AND version<=? ORDER BY version DESC LIMIT 1').get(runId, recordId, version.version);
++    if (latest) {
++      const review = JSON.parse(latest.payload_json as string) as DeliveryReview;
++      return { status: review.decision === 'rejected' ? 'excluded' : 'kept', revision: 0, origin: 'legacy_review', record_version: review.record_version };
++    }
++    const legacy = this.store.db.prepare(`SELECT envelope_json FROM s4_versions WHERE run_id=? AND record_id=? AND version<=?
++      AND json_extract(envelope_json,'$.actor')='human' AND json_extract(envelope_json,'$.record.review_status') IN ('approved','rejected')
++      AND COALESCE(json_extract(envelope_json,'$.status'),'active')<>'proposed' ORDER BY version DESC LIMIT 1`).get(runId, recordId, version.version);
++    if (legacy) { const value = JSON.parse(legacy.envelope_json as string) as EvidenceVersion;
++      return { status: value.record.review_status === 'rejected' ? 'excluded' : 'kept', revision: 0, origin: 'legacy_review', record_version: value.version }; }
++    return { status: 'kept', revision: 0, origin: 'default', record_version: version.version };
+   }
+   private visibleVersions(id: string) { return this.store.current(id).filter(v => !this.annotation(id, v).deleted); }
+   private async availableCatalog(source: SourceSnapshot) {
+@@ -249,6 +273,7 @@
+       const figuresApproved = textApproved && review?.review_scope === 'text_and_figures' && review.delivery_fingerprint === value.delivery_fingerprint;
+       const unitIds = (fragments: typeof value.original_fragments) => units.filter(u => u.segments.every(s => fragments.some(f => f.block_id === s.block_id && f.start <= s.start && f.end >= s.end))).map(u => u.unit_id);
+       return { id: value.record_id, version: value.record_version, run_id: row.id, actor: version.actor, fragments: value.original_fragments, context: value.context_fragments,
++        passages: readingPassages(source.document, value.original_fragments, units), context_passages: readingPassages(source.document, value.context_fragments, units), retention: this.retention(row.id, version),
+         association: value.figure_association.status, figure_ids: value.figure_association.figure_ids, proposed_figure_ids: value.figure_association.proposed_figure_ids,
+         reasons: value.figure_association.reasons, review_status: review?.decision === 'rejected' ? 'rejected' : textApproved ? figuresApproved ? 'approved_text_and_figures' : 'approved_text_only' : 'pending',
+         text_fingerprint: value.text_fingerprint, delivery_fingerprint: value.delivery_fingerprint, labels: annotation.labels,
+@@ -267,14 +292,15 @@
+     return { paper: this.summary(paper), text_version: source?.document.text_version ?? '', pdf_url: `/api/t1/workbench/papers/${id}/pdf`, source_verified: issues.length === 0,
+       source_status: issues.length ? issues.some(i => i.includes('missing')) ? 'missing' : 'mismatch' : source ? 'valid' : 'not_parsed', source_issues: issues,
+       read_only: false, source_units: source ? this.units(source.document) : [],
+-      figures: (catalog?.figures ?? []).map(f => ({ id: f.figure_id, number: f.figure_number, verification: f.verification.status, caption: f.caption_segments, human_approved: false,
++      figures: (catalog?.figures ?? []).map(f => ({ id: f.figure_id, number: f.figure_number, verification: f.verification.status, caption: f.caption_segments, caption_passages: readingPassages(source!.document, f.caption_segments, this.units(source!.document)), human_approved: false,
+         assets: f.regions.map(a => ({ id: a.asset_id, url: `/api/t1/workbench/papers/${id}/figures/${a.asset_id}`, sha256: a.sha256, page: a.physical_page, width: a.width_px, height: a.height_px })) })),
+       outputs: await Promise.all(this.runRows().filter(r => r.paper_id === id).map(r => this.output(r))) };
+   }
+   async runDetail(id: string) { await this.initialize(); const row = this.run(id), paper = this.paper(row.paper_id), source = row.source, issues = await this.sourceIssues(paper, source), catalog = source ? await this.availableCatalog(source) : undefined;
+     const output = await this.output(row), currentRun = (await this.runs(id))[0]!;
+     return { run: { ...currentRun, state: output.state, candidate_count: output.records.length, result_ready: output.result_ready }, output, source_units: source ? this.units(source.document) : [], source_issues: issues,
+-      figures: (catalog?.figures ?? []).map(f => ({ id: f.figure_id, number: f.figure_number, verification: f.verification.status, caption: f.caption_segments, human_approved: false as const,
++      figures: (catalog?.figures ?? []).map(f => ({ id: f.figure_id, number: f.figure_number, verification: f.verification.status, caption: f.caption_segments,
++        caption_passages: readingPassages(source!.document, f.caption_segments, this.units(source!.document)), human_approved: false as const,
+         assets: f.regions.map(a => ({ id: a.asset_id, url: `/api/t1/workbench/runs/${encodeURIComponent(id)}/figures/${a.asset_id}`, sha256: a.sha256, page: a.physical_page, width: a.width_px, height: a.height_px })) })),
+       figure_catalog_sha256: source?.catalog_artifact?.sha256 ?? null,
+       source_status: issues.length ? issues.some(i => i.includes('missing')) ? 'missing' : 'mismatch' : source ? 'valid' : 'not_parsed', paper: this.summary(paper), pdf_url: `/api/t1/workbench/papers/${paper.id}/pdf`, text_version: source?.document.text_version ?? '' }; }
+@@ -489,9 +515,30 @@
+         text_fingerprint: delivered.text_fingerprint, delivery_fingerprint: figures ? delivered.delivery_fingerprint : null, decision: approved ? 'approved' : body.action === 'reject' ? 'rejected' : 'needs_context',
+         actor: body.reviewer, reviewed_at: now(), source_text_checked: approved, relevance_checked: approved, context_checked: approved, figure_pairing_checked: figures, reason: body.reason ?? '' };
+       this.store.db.prepare('INSERT INTO workbench_reviews VALUES(?,?,?,?)').run(id, recordId, value.version, JSON.stringify(review));
++      // Old clients may still submit a genuine review after using the new filter.
++      // Its explicit reject/pending/approve must not disappear behind an older choice.
++      if (this.store.db.prepare('SELECT record_id FROM workbench_retentions WHERE run_id=? AND record_id=?').get(id, recordId)) {
++        const previous = this.retention(id, old), selection: WorkbenchRetention = { status: body.action === 'reject' ? 'excluded' : 'kept',
++          revision: previous.revision + 1, origin: 'legacy_review', record_version: value.version, updated_at: review.reviewed_at };
++        this.store.db.prepare('UPDATE workbench_retentions SET payload_json=? WHERE run_id=? AND record_id=?').run(JSON.stringify(selection), id, recordId);
++      }
+       this.store.event(id, 'human_review', { record_id: recordId, record_version: value.version, action: body.action, reviewer: body.reviewer, text_approved: approved, figures_approved: figures });
+     });
+     return { record: (await this.output(row)).records.find(r => r.id === recordId)! };
++  }
++  async retainRecord(id: string, recordId: string, body: WorkbenchRetentionInput) {
++    await this.initialize();
++    if (!body || typeof body !== 'object' || Object.keys(body).some(key => !['expected_version', 'expected_retention_revision', 'status'].includes(key)) ||
++      !['kept', 'excluded'].includes(body.status) || !Number.isSafeInteger(body.expected_retention_revision) || body.expected_retention_revision < 0) throw new ContractError('invalid_retention_input');
++    this.store.atomic(() => {
++      const version = this.current(id, recordId, body.expected_version), previous = this.retention(id, version);
++      if (previous.revision !== body.expected_retention_revision) throw new WorkflowRetentionConflict(version.version, previous.revision);
++      const retention: WorkbenchRetention = { status: body.status, revision: previous.revision + 1, origin: 'user', record_version: version.version, updated_at: now() };
++      this.store.db.prepare('INSERT INTO workbench_retentions VALUES(?,?,?) ON CONFLICT(run_id,record_id) DO UPDATE SET payload_json=excluded.payload_json').run(id, recordId, JSON.stringify(retention));
++      this.store.event(id, 'retention_changed', { record_id: recordId, record_version: version.version, previous_status: previous.status,
++        status: retention.status, retention_revision: retention.revision, medical_approval_added: false });
++    });
++    return { record: (await this.output(this.run(id))).records.find(record => record.id === recordId)! };
+   }
+   async deleteRecord(id: string, recordId: string, body: WorkbenchRevisionInput) {
+     await this.initialize(); this.assertRevisionInput(body); const old = this.current(id, recordId, body.expected_version), record = structuredClone(old.record);
+@@ -501,42 +548,52 @@
+     return { deleted: true, record_id: recordId };
+   }
+   async export(id: string, kind: WorkbenchExportKind) {
+-    await this.initialize(); if (!['candidate_jsonl', 'candidate_csv', 'approved_jsonl', 'approved_csv', 'candidate_package', 'approved_package'].includes(kind)) throw new ContractError('export_kind_not_found');
++    await this.initialize(); if (!['candidate_jsonl', 'candidate_csv', 'approved_jsonl', 'approved_csv', 'candidate_package', 'approved_package', 'retained_jsonl', 'retained_csv', 'retained_package'].includes(kind)) throw new ContractError('export_kind_not_found');
+     // Engine terminal state precedes its last file/coverage writes. A terminal download
+     // waits for that coordinator promise instead of exporting a transient null coverage.
+     const finalizing = this.active.get(id); if (finalizing && terminals.has(this.store.snapshot(id).state)) await finalizing.promise;
+     const row = this.run(id); if (!row.source) throw new ContractError('parsed_source_required');
+-    const source = row.source, approved = kind.startsWith('approved'), catalog = await this.availableCatalog(source), paper = this.paper(row.paper_id);
+-    if (approved) await this.requireSource(paper, source);
++    const source = row.source, approved = kind.startsWith('approved'), retained = kind.startsWith('retained'), catalog = await this.availableCatalog(source), paper = this.paper(row.paper_id);
++    if (approved || retained) await this.requireSource(paper, source);
+     const versions = this.visibleVersions(id), reviews: DeliveryReview[] = [];
+-    const currentDelivery = allDeliveredRecords(buildEvidenceDelivery(source.document, versions, catalog));
+-    const selected = approved ? versions.filter(v => { const review = this.review(id, v), delivered = currentDelivery.find(r => r.record_id === v.record.record_id);
++    const retentionSnapshot = retained ? { schema_version: 'workbench-retention-snapshot-1', selected_at: now(),
++      run_event_seq: Number(this.store.db.prepare('SELECT COALESCE(MAX(seq),0) seq FROM s4_events WHERE run_id=?').get(id)!.seq),
++      records: versions.map(version => { const selection = this.retention(id, version); return { record_id: version.record.record_id,
++        record_version: version.version, status: selection.status, revision: selection.revision, origin: selection.origin, decision_record_version: selection.record_version }; }) } : undefined;
++    const currentDelivery = approved ? allDeliveredRecords(buildEvidenceDelivery(source.document, versions, catalog)) : [];
++    const selected = retained ? versions.filter(version => retentionSnapshot!.records.find(record => record.record_id === version.record.record_id)!.status === 'kept') : approved ? versions.filter(v => { const review = this.review(id, v), delivered = currentDelivery.find(r => r.record_id === v.record.record_id);
+       if (review?.decision !== 'approved' || !delivered || review.text_fingerprint !== delivered.text_fingerprint) return false;
+       // A missing/changed image invalidates the image confirmation; the unchanged text confirmation remains usable.
+       reviews.push(review.review_scope === 'text_and_figures' && review.delivery_fingerprint !== delivered.delivery_fingerprint ? {
+         ...review, review_scope: 'text_only', delivery_fingerprint: null, figure_pairing_checked: false,
+         reason: review.reason + '\nFigure assets/pairing changed or became unavailable; prior text confirmation only.' } : review); return true; }) : versions;
+     if (approved && !selected.length) throw new ContractError('no_current_approved_records');
++    if (retained && !selected.length) throw new ContractError('no_retained_records');
+     const exportId = 'export-' + randomUUID(), parent = resolve(this.directory, 'exports'); await mkdir(parent, { recursive: true, mode: 0o700 });
+     const directory = resolve(parent, exportId);
+     // Historical candidate inspection remains possible without a live PDF. Candidate packages retain the same source guard as the core exporter.
+     const issues = await this.sourceIssues(paper, source);
+-    if (issues.length && !approved && !kind.endsWith('package')) {
++    if (issues.length && !approved && !retained && !kind.endsWith('package')) {
+       const output = await this.output(row), text = kind.endsWith('jsonl') ? output.records.map(r => JSON.stringify({ ...r, historical_source_issues: issues })).join('\n') + '\n' : this.recordCsv(output.records);
+       this.store.event(id, 'historical_candidate_export', { export_id: exportId, source_issues: issues, approved: false });
+       return { bytes: Buffer.from(text), filename: id + '-' + kind + (kind.endsWith('jsonl') ? '.jsonl' : '.csv'), type: kind.endsWith('jsonl') ? 'application/x-ndjson' : 'text/csv; charset=utf-8' };
+     }
+     const humanRoles = selected.flatMap(v => { const annotation = this.annotation(id, v); return annotation.labels.evidence_role ? [{ record_id: v.record.record_id,
+       record_version: v.version, role: annotation.labels.evidence_role, actor: annotation.reviewer }] : []; });
+-    await exportEvidenceDelivery(source.document, selected, { codeRoot: this.codeRoot, directory, catalog, mode: approved ? 'approved' : 'candidates', reviews, humanRoles,
++    await exportEvidenceDelivery(source.document, selected, { codeRoot: this.codeRoot, directory, catalog, mode: approved ? 'approved' : retained ? 'retained' : 'candidates', reviews, humanRoles,
++      ...(retained ? { retentionSelections: retentionSnapshot!.records.filter((record): record is typeof record & { status: 'kept' } => record.status === 'kept') } : {}),
+       coverage: { ...(typeof row.coverage === 'object' && row.coverage ? row.coverage : {}), run_id: id, state: this.store.snapshot(id).state,
+         controlled_fixture: row.controlled, result_ready: Boolean(row.finished_at) || !this.active.has(id), medical_quality_approved: false, automatic_resume: false } });
+     const annotations = selected.map(v => ({ record_id: v.record.record_id, record_version: v.version, ...this.annotation(id, v) }));
+     await writeFile(resolve(directory, 'human-annotations.json'), JSON.stringify(annotations, null, 2) + '\n');
+     await writeFile(resolve(directory, 'source-record-versions.jsonl'), selected.map(v => JSON.stringify(v)).join('\n') + (selected.length ? '\n' : ''));
++    if (retentionSnapshot) await writeFile(resolve(directory, 'retention.json'), JSON.stringify(retentionSnapshot, null, 2) + '\n');
+     const manifestPath = resolve(directory, 'manifest.json'), manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+     Object.assign(manifest, { controlled_fixture: row.controlled, origin: row.origin, run_id: id, source_ir_sha256: source.ir.sha256, figure_catalog_sha256: source.catalog_artifact?.sha256 ?? null,
+       original_28_field_records: 'source-record-versions.jsonl; human-annotations.json is separate from paper text' });
++    if (retentionSnapshot) Object.assign(manifest, { retention_snapshot: 'retention.json', selection_at: retentionSnapshot.selected_at,
++      selection_run_event_seq: retentionSnapshot.run_event_seq, current_record_count: versions.length,
++      excluded_record_count: versions.length - selected.length });
+     await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+     this.store.atomic(() => { this.store.db.prepare('INSERT INTO workbench_exports VALUES(?,?,?)').run(exportId, id, JSON.stringify({ kind, created_at: now(), versions: selected.map(v => [v.record.record_id, v.version]), directory: relative(this.codeRoot, directory) }));
+       this.store.event(id, 'export_saved', { export_id: exportId, kind, record_count: selected.length, controlled_fixture: row.controlled }); });
+@@ -560,7 +617,7 @@
+       .map(value => (JSON.parse(value.payload_json as string) as { directory?: string }).directory).filter((d): d is string => Boolean(d)));
+     this.store.atomic(() => {
+       for (const row of runs) {
+-        for (const table of ['workbench_annotations', 'workbench_reviews', 'workbench_exports', 's4_batches', 's4_versions', 's4_events']) this.store.db.prepare(`DELETE FROM ${table} WHERE run_id=?`).run(row.id);
++        for (const table of ['workbench_annotations', 'workbench_reviews', 'workbench_retentions', 'workbench_exports', 's4_batches', 's4_versions', 's4_events']) this.store.db.prepare(`DELETE FROM ${table} WHERE run_id=?`).run(row.id);
+         this.store.db.prepare('DELETE FROM workbench_runs WHERE id=?').run(row.id); this.store.db.prepare('DELETE FROM s4_runs WHERE id=?').run(row.id);
+       }
+       this.store.db.prepare('DELETE FROM workbench_papers WHERE id=?').run(id);
+--- a/code/apps/server/test/reading-passages.test.ts
++++ b/code/apps/server/test/reading-passages.test.ts
+@@ -0,0 +1,78 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { buildSourceEvidenceUnits, type ExtractionDocument } from '@t1/agent';
++import type { WorkbenchFragment } from '../../../packages/contracts/src/workbench.js';
++import { WorkbenchSources } from '../src/workbench.js';
++import { readingPassages } from '../src/reading-passages.js';
++
++const span = (block_id: string, text: string, start = 0, end = Array.from(text).length): WorkbenchFragment => ({ block_id, text_version: 'v1', start, end,
++  exact_quote: Array.from(text).slice(start, end).join(''), occurrence: 0, physical_page: 1, bbox: [10, 10, 90, 20], location_precision: 'whole_textline_not_exact_glyph' });
++function fixture(texts = ['A partly annular lesion', 'involves the lumen.', 'Other source content.']) {
++  const fragments = texts.map((text, index) => span(`b${index}`, text));
++  const document = { schema_version: '3', text_version: 'v1', blocks: texts.map((text, index) => ({ block_id: `b${index}`, text, page: 1,
++    reading_order: index, bbox: [10, 10 + index * 12, 110, 20 + index * 12] })), structure: { units: [], organization: { continuation_recovery: { relations: [] } } } } as unknown as ExtractionDocument;
++  const units = [{ structure_unit_ids: ['paragraph-1'], source_type: 'body', kind: 'sentence', segments: fragments }];
++  return { document, fragments, units };
++}
++
++test('continuous source layout flows without changing source fragments, spelling or hard hyphens', () => {
++  const { document, fragments, units } = fixture(['Partly annular/semi-', 'circumferential tumors involve the circum-', 'ference.']);
++  const original = structuredClone(fragments), groups = readingPassages(document, fragments, units);
++  assert.deepEqual(groups.map(group => group.fragment_indices), [[0, 1, 2]]);
++  assert.deepEqual(groups[0]!.joins.map(join => join.kind), ['line_wrap', 'line_wrap']);
++  assert.deepEqual(fragments, original);
++});
++
++test('source gaps, paragraphs, unknown mappings, table cells and different cases remain separate', () => {
++  const { document, fragments, units } = fixture();
++  assert.equal(readingPassages(document, [fragments[0]!, fragments[2]!], units).length, 2);
++  const differentParagraphs = fragments.map((fragment, index) => ({ structure_unit_ids: [`p${index}`], source_type: 'body', kind: 'sentence', segments: [fragment] }));
++  assert.equal(readingPassages(document, fragments, differentParagraphs).length, 3);
++  assert.equal(readingPassages(document, fragments, [{ ...units[0]!, structure_unit_ids: [] }]).length, 3);
++  assert.equal(readingPassages(document, fragments, [{ ...units[0]!, kind: 'table_cell', source_type: 'table' }]).length, 3);
++  const cases = fixture(['Patient 1 has an annular lesion.', 'Patient 2 has an irregular lesion.']);
++  assert.equal(readingPassages(cases.document, cases.fragments, cases.units).length, 2);
++});
++
++test('columns, vertical paragraph boundaries and unchecked page continuations are not guessed', () => {
++  for (const change of ['column', 'vertical', 'page']) {
++    const { document, fragments, units } = fixture();
++    if (change === 'column') document.blocks[1]!.bbox = [220, 22, 320, 32];
++    if (change === 'vertical') document.blocks[1]!.bbox = [10, 120, 110, 130];
++    if (change === 'page') document.blocks[1]!.page = 2;
++    assert.equal(readingPassages(document, fragments.slice(0, 2), units).length, 2, change);
++  }
++});
++
++test('same-block joins retain only the exact original whitespace; skipped source characters block the join', () => {
++  const { document, units } = fixture(['A lesion.  Another lesion.']);
++  const a = span('b0', document.blocks[0]!.text, 0, 9), b = span('b0', document.blocks[0]!.text, 11);
++  const group = readingPassages(document, [a, b], units)[0]!;
++  assert.equal(group.joins[0]!.kind, 'source_whitespace'); assert.equal(group.joins[0]!.source_whitespace, '  ');
++  assert.equal(readingPassages(document, [span('b0', document.blocks[0]!.text, 0, 1), b], units).length, 2);
++  assert.equal(readingPassages(document, [a, { ...b, exact_quote: 'rewritten' }], units).length, 2);
++  assert.equal(readingPassages(document, [a, { ...b, text_version: 'other-version' }], units).length, 2);
++});
++
++test('only an exact engineering-checked continuation edge can cross a page', () => {
++  const { document, fragments, units } = fixture(['An annular lesion', 'involves the lumen.']);
++  document.blocks[1]!.page = 2;
++  const value = document as Extract<ExtractionDocument, { schema_version: '3' }>;
++  value.structure.units = [{ unit_id: 'from', source_segments: [fragments[0]!] }, { unit_id: 'to', source_segments: [fragments[1]!] }] as unknown as typeof value.structure.units;
++  const recovery = value.structure.organization!.continuation_recovery!;
++  recovery.relations = [{ status: 'engineering_checked', from_unit_id: 'from', to_unit_id: 'to' }] as unknown as typeof recovery.relations;
++  const groups = readingPassages(document, fragments, units);
++  assert.equal(groups.length, 1); assert.equal(groups[0]!.joins[0]!.kind, 'checked_continuation');
++});
++
++test('saved L07 real-paper line fragments have traceable continuous paragraph layout without altering frozen evidence', async () => {
++  const paper = (await new WorkbenchSources().retained(true)).findLast(value => value.row.id === 'L07' && value.outputs.length > 0)!;
++  const units = buildSourceEvidenceUnits(paper.document), versions = paper.outputs.at(-1)!.result.records;
++  let edges = 0, joined = 0;
++  for (const version of versions) {
++    const fragments = version.record.quote_span.segments, original = structuredClone(fragments), groups = readingPassages(paper.document, fragments, units);
++    edges += Math.max(0, fragments.length - 1); joined += groups.reduce((sum, group) => sum + group.joins.length, 0);
++    assert.deepEqual(fragments, original);
++  }
++  assert.equal(edges, 74); assert.equal(joined, 74);
++});
+--- a/code/apps/server/test/retention-guards.test.ts
++++ b/code/apps/server/test/retention-guards.test.ts
+@@ -0,0 +1,29 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { access } from 'node:fs/promises';
++import { exportEvidenceDelivery, validateEvidenceSubmission } from '@t1/agent';
++import { makeEvidenceFixture } from '../../../tests/extraction/fixtures/evidence-fixtures.js';
++import { isT1ApiMethod, isT1ApiPath, t1BackendPath } from '../../pi-web/t1/gateway-policy.js';
++
++test('retention mutations and retained downloads stay inside the explicit T1 method/path boundary', () => {
++  const prefix = '/api/t1/workbench/runs/run:1';
++  const retention = prefix + '/records/record:1/retention';
++  assert.equal(isT1ApiPath(retention), true); assert.equal(isT1ApiMethod(retention, 'POST'), true);
++  for (const method of ['GET', 'HEAD', 'PATCH', 'PUT', 'DELETE']) assert.equal(isT1ApiMethod(retention, method), false, method);
++  for (const kind of ['retained_jsonl', 'retained_csv', 'retained_package', 'approved_jsonl']) {
++    assert.equal(isT1ApiMethod(prefix + '/exports/' + kind, 'GET'), true); assert.equal(isT1ApiMethod(prefix + '/exports/' + kind, 'POST'), false);
++  }
++  assert.equal(t1BackendPath(['workbench', 'runs', 'run:1', 'records', 'record:1', 'retention']), '/api/workbench/runs/run%3A1/records/record%3A1/retention');
++  for (const path of ['/api/t1/workbench/runs/run:1/records/../retention', prefix + '/exports/retained_other', '/api/agent/new']) assert.equal(isT1ApiPath(path), false);
++});
++
++test('retained export cannot bypass source glyph quarantine or create a directory before rejecting it', async () => {
++  const fixture = makeEvidenceFixture(), result = validateEvidenceSubmission(fixture.submission, fixture.context); assert.ok(result.record);
++  const versions = [{ record: result.record, version: 1, actor: 'automatic' as const, status: 'active' as const }];
++  fixture.document.blocks[0]!.source_glyph_issues = [{ code: 'sparse_embedded_font_without_unicode_mapping', start: 0, end: 1,
++    font_name: 'Custom', font_program_sha256: 'a'.repeat(64), pdf_character_code: 109, precision: 'glyph_offset' }];
++  const directory = 'runtime-data/retained-glyph-guard-must-not-exist';
++  await assert.rejects(exportEvidenceDelivery(fixture.document, versions, { codeRoot: '.', directory, mode: 'retained', coverage: {},
++    retentionSelections: [{ record_id: result.record.record_id, record_version: 1, decision_record_version: 1, status: 'kept', revision: 0, origin: 'default' }] }), /source_glyph_fidelity_unverified/);
++  await assert.rejects(access(directory), /ENOENT/);
++});
+--- a/code/apps/server/test/retention.test.ts
++++ b/code/apps/server/test/retention.test.ts
+@@ -0,0 +1,130 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { mkdtemp, rm } from 'node:fs/promises';
++import { resolve } from 'node:path';
++import { gunzipSync } from 'node:zlib';
++import { ExtractionStore, RunStore } from '@t1/agent';
++import { ContractError } from '@t1/contracts';
++import { WorkbenchWorkflow } from '../src/workflow.js';
++import { buildApp } from '../src/app.js';
++
++test('default retention, reversible exclusion and conflict guards persist independently of evidence and approvals', { timeout: 60_000 }, async () => {
++  const directory = await mkdtemp(resolve('runtime-data/retention-test-')), database = resolve(directory, 'test.sqlite');
++  let store = new ExtractionStore(database), legacy = new RunStore(), workflow = new WorkbenchWorkflow(store, { directory });
++  let app = buildApp(legacy, undefined, workflow);
++  try {
++    await app.ready();
++    const detail = await workflow.detail('L07'), output = detail.outputs[0]!, original = output.records[0]!, id = output.id;
++    assert.ok(output.records.every(record => record.retention?.status === 'kept' && record.retention.origin === 'default'));
++    assert.equal(store.db.prepare('SELECT COUNT(*) n FROM workbench_retentions').get()!.n, 0);
++    const reviewsBefore = store.db.prepare('SELECT * FROM workbench_reviews').all(), versionsBefore = store.db.prepare('SELECT * FROM s4_versions').all();
++    const path = `/api/workbench/runs/${encodeURIComponent(id)}/records/${original.id}/retention`;
++    const excludedResponse = await app.inject({ method: 'POST', url: path, payload: { expected_version: original.version, expected_retention_revision: 0, status: 'excluded' } });
++    assert.equal(excludedResponse.statusCode, 200); const excluded = excludedResponse.json().record;
++    assert.equal(excluded.version, original.version); assert.equal(excluded.retention.status, 'excluded'); assert.equal(excluded.retention.revision, 1);
++    assert.deepEqual(excluded.fragments, original.fragments); assert.equal(excluded.text_fingerprint, original.text_fingerprint); assert.equal(excluded.delivery_fingerprint, original.delivery_fingerprint);
++    assert.equal(excluded.text_approved, false); assert.equal(excluded.evidence_role, original.evidence_role);
++    assert.deepEqual(store.db.prepare('SELECT * FROM workbench_reviews').all(), reviewsBefore); assert.deepEqual(store.db.prepare('SELECT * FROM s4_versions').all(), versionsBefore);
++    const stale = await app.inject({ method: 'POST', url: path, payload: { expected_version: original.version, expected_retention_revision: 0, status: 'kept' } });
++    assert.equal(stale.statusCode, 409); assert.equal(stale.json().current_retention_revision, 1);
++    const wrongVersion = await app.inject({ method: 'POST', url: path, payload: { expected_version: original.version - 1, expected_retention_revision: 1, status: 'kept' } });
++    assert.equal(wrongVersion.statusCode, 409);
++    const restored = (await app.inject({ method: 'POST', url: path, payload: { expected_version: original.version, expected_retention_revision: 1, status: 'kept' } })).json().record;
++    assert.equal(restored.retention.revision, 2); assert.equal(restored.retention.status, 'kept');
++    await workflow.retainRecord(id, original.id, { expected_version: original.version, expected_retention_revision: 2, status: 'excluded' });
++    const revised = await workflow.revise(id, original.id, { expected_version: original.version, reviewer: 'isolated-engineering-test', labels: { comment: 'Separate source annotation.' } });
++    assert.equal(revised.record.retention!.status, 'excluded'); assert.equal(revised.record.retention!.revision, 3);
++    assert.ok(workflow.events(id).some(event => event.type === 'retention_changed'));
++    await app.close(); legacy.close(); store.close();
++    store = new ExtractionStore(database); legacy = new RunStore(); workflow = new WorkbenchWorkflow(store, { directory, sources: false }); app = buildApp(legacy, undefined, workflow); await app.ready();
++    const persisted = (await workflow.runDetail(id)).output.records.find(record => record.id === original.id)!;
++    assert.equal(persisted.retention!.status, 'excluded'); assert.equal(persisted.version, revised.record.version);
++    await workflow.deletePaper('L07'); assert.equal(store.db.prepare('SELECT COUNT(*) n FROM workbench_retentions WHERE run_id=?').get(id)!.n, 0);
++  } finally { await app.close(); legacy.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('latest explicit legacy rejection is preserved across edits and can be reversed by pending, approval or keep', { timeout: 60_000 }, async () => {
++  const directory = await mkdtemp(resolve('runtime-data/retention-legacy-test-')), store = new ExtractionStore(resolve(directory, 'test.sqlite'));
++  const workflow = new WorkbenchWorkflow(store, { directory });
++  try {
++    const output = (await workflow.detail('L07')).outputs[0]!, id = output.id, recordId = output.records[0]!.id;
++    const review = async (action: 'reject' | 'pending' | 'approve_text') => {
++      const record = (await workflow.runDetail(id)).output.records.find(record => record.id === recordId)!;
++      return (await workflow.reviewRecord(id, recordId, { expected_version: record.version, action, reviewer: 'isolated-legacy-tester', source_text_checked: true, relevance_checked: true, context_checked: true })).record;
++    };
++    let record = await review('reject'); assert.equal(record.retention!.status, 'excluded'); assert.equal(record.retention!.origin, 'legacy_review');
++    record = (await workflow.revise(id, recordId, { expected_version: record.version, reviewer: 'isolated-legacy-tester', labels: { tags: ['edit-does-not-restore'] } })).record;
++    assert.equal(record.retention!.status, 'excluded');
++    record = await review('pending'); assert.equal(record.retention!.status, 'kept');
++    await review('reject'); record = await review('approve_text'); assert.equal(record.retention!.status, 'kept');
++    record = await review('reject');
++    record = (await workflow.retainRecord(id, recordId, { expected_version: record.version, expected_retention_revision: 0, status: 'kept' })).record;
++    assert.equal(record.retention!.status, 'kept'); assert.equal(record.text_approved, false); assert.equal(record.review_status, 'rejected');
++    assert.equal(store.db.prepare('SELECT COUNT(*) n FROM workbench_retentions').get()!.n, 1);
++    record = await review('reject'); assert.equal(record.retention!.status, 'excluded'); assert.equal(record.retention!.revision, 2);
++    record = await review('pending'); assert.equal(record.retention!.status, 'kept'); assert.equal(record.retention!.revision, 3);
++  } finally { await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++function archiveEntries(bytes: Buffer) {
++  const tar = gunzipSync(bytes), entries = new Map<string, Buffer>();
++  for (let offset = 0; offset + 512 <= tar.length;) {
++    const rawName = tar.subarray(offset, offset + 100).toString().replace(/\0.*$/s, ''); if (!rawName) break;
++    const name = rawName.replace(/^\.\//u, '');
++    const size = parseInt(tar.subarray(offset + 124, offset + 136).toString().replace(/\0.*$/s, '').trim() || '0', 8);
++    entries.set(name, tar.subarray(offset + 512, offset + 512 + size)); offset += 512 + Math.ceil(size / 512) * 512;
++  }
++  return entries;
++}
++
++test('retained JSONL, CSV and package select unexcluded current records, preserve source bytes and keep medical confirmation empty', { timeout: 90_000 }, async () => {
++  const directory = await mkdtemp(resolve('runtime-data/retention-export-test-')), store = new ExtractionStore(resolve(directory, 'test.sqlite'));
++  const workflow = new WorkbenchWorkflow(store, { directory });
++  try {
++    const output = (await workflow.detail('L07')).outputs[0]!, id = output.id, excluded = output.records[0]!;
++    await workflow.retainRecord(id, excluded.id, { expected_version: excluded.version, expected_retention_revision: 0, status: 'excluded' });
++    const jsonl = await workflow.export(id, 'retained_jsonl'), rows = jsonl.bytes.toString().trim().split('\n').map(line => JSON.parse(line));
++    assert.equal(rows.length, output.records.length - 1); assert.ok(!rows.some(record => record.record_id === excluded.id));
++    for (const record of rows) {
++      const original = output.records.find(value => value.id === record.record_id)!;
++      assert.equal(record.record_version, original.version); assert.deepEqual(record.original_fragments, original.fragments); assert.deepEqual(record.context_fragments, original.context);
++      assert.equal(record.text_fingerprint, original.text_fingerprint); assert.equal(record.delivery_fingerprint, original.delivery_fingerprint);
++      assert.equal(record.export_review_status, 'retained_unconfirmed'); assert.equal(record.human_confirmation, null); assert.equal(record.medical_quality_approved, false);
++      assert.equal(record.retention_selection.status, 'kept'); assert.equal(record.primary_assessment?.effective_role ?? 'primary_candidate', original.evidence_role);
++    }
++    const csv = (await workflow.export(id, 'retained_csv')).bytes.toString(); assert.match(csv, /retention_status,medical_quality_approved/); assert.ok(!csv.includes(excluded.id));
++    const entries = archiveEntries((await workflow.export(id, 'retained_package')).bytes), manifest = JSON.parse(entries.get('manifest.json')!.toString());
++    assert.equal(manifest.mode, 'retained'); assert.equal(manifest.record_level_human_confirmation, false); assert.equal(manifest.medical_quality_approved, false);
++    assert.equal(manifest.record_count, rows.length); assert.equal(manifest.excluded_record_count, 1); assert.equal(manifest.retention_snapshot, 'retention.json');
++    const snapshot = JSON.parse(entries.get('retention.json')!.toString()); assert.equal(snapshot.records.length, output.records.length);
++    assert.equal(snapshot.records.find((record: { record_id: string }) => record.record_id === excluded.id).status, 'excluded');
++    assert.deepEqual(JSON.parse(entries.get('reviews.json')!.toString()), []);
++    assert.equal(entries.get('source-record-versions.jsonl')!.toString().trim().split('\n').length, rows.length);
++    const originalRead = workflow['readPinned'].bind(workflow), source = workflow['run'](id).source!;
++    for (const path of [source.ir.path, workflow['paper']('L07').pdf.path]) {
++      workflow['readPinned'] = async artifact => { if (artifact.path === path) throw new ContractError('source_sha_mismatch'); return originalRead(artifact); };
++      for (const kind of ['retained_jsonl', 'retained_csv', 'retained_package'] as const) await assert.rejects(workflow.export(id, kind), /source_integrity_blocked/);
++    }
++    workflow['readPinned'] = originalRead;
++    assert.equal(store.db.prepare('SELECT COUNT(*) n FROM workbench_reviews').get()!.n, 0);
++  } finally { await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
++
++test('unavailable Figure assets remain pending references while retained text can be exported without image approval', { timeout: 90_000 }, async () => {
++  const directory = await mkdtemp(resolve('runtime-data/retention-figure-test-')), store = new ExtractionStore(resolve(directory, 'test.sqlite'));
++  const workflow = new WorkbenchWorkflow(store, { directory });
++  try {
++    const detail = await workflow.detail('L05'), output = detail.outputs.find(value => value.records.some(record => record.association === 'paired'))!, paired = output.records.find(record => record.association === 'paired')!;
++    // Exclusions are written only to this isolated test DB, avoiding repeated unrelated view generation.
++    for (const record of output.records.filter(record => record.id !== paired.id)) store.db.prepare('INSERT INTO workbench_retentions VALUES(?,?,?)').run(output.id, record.id,
++      JSON.stringify({ status: 'excluded', revision: 1, origin: 'user', record_version: record.version }));
++    const before = JSON.parse((await workflow.export(output.id, 'retained_jsonl')).bytes.toString().trim());
++    assert.equal(before.figure_association.status, 'paired'); assert.equal(before.human_confirmation, null); assert.equal(before.export_review_status, 'retained_unconfirmed');
++    const run = await workflow.runDetail(output.id), sha = run.figures.find(figure => paired.figure_ids.includes(figure.id))!.assets[0]!.sha256;
++    const originalRead = workflow['readPinned'].bind(workflow);
++    workflow['readPinned'] = async artifact => { if (artifact.sha256 === sha) throw new ContractError('source_file_missing'); return originalRead(artifact); };
++    const after = JSON.parse((await workflow.export(output.id, 'retained_jsonl')).bytes.toString().trim());
++    assert.equal(after.figure_association.status, 'pending'); assert.deepEqual(after.figure_association.figure_ids, []); assert.deepEqual(after.original_fragments, before.original_fragments);
++    assert.equal(after.human_confirmation, null); assert.equal(after.medical_quality_approved, false);
++  } finally { await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
+--- a/code/apps/server/test/workflow.test.ts
++++ b/code/apps/server/test/workflow.test.ts
+@@ -1,8 +1,8 @@
+ import test from 'node:test';
+ import assert from 'node:assert/strict';
+ import { createHash } from 'node:crypto';
+-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+-import { resolve, relative } from 'node:path';
++import { mkdtemp, readFile, rm, writeFile, mkdir } from 'node:fs/promises';
++import { resolve, relative, dirname } from 'node:path';
+ import { setTimeout as delay } from 'node:timers/promises';
+ import { gunzipSync } from 'node:zlib';
+ import { ExtractionStore, RunStore, evidenceScopeIssues } from '@t1/agent';
+@@ -187,6 +187,8 @@
+     report.all_workflow_assertions_passed = true;
+   } finally {
+     for (const release of releases.values()) release(); await app.close(); store.close(); legacy.close(); await rm(directory, { recursive: true, force: true });
+-    await writeFile(resolve('docs/acceptance/s5-workflow-2026-11-09/backend-workflow-report.json'), JSON.stringify(report, null, 2) + '\n');
++    // Routine regressions must never rewrite the frozen S5 acceptance evidence.
++    const reportPath = resolve(process.env.T1_WORKFLOW_TEST_REPORT_PATH ?? 'runtime-data/test-results/workflow-report.json');
++    await mkdir(dirname(reportPath), { recursive: true }); await writeFile(reportPath, JSON.stringify(report, null, 2) + '\n');
+   }
+ });
+--- a/code/packages/agent/src/evidence-delivery.ts
++++ b/code/packages/agent/src/evidence-delivery.ts
+@@ -308,18 +308,30 @@
+ 
+ /** Source assets and approvals are verified before creating an exclusive output folder. No old artifact is rewritten. */
+ export async function exportEvidenceDelivery(document: ExtractionDocument, versions: readonly EvidenceVersion[], options: {
+-  codeRoot: string; directory: string; catalog?: FigureAssetCatalog; mode: 'candidates' | 'approved'; reviews?: readonly DeliveryReview[];
++  codeRoot: string; directory: string; catalog?: FigureAssetCatalog; mode: 'candidates' | 'approved' | 'retained'; reviews?: readonly DeliveryReview[];
++  retentionSelections?: readonly { record_id: string; record_version: number; status: 'kept'; revision: number; origin: 'default' | 'user' | 'legacy_review'; decision_record_version: number }[];
+   coverage: unknown; sampleReview?: OutputSampleReview;
+   humanRoles?: readonly { record_id: string; record_version: number; role: 'primary_candidate' | 'background_suggestion'; actor: string }[];
+ }) {
+   let sourceGlyphAudit: Awaited<ReturnType<typeof auditLegacySourceGlyphs>>['audit'] | undefined;
+-  if (options.mode === 'approved' && sourceGlyphCheckStatus(document) === 'legacy_not_checked') {
++  if (options.mode !== 'candidates' && sourceGlyphCheckStatus(document) === 'legacy_not_checked') {
+     try {
+       const audited = await auditLegacySourceGlyphs(document); document = audited.document; sourceGlyphAudit = audited.audit;
+     } catch { throw new ContractError('source_glyph_check_missing_reparse_required'); }
+   }
+   const delivery = buildEvidenceDelivery(document, versions, options.catalog), checked = new Map<string, DeliveryReview>();
+   const allRecords = allDeliveredRecords(delivery);
++  const retentionSelections = new Map<string, NonNullable<typeof options.retentionSelections>[number]>();
++  if (options.mode === 'retained') {
++    if (!options.retentionSelections || options.retentionSelections.length !== allRecords.length || options.reviews?.length) throw new ContractError('retained_export_requires_selection_snapshot');
++    for (const selection of options.retentionSelections) {
++      const record = allRecords.find(record => record.record_id === selection.record_id);
++      if (!record || selection.record_version !== record.record_version || selection.status !== 'kept' || !Number.isSafeInteger(selection.revision) || selection.revision < 0 ||
++        !['default', 'user', 'legacy_review'].includes(selection.origin) || !Number.isSafeInteger(selection.decision_record_version) || selection.decision_record_version < 1 ||
++        selection.decision_record_version > selection.record_version || retentionSelections.has(selection.record_id)) throw new ContractError('retained_selection_version_conflict');
++      retentionSelections.set(selection.record_id, clone(selection));
++    }
++  }
+   for (const review of options.reviews ?? []) {
+     assertSchema(DeliveryReviewSchema, review);
+     if (!Number.isFinite(Date.parse(review.reviewed_at)) || checked.has(review.record_id)) throw new ContractError('delivery_review_invalid');
+@@ -402,20 +414,24 @@
+   for (const folder of new Set(assets.map(a => dirname(a.package_path)))) await mkdir(resolve(directory, folder));
+   for (const asset of assets) await writeFile(resolve(directory, asset.package_path), asset.bytes, { flag: 'wx' });
+   const exportedRecord = (r: DeliveredEvidence) => ({ ...r,
+-    export_review_status: options.mode === 'approved' ? checked.get(r.record_id)?.review_scope === 'text_and_figures' ? 'approved_text_and_figures' : 'approved_text_only' : 'candidate',
++    export_review_status: options.mode === 'approved' ? checked.get(r.record_id)?.review_scope === 'text_and_figures' ? 'approved_text_and_figures' : 'approved_text_only' : options.mode === 'retained' ? 'retained_unconfirmed' : 'candidate',
++    ...(options.mode === 'retained' ? { retention_selection: retentionSelections.get(r.record_id)!, medical_quality_approved: false as const } : {}),
+     human_confirmation: checked.get(r.record_id) ?? null, legacy_text_review_events: legacyTextApprovals.get(r.record_id) ?? [] });
+   const exportRecords = delivery.records.map(exportedRecord), backgroundRecords = (delivery.background_records ?? []).map(exportedRecord);
+   await writeFile(resolve(directory, 'records.jsonl'), exportRecords.map(r => JSON.stringify(r)).join('\n') + (delivery.records.length ? '\n' : ''), { flag: 'wx' });
+   const csv = (value: string) => '"' + value.replace(/"/g, '""') + '"';
+   // One row per original fragment. No flattened, reconstructed prose description is created.
+   const csvRows = (records: DeliveredEvidence[]) => records.flatMap(r => r.original_fragments.map((f, index) => [r.record_id, String(r.record_version), String(index), f.exact_quote,
+-    String(f.physical_page), f.block_id, String(f.start), String(f.end), r.figure_association.status].map(csv).join(',')));
++    String(f.physical_page), f.block_id, String(f.start), String(f.end), r.figure_association.status,
++    ...(options.mode === 'retained' ? ['kept', 'false'] : [])].map(csv).join(',')));
++  const csvHeader = '\ufeffrecord_id,record_version,fragment_index,original_fragment,physical_page,block_id,start,end,figure_status' +
++    (options.mode === 'retained' ? ',retention_status,medical_quality_approved' : '') + '\n';
+   const rows = csvRows(delivery.records);
+-  await writeFile(resolve(directory, 'records.csv'), '\ufeffrecord_id,record_version,fragment_index,original_fragment,physical_page,block_id,start,end,figure_status\n'+rows.join('\n')+(rows.length?'\n':''), { flag: 'wx' });
++  await writeFile(resolve(directory, 'records.csv'), csvHeader+rows.join('\n')+(rows.length?'\n':''), { flag: 'wx' });
+   if (delivery.background_records) {
+     const backgroundRows = csvRows(delivery.background_records);
+     await writeFile(resolve(directory, 'background-records.jsonl'), backgroundRecords.map(r => JSON.stringify(r)).join('\n') + (backgroundRecords.length ? '\n' : ''), { flag: 'wx' });
+-    await writeFile(resolve(directory, 'background-records.csv'), '\ufeffrecord_id,record_version,fragment_index,original_fragment,physical_page,block_id,start,end,figure_status\n'+backgroundRows.join('\n')+(backgroundRows.length?'\n':''), { flag: 'wx' });
++    await writeFile(resolve(directory, 'background-records.csv'), csvHeader+backgroundRows.join('\n')+(backgroundRows.length?'\n':''), { flag: 'wx' });
+   }
+   await writeFile(resolve(directory, 'delivery.json'), JSON.stringify({ ...delivery, records: exportRecords,
+     ...(delivery.background_records ? { background_records: backgroundRecords } : {}) }, null, 2)+'\n', { flag: 'wx' });
+@@ -431,6 +447,8 @@
+     ...(delivery.primary_assessment_policy_version ? { primary_assessment_policy_version: delivery.primary_assessment_policy_version,
+       background_suggestions: 'background-records.jsonl / background-records.csv; only background suggested, not human confirmed' } : {}),
+     fixture: document.fixture, record_level_human_confirmation: options.mode === 'approved',
++    ...(options.mode === 'retained' ? { selection_semantics: 'kept_by_default_unless_excluded', retained_records_are_medically_unconfirmed: true,
++      retention_selection_schema: 'workbench-retention-snapshot-1' } : {}),
+     approved_by_model: false, full_recall_claimed: false, medical_quality_approved: false,
+     assets: assets.map(({ bytes: _bytes, ...a }) => a), authoritative_description: 'records.jsonl original_fragments; records.csv has one row per fragment',
+     source_ir_fidelity_is_not_medical_approval: true, legacy_records_modified: false,
+--- a/code/packages/contracts/src/workbench.ts
++++ b/code/packages/contracts/src/workbench.ts
+@@ -3,13 +3,28 @@
+   block_id: string; text_version: string; start: number; end: number; exact_quote: string;
+   occurrence: number; physical_page: number; bbox: number[]; location_precision: string;
+ }
++/** Read-only layout over the original fragments. Indices are zero based; quotes and offsets are never rewritten. */
++export interface WorkbenchReadingPassage {
++  fragment_indices: number[];
++  joins: Array<{ before_fragment: number; kind: 'offset_contiguous' | 'source_whitespace' | 'line_wrap' | 'checked_continuation'; source_whitespace?: string }>;
++}
++export interface WorkbenchRetention {
++  status: 'kept' | 'excluded'; revision: number;
++  origin: 'default' | 'user' | 'legacy_review';
++  record_version: number; updated_at?: string;
++}
++export interface WorkbenchRetentionInput {
++  expected_version: number; expected_retention_revision: number; status: 'kept' | 'excluded';
++}
+ export interface WorkbenchAsset { id: string; url: string; sha256: string; page: number; width: number; height: number }
+ export interface WorkbenchFigure {
+   id: string; number: string | null; verification: string; caption: WorkbenchFragment[];
++  caption_passages?: WorkbenchReadingPassage[];
+   assets: WorkbenchAsset[]; human_approved: false;
+ }
+ export interface WorkbenchRecord {
+   id: string; version: number; run_id: string; fragments: WorkbenchFragment[]; context: WorkbenchFragment[];
++  passages?: WorkbenchReadingPassage[]; context_passages?: WorkbenchReadingPassage[]; retention?: WorkbenchRetention;
+   association: 'paired' | 'pending' | 'no_explicit_reference' | 'not_checked'; figure_ids: string[];
+   proposed_figure_ids: string[]; reasons: string[];
+   review_status: string; text_fingerprint: string; delivery_fingerprint: string;
+@@ -47,6 +62,7 @@
+ export interface WorkbenchCapabilities {
+   schema_version: 't1-workbench-capabilities-1'; read_only: boolean; paper_upload: boolean;
+   extraction_start: boolean; persisted_review: boolean; approved_export: boolean;
++  persisted_retention?: boolean; retained_export?: boolean;
+   backend_pi_sdk: '1.4.0';
+   max_concurrent_runs?: number;
+   model_runtime?: WorkbenchModelRuntime;
+@@ -60,6 +76,7 @@
+ export interface WorkbenchSourceUnit {
+   unit_id: string; kind: string; source_type: string; completeness: string;
+   boundary_reasons: string[]; segments: WorkbenchFragment[]; text: string;
++  structure_unit_ids?: string[];
+ }
+ export interface WorkbenchLabels {
+   feature_category?: string;
+@@ -76,7 +93,8 @@
+   context_checked?: boolean; figure_pairing_checked?: boolean;
+ }
+ export interface WorkbenchEvent { run_id: string; seq: number; type: string; timestamp: string; detail: Record<string, unknown> }
+-export type WorkbenchExportKind = 'candidate_jsonl' | 'candidate_csv' | 'approved_jsonl' | 'approved_csv' | 'candidate_package' | 'approved_package';
++export type WorkbenchExportKind = 'candidate_jsonl' | 'candidate_csv' | 'approved_jsonl' | 'approved_csv' | 'candidate_package' | 'approved_package' |
++  'retained_jsonl' | 'retained_csv' | 'retained_package';
+ export interface WorkbenchRunDetail {
+   run: WorkbenchRun; output: WorkbenchOutput; source_units: WorkbenchSourceUnit[]; source_issues: string[];
+   source_status: string; paper: WorkbenchPaper; pdf_url: string; text_version: string; figures: WorkbenchFigure[];
+--- a/code/apps/pi-web/e2e/t1-workflow.mjs
++++ b/code/apps/pi-web/e2e/t1-workflow.mjs
+@@ -1,10 +1,13 @@
++/** HISTORICAL individual-approval UI check. New daily retention workbenches fail before browser/data actions. */
+ /** S5 HTTP/browser verification against the explicitly controlled local runner. Never calls a model. */
+ import assert from 'node:assert/strict';
++import { requireLegacyReviewWorkflow } from './legacy-review-guard.mjs';
+ import { setTimeout as delay } from 'node:timers/promises';
+ import { mkdir, readFile, writeFile, rename, rm } from 'node:fs/promises';
+ import { resolve, join } from 'node:path';
+ import { pathToFileURL } from 'node:url';
+ const code = resolve('../..'), origin = 'http://127.0.0.1:30141';
++await requireLegacyReviewWorkflow(origin, 't1-workflow.mjs');
+ process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
+ process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
+ const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
+--- a/code/apps/pi-web/e2e/results-presentation.mjs
++++ b/code/apps/pi-web/e2e/results-presentation.mjs
+@@ -1,5 +1,7 @@
++/** HISTORICAL individual-approval UI check. New daily retention workbenches fail before browser/data actions. */
+ /** Read-only checks against real saved T1 results. No exports, approvals, uploads or model calls. */
+ import assert from 'node:assert/strict';
++import { requireLegacyReviewWorkflow } from './legacy-review-guard.mjs';
+ import { createHash } from 'node:crypto';
+ import { mkdir, writeFile } from 'node:fs/promises';
+ import { dirname, resolve, join } from 'node:path';
+@@ -9,6 +11,7 @@
+ const origin = process.env.T1_UI_ORIGIN ?? 'http://127.0.0.1:30151';
+ const evidence = resolve(process.env.T1_UI_EVIDENCE ?? join(code, 'docs/acceptance/resume-2026-11-11/ui'));
+ assert.equal(new URL(origin).hostname, '127.0.0.1', 'Use a local read-only workbench');
++await requireLegacyReviewWorkflow(origin, 'results-presentation.mjs');
+ process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
+ process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
+ const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
+--- a/code/apps/pi-web/e2e/legacy-review-guard.mjs
++++ b/code/apps/pi-web/e2e/legacy-review-guard.mjs
+@@ -0,0 +1,10 @@
++/** Old approval-UI scripts are kept as historical evidence, never the daily retention regression entry. */
++export function assertLegacyReviewCapabilities(capabilities, script) {
++  if (capabilities?.persisted_retention === true) throw new Error(`${script} checks the historical individual-approval UI and cannot run on the keep/exclude workbench. Use e2e/retention-workflow.mjs with an isolated test DB, or e2e/retention-readonly.mjs for ordinary read-only smoke. No browser or data action was started.`);
++}
++
++export async function requireLegacyReviewWorkflow(origin, script, fetcher = fetch) {
++  const response = await fetcher(new URL('/api/t1/workbench/capabilities', origin), { method: 'GET', cache: 'no-store' });
++  if (!response.ok) throw new Error(`${script}: cannot verify legacy UI capabilities (HTTP ${response.status}); refusing to start browser/data actions.`);
++  assertLegacyReviewCapabilities(await response.json(), script);
++}
+--- a/code/apps/pi-web/e2e/legacy-review-guard.test.mjs
++++ b/code/apps/pi-web/e2e/legacy-review-guard.test.mjs
+@@ -0,0 +1,25 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { readFile } from 'node:fs/promises';
++import { assertLegacyReviewCapabilities, requireLegacyReviewWorkflow } from './legacy-review-guard.mjs';
++
++test('historical scripts refuse the new retention capability and unavailable capabilities before subsequent actions', async () => {
++  let subsequentAction = false;
++  await assert.rejects(async () => {
++    await requireLegacyReviewWorkflow('http://127.0.0.1:30141', 'historical-test', async (url, init) => {
++      assert.equal(url.pathname, '/api/t1/workbench/capabilities'); assert.equal(init.method, 'GET');
++      return { ok: true, json: async () => ({ persisted_retention: true }) };
++    });
++    subsequentAction = true;
++  }, /historical individual-approval UI.*retention-workflow/s);
++  assert.equal(subsequentAction, false);
++  await assert.rejects(requireLegacyReviewWorkflow('http://127.0.0.1:30141', 'historical-test', async () => ({ ok: false, status: 503 })), /refusing to start/);
++  assert.doesNotThrow(() => assertLegacyReviewCapabilities({ persisted_review: true }, 'legacy-fixture'));
++});
++
++test('both historical script entries check capabilities before browser launch or evidence writes', async () => {
++  for (const script of ['t1-workflow.mjs', 'results-presentation.mjs']) {
++    const source = await readFile(new URL(script, import.meta.url), 'utf8'), guard = source.indexOf('await requireLegacyReviewWorkflow(');
++    assert.ok(guard >= 0); assert.ok(guard < source.indexOf('await chromium.launch(')); assert.ok(guard < source.indexOf('await mkdir('));
++  }
++});

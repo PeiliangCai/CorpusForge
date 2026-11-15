@@ -1,0 +1,574 @@
+--- a/code/apps/pi-web/t1/T1Workbench.tsx
++++ b/code/apps/pi-web/t1/T1Workbench.tsx
+@@ -5,7 +5,7 @@
+ import { TabBar, type Tab } from "@/components/TabBar";
+ import { SidebarMenu, type SidebarMenuAnchor } from "@/components/SidebarMenu";
+ import { SidebarToast, type SidebarToastData } from "@/components/SidebarToast";
+-import { PlusIcon, RefreshIcon, SearchIcon, ChevronIcon, CloseIcon, EyeIcon, MessageIcon, OpenInNewTabIcon } from "@/components/SidebarIcons";
++import { PlusIcon, RefreshIcon, SearchIcon, ChevronIcon, EyeIcon, MessageIcon, OpenInNewTabIcon } from "@/components/SidebarIcons";
+ import { GenericFileIcon } from "@/components/FileIcons";
+ import { useResizablePanel } from "@/hooks/useResizablePanel";
+ import { useTheme } from "@/hooks/useTheme";
+@@ -66,12 +66,14 @@
+   const modelRuntime = invalidModel ? undefined : capabilities?.model_runtime && selectedModel ? { ...capabilities.model_runtime, model_id: selectedModel.model_id, provider: selectedModel.provider, reasoning_effort: selectedModel.reasoning_effort === "none" ? t("t1.noReasoningParameter") : selectedModel.reasoning_effort } : capabilities?.model_runtime;
+   const [paperId, setPaperId] = useState(""), [runId, setRunId] = useState<string | null>(null), [historyId, setHistoryId] = useState(""), [recordId, setRecordId] = useState("");
+   const [detail, setDetail] = useState<WorkbenchPaperDetail | null>(null), [runDetail, setRunDetail] = useState<RunDetail | null>(null);
++  const [runObservedAt, setRunObservedAt] = useState<{ id: string; at: number } | null>(null);
+   const [page, setPage] = useState(1), [revision, setRevision] = useState(0), [recordQuery, setRecordQuery] = useState("");
+   const [recordRole, setRecordRole] = useState("all"), [retentionView, setRetentionView] = useState("kept");
+   const [loading, setLoading] = useState(true), [error, setError] = useState(""), [detailError, setDetailError] = useState("");
+   const [activeTab, setActiveTab] = useState("newTask"), [tabIds, setTabIds] = useState(["newTask"]);
+   const [submissionRevision, setSubmissionRevision] = useState(0);
+   const [showSource, setShowSource] = useState(false), [showSidebar, setShowSidebar] = useState(true), [showNotes, setShowNotes] = useState(false);
++  const expandNavRef = useRef<HTMLButtonElement>(null), collapseNavRef = useRef<HTMLButtonElement>(null), navFocusTarget = useRef<boolean | null>(null);
+   const [menu, setMenu] = useState<SidebarMenuAnchor | null>(null), [toast, setToast] = useState<SidebarToastData | null>(null);
+   const [taskMenu, setTaskMenu] = useState<RunTaskMenuState | null>(null), [cancelling, setCancelling] = useState<ReadonlySet<string>>(new Set());
+   const cancellingRef = useRef(new Set<string>());
+@@ -95,7 +97,7 @@
+   const locatedRecordRef = useRef("");
+   const initialized = useRef(false), sidebarWidth = useRef(224), sourceWidth = useRef(520);
+   const sidebarMax = useCallback(() => getSidebarMaxWidth({ viewportWidth: window.innerWidth, rightPanelOpen: showSource, rightPanelWidth: sourceWidth.current }), [showSource]);
+-  const sourceMax = useCallback(() => getRightPanelMaxWidth({ viewportWidth: window.innerWidth, sidebarOpen: showSidebar, sidebarWidth: sidebarWidth.current }), [showSidebar]);
++  const sourceMax = useCallback(() => getRightPanelMaxWidth({ viewportWidth: window.innerWidth, sidebarOpen: true, sidebarWidth: showSidebar ? sidebarWidth.current : 44 }), [showSidebar]);
+   const sidebar = useResizablePanel({ ariaLabel: t("t1.resizeNav"), cssVariable: "--t1-sidebar-width", defaultWidth: 224, getMaxWidth: sidebarMax, growthDirection: "right", minWidth: 180, maxWidth: 480, storageKey: "t1:pi-web:sidebar-width", widthRef: sidebarWidth });
+   const source = useResizablePanel({ ariaLabel: t("t1.resizeSource"), cssVariable: "--t1-source-width", defaultWidth: 520, getMaxWidth: sourceMax, growthDirection: "left", minWidth: 300, maxWidth: 1000, storageKey: "t1:pi-web:source-width", widthRef: sourceWidth });
+   const selectedRun = runs.find(run => run.run_id === runId);
+@@ -143,6 +145,10 @@
+ 
+   useEffect(() => { if (!showSidebar) setTaskMenu(null); }, [showSidebar]);
+   useEffect(() => { if (mobile) setShowSidebar(false); }, [mobile]);
++  useEffect(() => {
++    if (navFocusTarget.current !== showSidebar) return;
++    (showSidebar ? collapseNavRef : expandNavRef).current?.focus({ preventScroll: true }); navFocusTarget.current = null;
++  }, [showSidebar]);
+   useEffect(() => { setRecordQuery(""); setRecordRole("all"); setRetentionView("kept"); }, [paperId, runId, historyId]);
+   useEffect(() => { setShowNotes(false); setEditor(null); setExportError(""); }, [paperId, runId, historyId]);
+   useEffect(() => { if (!taskView) { setShowSource(false); setShowNotes(false); setEditor(null); } }, [taskView]);
+@@ -191,13 +197,15 @@
+   function openTab(id: string) {
+     if ((id === "records" || id === "figures") && !hasTaskContext) return;
+     setTabIds(current => current.includes(id) ? current : [...current, id]); setActiveTab(id);
+-  }
+-  function newTask() { setShowSource(false); setActionError(""); openTab("newTask"); if (mobile) setShowSidebar(false); }
++    if (mobile && (id === "newTask" || id === "tasks")) showTaskNavigation(false);
++  }
++  function newTask() { setShowSource(false); setActionError(""); openTab("newTask"); }
++  function showTaskNavigation(open: boolean) { navFocusTarget.current = open; setShowSidebar(open); }
+   function chooseModel(id: string) { setModelProfileId(id); try { localStorage.setItem("t1:extraction-model-profile", id); } catch { /* In-memory selection still works. */ } }
+   function selectRun(run: WorkbenchRun) {
+     if (deletedRuns.current.has(run.run_id)) return;
+     setRestoreFile(null); setPaperId(run.document_id); setRunId(run.run_id); setHistoryId(""); setRecordId(""); setPage(1); setActionError("");
+-    setTabIds(current => current.includes("records") ? current : [...current, "records"]); setActiveTab("records"); if (mobile) setShowSidebar(false);
++    setTabIds(current => current.includes("records") ? current : [...current, "records"]); setActiveTab("records"); if (mobile) showTaskNavigation(false);
+   }
+   function clearTaskSelection() {
+     setPaperId(""); setRunId(null); setHistoryId(""); setRecordId(""); setRunDetail(null); setDetail(null); setPage(1);
+@@ -317,7 +325,7 @@
+           try {
+             const value = await api<RunDetail>(`workbench/runs/${encodeURIComponent(runId!)}`, { signal: controller.signal });
+             if (value.run.run_id !== runId || value.output.id !== runId || value.run.document_id !== value.paper.id || value.output.records.some(record => record.run_id !== runId)) throw new Error(t("t1.selectedRunUnavailable"));
+-            if (!controller.signal.aborted && selectionRef.current.runId === runId && !deletedRuns.current.has(runId!) && mutationVersion === (runMutationVersions.current.get(runId!) ?? 0)) { setRunDetail(value); setDetailError(""); setPapers(current => current.map(paper => paper.id === value.paper.id ? cleanPaper(value.paper) : paper)); }
++            if (!controller.signal.aborted && selectionRef.current.runId === runId && !deletedRuns.current.has(runId!) && mutationVersion === (runMutationVersions.current.get(runId!) ?? 0)) { setRunDetail(value); setRunObservedAt({ id: runId!, at: Date.now() }); setDetailError(""); setPapers(current => current.map(paper => paper.id === value.paper.id ? cleanPaper(value.paper) : paper)); }
+           } catch (cause) {
+             if (!controller.signal.aborted && selectionRef.current.runId === runId && cause instanceof WorkbenchError && cause.code === "workbench_run_not_found") { clearTaskSelection(); return; }
+             if (!controller.signal.aborted && !refreshingRef.current && !cancellingRef.current.has(runId!) && !deletedRuns.current.has(runId!)) setDetailError(errorText(cause)); throw cause;
+@@ -447,7 +455,7 @@
+   const sourceActions = pdfUrl && <><button className="t1-button t1-source-toggle" aria-pressed={showSource} onClick={() => setShowSource(value => !value)}><EyeIcon size={15} />{t(showSource ? "t1.hideOriginal" : "t1.showOriginal")}</button><a className="t1-button t1-mobile-source" href={`${pdfUrl}#page=${page}`} target="_blank" rel="noreferrer"><OpenInNewTabIcon size={14} />{t("t1.openOriginal")}</a></>;
+ 
+   return <div className="t1-workbench" ref={sidebar.panelRef} data-source-open={showSource && Boolean(pdfUrl)}>
+-    <header className="t1-topbar"><div className="t1-brand"><button type="button" className="t1-nav-toggle" onClick={() => setShowSidebar(value => !value)} aria-label={t("t1.toggleNav")} title={t("t1.toggleNav")} aria-expanded={showSidebar}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></svg></button><span>T1</span><strong>{t("t1.title")}</strong></div>
++    <header className="t1-topbar"><div className="t1-brand"><span>T1</span><strong>{t("t1.title")}</strong></div>
+       <div className="t1-top-actions"><select aria-label={t("t1.language")} value={locale} onChange={e => setLocale(e.target.value as typeof locale)}>{supportedLocales.map(item => <option value={item.id} key={item.id}>{item.label}</option>)}</select><button onClick={() => void refreshWorkspace()} disabled={loading || refreshing} aria-busy={refreshing} aria-label={t(refreshing ? "t1.refreshing" : "t1.refresh")} title={t(refreshing ? "t1.refreshing" : "t1.refresh")}><RefreshIcon size={16} /></button><button aria-label={t("t1.theme")} title={t("t1.theme")} onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); setMenu({ kind: "rect", rect, align: "end" }); }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M20.8 13.2A9 9 0 0 1 10.8 3.1 9 9 0 1 0 20.8 13.2Z" /></svg></button></div>
+     </header>
+     <span className="t1-sr-only" role="status" aria-live="polite">{refreshing ? t("t1.refreshing") : ""}</span>
+@@ -456,11 +464,14 @@
+       ...(taskNotice ? [{ id: "task", notice: taskNotice, onDismiss: () => setTaskNotice(null), className: "t1-task-toast", action: taskNotice.failed ? <button className="t1-button" onClick={() => void cancelRun(taskNotice.id)}>{t("t1.retry")}</button> : undefined }] : []),
+     ]} />
+     <div className="t1-body" ref={source.panelRef}>
+-      {showSidebar && <><aside className="t1-sidebar" aria-label={t("t1.submittedTasks")}><div className="t1-sidebar-heading"><strong>{t("t1.submittedTasks")}</strong><span>{taskGroups.length}</span><button className="t1-sidebar-close" aria-label={t("t1.close")} onClick={() => setShowSidebar(false)}><CloseIcon size={18} /></button></div>
++      <div className="t1-navigation" data-expanded={showSidebar} id="t1-task-navigation">
++      {showSidebar ? <aside className="t1-sidebar" aria-label={t("t1.submittedTasks")} onKeyDown={event => { if (mobile && event.key === "Escape") { event.preventDefault(); showTaskNavigation(false); } }}><div className="t1-sidebar-heading"><strong>{t("t1.submittedTasks")}</strong><span>{taskGroups.length}</span><button type="button" ref={collapseNavRef} className="t1-nav-toggle t1-sidebar-collapse" aria-label={t("t1.collapseTaskNav")} title={t("t1.collapseTaskNav")} aria-controls="t1-task-navigation" aria-expanded={true} onClick={() => showTaskNavigation(false)}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16m7-11-3 3 3 3" /></svg></button></div>
+         <button className="t1-new-task" onClick={newTask}><PlusIcon size={16} />{t("t1.newTask")}</button>
+         <div className="t1-paper-list-region" aria-busy={refreshing}><SubmissionRunList variant="sidebar" runs={runs} papers={papers} selectedId={taskView ? runId ?? historyId : null} menuRunId={taskMenu?.runId} onSelect={selectRun} onMenu={openRunMenu} statusLabel={runLabel} />{refreshing && <div className="t1-refresh-overlay" aria-hidden="true" />}</div>
+         <div className="t1-sidebar-bottom"><button onClick={() => openTab("tasks")}><MessageIcon size={15} />{t("t1.tasks")}</button><DetailDisclosure title={t("t1.aboutWorkbench")}><p>Pi Web 0.15.0 · T1 Pi SDK 1.4.0</p></DetailDisclosure></div>
+-        <SidebarToast toast={toast} onDismiss={() => setToast(null)} dismissLabel={t("t1.close")} /></aside><div className="t1-resize" {...sidebar.separatorProps} /></>}
++        <SidebarToast toast={toast} onDismiss={() => setToast(null)} dismissLabel={t("t1.close")} /></aside> : <nav className="t1-nav-rail" aria-label={t("t1.submittedTasks")}><button type="button" ref={expandNavRef} className="t1-nav-toggle" aria-label={t("t1.expandTaskNav")} title={t("t1.expandTaskNav")} aria-controls="t1-task-navigation" aria-expanded={false} onClick={() => showTaskNavigation(true)}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16m4-11 3 3-3 3" /></svg><span aria-hidden="true">{t("t1.task")}</span></button></nav>}
++      </div>
++      {showSidebar && <div className="t1-resize" {...sidebar.separatorProps} />}
+       <main className="t1-main"><div className="t1-workspace-bar"><span title={workspaceTitle}>{workspaceTitle}</span></div>
+         <TabBar tabs={tabs} activeTabId={activeTab} onSelectTab={setActiveTab} onCloseTab={id => { const next = tabIds.filter(tab => tab !== id); setTabIds(next); if (activeTab === id) setActiveTab(next[0] ?? ""); }} onReorderTab={(from, to, after) => setTabIds(current => movePanelTab(current, from, to, after))} />
+         <div className="t1-content-region" aria-busy={refreshing}><div className="t1-content" data-view={activeTab} data-source-blocked={sourceBlocked}>
+@@ -497,7 +508,7 @@
+                 {runId && currentRun && <details className="t1-exports"><summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5" /></svg>{t("t1.exportTitle")}<ChevronIcon size={12} /></summary><div className="t1-export-options" aria-label={t("t1.exportFormat")}>{(batchId ? ["retained_package" as const] : exportKinds).map(kind => <button key={kind} disabled={Boolean(download) || (batchId ? batchResults.loading || Object.keys(batchResults.errors).length > 0 : sourceBlocked) || !capabilities?.retained_export || keptCount === 0} onClick={() => void downloadExport(kind)}>{t(`t1.${kind}`)}</button>)}</div></details>}
+               </div>
+             </div>
+-            {state && !batchId && <RunProgress run={displayedRun} state={state} coverage={taskCoverage} events={batchId ? [] : progressEvents} onDetails={() => setShowNotes(true)} />}
++            {state && !batchId && <RunProgress run={displayedRun} state={state} coverage={taskCoverage} events={progressEvents} connection={connection} observedAt={runObservedAt?.id === displayedRun?.run_id ? runObservedAt?.at : undefined} onDetails={() => setShowNotes(true)} />}
+             {batchId && selectedGroup && <BatchProgress batchId={batchId} runs={selectedGroup.runs} papers={papers} runLabel={runLabel} />}
+             {missingHistoricalSource && <p className="t1-alert" role="status">{t("t1.historicalSourceUnavailable")}</p>}
+             {exportError && <div className="t1-alert t1-export-error" role="alert">{exportError}<button className="t1-button" onClick={() => { setExportError(""); setShowNotes(true); }}>{t("t1.viewDetails")}</button></div>}
+--- a/code/apps/pi-web/t1/workbench.css
++++ b/code/apps/pi-web/t1/workbench.css
+@@ -231,7 +231,7 @@
+ /* Compact Pi Web chrome; navigation and content are divided by single rules. */
+ .t1-topbar { height: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 18px; background: var(--bg-panel); border-bottom: 1px solid var(--border); }
+ .t1-brand, .t1-top-actions { display: flex; align-items: center; gap: 10px; }
+-.t1-nav-toggle { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 30px; height: 30px; padding: 4px; border: 0; border-radius: 5px; background: transparent; color: var(--text-muted); }
++.t1-nav-toggle { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 32px; height: 32px; padding: 4px; border: 0; border-radius: 5px; background: transparent; color: var(--text-muted); }
+ .t1-nav-toggle:hover { background: var(--bg-hover); color: var(--text); }
+ .t1-nav-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+ .t1-brand > span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--t1-action-bg); color: var(--t1-action-text); font-size: 11px; font-weight: 700; letter-spacing: -.5px; }
+@@ -243,11 +243,16 @@
+ .t1-top-actions button { width: 30px; height: 30px; }
+ .t1-top-actions button:hover, .t1-workspace-bar button:hover { background: var(--bg-hover); color: var(--text); }
+ .t1-body { --t1-source-width: 520px; position: relative; display: flex; flex: 1; min-height: 0; overflow: hidden; }
++.t1-navigation { display: flex; flex-shrink: 0; width: var(--t1-sidebar-width); min-height: 0; }
++.t1-navigation[data-expanded="false"] { width: 44px; }
++.t1-nav-rail { display: flex; justify-content: center; width: 100%; padding-top: 12px; background: var(--bg-panel); border-right: 1px solid var(--border); }
++.t1-nav-rail .t1-nav-toggle { height: 52px; flex-direction: column; gap: 4px; }
++.t1-nav-rail .t1-nav-toggle > span { font-size: 10px; }
+ .t1-sidebar { position: relative; width: var(--t1-sidebar-width); flex-shrink: 0; display: flex; flex-direction: column; background: var(--bg-panel); overflow: hidden; }
+ .t1-sidebar-heading { display: flex; align-items: center; gap: 7px; padding: 18px 16px 10px; color: var(--text-muted); font-size: 11px; }
+ .t1-sidebar-heading strong { font-weight: 500; }
+ .t1-sidebar-heading > span { color: var(--text-dim); font-size: 10px; font-variant-numeric: tabular-nums; }
+-.t1-sidebar-close { display: none; margin-left: auto; padding: 2px; border: 0; background: transparent; color: var(--text); }
++.t1-sidebar-collapse { margin-left: auto; }
+ .t1-new-task { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 0 12px 16px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--t1-surface); color: var(--text); font-size: 12px !important; box-shadow: 0 1px 2px #00000005; }
+ .t1-new-task:hover { background: var(--bg-hover); border-color: var(--text-dim); }
+ .t1-paper-list { flex: 1; overflow: auto; padding: 0 8px 12px; scrollbar-width: thin; }
+@@ -325,6 +330,8 @@
+ .t1-run-progress[data-progress-outcome="incomplete"] .t1-progress-title, .t1-run-progress[data-progress-outcome="incomplete"] .t1-status-dot { color: var(--t1-warning); }
+ .t1-run-progress[data-progress-outcome="incomplete"] .t1-status-dot { background: currentColor; }
+ .t1-progress-metrics { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--text-muted); font-size: 10px; font-variant-numeric: tabular-nums; }
++.t1-progress-activity { min-height: 18px; margin: 7px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--text-muted); line-height: 1.6; }
++.t1-progress-activity strong { color: var(--t1-warning); font-weight: 600; }
+ .t1-progress-stages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); list-style: none; padding: 0; margin: 12px 0 10px; gap: 6px; }
+ .t1-progress-stages li { display: flex; align-items: center; gap: 6px; color: var(--text-dim); font-size: 10px; }
+ .t1-progress-stages li > span { display: grid; place-items: center; width: 17px; height: 17px; flex-shrink: 0; border: 1px solid var(--border); border-radius: 50%; font-size: 9px; font-variant-numeric: tabular-nums; }
+@@ -587,7 +594,8 @@
+   .t1-top-actions select { max-width: 78px; padding: 4px; font-size: 10px; }
+   .t1-top-actions button { width: 27px; height: 28px; }
+   .t1-sidebar { position: absolute; top: 0; height: 100%; width: min(280px, 86vw); z-index: 20; border-right: 1px solid var(--border); box-shadow: 10px 0 35px #0002; }
+-  .t1-sidebar-close { display: flex; }
++  .t1-navigation, .t1-navigation[data-expanded="false"] { width: 36px; }
++  .t1-navigation[data-expanded="true"]::before { content: ""; width: 36px; background: var(--bg-panel); border-right: 1px solid var(--border); }
+   .t1-paper-actions { flex-basis: 44px; width: 44px; height: 44px; margin-top: 0; }
+   .t1-workspace-bar { height: 34px; padding: 0 7px; gap: 4px; }
+   .t1-workspace-bar > span { font-size: 10px; }
+--- a/code/apps/pi-web/t1/RunProgress.tsx
++++ b/code/apps/pi-web/t1/RunProgress.tsx
+@@ -5,37 +5,42 @@
+ import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
+ import { progressDuration, progressStages, runProgress, type ProgressEvent } from "./run-progress";
+ import { runPresentation } from "./run-presentation";
++import { runActivity } from "./run-activity";
+ 
+ /** The clock only updates elapsed time. Percentages change with persisted work. */
+-export function RunProgress({ run, state, coverage, events, onDetails }: { run?: WorkbenchRun; state?: string; coverage: unknown; events: readonly ProgressEvent[]; onDetails(): void }) {
++export function RunProgress({ run, state, coverage, events, connection, observedAt, onDetails }: { run?: WorkbenchRun; state?: string; coverage: unknown; events: readonly ProgressEvent[]; connection?: string; observedAt?: number; onDetails(): void }) {
+   const { t, locale } = useI18n();
+   const progress = runProgress(run, state, coverage, events), presentation = runPresentation(state, coverage, run?.result_ready, run?.task_completion);
+   const [now, setNow] = useState<number | null>(null);
++  const activity = runActivity(run, state, connection, observedAt, now ?? observedAt);
+   useEffect(() => {
+-    if (progress.ended) return;
++    if (progress.ended || activity.stopped) return;
+     const timer = window.setInterval(() => setNow(Date.now()), 1000);
+     return () => window.clearInterval(timer);
+-  }, [progress.ended]);
++  }, [progress.ended, activity.stopped]);
+   const started = run?.execution_started_at ? Date.parse(run.execution_started_at) : NaN;
+   const finished = run?.finished_at ? Date.parse(run.finished_at) : NaN;
+-  const observedAt = progress.updatedAt ? Date.parse(progress.updatedAt) : NaN;
++  const eventAt = progress.updatedAt ? Date.parse(progress.updatedAt) : NaN;
+   const executionMs = Number.isFinite(started) && (progress.ended ? Number.isFinite(finished) : now !== null)
+     ? Math.max(0, (progress.ended ? finished : now!) - started) : progress.executionElapsedMs;
+   const queuedAt = run?.created_at ? Date.parse(run.created_at) : NaN;
+   const queueMs = progress.stage === "queued" && now !== null && Number.isFinite(queuedAt) ? Math.max(0, now - queuedAt) : progress.queueWaitMs;
+-  const active = !progress.ended, determinate = progress.percent !== undefined;
++  const active = !progress.ended && !activity.stopped, determinate = progress.percent !== undefined;
+   const percentKey = progress.unit === "source_blocks" ? "t1.progressSourcePercent" : "t1.progressParagraphPercent", countKey = progress.unit === "source_blocks" ? "t1.progressSourceCount" : "t1.progressParagraphCount";
+-  const stageLabel = t(`t1.${progress.ended || progress.finalizing ? presentation.statusKey : `progress_${progress.stage}`}`);
+-  return <section className="t1-run-progress" data-progress-stage={progress.stage} data-progress-outcome={progress.success ? "complete" : progress.ended ? "incomplete" : "active"} aria-label={t("t1.extractionProgress")}>
++  const stageLabel = t(`t1.${activity.stopped ? state : progress.ended || progress.finalizing ? presentation.statusKey : `progress_${progress.stage}`}`);
++  const activityText = activity.status === "stopped" ? t(activity.stopKind === "quota" ? "t1.progressStoppedQuota" : activity.stopKind === "time" ? "t1.progressStoppedTime" : "t1.progressStopped") : activity.status === "ended" ? progress.success ? t("t1.progressFinished") : t("t1.progressEnded")
++    : activity.status === "finalizing" ? t("t1.taskFinalizingHint") : activity.status === "stale" || activity.status === "disconnected" ? t(`t1.activity_${activity.status}`, { activity: t(`t1.activity_${activity.phase}`) }) : t(`t1.activity_${activity.status}`);
++  return <section className="t1-run-progress" data-progress-stage={progress.stage} data-progress-outcome={progress.success ? "complete" : progress.ended || activity.stopped ? "incomplete" : "active"} aria-label={t("t1.extractionProgress")}>
+     <div className="t1-progress-heading"><button className="t1-progress-title" onClick={onDetails}><span className="t1-status-dot" />{stageLabel}</button>
+       <div className="t1-progress-metrics">{executionMs !== undefined ? <span>{t("t1.progressElapsed", { time: progressDuration(executionMs) })}</span> : progress.ended && <span>{t("t1.progressElapsedUnrecorded")}</span>}{progress.stage === "queued" && queueMs !== undefined && <span>{t("t1.progressQueueElapsed", { time: progressDuration(queueMs) })}</span>}<span>{t("t1.progressCandidates", { count: progress.candidateRecords })}</span></div>
+     </div>
++    <p className="t1-progress-activity" data-activity-status={activity.status} role="status" title={activityText}>{activity.stopped ? <strong>{activityText}</strong> : activityText}{activity.elapsedMs !== undefined && <> · {t(activity.freshness === "live" ? "t1.progressOperationElapsed" : "t1.progressRecordedElapsed", { time: progressDuration(activity.elapsedMs) })}</>}{activity.stopped && progress.finalizing && <> · {t("t1.progressStoppedSaving")}</>}</p>
+     <ol className="t1-progress-stages">{progressStages.map((stage, index) => <li key={stage} data-step={progress.success || progress.stageIndex > index ? "done" : progress.stageIndex === index ? active ? "current" : "stopped" : "pending"} aria-current={active && progress.stageIndex === index ? "step" : undefined}><span>{index + 1}</span>{t(`t1.progress_${stage}`)}</li>)}</ol>
+     <div className={`t1-progress-track${active && !determinate ? " is-indeterminate" : ""}`} role="progressbar" aria-label={t(determinate ? "t1.progressSourceStage" : "t1.extractionProgress")} aria-valuemin={determinate || progress.success ? 0 : undefined} aria-valuemax={determinate || progress.success ? 100 : undefined} aria-valuenow={progress.success ? 100 : progress.percent} aria-valuetext={determinate ? t(percentKey, { completed: progress.completed!, total: progress.total!, percent: progress.percent! }) : stageLabel}>
+       <span style={determinate ? { width: `${progress.percent}%` } : progress.success ? { width: "100%" } : undefined} />
+     </div>
+-    <div className="t1-progress-detail" aria-live="polite"><span>{progress.percent !== undefined ? t(percentKey, { completed: progress.completed!, total: progress.total!, percent: progress.percent }) : progress.completed !== undefined ? t(countKey, { completed: progress.completed, total: progress.total! }) : t(active ? "t1.progressUnknownTotal" : "t1.progressNoCount")}</span>{active && progress.stage === "reconciling" && <span>{t(progress.finalizing ? "t1.taskFinalizingHint" : "t1.progressSummaryHelp")}</span>}{active && progress.activity === "figure_discovery" && <span>{t("t1.progressFiguresActivity")}</span>}{progress.totalBatches !== undefined && <span>{t("t1.progressBatchCount", { completed: progress.completedBatches ?? 0, total: progress.totalBatches })}</span>}</div>
++    <div className="t1-progress-detail" aria-live="polite"><span>{progress.percent !== undefined ? t(percentKey, { completed: progress.completed!, total: progress.total!, percent: progress.percent }) : progress.completed !== undefined ? t(countKey, { completed: progress.completed, total: progress.total! }) : t(active ? "t1.progressUnknownTotal" : "t1.progressNoCount")}</span>{active && progress.stage === "reconciling" && <span>{t(progress.finalizing ? "t1.taskFinalizingHint" : "t1.progressSummaryHelp")}</span>}{active && progress.activity === "figure_discovery" && <span>{t("t1.progressFiguresActivity")}</span>}{activity.currentBatchIndex !== undefined && <span>{t("t1.progressCurrentBatch", { index: activity.currentBatchIndex })}</span>}{progress.totalBatches !== undefined && <span>{t("t1.progressBatchCount", { completed: progress.completedBatches ?? 0, total: progress.totalBatches })}</span>}{Boolean(activity.failedBatches) && <span>{t("t1.progressFailedBatches", { count: activity.failedBatches! })}</span>}</div>
+     {Boolean(progress.gap) && <p className="t1-progress-gap">{t("t1.progressScopeGap", { count: progress.gap! })}</p>}
+-    {Number.isFinite(observedAt) && <time className="t1-progress-updated" dateTime={progress.updatedAt}>{t("t1.progressLastUpdate", { time: new Date(observedAt).toLocaleTimeString(locale, { hour12: false }) })}</time>}
++    {Number.isFinite(eventAt) && <time className="t1-progress-updated" dateTime={progress.updatedAt}>{t("t1.progressLastUpdate", { time: new Date(eventAt).toLocaleTimeString(locale, { hour12: false }) })}</time>}
+   </section>;
+ }
+--- a/code/apps/pi-web/t1/TaskCompletionNotes.tsx
++++ b/code/apps/pi-web/t1/TaskCompletionNotes.tsx
+@@ -5,6 +5,7 @@
+ import { runPresentation } from "./run-presentation";
+ import { taskCompletionDetails } from "./task-completion";
+ import { contentUnitComposition } from "./run-progress";
++import { RunActivityDetails } from "./RunActivityDetails";
+ 
+ export function TaskCompletionNotes({ entries }: { entries: readonly { run: WorkbenchRun; coverage: unknown; label?: string; gaps?: WorkbenchSourceGap[]; pdfUrl?: string }[] }) {
+   const { t } = useI18n();
+@@ -19,6 +20,7 @@
+         {run.progress?.unit && <p>{t(contentUnits ? "t1.progressParagraphHelp" : "t1.progressLegacyLinesHelp")}</p>}
+         {contentUnits && (composition.length ? <dl className="t1-unit-composition">{composition.map(({ kind, total, completed }) => <div key={kind}><dt>{t(`t1.inputUnit.${kind}`)}</dt><dd>{completed === undefined ? t("t1.progressUnitSubmitted", { total }) : t("t1.progressUnitProcessed", { completed, total })}</dd></div>)}</dl> : <p>{t("t1.progressCompositionUnrecorded")}</p>)}
+         {run.progress?.total_batches !== undefined && <p>{t("t1.progressBatchHelp")}</p>}
++        <RunActivityDetails run={run} />
+         {run.task_completion?.rule_origin === "legacy_evidence_projection" && <p>{t("t1.completionLegacyProjection")}</p>}
+         {presentation.finalizing && <p>{t("t1.taskFinalizingHint")}</p>}
+         {details.reasonKeys.length > 0 && <ul>{details.reasonKeys.map(key => <li key={key}>{t(`t1.${key}`)}</li>)}</ul>}
+--- a/code/apps/pi-web/t1/messages.mjs
++++ b/code/apps/pi-web/t1/messages.mjs
+@@ -200,14 +200,37 @@
+   tableSupportContext: ["Metric, group, unit and source notes", "指标、组别、单位及原注", "指標、組別、單位及原註"],
+   tableSupportSharedContext: ["Shared table context and original notes", "公共表格语境及原注", "共用表格語境及原註"],
+   tableNumber: ["Table {number}", "表 {number}", "表 {number}"],
+-  progressBatchCount: ["Processing batches {completed} / {total}", "处理批次 {completed} / {total}", "處理批次 {completed} / {total}"],
++  progressBatchCount: ["Completed {completed} / {total} batches", "已完成 {completed} / {total} 批", "已完成 {completed} / {total} 批"],
++  progressCurrentBatch: ["Current batch {index}", "当前第 {index} 批", "目前第 {index} 批"],
++  progressFailedBatches: ["{count} failed batches", "已失败 {count} 批", "已失敗 {count} 批"],
++  progressStopped: ["Task stopped. Progress will not continue.", "任务已停止，进度不会继续更新。", "任務已停止，進度不會繼續更新。"],
++  progressStoppedQuota: ["Stopped: call allowance exhausted. Existing results are saved.", "已停止：调用额度不足，已保留结果。", "已停止：呼叫額度不足，已保留結果。"],
++  progressStoppedTime: ["Stopped: processing time limit reached. Existing results are saved.", "已停止：达到处理时限，已保留结果。", "已停止：達到處理時限，已保留結果。"],
++  progressStoppedSaving: ["Saving existing results", "正在保存已有结果", "正在儲存已有結果"],
++  progressFinished: ["Task processing finished.", "任务处理完成。", "任務處理完成。"],
++  progressEnded: ["This run ended. Check Notes for its completion status.", "本次运行已结束，可在说明查看完成情况。", "本次執行已結束，可在說明檢視完成情況。"],
++  activity_waiting: ["Waiting for the model response", "等待模型响应", "等待模型回應"],
++  activity_receiving: ["Receiving the model response", "正在接收模型响应", "正在接收模型回應"],
++  activity_tool: ["Processing source content", "正在处理原文内容", "正在處理原文內容"],
++  activity_retry: ["Waiting for the scheduled retry", "等待本次重试", "等待本次重試"],
++  activity_processing: ["Current activity unrecorded", "当前活动未记录", "目前活動未記錄"],
++  activity_stale: ["Awaiting status (last: {activity})", "状态待更新（最近：{activity}）", "狀態待更新（最近：{activity}）"],
++  activity_disconnected: ["Live status disconnected (last: {activity})", "实时状态未连接（最近：{activity}）", "即時狀態未連線（最近：{activity}）"],
++  progressOperationElapsed: ["Elapsed {time}", "已用时 {time}", "已用時 {time}"],
++  progressRecordedElapsed: ["Recorded elapsed {time}", "记录耗时 {time}", "記錄耗時 {time}"],
++  progressActivityDetails: ["Request and tool activity", "请求与工具活动详情", "請求與工具活動詳情"],
++  progressOperationStarted: ["Recorded start {time}", "记录开始于 {time}", "記錄開始於 {time}"],
++  progressRequestAttempt: ["Request attempt {attempt} / {total}", "本次请求尝试 {attempt} / {total}", "本次請求嘗試 {attempt} / {total}"],
++  progressLastRequestFailed: ["Last request failed at {time}", "上次请求失败于 {time}", "上次請求失敗於 {time}"],
++  progressLastResponse: ["Last response received at {time}", "最近响应收到于 {time}", "最近回應收到於 {time}"],
++  progressActivityHelp: ["Elapsed time describes recorded activity, not completion or token progress. A retry follows the existing task policy.", "活动耗时不代表完成比例或 token 进度；重试沿用既有任务策略。", "活動耗時不代表完成比例或 token 進度；重試沿用既有任務策略。"],
+   progressBatchHelp: ["A processing batch groups multiple content units within the input length limits; a long paragraph can be split. One batch can include multiple model exchanges and is not a request count.", "处理批次按输入长度组织多段内容，长段可拆分；一批可包含多轮模型交互，批次数不等于模型请求次数。", "處理批次按輸入長度組織多段內容，長段可拆分；一批可包含多輪模型互動，批次數不等於模型請求次數。"],
+   progressUnknownTotal: ["The current stage has no known total yet.", "当前阶段总工作量尚不确定。", "目前階段總工作量尚不確定。"],
+   progressNoCount: ["Processing counts were not recorded.", "处理数量未记录。", "處理數量未記錄。"],
+   progressSummaryHelp: ["The system reconciles automatically and ends the run after completion checks and saving. No per-record confirmation is required.", "系统自动汇总核验，完成检查并保存后自动结束，无需逐条确认保留。", "系統自動彙整核驗，完成檢查並儲存後自動結束，無需逐條確認保留。"],
+   progressFiguresActivity: ["Finding original Figures.", "正在提取论文原图。", "正在擷取論文原圖。"],
+   progressSourceGap: ["{count} source blocks have reading gaps; the counts above cover dispatched text only.", "另有 {count} 块原文存在读取缺口；上方数量仅统计已派发原文。", "另有 {count} 塊原文存在讀取缺口；上方數量僅統計已派發原文。"],
+-  progressLastUpdate: ["Last activity {time}", "最近活动 {time}", "最近活動 {time}"],
++  progressLastUpdate: ["Last event {time}", "最近事件 {time}", "最近事件 {time}"],
+   sourceLocationVersion: ["Source locations and versions", "来源位置与版本", "來源位置與版本"],
+   originalFields: ["Raw fields", "原始字段", "原始欄位"],
+   exportFormat: ["Export format", "导出格式", "匯出格式"],
+@@ -483,6 +506,8 @@
+   resizeNav: ["Resize paper navigation", "调整论文导航宽度", "調整論文導覽寬度"],
+   resizeSource: ["Resize original PDF panel", "调整原文阅读器宽度", "調整原文閱讀器寬度"],
+   toggleNav: ["Toggle task navigation", "切换任务导航", "切換任務導覽"],
++  expandTaskNav: ["Expand task navigation", "展开任务导航", "展開任務導覽"],
++  collapseTaskNav: ["Collapse task navigation", "收起任务导航", "收合任務導覽"],
+   separateTasks: ["Each run keeps its own scope, events and reviews.", "各运行独立保留范围、事件与审核。", "各執行獨立保留範圍、事件與審核。"],
+   sourceVersion: ["Source version", "来源版本", "來源版本"],
+   previousPage: ["Previous original page", "原件上一页", "原件上一頁"],
+--- a/code/apps/pi-web/e2e/navigation-context.mjs
++++ b/code/apps/pi-web/e2e/navigation-context.mjs
+@@ -76,7 +76,7 @@
+   });
+   await scenario('exact_single_context_global_hierarchy_and_draft', async ({ page, go, choose, globalPage }) => {
+     await go(); await page.locator('.t1-task-title-field input').fill('未提交草稿'); await page.locator('input[type="file"][multiple]').first().setInputFiles({ name: 'draft.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n% draft fixture\n%%EOF\n') }); await page.locator('.t1-file-list [data-upload-state="uploaded"]').waitFor();
+-    await choose('single-a'); assert.equal(await page.locator('.t1-workspace-bar > span').innerText(), '单篇任务A'); assert.equal(await page.locator('.t1-source-toggle').count(), 1); assert.equal(await page.locator('.t1-workspace-bar button').count(), 0); assert.equal(await page.locator('.t1-brand .t1-nav-toggle').count(), 1);
++    await choose('single-a'); assert.equal(await page.locator('.t1-workspace-bar > span').innerText(), '单篇任务A'); assert.equal(await page.locator('.t1-source-toggle').count(), 1); assert.equal(await page.locator('.t1-workspace-bar button').count(), 0); assert.equal(await page.locator('.t1-sidebar-heading .t1-nav-toggle').count(), 1); assert.equal(await page.locator('.t1-topbar .t1-nav-toggle').count(), 0);
+     await page.locator('.t1-source-toggle').click(); await page.locator('.t1-source').waitFor(); await globalPage('tasks'); await assertGlobal(page, '任务与历史');
+     await globalPage('newTask'); await assertGlobal(page, '创建任务'); assert.equal(await page.locator('.t1-task-title-field input').inputValue(), '未提交草稿'); assert.equal(await page.locator('.t1-file-list [data-upload-state="uploaded"]').count(), 1); await page.screenshot({ path: join(evidence, phase + '-creation-desktop.png') });
+     await page.reload(); await page.locator('.t1-new-task-panel:not([hidden])').waitFor(); assert.equal(await page.getByRole('tab').count(), 1); await assertGlobal(page, '创建任务');
+@@ -110,7 +110,7 @@
+   await scenario('content_composition_and_processing_batches_remain_truthful_for_new_and_legacy_runs', async ({ page, state, go }) => {
+     for (const unit of ['content_units', 'paragraphs']) {
+       Object.assign(state.runs[0], { state: 'extracting', task_processing_complete: undefined, result_ready: false, progress: { schema_version: 't1-workbench-progress-1', stage: 'extracting', unit, completed: unit === 'paragraphs' ? 100 : 28, total: unit === 'paragraphs' ? 2158 : 55, completed_batches: 4, total_batches: 39, candidate_records: 1, telemetry: 'events', ...(unit === 'content_units' ? { unit_counts: { paragraph: 10, figure_text: 40, heading: 2, source_fragment: 3 }, completed_unit_counts: { paragraph: 5, figure_text: 20, heading: 2, source_fragment: 1 } } : {}) } });
+-      await go('run=single-a&view=records'); await page.locator('.t1-evidence-card').waitFor(); assert.match(await page.locator('.t1-progress-detail').innerText(), /内容单元/); assert.match(await page.locator('.t1-progress-detail').innerText(), /处理批次 4 \/ 39/); assert.doesNotMatch(await page.locator('.t1-progress-detail').innerText(), /抽取窗口|自然段/);
++      await go('run=single-a&view=records'); await page.locator('.t1-evidence-card').waitFor(); assert.match(await page.locator('.t1-progress-detail').innerText(), /内容单元/); assert.match(await page.locator('.t1-progress-detail').innerText(), /已完成 4 \/ 39 批/); assert.doesNotMatch(await page.locator('.t1-progress-detail').innerText(), /抽取窗口|自然段/);
+       await page.locator('.t1-notes-toggle').click(); const dialog = page.getByRole('dialog', { name: '说明', exact: true }); await dialog.waitFor(); assert.match(await dialog.innerText(), /批次数不等于模型请求次数/);
+       if (unit === 'content_units') { assert.equal(await dialog.locator('.t1-unit-composition > div').count(), 4); assert.match(await dialog.locator('.t1-unit-composition').innerText(), /正文句段\s+已处理 5 \/ 10/); assert.match(await dialog.locator('.t1-unit-composition').innerText(), /图内文字组\s+已处理 20 \/ 40/); }
+       else { assert.equal(await dialog.locator('.t1-unit-composition').count(), 0); assert.match(await dialog.innerText(), /未记录内容组成，不能从总内容数推算正文段落数/); }
+--- a/code/apps/pi-web/t1/run-activity.ts
++++ b/code/apps/pi-web/t1/run-activity.ts
+@@ -0,0 +1,34 @@
++import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import { runPresentation } from "./run-presentation";
++
++// Three existing ten-second detail polling intervals. This describes the
++// freshness of our observations, never a provider timeout or a cancellation.
++export const ACTIVITY_FRESH_MS = 30_000;
++const quotaReasons = new Set(["experiment_input_token_limit", "experiment_output_token_limit", "experiment_request_limit"]);
++const timeReasons = new Set(["experiment_time_limit", "document_time_limit", "request_time_limit", "pi_session_time_limit"]);
++const count = (value: unknown) => typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
++
++/** Host operation receipts and successful detail reads are the authority.
++ * A clock, SSE keepalive or progress percentage cannot prove model activity. */
++export function runActivity(run: WorkbenchRun | undefined, state: string | undefined, connection?: string, observedAt?: number, now?: number | null) {
++  const presentation = runPresentation(state, run, run?.result_ready, run?.task_completion);
++  const reason = run?.progress?.termination_reason;
++  const terminationReason = ["partial", "failed"].includes(state ?? "") && run?.result_ready === true && typeof reason === "string" && (quotaReasons.has(reason) || timeReasons.has(reason)) ? reason : undefined;
++  const stopped = ["cancelled", "failed", "interrupted"].includes(state ?? "") || Boolean(terminationReason);
++  const terminal = presentation.ended;
++  const operation = terminal ? undefined : run?.progress?.operation;
++  const validOperation = operation && Number.isFinite(Date.parse(operation.started_at)) && count(operation.elapsed_ms) !== undefined
++    && (operation.kind === "model_request" && ["waiting_response", "receiving_response"].includes(operation.state)
++      || operation.kind === "tool" && operation.state === "executing" || operation.kind === "retry" && operation.state === "scheduled") ? operation : undefined;
++  const phase = validOperation?.kind === "model_request" ? validOperation.state === "waiting_response" ? "waiting" : "receiving"
++    : validOperation?.kind === "tool" ? "tool" : validOperation?.kind === "retry" ? "retry" : "processing";
++  const age = typeof observedAt === "number" && Number.isFinite(observedAt) && typeof now === "number" && Number.isFinite(now) ? Math.max(0, now - observedAt) : undefined;
++  const freshness = connection !== "connected" ? "disconnected" : age === undefined || age > ACTIVITY_FRESH_MS ? "stale" : "live";
++  const status = stopped ? "stopped" : presentation.finalizing ? "finalizing" : terminal ? "ended" : freshness === "live" ? phase : freshness;
++  const elapsedMs = validOperation ? validOperation.elapsed_ms + (freshness === "live" ? age! : 0) : undefined;
++  const index = terminal || state !== "extracting" ? undefined : count(run?.progress?.current_batch_index), total = count(run?.progress?.total_batches);
++  return { status, phase, stopped, terminal, freshness, elapsedMs, operation: validOperation, terminationReason,
++    stopKind: terminationReason ? quotaReasons.has(terminationReason) ? "quota" : "time" : undefined,
++    currentBatchIndex: index !== undefined && index > 0 && (total === undefined || index <= total) ? index : undefined,
++    failedBatches: count(run?.progress?.failed_batches), lastRequest: run?.progress?.last_request };
++}
+--- a/code/apps/pi-web/t1/run-activity.test.ts
++++ b/code/apps/pi-web/t1/run-activity.test.ts
+@@ -0,0 +1,63 @@
++import assert from "node:assert/strict";
++import test from "node:test";
++import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import { ACTIVITY_FRESH_MS, runActivity } from "./run-activity";
++
++const at = Date.parse("2026-11-15T11:00:00Z");
++const run = (state = "extracting"): WorkbenchRun => ({ run_id: "r", document_id: "p", state, fixture: true, result_ready: false, candidate_count: 0,
++  progress: { schema_version: "t1-workbench-progress-1", stage: "extracting", telemetry: "events", completed: 0, total: 547, candidate_records: 0, completed_batches: 1, total_batches: 24, failed_batches: 1, current_batch_index: 3,
++    operation: { kind: "model_request", state: "waiting_response", started_at: new Date(at - 5000).toISOString(), elapsed_ms: 5000, attempt: 1, max_retries: 2 } } });
++
++test("a fresh observed host request exposes elapsed wait without changing completion or batch identity", () => {
++  const value = run(), activity = runActivity(value, value.state, "connected", at, at + 2000);
++  assert.equal(activity.status, "waiting"); assert.equal(activity.elapsedMs, 7000); assert.equal(activity.currentBatchIndex, 3); assert.equal(activity.failedBatches, 1);
++  assert.equal(value.progress?.completed, 0); assert.equal(value.progress?.completed_batches, 1);
++});
++
++test("response, tool and scheduled-retry states come only from matching host operation receipts", () => {
++  for (const [operation, expected] of [
++    [{ kind: "model_request", state: "receiving_response" }, "receiving"], [{ kind: "tool", state: "executing", tool_name: "read_document_blocks" }, "tool"], [{ kind: "retry", state: "scheduled" }, "retry"],
++  ] as const) {
++    const value = run(); value.progress!.operation = { ...value.progress!.operation!, ...operation };
++    assert.equal(runActivity(value, value.state, "connected", at, at).status, expected);
++  }
++});
++
++test("disconnected or stale observations display snapshots and freeze elapsed operation time", () => {
++  assert.equal(runActivity(run(), "extracting", "reconnecting", at, at + 60_000).status, "disconnected");
++  const stale = runActivity(run(), "extracting", "connected", at, at + ACTIVITY_FRESH_MS + 1);
++  assert.equal(stale.status, "stale"); assert.equal(stale.elapsedMs, 5000);
++  assert.equal(runActivity(run(), "extracting", "connected", undefined, at).status, "stale");
++});
++
++test("terminal states outrank stale or leftover waiting receipts, including cancellation still saving results", () => {
++  for (const state of ["cancelled", "failed", "interrupted"]) {
++    const activity = runActivity(run(state), state, "connected", at, at + 1000);
++    assert.equal(activity.status, "stopped"); assert.equal(activity.operation, undefined); assert.equal(activity.elapsedMs, undefined); assert.equal(activity.currentBatchIndex, undefined);
++  }
++  const completed = run("completed"); completed.result_ready = true; completed.task_processing_complete = true;
++  assert.equal(runActivity(completed, completed.state, "reconnecting", at, at + 90_000).status, "ended");
++  assert.equal(runActivity(run("partial"), "partial", "connected", at, at).status, "finalizing");
++});
++
++test("legacy runs, invalid operation records and unknown batch indexes never invent in-flight work", () => {
++  const value = run(); delete value.progress!.operation; delete value.progress!.current_batch_index;
++  assert.equal(runActivity(value, value.state, "connected", at, at).status, "processing");
++  assert.equal(runActivity(value, value.state, "connected", at, at).currentBatchIndex, undefined);
++  value.progress!.operation = { kind: "model_request", state: "waiting_response", elapsed_ms: 20, started_at: "unrecorded" };
++  assert.equal(runActivity(value, value.state, "connected", at, at).status, "processing");
++  value.progress!.current_batch_index = 25; assert.equal(runActivity(value, value.state, "connected", at, at).currentBatchIndex, undefined);
++  value.progress!.current_batch_index = 3; assert.equal(runActivity(value, "reconciling", "connected", at, at).currentBatchIndex, undefined);
++});
++
++test("only explicit final host termination codes explain quota or time stops; individual request failures do not", () => {
++  for (const reason of ["experiment_input_token_limit", "experiment_output_token_limit", "experiment_request_limit", "experiment_time_limit", "document_time_limit", "request_time_limit", "pi_session_time_limit"]) {
++    const value = run("partial"); value.result_ready = true; Object.assign(value.progress!, { termination_reason: reason });
++    const activity = runActivity(value, value.state, "connected", at, at);
++    assert.equal(activity.status, "stopped"); assert.equal(activity.terminationReason, reason); assert.equal(activity.stopKind, reason.includes("token_limit") || reason === "experiment_request_limit" ? "quota" : "time");
++    value.result_ready = false; assert.equal(runActivity(value, value.state, "connected", at, at).terminationReason, undefined);
++  }
++  const value = run("partial"); value.result_ready = true; value.progress!.last_request = { outcome: "failed", finished_at: new Date(at).toISOString(), error_code: "provider_timeout" };
++  assert.equal(runActivity(value, value.state, "connected", at, at).stopKind, undefined);
++  Object.assign(value.progress!, { termination_reason: "unknown" }); assert.equal(runActivity(value, value.state, "connected", at, at).status, "ended");
++});
+--- a/code/apps/pi-web/t1/RunActivityDetails.tsx
++++ b/code/apps/pi-web/t1/RunActivityDetails.tsx
+@@ -0,0 +1,19 @@
++"use client";
++
++import { useI18n } from "@/hooks/useI18n";
++import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import { progressDuration } from "./run-progress";
++
++/** Technical identity, retries and error codes stay inside the notes drawer. */
++export function RunActivityDetails({ run }: { run: WorkbenchRun }) {
++  const { t, locale } = useI18n(), saved = run.progress, terminal = ["completed", "partial", "cancelled", "failed", "interrupted"].includes(run.state);
++  const operation = terminal ? undefined : saved?.operation, request = saved?.last_request;
++  if (!operation && !request) return null;
++  const date = (value: string) => Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString(locale) : t("t1.timeUnrecorded");
++  return <details className="t1-technical-details t1-operation-details"><summary>{t("t1.progressActivityDetails")}</summary>
++    {operation && <><p>{t(`t1.activity_${operation.kind === "model_request" ? operation.state === "waiting_response" ? "waiting" : "receiving" : operation.kind === "tool" ? "tool" : "retry"}`)} · {t("t1.progressOperationElapsed", { time: progressDuration(operation.elapsed_ms) })}</p><p>{t("t1.progressOperationStarted", { time: date(operation.started_at) })}</p>
++      {operation.attempt !== undefined && <p>{t("t1.progressRequestAttempt", { attempt: operation.attempt + 1, total: (operation.max_retries ?? operation.attempt) + 1 })}</p>}{operation.tool_name && <code>{operation.tool_name}</code>}</>}
++    {request && <p>{t(request.outcome === "failed" ? "t1.progressLastRequestFailed" : "t1.progressLastResponse", { time: date(request.finished_at) })}{request.error_code && <> · <code>{request.error_code}</code></>}</p>}
++    <p>{t("t1.progressActivityHelp")}</p>
++  </details>;
++}
+--- a/code/apps/pi-web/e2e/navigation-activity.mjs
++++ b/code/apps/pi-web/e2e/navigation-activity.mjs
+@@ -0,0 +1,146 @@
++/** Isolated browser APIs only. Runtime services, user tasks and providers never receive writes. */
++import assert from 'node:assert/strict';
++import { readFile, writeFile } from 'node:fs/promises';
++import { createHash } from 'node:crypto';
++import { dirname, join, resolve } from 'node:path';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..'), origin = process.env.T1_ACTIVITY_ORIGIN ?? 'http://127.0.0.1:30158', phase = process.env.T1_ACTIVITY_PHASE ?? 'after';
++const evidence = join(code, 'docs/acceptance/new-task-layout-2026-11-14/item5/navigation-activity');
++const dist = process.env.T1_ACTIVITY_DIST, BUILD_ID = dist ? (await readFile(join(code, dist, 'BUILD_ID'), 'utf8')).trim() : 'isolated-dev';
++const result = { status: 'running', phase, origin, BUILD_ID, dist, checks: [], errors: [], blocked: [], mock_mutations: [], production_business_writes: 0, paid_calls: 0, production_exports: 0 };
++process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
++process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
++const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href), browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
++const batchId = '11111111-1111-4111-8111-111111111111';
++const scope = { catalog_version: 'navigation-fixture', matching_policy_version: 'fixture', cancers: { mode: 'all', ids: [] }, image_types: { mode: 'all', ids: [] }, features: { mode: 'all', binding_ids: [] } };
++const profile = { profile_id: 'chosen-profile', provider: 'fixture', model_id: 'fixture-model', api: 'openai-responses', reasoning_effort: 'medium', context_window: 32768, max_output_tokens: 4096, configuration_source: 'server' };
++const catalog = { catalog_version: scope.catalog_version, cancers: [{ id: 'lung', name: '肺癌' }], image_types: [{ id: 'ct', name: 'CT', cancer_ids: ['lung'] }], features: [], bindings: [], default_scope: scope, restricted_available: true, development_only: false };
++const pdf = await readFile(join(code, 'evaluation/corpus/development-candidates/L01.pdf')), sha = createHash('sha256').update(pdf).digest('hex');
++const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/b3sAAAAASUVORK5CYII=', 'base64');
++const fragment = (text, run, page = 1) => ({ block_id: run + '-block', text_version: run + '-text', start: 0, end: text.length, exact_quote: text, occurrence: 1, physical_page: page, bbox: [0, 0, 10, 10], location_precision: 'block' });
++function seed() {
++  const run = (id, paper, title) => ({ run_id: id, document_id: paper, state: 'completed', fixture: true, candidate_count: 1, created_at: '2026-11-15T00:00:00Z', model_id: profile.model_id, model_profile: profile, scope, task_title: title, original_filename: paper + '.pdf', submission: { kind: 'single' }, result_ready: true, task_processing_complete: true });
++  const runs = [run('single-a', 'paper-a', '单篇任务A'), run('single-b', 'paper-a', '同论文任务B'), { ...run('member-a', 'paper-a', '批量任务C'), submission: { kind: 'batch', batch_id: batchId } }, { ...run('member-b', 'paper-b', '批量任务C'), submission: { kind: 'batch', batch_id: batchId } }];
++  const papers = ['orphan', 'paper-a', 'paper-b'].map(id => ({ id, title: id === 'orphan' ? '例子2.pdf' : id + '来源名称', filename: id + '.pdf', sha256: sha, language: 'en', pages: 12, note: '', uploaded: true, output_ids: runs.filter(run => run.document_id === id).map(run => run.run_id) }));
++  return { runs, papers, requests: [], writes: [], missing: '', hold: '', gate: null };
++}
++async function scenario(name, work, viewport = { width: 1440, height: 1000 }) {
++  if (process.env.T1_ACTIVITY_CASES && !process.env.T1_ACTIVITY_CASES.split(',').includes(name)) return;
++  const context = await browser.newContext({ viewport, locale: 'zh-CN', reducedMotion: 'reduce' }), state = seed();
++  await context.addInitScript(expected => { if (location.origin === expected) { localStorage.setItem('pi-locale', 'zh-CN'); localStorage.setItem('pi-theme', 'light'); localStorage.setItem('t1:extraction-model-profile', 'chosen-profile'); } }, origin);
++  await context.addInitScript(() => {
++    const nativeNow = Date.now.bind(Date), nativeFetch = window.fetch.bind(window);
++    const control = { offset: 0, disconnected: false, streams: new Set() }; window.__t1ActivityTest = control;
++    Date.now = () => nativeNow() + control.offset;
++    window.fetch = (input, init) => {
++      const value = input instanceof Request ? input.url : String(input), url = new URL(value, location.origin);
++      if (!url.pathname.endsWith('/events')) return nativeFetch(input, init);
++      if (control.disconnected) return Promise.reject(new TypeError('fixture_stream_disconnected'));
++      let saved;
++      const stream = new ReadableStream({ start(controller) { saved = controller; control.streams.add(controller); controller.enqueue(new TextEncoder().encode(': isolated connected stream\n\n')); }, cancel() { control.streams.delete(saved); } });
++      return Promise.resolve(new Response(stream, { status: 200, headers: { 'content-type': 'text/event-stream' } }));
++    };
++  });
++  const json = (route, value, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(value) });
++  const detail = run => ({ run, paper: state.papers.find(paper => paper.id === run.document_id), output: { id: run.run_id, strategy: 'B0', origin: 'controlled_fixture', state: run.state, scope, records: run.candidate_count ? [{ id: 'same-id', run_id: run.run_id, version: 1, fragments: [fragment('ONLY ' + run.run_id + ' original text', run.run_id)], context: [], association: 'paired', figure_ids: ['same-figure'], proposed_figure_ids: [], reasons: [], review_status: 'pending', text_fingerprint: run.run_id, evidence_role: 'primary_candidate', retention: { status: 'kept', revision: 0, origin: 'default', record_version: 1 } }] : [], coverage: { task_processing_complete: run.task_processing_complete } }, source_units: [], figures: [{ id: 'same-figure', number: '1', verification: 'needs_review', caption: [fragment('ONLY ' + run.run_id + ' caption', run.run_id)], assets: [{ id: 'same-asset', url: '/api/t1/workbench/runs/' + run.run_id + '/figures/same-asset', sha256: run.run_id, page: 1, width: 100, height: 100 }] }], source_issues: state.missing === run.run_id ? ['pdf_source_file_missing'] : [], source_status: state.missing === run.run_id ? 'missing' : 'valid', text_version: run.run_id + '-text', pdf_url: '/api/t1/workbench/papers/' + run.document_id + '/pdf' });
++  const remove = ids => { state.runs = state.runs.filter(run => !ids.includes(run.run_id)); state.papers = state.papers.map(paper => ({ ...paper, output_ids: paper.output_ids.filter(id => !ids.includes(id)) })); };
++  await context.route('**/*', async route => {
++    const request = route.request(), url = new URL(request.url()), path = url.pathname, method = request.method(), base = '/api/t1/workbench';
++    if (url.origin !== origin) { result.blocked.push({ name, method, path }); return route.abort('blockedbyclient'); }
++    if (!path.startsWith('/api/')) return route.continue();
++    state.requests.push({ method, path });
++    if (method === 'GET' && path === base + '/capabilities') return json(route, { schema_version: 't1-workbench-capabilities-1', read_only: false, paper_upload: true, extraction_start: true, persisted_review: true, persisted_retention: true, retained_export: true, model_selection: true, backend_pi_sdk: '1.4.0', max_concurrent_runs: 2 });
++    if (method === 'GET' && path === base + '/catalog') return json(route, catalog);
++    if (method === 'GET' && path === base + '/models') return json(route, { provider: 'fixture', default_profile_id: profile.profile_id, profiles: [profile] });
++    if (method === 'GET' && path === base + '/papers') return json(route, { papers: state.papers });
++    if (method === 'GET' && path === base + '/runs') return state.failRuns ? json(route, { error: 'fixture_lists_unavailable' }, 503) : json(route, { runs: state.runs });
++    if (method === 'GET' && path.endsWith('/events')) return route.fulfill({ contentType: 'text/event-stream', body: ': isolated fixture\n\n' });
++    if (method === 'GET' && path.endsWith('/pdf')) return route.fulfill({ contentType: 'application/pdf', body: pdf });
++    if (method === 'GET' && path.endsWith('/figures/same-asset')) return route.fulfill({ contentType: 'image/png', body: png });
++    const runId = path.match(/^\/api\/t1\/workbench\/runs\/([^/]+)$/)?.[1], paperId = path.match(/^\/api\/t1\/workbench\/papers\/([^/]+)$/)?.[1];
++    if (method === 'GET' && runId) {
++      if (state.hold === runId) await state.gate;
++      const run = state.runs.find(run => run.run_id === runId); return run && state.notFound !== runId ? json(route, detail(run)) : json(route, { error: 'workbench_run_not_found' }, 404);
++    }
++    if (method === 'GET' && paperId) return json(route, { paper: state.papers.find(paper => paper.id === paperId), outputs: state.runs.filter(run => run.document_id === paperId).map(run => detail(run).output), source_units: [], figures: [], source_status: 'not_parsed' });
++    if (method === 'DELETE' && (runId || path === base + '/batches/' + batchId)) { state.writes.push({ method, path }); remove(runId ? [runId] : state.runs.filter(run => run.submission.kind === 'batch').map(run => run.run_id)); return json(route, { deleted: true }); }
++    if (method === 'POST' && path === base + '/papers') { state.writes.push({ method, path }); return json(route, { paper: { ...state.papers[0], id: 'draft-paper', title: 'draft.pdf', filename: 'draft.pdf' } }, 201); }
++    result.blocked.push({ name, method, path }); return route.abort('blockedbyclient');
++  });
++  const page = await context.newPage(); page.setDefaultTimeout(12000); page.on('pageerror', error => result.errors.push({ name, error: String(error) }));
++  const go = async (params = '') => { await page.goto(origin + '/?' + params); await page.locator('.t1-status[role="status"]').waitFor({ state: 'hidden' }); await page.getByRole('tab').first().waitFor(); };
++  const choose = async id => { if (!await page.locator('.t1-sidebar').isVisible()) await page.locator('.t1-nav-toggle').click(); await page.locator('[data-submission-list="sidebar"] [data-run-id="' + id + '"]').click(); await page.waitForFunction(id => document.querySelector('.t1-evidence-card')?.getAttribute('data-source-run-id') === id, id); };
++  const deleteTask = async id => { if (!await page.locator('.t1-sidebar').isVisible()) await page.locator('.t1-nav-toggle').click(); await page.locator('[data-submission-list="sidebar"] [data-run-menu-id="' + id + '"]').click(); await page.getByRole('menuitem', { name: '删除任务', exact: true }).click(); const dialog = page.getByRole('dialog', { name: '删除任务', exact: true }); await dialog.waitFor(); await dialog.getByRole('button', { name: '确认删除任务', exact: true }).click(); await dialog.waitFor({ state: 'hidden' }); };
++  const globalPage = async view => { if (view === 'newTask') { if (!await page.locator('.t1-sidebar').isVisible()) await page.locator('.t1-nav-toggle').click(); await page.locator('.t1-new-task').click(); } else { if (!await page.locator('.t1-sidebar').isVisible()) await page.locator('.t1-nav-toggle').click(); await page.locator('.t1-sidebar-bottom > button').click(); } await page.waitForFunction(view => new URL(location.href).searchParams.get('view') === view && !new URL(location.href).searchParams.has('paper') && !new URL(location.href).searchParams.has('run'), view); };
++  try { await work({ page, state, go, choose, deleteTask, remove, globalPage }); result.checks.push({ name, status: 'passed' }); console.log('PASS ' + name); }
++  catch (error) { result.checks.push({ name, status: 'failed', error: String(error) }); console.log('FAIL ' + name + ' ' + error); await page.screenshot({ path: join(evidence, phase + '-failed-' + name + '.png') }); }
++  finally { result.mock_mutations.push(...state.writes); await context.close(); }
++}
++async function assertGlobal(page, label) { assert.equal(await page.locator('.t1-workspace-bar > span').innerText(), label); assert.equal(await page.locator('.t1-source-toggle,.t1-mobile-source,.t1-source').count(), 0); assert.equal(await page.locator('.t1-evidence-card').count(), 0); }
++const waiting = state => {
++  const started = new Date(Date.now() - 5000).toISOString();
++  Object.assign(state.runs[0], { state: 'extracting', result_ready: false, task_processing_complete: undefined,
++    progress: { schema_version: 't1-workbench-progress-1', stage: 'extracting', telemetry: 'events', unit: 'content_units', completed: 0, total: 547, candidate_records: 1,
++      completed_batches: 1, total_batches: 24, failed_batches: 1, current_batch_index: 3, current_batch_id: 'batch-0003', updated_at: started,
++      operation: { kind: 'model_request', state: 'waiting_response', started_at: started, elapsed_ms: 5000, attempt: 1, max_retries: 2 } } });
++};
++const pause = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
++const refresh = async page => { await page.getByRole('button', { name: '刷新工作台', exact: true }).click(); await page.waitForFunction(() => !document.querySelector('[aria-label="正在刷新工作台…"]')); };
++const activity = page => page.locator('.t1-progress-activity');
++try {
++  if (dist) assert.equal((await fetch(origin + '/_next/static/' + BUILD_ID + '/_buildManifest.js')).status, 200);
++  await scenario('desktop_sidebar_and_fixed_rail_keyboard_focus_resize', async ({ page, go }) => {
++    await go(); await page.locator('.t1-task-title-field input').fill('导航切换保留草稿');
++    assert.equal(await page.locator('.t1-topbar .t1-nav-toggle').count(), 0);
++    let close = page.getByRole('button', { name: '收起任务导航', exact: true }); assert.equal(await close.locator('..').locator('strong').innerText(), '抽取任务');
++    await close.focus(); await page.keyboard.press('Enter'); let open = page.getByRole('button', { name: '展开任务导航', exact: true }); await open.waitFor(); assert.equal(await open.evaluate(element => element === document.activeElement), true);
++    assert.equal(Math.round((await page.locator('.t1-navigation').boundingBox()).width), 44); const rail = await page.locator('.t1-nav-rail').boundingBox(), main = await page.locator('.t1-main').boundingBox(); assert.ok(main.x >= rail.x + rail.width - 1); assert.equal(await page.locator('.t1-nav-toggle').count(), 1);
++    await page.screenshot({ path: join(evidence, phase + '-rail-desktop.png') });
++    await page.keyboard.press('Enter'); await close.waitFor(); assert.equal(await close.evaluate(element => element === document.activeElement), true);
++    const separator = page.locator('.t1-resize[role="separator"]').first(), before = await page.locator('.t1-navigation').boundingBox(); await separator.focus(); await page.keyboard.press('ArrowRight'); const after = await page.locator('.t1-navigation').boundingBox(); assert.ok(after.width > before.width);
++    await close.click(); await open.waitFor(); await open.click(); await close.waitFor(); assert.ok(Math.abs((await page.locator('.t1-navigation').boundingBox()).width - after.width) <= 1); assert.equal(await page.locator('.t1-task-title-field input').inputValue(), '导航切换保留草稿'); await page.screenshot({ path: join(evidence, phase + '-sidebar-desktop.png') });
++  });
++  await scenario('mobile_drawer_keeps_main_geometry_and_edge_focus', async ({ page, go, choose, globalPage }) => {
++    await go(); const open = page.getByRole('button', { name: '展开任务导航', exact: true }); await open.waitFor(); const before = await page.locator('.t1-main').boundingBox(); assert.equal(Math.round((await page.locator('.t1-navigation').boundingBox()).width), 36);
++    await open.focus(); await page.keyboard.press('Enter'); const close = page.getByRole('button', { name: '收起任务导航', exact: true }); await close.waitFor(); assert.deepEqual(await page.locator('.t1-main').boundingBox(), before); assert.equal(await close.evaluate(element => element === document.activeElement), true); await page.screenshot({ path: join(evidence, phase + '-drawer-mobile.png') });
++    await page.keyboard.press('Escape'); await open.waitFor(); assert.equal(await open.evaluate(element => element === document.activeElement), true); assert.deepEqual(await page.locator('.t1-main').boundingBox(), before);
++    await choose('single-a'); assert.equal(await page.locator('.t1-results-actions .t1-mobile-source').isVisible(), true); const source = await page.locator('.t1-results-actions .t1-mobile-source').boundingBox(), rail = await page.locator('.t1-nav-rail').boundingBox(); assert.ok(source.x >= rail.x + rail.width); assert.equal(await page.locator('.t1-topbar .t1-nav-toggle').count(), 0); await page.screenshot({ path: join(evidence, phase + '-results-mobile.png') });
++    await globalPage('newTask'); await assertGlobal(page, '创建任务'); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
++  }, { width: 390, height: 844 });
++  await scenario('live_request_tool_retry_and_actual_batch_numbers', async ({ page, state, go }) => {
++    waiting(state); await go('run=single-a&view=records'); await page.locator('.t1-evidence-card').waitFor(); await page.locator('[data-activity-status="waiting"]').waitFor(); assert.match(await activity(page).innerText(), /等待模型响应/); const bar = page.getByRole('progressbar'); assert.equal(await bar.getAttribute('aria-valuenow'), '0');
++    assert.match(await page.locator('.t1-progress-detail').innerText(), /当前第 3 批/); assert.match(await page.locator('.t1-progress-detail').innerText(), /已完成 1 \/ 24 批/); assert.match(await page.locator('.t1-progress-detail').innerText(), /已失败 1 批/);
++    const old = await activity(page).innerText(); await page.waitForFunction(previous => document.querySelector('.t1-progress-activity')?.textContent !== previous, old, { timeout: 4000 }); assert.equal(await bar.getAttribute('aria-valuenow'), '0'); await page.screenshot({ path: join(evidence, phase + '-waiting-desktop.png') });
++    state.runs[0].progress.operation.state = 'receiving_response'; await refresh(page); await page.locator('[data-activity-status="receiving"]').waitFor(); assert.equal(await bar.getAttribute('aria-valuenow'), '0');
++    Object.assign(state.runs[0].progress.operation, { kind: 'tool', state: 'executing', tool_name: 'read_document_blocks' }); await refresh(page); await page.locator('[data-activity-status="tool"]').waitFor(); assert.doesNotMatch(await activity(page).innerText(), /read_document_blocks/);
++    await page.locator('.t1-notes-toggle').click(); const notes = page.getByRole('dialog', { name: '说明', exact: true }); await notes.waitFor(); await notes.locator('.t1-operation-details > summary').click(); assert.match(await notes.locator('.t1-operation-details').innerText(), /本次请求尝试 2 \/ 3/); assert.match(await notes.locator('.t1-operation-details').innerText(), /read_document_blocks/); await page.keyboard.press('Escape'); await notes.waitFor({ state: 'hidden' });
++    Object.assign(state.runs[0].progress.operation, { kind: 'retry', state: 'scheduled' }); state.runs[0].progress.last_request = { outcome: 'failed', finished_at: new Date().toISOString(), error_code: 'provider_timeout' }; await refresh(page); await page.locator('[data-activity-status="retry"]').waitFor(); assert.equal(await bar.getAttribute('aria-valuenow'), '0');
++    state.runs[0].state = 'reconciling'; state.runs[0].progress.stage = 'reconciling'; await refresh(page); assert.doesNotMatch(await page.locator('.t1-progress-detail').innerText(), /当前第/); assert.match(await page.locator('.t1-progress-detail').innerText(), /已完成 1 \/ 24 批/);
++  });
++  await scenario('stopped_states_outrank_leftover_operations_and_finalization', async ({ page, state, go }) => {
++    for (const terminal of ['cancelled', 'failed', 'interrupted', 'partial']) {
++      waiting(state); state.runs[0].state = terminal; state.runs[0].result_ready = terminal !== 'cancelled'; state.runs[0].task_processing_complete = false;
++      await go('run=single-a&view=records'); await page.locator('.t1-evidence-card').waitFor(); await page.locator('[data-activity-status="' + (terminal === 'partial' ? 'ended' : 'stopped') + '"]').waitFor(); assert.match(await activity(page).innerText(), terminal === 'partial' ? /运行已结束/ : /任务已停止/);
++      assert.equal(await page.locator('.t1-progress-track.is-indeterminate').count(), 0); assert.equal(await page.locator('.t1-progress-stages [aria-current="step"]').count(), 0); assert.doesNotMatch(await activity(page).innerText(), /等待模型|接收模型|已用时/); assert.doesNotMatch(await page.locator('.t1-progress-detail').innerText(), /当前第/);
++      const before = await activity(page).innerText(); await pause(1100); assert.equal(await activity(page).innerText(), before); if (terminal === 'cancelled') await page.screenshot({ path: join(evidence, phase + '-cancelled.png') });
++    }
++  });
++  await scenario('connection_loss_and_stale_reads_freeze_only_recorded_wait', async ({ page, state, go }) => {
++    waiting(state); await go('run=single-a&view=records'); await page.locator('[data-activity-status="waiting"]').waitFor();
++    await page.evaluate(() => { const control = window.__t1ActivityTest; control.disconnected = true; for (const stream of control.streams) stream.error(new Error('fixture_disconnect')); control.streams.clear(); });
++    await page.locator('[data-activity-status="disconnected"]').waitFor(); assert.match(await activity(page).innerText(), /最近：等待模型响应/); assert.match(await activity(page).innerText(), /记录耗时/); let before = await activity(page).innerText(); await pause(1100); assert.equal(await activity(page).innerText(), before);
++    await page.reload(); await page.locator('[data-activity-status="waiting"]').waitFor(); await page.evaluate(() => { window.__t1ActivityTest.offset = 35000; }); await page.locator('[data-activity-status="stale"]').waitFor(); before = await activity(page).innerText();
++    await page.evaluate(() => { for (const stream of window.__t1ActivityTest.streams) stream.enqueue(new TextEncoder().encode(': keepalive\n\n')); }); await pause(1100); assert.equal(await activity(page).innerText(), before); assert.match(before, /状态待更新/); assert.equal(await page.getByRole('progressbar').getAttribute('aria-valuenow'), '0'); await page.screenshot({ path: join(evidence, phase + '-stale.png') });
++  });
++  await scenario('legacy_unknown_activity_and_global_context_remain_honest', async ({ page, state, go, globalPage }) => {
++    waiting(state); delete state.runs[0].progress.operation; delete state.runs[0].progress.current_batch_index; await go('run=single-a&view=records'); await page.locator('[data-activity-status="processing"]').waitFor(); assert.match(await activity(page).innerText(), /当前活动未记录/); assert.doesNotMatch(await activity(page).innerText(), /等待模型|已用时/); assert.match(await page.locator('.t1-progress-updated').innerText(), /最近事件/);
++    await globalPage('tasks'); await assertGlobal(page, '任务与历史'); assert.equal(await page.locator('.t1-progress-activity').count(), 0); await globalPage('newTask'); await assertGlobal(page, '创建任务');
++  });
++  await scenario('verified_quota_stop_is_visible_and_unknown_partial_is_not_guessed', async ({ page, state, go }) => {
++    waiting(state); Object.assign(state.runs[0], { state: 'partial', result_ready: true, task_processing_complete: false }); state.runs[0].progress.termination_reason = 'experiment_input_token_limit'; state.runs[0].progress.completed = 304; state.runs[0].progress.completed_batches = 19;
++    await go('run=single-a&view=records'); await page.locator('[data-activity-status="stopped"]').waitFor(); assert.match(await activity(page).innerText(), /已停止：调用额度不足，已保留结果/); assert.match(await page.locator('.t1-progress-detail').innerText(), /304 \/ 547/); assert.match(await page.locator('.t1-progress-detail').innerText(), /已完成 19 \/ 24 批/); assert.doesNotMatch(await activity(page).innerText(), /等待模型|已用时/); assert.equal(await page.locator('.t1-progress-track.is-indeterminate').count(), 0); await page.screenshot({ path: join(evidence, phase + '-quota-stopped.png') });
++    delete state.runs[0].progress.termination_reason; state.runs[0].progress.last_request = { outcome: 'failed', finished_at: new Date().toISOString(), error_code: 'provider_timeout' }; await go('run=single-a&view=records'); await page.locator('[data-activity-status="ended"]').waitFor(); assert.doesNotMatch(await activity(page).innerText(), /额度|供应商|超时/);
++  });
++  result.status = result.checks.every(check => check.status === 'passed') && !result.errors.length && !result.blocked.length ? 'passed' : 'failed';
++} finally { await browser.close(); await writeFile(join(evidence, 'browser-' + phase + '.json'), JSON.stringify({ ...result, completed_at_utc: new Date().toISOString() }, null, 2) + '\n'); console.log(JSON.stringify(result)); }
++if (result.status !== 'passed') process.exitCode = 1;

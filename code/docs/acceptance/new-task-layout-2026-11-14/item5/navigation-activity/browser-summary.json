@@ -1,0 +1,44 @@
+{
+  "status": "passed",
+  "BUILD_ID": "ROz92W9UBZF3KuLyh7zeJ",
+  "dist": "apps/pi-web/build/navigation-activity-delivery-validated-20261115",
+  "checks": [
+    {
+      "name": "desktop_sidebar_and_fixed_rail_keyboard_focus_resize",
+      "status": "passed"
+    },
+    {
+      "name": "mobile_drawer_keeps_main_geometry_and_edge_focus",
+      "status": "passed"
+    },
+    {
+      "name": "live_request_tool_retry_and_actual_batch_numbers",
+      "status": "passed"
+    },
+    {
+      "name": "stopped_states_outrank_leftover_operations_and_finalization",
+      "status": "passed"
+    },
+    {
+      "name": "connection_loss_and_stale_reads_freeze_only_recorded_wait",
+      "status": "passed"
+    },
+    {
+      "name": "legacy_unknown_activity_and_global_context_remain_honest",
+      "status": "passed"
+    },
+    {
+      "name": "verified_quota_stop_is_visible_and_unknown_partial_is_not_guessed",
+      "status": "passed"
+    }
+  ],
+  "unique_scenarios_passed": 7,
+  "failed": 0,
+  "initial_full_run": "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-activity/browser-after.json",
+  "targeted_harness_recheck": "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-activity/browser-counter-fixed.json",
+  "recheck_reason": "The fixed 1.2-second assertion crossed an interval/whole-second boundary. Wait for the observed elapsed-text transition within 4 seconds; same product binary, no source rebuild. Initial six passed scenarios were not repeated.",
+  "page_errors": [],
+  "unknown_or_external_requests": [],
+  "production_business_writes": 0,
+  "paid_calls": 0
+}

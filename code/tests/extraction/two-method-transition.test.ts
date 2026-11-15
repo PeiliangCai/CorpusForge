@@ -44,7 +44,7 @@ test('frozen historical masks remain readable and unchanged while the current sh
       assert.equal(historical.selection.rule_version, 's4-explainable-source-selection-1');
       assert.deepEqual(historical.selection.excluded_block_ids, []);
       assert.equal(current.rule_version, SOURCE_SELECTION_VERSION);
-      assert.equal(current.bibliography_scope_rule_version, 'explicit-bibliography-task-scope-1');
+      assert.equal(current.bibliography_scope_rule_version, 'explicit-bibliography-task-scope-2');
       assert.notEqual(current.digest, historical.selection.digest);
       assert.ok(current.excluded_block_ids.length > 0);
       assert.ok(current.entries.filter(e => e.state === 'excluded').every(e => e.article_eligible && e.rule_ids.includes('TASK_BIBLIOGRAPHY_EXCLUDED')));

@@ -1,0 +1,550 @@
+--- before/code/apps/server/src/workflow.ts
++++ after/code/apps/server/src/workflow.ts
+@@ -39,6 +39,7 @@
+ interface PaperRow { id: string; title: string; filename: string; pdf: Artifact; uploaded: boolean; language: string; pages: number;
+   note: string; latest_source?: SourceSnapshot }
+ interface RunRow { id: string; paper_id: string; created_at: string; origin: WorkbenchOutput['origin']; controlled: boolean;
++  scope_catalog?: EvidenceCatalog;
+   source?: SourceSnapshot; coverage?: unknown; error?: string; directory: string; strategy?: string; summary?: string;
+   execution_started_at?: string; queue_wait_ms?: number; runtime_deadline?: string; finished_at?: string; submission?: WorkbenchSubmission; model_profile?: WorkbenchModelProfile }
+ interface Annotation { labels: WorkbenchLabels; deleted: boolean; reviewer: string; reason: string }
+@@ -59,7 +60,7 @@
+   execute(context: WorkflowExecution): Promise<{ coverage?: unknown; summary?: string }>;
+ }
+ export interface WorkflowOptions {
+-  codeRoot?: string; directory?: string; sources?: WorkbenchSources | false; catalog?: EvidenceCatalog; runner?: WorkflowRunner;
++  codeRoot?: string; directory?: string; sources?: WorkbenchSources | false; catalog?: EvidenceCatalog; catalogProvider?: () => EvidenceCatalog; runner?: WorkflowRunner;
+   parse?: (input: RunInput, fileReference: string, directory: string, signal: AbortSignal) => Promise<ExtractionDocument>;
+   /** Internal fixture may shorten the clock; production gets 30 min after taking an execution slot. */
+   runTimeoutMs?: number;
+@@ -93,6 +94,7 @@
+   private readonly sourceUnitCache = new Map<string, WorkbenchSourceUnit[]>();
+   private readonly outputCache = new Map<string, { key: string; value: WorkbenchOutput }>();
+   private readonly requests = new Map<string, { hash: string; promise: Promise<unknown> }>();
++  private readonly batchAdmissions = new Map<string, Promise<unknown>>();
+   private readonly modelProfiles?: WorkbenchModelsStore;
+   constructor(readonly store: ExtractionStore, readonly options: WorkflowOptions = {}) {
+     this.codeRoot = resolve(options.codeRoot ?? CODE); this.directory = resolve(this.codeRoot, options.directory ?? 'runtime-data/workbench');
+@@ -175,9 +177,10 @@
+     if (!this.modelProfiles) throw new ContractError('model_selection_unavailable');
+     const profile = this.modelProfiles.add(value); return { profile, ...this.modelProfiles.list() };
+   }
+-  scopeCatalog() { return { ...this.catalog, default_scope: { ...defaultScope(this.catalog.catalog_version), matching_policy_version: 'exact-explicit-synonyms-1' },
+-    restricted_available: this.catalog.status === 'approved' && !this.catalog.fixture,
+-    restricted_reason: this.catalog.status === 'approved' && !this.catalog.fixture ? null : 'medical_catalog_not_approved', development_only: this.catalog.status === 'development_only' || this.catalog.fixture }; }
++  private currentScopeCatalog() { return structuredClone(this.options.catalogProvider?.() ?? this.catalog); }
++  scopeCatalog() { const catalog = this.currentScopeCatalog(), available = ['approved', 'operator_configured'].includes(catalog.status) && !catalog.fixture;
++    return { ...catalog, default_scope: { ...defaultScope(catalog.catalog_version), matching_policy_version: 'exact-explicit-synonyms-1' },
++      restricted_available: available, restricted_reason: available ? null : 'medical_catalog_not_approved', development_only: catalog.status === 'development_only' || catalog.fixture }; }
+   private paper(id: string): PaperRow {
+     const row = this.store.db.prepare('SELECT payload_json FROM workbench_papers WHERE id=?').get(id);
+     if (!row) throw new ContractError('workbench_paper_not_found'); return JSON.parse(row.payload_json as string);
+@@ -193,9 +196,9 @@
+     language: row.language, pages: row.pages, note: row.note, output_ids: this.store.db.prepare('SELECT id FROM workbench_runs WHERE paper_id=? ORDER BY rowid DESC').all(row.id).map(r => r.id as string) }; }
+   async papers() { await this.initialize(); return this.store.db.prepare('SELECT payload_json FROM workbench_papers ORDER BY rowid DESC').all().map(r => this.summary(JSON.parse(r.payload_json as string))); }
+   async runs(filterId?: string): Promise<WorkbenchRun[]> { await this.initialize();
+-    return this.store.db.prepare(`SELECT w.id,w.paper_id,s.state,s.input_json,json_extract(w.payload_json,'$.origin','$.created_at','$.controlled','$.error','$.execution_started_at','$.queue_wait_ms','$.runtime_deadline','$.finished_at','$.submission','$.model_profile') info
++    return this.store.db.prepare(`SELECT w.id,w.paper_id,s.state,s.input_json,json_extract(w.payload_json,'$.origin','$.created_at','$.controlled','$.error','$.execution_started_at','$.queue_wait_ms','$.runtime_deadline','$.finished_at','$.submission','$.model_profile','$.scope_catalog') info
+       FROM workbench_runs w JOIN s4_runs s ON w.id=s.id ${filterId ? 'WHERE w.id=?' : ''} ORDER BY w.rowid DESC`).all(...(filterId ? [filterId] : [])).map(row => {
+-      const [origin, created_at, controlled, error, execution_started_at, queue_wait_ms, runtime_deadline, finished_at, submission, model_profile] = JSON.parse(row.info as string), input = JSON.parse(row.input_json as string) as RunInput;
++      const [origin, created_at, controlled, error, execution_started_at, queue_wait_ms, runtime_deadline, finished_at, submission, model_profile, scope_catalog] = JSON.parse(row.info as string), input = JSON.parse(row.input_json as string) as RunInput;
+       const count = this.store.db.prepare(`SELECT COUNT(*) n FROM s4_versions v JOIN
+         (SELECT record_id,MAX(version) version FROM s4_versions WHERE run_id=? AND COALESCE(json_extract(envelope_json,'$.status'),'active')<>'proposed' GROUP BY record_id) current
+         ON v.record_id=current.record_id AND v.version=current.version
+@@ -203,7 +206,7 @@
+         WHERE v.run_id=? AND COALESCE(json_extract(a.payload_json,'$.deleted'),0)<>1`).get(row.id as string, row.id as string)!;
+       const ready = Boolean(finished_at) || !this.active.has(row.id as string), rawState = row.state as string;
+       return { run_id: row.id as string, document_id: row.paper_id as string, state: ['completed', 'partial'].includes(rawState) && !ready ? 'reconciling' : rawState, fixture: Boolean(controlled), candidate_count: Number(count.n),
+-        scope: input.scope, origin, created_at, provider: input.runtime_profile.provider, model_id: input.runtime_profile.model_id,
++        scope: input.scope, ...(scope_catalog ? { scope_catalog } : {}), origin, created_at, provider: input.runtime_profile.provider, model_id: input.runtime_profile.model_id,
+         ...(model_profile ? { model_profile } : {}), result_ready: terminals.has(rawState) && ready, ...(submission ? { submission } : {}), ...(finished_at ? { finished_at } : {}), ...(error ? { error } : {}), ...(execution_started_at ? { execution_started_at, queue_wait_ms, runtime_deadline } : {}) };
+     });
+   }
+@@ -254,6 +257,13 @@
+     this.pdfOperations.set(key, current);
+     try { return await current; }
+     finally { if (this.pdfOperations.get(key) === current) this.pdfOperations.delete(key); }
++  }
++  /** Concurrent first members cannot establish different snapshots for the same batch. */
++  private async withBatchAdmission<T>(submission: WorkbenchSubmission | undefined, operation: () => Promise<T>): Promise<T> {
++    if (submission?.kind !== 'batch') return operation();
++    const key = submission.batch_id, previous = this.batchAdmissions.get(key) ?? Promise.resolve();
++    const current = previous.catch(() => {}).then(operation); this.batchAdmissions.set(key, current);
++    try { return await current; } finally { if (this.batchAdmissions.get(key) === current) this.batchAdmissions.delete(key); }
+   }
+   /** Deletion never races a pending source check, export, or human write. */
+   private async withRunWrite<T>(id: string, operation: () => Promise<T>): Promise<T> {
+@@ -351,7 +361,7 @@
+     const snapshot = { input: JSON.parse(raw.input_json as string) as RunInput, state: raw.state as string }, source = row.source;
+     if (!source) return { id: row.id, strategy: row.strategy ?? 'B0', state: snapshot.state, origin: row.origin, records: [], fixture: row.controlled,
+       result_ready: terminals.has(snapshot.state) && (Boolean(row.finished_at) || !this.active.has(row.id)),
+-      full_recall_claimed: false, medical_quality_approved: false, scope: snapshot.input.scope, error: row.error };
++      full_recall_claimed: false, medical_quality_approved: false, scope: snapshot.input.scope, ...(row.scope_catalog ? { scope_catalog: row.scope_catalog } : {}), error: row.error };
+     const catalog = await this.availableCatalog(source), latest = this.run(row.id);
+     if (latest.source?.ir.sha256 !== source.ir.sha256 || latest.source?.catalog_artifact?.sha256 !== source.catalog_artifact?.sha256) return this.output(latest);
+     row = latest;
+@@ -376,6 +386,7 @@
+         evidence_role: annotation.labels.evidence_role ?? value.primary_assessment?.effective_role ?? 'primary_candidate', model_primary_assessment: value.primary_assessment?.value ?? null };
+     });
+     const value: WorkbenchOutput = { id: row.id, strategy: row.strategy ?? 'B0', state: snapshot.state, origin: row.origin, records, fixture: row.controlled, scope: snapshot.input.scope,
++      ...(row.scope_catalog ? { scope_catalog: row.scope_catalog } : {}),
+       result_ready: terminals.has(currentState) && ready,
+       ...(row.summary ? { summary: row.summary, summary_is_diagnostic: true as const } : {}),
+       full_recall_claimed: false, medical_quality_approved: false, coverage: row.coverage, same_source_review_index: buildSameSourceReviewIndex(versions), ...(row.error ? { error: row.error } : {}) };
+@@ -445,7 +456,7 @@
+     // Replaying a committed request is read-only even after the server restarts,
+     // an allowance closes, or a catalogue changes. The original scope is immutable.
+     // Keep the exact legacy payload when metadata is absent so old keys still replay after an upgrade.
+-    return this.submission('start', requestId, { paper_id: id, scope, ...(submission ? { submission } : {}), ...(modelProfileId !== undefined ? { model_profile_id: modelProfileId } : {}) }, async runId => ({ run: (await this.runs(runId))[0]! }), async remember => {
++    return this.submission('start', requestId, { paper_id: id, scope, ...(submission ? { submission } : {}), ...(modelProfileId !== undefined ? { model_profile_id: modelProfileId } : {}) }, async runId => ({ run: (await this.runs(runId))[0]! }), async remember => this.withBatchAdmission(submission, async () => {
+     if (this.shuttingDown) throw new ContractError('server_shutting_down');
+     if (this.deletingPapers.has(id)) throw new ContractError('paper_deletion_in_progress');
+     // Admission can await source checks or runner preparation before a run exists.
+@@ -454,7 +465,13 @@
+     try {
+     const admittedAt = now();
+     assertSchema(ScopeSchema, scope);
+-    const scopeErrors = evidenceScopeIssues(scope, this.catalog);
++    if (scope.features.mode !== 'all' || scope.features.binding_ids.length) throw new ContractError('feature_scope_removed');
++    const batch = submission?.kind === 'batch' ? this.runRows().find(row => row.submission?.kind === 'batch' && row.submission.batch_id === submission.batch_id) : undefined;
++    const catalog = batch?.scope_catalog ? structuredClone(batch.scope_catalog) : this.currentScopeCatalog();
++    if (batch && canonical(scope) !== canonical(this.store.snapshot(batch.id).input.scope)) throw new ContractError('batch_scope_frozen');
++    if (batch && (modelProfileId ?? this.modelProfiles?.initial.profile_id) !== batch.model_profile?.profile_id) throw new ContractError('batch_model_frozen');
++    if (batch && this.options.catalogProvider && !batch.scope_catalog) throw new ContractError('batch_catalog_snapshot_unavailable');
++    const scopeErrors = evidenceScopeIssues(scope, catalog);
+     if (scopeErrors.length) throw new ContractError(scopeErrors.join(','));
+     const paper = this.paper(id); await this.requireSource(paper, paper.latest_source);
+     const runner = this.options.runner; if (!runner) throw new ContractError('server_model_not_enabled');
+@@ -466,7 +483,7 @@
+     const input: RunInput = { schema_version: '1', run_id: runId, document_id: id, file_sha256: paper.pdf.sha256, fixture: false, scope: structuredClone(scope),
+       rule_version: 'visual-statements-2', runtime_profile: { provider: model?.provider ?? runner.provider, model_id: model?.model_id ?? runner.model_id, endpoint: '', pi_version: '1.4.0', version: 's5-workbench-1' } };
+     await runner.prepare?.(input, directory);
+-    const row: RunRow = { id: runId, paper_id: id, created_at: admittedAt, origin: runner.controlled ? 'controlled_fixture' : 'workbench_run', controlled: runner.controlled, directory, strategy: 'B0', ...(submission ? { submission } : {}), ...(model ? { model_profile: structuredClone(model) } : {}) };
++    const row: RunRow = { id: runId, paper_id: id, created_at: admittedAt, origin: runner.controlled ? 'controlled_fixture' : 'workbench_run', controlled: runner.controlled, directory, strategy: 'B0', scope_catalog: catalog, ...(submission ? { submission } : {}), ...(model ? { model_profile: structuredClone(model) } : {}) };
+     this.store.atomic(() => { this.store.create(input, { fixed_method: 'B0', controlled_fixture: runner.controlled }); this.saveRun(row); remember(runId); });
+     const controller = new AbortController();
+     const promise = this.schedule(runId, controller, () => this.execute(row, input, controller));
+@@ -476,7 +493,7 @@
+       const remaining = this.preparingPapers.get(id)! - 1;
+       if (remaining) this.preparingPapers.set(id, remaining); else this.preparingPapers.delete(id);
+     }
+-    });
++    }));
+   }
+   private schedule(id: string, controller: AbortController, run: () => Promise<void>) {
+     const promise = new Promise<void>((resolve, reject) => {
+@@ -531,7 +548,7 @@
+       const metadata: EvidenceValidationContext['metadata'] = { task_id: row.id, article_family_id: paper.id, created_at: row.created_at,
+         source_version: { file_sha256: paper.pdf.sha256, source_kind: paper.uploaded ? 'user_uploaded_pdf' : 'retained_public_pdf', version: paper.pdf.sha256, obtained_at: row.created_at },
+         bibliographic_identity: { title: paper.title, authors: [], venue: null, year: null, doi: null, pmid: null, identity_status: 'user_title_unverified' }, document_access: 'full_text' };
+-      const result = await this.options.runner!.execute({ input, document, evidence_catalog: structuredClone(this.catalog), catalog: source.catalog, directory: row.directory, signal, store: this.store, metadata, execution_started_at: row.execution_started_at, ...(row.model_profile ? { model_profile: structuredClone(row.model_profile) } : {}) });
++      const result = await this.options.runner!.execute({ input, document, evidence_catalog: structuredClone(row.scope_catalog ?? this.catalog), catalog: source.catalog, directory: row.directory, signal, store: this.store, metadata, execution_started_at: row.execution_started_at, ...(row.model_profile ? { model_profile: structuredClone(row.model_profile) } : {}) });
+       this.saveRun({ ...this.run(row.id), coverage: result.coverage, summary: result.summary });
+       if (!terminals.has(this.store.snapshot(row.id).state)) throw new ContractError('runner_finished_without_terminal_state');
+     } catch (error) {
+@@ -594,7 +611,7 @@
+       assertion: { value: 'unknown', original_wording: '', evidence: [] }, applicability: { status: 'unknown', original_wording: '', evidence: [] }, numeric_expressions: [],
+       provenance: { origin: 'unclear', cited_references: [], evidence: [] }, translation_zh: null };
+     const blocks = taskSourceBlockIds(source.document, buildArticleScope(source.document));
+-    const validated = validateEvidenceSubmission(submission, { input, document: source.document, catalog: this.catalog, metadata, toolCallId: 'human-' + randomUUID(),
++    const validated = validateEvidenceSubmission(submission, { input, document: source.document, catalog: row.scope_catalog ?? this.catalog, metadata, toolCallId: 'human-' + randomUUID(),
+       allowedBlockIds: blocks, readBlockIds: blocks, evidencePolicyVersion: 'visual-statements-2', primaryAssessmentPolicyVersion: 'model-primary-assessment-1' });
+     if (!validated.accepted || !validated.record) throw new ContractError('manual_source_validation_failed:' + validated.issues.map(i => i.code).join(','));
+     validated.record.record_id = record?.record_id ?? 'manual-' + randomUUID(); return validated.record;
+@@ -709,6 +726,7 @@
+     if (retentionSnapshot) await writeFile(resolve(directory, 'retention.json'), JSON.stringify(retentionSnapshot, null, 2) + '\n');
+     const manifestPath = resolve(directory, 'manifest.json'), manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+     Object.assign(manifest, { controlled_fixture: row.controlled, origin: row.origin, run_id: id, source_ir_sha256: source.ir.sha256, figure_catalog_sha256: source.catalog_artifact?.sha256 ?? null,
++      ...(row.scope_catalog ? { scope_catalog: row.scope_catalog, scope: this.store.snapshot(id).input.scope } : {}),
+       original_28_field_records: 'source-record-versions.jsonl; human-annotations.json is separate from paper text' });
+     if (retentionSnapshot) Object.assign(manifest, { retention_snapshot: 'retention.json', selection_at: retentionSnapshot.selected_at,
+       selection_run_event_seq: retentionSnapshot.run_event_seq, current_record_count: versions.length,
+--- before/code/apps/server/src/app.ts
++++ after/code/apps/server/src/app.ts
+@@ -18,6 +18,8 @@
+     if (error instanceof WorkflowCatalogConflict) return reply.code(409).send({ error: code, message: 'The Figure catalog has a newer version. Reload before confirming.', current_catalog_sha256: error.current_catalog_sha256 });
+     if ((error as { statusCode?: number }).statusCode === 413 || code === 'pdf_size_out_of_bounds') return reply.code(413).send({ error: 'pdf_size_out_of_bounds' });
+     if (code === 'submission_payload_conflict') return reply.code(409).send({ error: code });
++    if (code.split(',').includes('catalog_version_mismatch')) return reply.code(409).send({ error: code, message: 'The extraction scope choices changed. Refresh the workbench before starting.' });
++    if (['batch_scope_frozen', 'batch_model_frozen'].includes(code)) return reply.code(409).send({ error: code });
+     if (code === 'submission_result_deleted') return reply.code(410).send({ error: code });
+     if (code === 'submission_busy') return reply.code(429).send({ error: code });
+     if (['cancel_active_runs_before_deleting_paper', 'paper_deletion_in_progress', 'paper_busy_before_deleting_run'].includes(code)) return reply.code(409).send({ error: code });
+--- before/code/apps/pi-web/t1/T1Workbench.tsx
++++ after/code/apps/pi-web/t1/T1Workbench.tsx
+@@ -17,7 +17,7 @@
+ import { useRunEvents } from "./useRunEvents";
+ import { api, jsonBody, request, WorkbenchError } from "./api";
+ import { ScopeSummary } from "./ScopeEditor";
+-import { scopeProblems, type ScopeCatalog } from "./scope";
++import { refreshDraftScope, scopeProblems, type ScopeCatalog } from "./scope";
+ import { FigureView, Fragments } from "./EvidenceSource";
+ import { RecordRetention } from "./RecordRetention";
+ import { SourceEditor } from "./SourceEditor";
+@@ -143,6 +143,10 @@
+     if (cause instanceof WorkbenchError && cause.code === "submission_payload_conflict") return t("t1.submissionConflict");
+     if (cause instanceof WorkbenchError && cause.code === "submission_result_deleted") return t("t1.submissionDeleted");
+     if (cause instanceof WorkbenchError && cause.code === "submission_busy") return t("t1.submissionBusy");
++    if (cause instanceof WorkbenchError && cause.code.split(",").includes("catalog_version_mismatch")) return t("t1.scopeCatalogChanged");
++    if (cause instanceof WorkbenchError && cause.code.startsWith("scope_catalog_")) return t("t1.scopeCatalogInvalid");
++    if (cause instanceof WorkbenchError && cause.code === "feature_scope_removed") return t("t1.featureScopeRemoved");
++    if (cause instanceof WorkbenchError && ["batch_scope_frozen", "batch_model_frozen"].includes(cause.code)) return t("t1.submissionConflict");
+     if (cause instanceof WorkbenchError && ["invalid_model_profile", "model_profile_limit"].includes(cause.code)) return t("t1.invalidModelProfile");
+     if (cause instanceof WorkbenchError && ["invalid_model_profile_id", "model_profile_not_found"].includes(cause.code)) return t("t1.missingSavedModel");
+     if (cause instanceof WorkbenchError && cause.code.includes("source_glyph_check_missing")) return t("t1.sourceGlyphLegacy");
+@@ -156,6 +160,8 @@
+     if (cause instanceof TypeError) return t("t1.connectionInterrupted");
+     return cause instanceof Error ? cause.message : t("t1.requestFailed");
+   }
++  const currentErrorText = useRef(errorText);
++  useEffect(() => { currentErrorText.current = errorText; });
+   function openTab(id: string) { setTabIds(current => current.includes(id) ? current : [...current, id]); setActiveTab(id); }
+   function chooseModel(id: string) { setModelProfileId(id); try { localStorage.setItem("t1:extraction-model-profile", id); } catch { /* In-memory selection still works. */ } }
+   function selectRun(run: WorkbenchRun) {
+@@ -212,11 +218,11 @@
+     function load() {
+       if (flight) return flight;
+       const version = ++runsReadVersion.current;
+-      flight = Promise.all([api<WorkbenchCapabilities>("workbench/capabilities", { signal: controller.signal }), api<{ papers: WorkbenchPaper[] }>("workbench/papers", { signal: controller.signal }), api<{ runs: WorkbenchRun[] }>("workbench/runs", { signal: controller.signal }), api<WorkbenchScopeCatalog>("workbench/catalog", { signal: controller.signal }), api<WorkbenchModels>("workbench/models", { signal: controller.signal })])
++      flight = Promise.all([api<WorkbenchCapabilities>("workbench/capabilities", { signal: controller.signal }), api<{ papers: WorkbenchPaper[] }>("workbench/papers", { signal: controller.signal }), api<{ runs: WorkbenchRun[] }>("workbench/runs", { signal: controller.signal }), api<WorkbenchScopeCatalog>("workbench/catalog", { signal: controller.signal }).then(value => ({ value, error: null })).catch(error => ({ value: null, error })), api<WorkbenchModels>("workbench/models", { signal: controller.signal })])
+       .then(([caps, listed, tasks, rawChoices, availableModels]) => {
+         if (controller.signal.aborted) return;
+-        const choices: ScopeCatalog = { ...rawChoices, catalog: rawChoices };
+-        setCapabilities(caps); setPapers(listed.papers.map(cleanPaper)); if (version === runsReadVersion.current) setRuns(tasks.runs.filter(visibleRun)); setCatalog(choices); setScope(current => current ?? choices.default_scope); setError("");
++        const choices: ScopeCatalog | null = rawChoices.value ? { ...rawChoices.value, catalog: rawChoices.value } : null;
++        setCapabilities(caps); setPapers(listed.papers.map(cleanPaper)); if (version === runsReadVersion.current) setRuns(tasks.runs.filter(visibleRun)); setCatalog(choices); if (choices) setScope(current => refreshDraftScope(current, choices)); setError(rawChoices.error ? currentErrorText.current(rawChoices.error) : "");
+         setModels(availableModels);
+         if (!modelInitialized.current) {
+           let saved: string | null = null; try { saved = localStorage.getItem("t1:extraction-model-profile"); } catch { /* A fresh selection uses the configured default. */ }
+@@ -227,7 +233,9 @@
+           setPaperId(selected.paperId); setRunId(selected.runId); setHistoryId(selected.historyId); setRecordId(selected.recordId); setActiveTab(selected.activeTab);
+           initialized.current = true;
+         }
+-      }).catch(cause => { if (!controller.signal.aborted && !refreshingRef.current) setError(errorText(cause)); throw cause; }).finally(() => { flight = null; if (!controller.signal.aborted) setLoading(false); });
++        // Keep the saved task lists usable, while reporting a partial refresh as a failure.
++        if (rawChoices.error) throw rawChoices.error;
++      }).catch(cause => { if (!controller.signal.aborted && !refreshingRef.current) setError(currentErrorText.current(cause)); throw cause; }).finally(() => { flight = null; if (!controller.signal.aborted) setLoading(false); });
+       return flight;
+     }
+     refreshWorkspaceRef.current = load; void load().catch(() => {});
+@@ -484,7 +492,7 @@
+           {record?.labels?.comment && <aside className="t1-reviewer-comment"><strong>{t("t1.comment")}</strong><p>{record.labels.comment}</p></aside>}
+         </section>
+         {runId && <details className="t1-technical-details"><summary>{t("t1.currentTaskEvents")}</summary><p className="t1-stream-status">{t(`t1.${connection}`)}</p>{events.length ? <ol className="t1-events">{events.map(event => <li key={event.seq}><span>#{event.seq} · {event.type}</span><p>{event.summary}</p><time>{event.timestamp}</time></li>)}</ol> : <p>{t("t1.noEvents")}</p>}</details>}
+-        <section className="t1-notes-section"><h3>{t("t1.sourceInformation")}</h3>{displayedRun?.model_id && <p data-run-model={displayedRun.model_id}>{t("t1.extractionModel")}: {displayedRun.model_id}{displayedRun.model_profile && ` · ${displayedRun.model_profile.api} · ${displayedRun.model_profile.reasoning_effort === "none" ? t("t1.noReasoningParameter") : displayedRun.model_profile.reasoning_effort}`}</p>}<p>{t("t1.fragmentsSeparate")}</p>{output?.scope && <details className="t1-note-disclosure"><summary>{t("t1.runScope")}</summary><ScopeSummary scope={output.scope} data={catalog} /></details>}
++        <section className="t1-notes-section"><h3>{t("t1.sourceInformation")}</h3>{displayedRun?.model_id && <p data-run-model={displayedRun.model_id}>{t("t1.extractionModel")}: {displayedRun.model_id}{displayedRun.model_profile && ` · ${displayedRun.model_profile.api} · ${displayedRun.model_profile.reasoning_effort === "none" ? t("t1.noReasoningParameter") : displayedRun.model_profile.reasoning_effort}`}</p>}<p>{t("t1.fragmentsSeparate")}</p>{output?.scope && <details className="t1-note-disclosure"><summary>{t("t1.runScope")}</summary><ScopeSummary scope={output.scope} snapshot={output.scope_catalog} historical /></details>}
+           {record && <SameSourceMembers index={output?.same_source_review_index} record={record} records={records} onSelect={id => { const member = records.find(item => item.id === id); setRecordQuery(""); setRecordRole("all"); setRetentionView(member ? retainedStatus(member) : "kept"); setRecordId(id); setShowNotes(false); }} />}
+         </section>
+         {editable && !sourceBlocked && <section className="t1-notes-section"><h3>{t("t1.moreActions")}</h3>{record && <button className="t1-button" onClick={() => setEditor({ run: runId!, record: record.id })}>{t("t1.sourceCorrection")}</button>}<button className="t1-button" onClick={() => setEditor({ run: runId!, record: null })}>{t("t1.add")}</button></section>}
+--- before/code/apps/pi-web/t1/messages.mjs
++++ after/code/apps/pi-web/t1/messages.mjs
+@@ -267,13 +267,16 @@
+   choosePaper: ["Select an uploaded paper", "选择已上传论文", "選擇已上傳論文"],
+   scopeTitle: ["Extraction scope", "本次抽取范围", "本次擷取範圍"],
+   cancer: ["Cancer", "癌种", "癌種"],
+-  modality: ["Image type", "图像类型", "影像類型"],
++  modality: ["Image modality", "图像模态", "影像模態"],
+   feature: ["Visual feature", "视觉特征", "視覺特徵"],
+   all: ["Unrestricted", "不限", "不限"],
+   selected: ["Restrict and select", "限制并多选", "限制並多選"],
+   emptySelection: ["Select at least one item, or explicitly choose Unrestricted.", "请至少选择一项，或主动改为不限。", "請至少選擇一項，或主動改為不限。"],
+   invalidSelection: ["No longer applicable; remove this selection or adjust the upstream scope.", "此项已不适用；请取消勾选或调整上游范围。", "此項已不適用；請取消勾選或調整上游範圍。"],
+-  noChoices: ["No verified options are available for this scope.", "此范围暂无可用的已核定选项。", "此範圍暫無可用的已核定選項。"],
++  noChoices: ["No configured options are available for this scope.", "此范围暂无可用选项。", "此範圍暫無可用選項。"],
++  scopeCatalogChanged: ["Scope choices changed. Refresh the workbench, check your selections and start again.", "范围选项已更新，请刷新工作台，核对选择后再开始。", "範圍選項已更新，請重新整理工作台，核對選擇後再開始。"],
++  scopeCatalogInvalid: ["Scope configuration is unavailable or invalid. Correct the JSON and refresh the workbench before starting.", "范围配置暂不可用或格式有误，请修正 JSON 并刷新工作台后再开始。", "範圍設定暫不可用或格式有誤，請修正 JSON 並重新整理工作台後再開始。"],
++  featureScopeRemoved: ["Feature filtering has been removed from new tasks. Refresh the workbench to choose cancer and image modality.", "新任务已移除特征筛选，请刷新工作台选择癌种与图像模态。", "新任務已移除特徵篩選，請重新整理工作台選擇癌種與影像模態。"],
+   restrictedUnavailable: ["A verified medical catalog is not available yet. Unrestricted scope remains available; draft medical terms cannot be used as production choices.", "正式医学目录尚未核定。不限范围仍可使用；草稿医学词条不能作为生产可选项。", "正式醫學目錄尚未核定。不限範圍仍可使用；草稿醫學詞條不能作為正式可選項。"],
+   scopeSummary: ["Scope submitted with this task", "将随任务保存的范围", "將隨任務儲存的範圍"],
+   scopeImmutable: ["Changing this form only affects a new run. Existing runs retain their saved scope.", "改选仅影响新运行；已有运行保留其原范围快照。", "改選僅影響新執行；既有執行保留其原範圍快照。"],
+diff --git a/code/apps/pi-web/t1/ScopeEditor.tsx b/code/apps/pi-web/t1/ScopeEditor.tsx
+index e303914..3190b3c 100644
+--- a/code/apps/pi-web/t1/ScopeEditor.tsx
++++ b/code/apps/pi-web/t1/ScopeEditor.tsx
+@@ -1,29 +1,30 @@
+ "use client";
+ import { useI18n } from "@/hooks/useI18n";
+ import type { Scope } from "../../../packages/contracts/src/index";
++import type { EvidenceCatalog } from "../../../packages/contracts/src/extraction-evidence";
+ import { applicableChoices, scopeProblems, type ScopeCatalog } from "./scope";
+ 
+ type Props = { scope: Scope; data: ScopeCatalog; onChange: (scope: Scope) => void };
+-export function ScopeSummary({ scope, data }: { scope: Scope; data?: ScopeCatalog | null }) {
++export function ScopeSummary({ scope, data, snapshot, historical = false }: { scope: Scope; data?: ScopeCatalog | null; snapshot?: EvidenceCatalog; historical?: boolean }) {
+   const { t } = useI18n();
++  const catalog = snapshot ?? (!historical && data?.catalog.catalog_version === scope.catalog_version ? data.catalog : undefined);
+   const names = (key: "cancers" | "image_types" | "features") => {
+     const part = scope[key], ids = key === "features" ? scope.features.binding_ids : scope[key].ids;
+     if (part.mode === "all") return t("t1.all");
+-    return ids.map(id => key === "cancers" ? data?.catalog.cancers.find(x => x.id === id)?.name ?? id
+-      : key === "image_types" ? data?.catalog.image_types.find(x => x.id === id)?.name ?? id
+-      : data?.catalog.features.find(x => x.feature_id === data.catalog.bindings.find(b => b.binding_id === id)?.feature_id)?.name ?? id).join(" · ") || t("t1.emptySelection");
++    return ids.map(id => key === "cancers" ? catalog?.cancers.find(x => x.id === id)?.name ?? id
++      : key === "image_types" ? catalog?.image_types.find(x => x.id === id)?.name ?? id
++      : catalog?.features.find(x => x.feature_id === catalog.bindings.find(b => b.binding_id === id)?.feature_id)?.name ?? id).join(" · ") || t("t1.emptySelection");
+   };
+-  return <dl className="t1-scope-summary"><div><dt>{t("t1.cancer")}</dt><dd>{names("cancers")}</dd></div><div><dt>{t("t1.modality")}</dt><dd>{names("image_types")}</dd></div><div><dt>{t("t1.feature")}</dt><dd>{names("features")}</dd></div></dl>;
++  return <dl className="t1-scope-summary"><div><dt>{t("t1.cancer")}</dt><dd>{names("cancers")}</dd></div><div><dt>{t("t1.modality")}</dt><dd>{names("image_types")}</dd></div>{historical && scope.features.mode === "selected" && <div><dt>{t("t1.feature")}</dt><dd>{names("features")}</dd></div>}</dl>;
+ }
+ export function ScopeEditor({ scope, data, onChange }: Props) {
+-  const { t } = useI18n(), { images, bindings } = applicableChoices(scope, data.catalog);
++  const { t } = useI18n(), { images } = applicableChoices(scope, data.catalog);
+   const layers = [
+-    { key: "cancers", label: t("t1.cancer"), part: scope.cancers, choices: data.catalog.cancers.map(x => ({ id: x.id, name: x.name })), valid: data.catalog.cancers.map(x => x.id) },
+-    { key: "image_types", label: t("t1.modality"), part: scope.image_types, choices: data.catalog.image_types.map(x => ({ id: x.id, name: x.name })), valid: images.map(x => x.id) },
+-    { key: "features", label: t("t1.feature"), part: { mode: scope.features.mode, ids: scope.features.binding_ids }, choices: data.catalog.bindings.map(x => ({ id: x.binding_id, name: `${data.catalog.features.find(f => f.feature_id === x.feature_id)?.name ?? x.feature_id}${x.sequence_or_phase_conditions.length ? ` · ${x.sequence_or_phase_conditions.join(" / ")}` : ""}` })), valid: bindings.map(x => x.binding_id) },
++    { key: "cancers", label: t("t1.cancer"), part: scope.cancers, choices: data.catalog.cancers.map(x => ({ id: x.id, name: x.name, description: x.description })), valid: data.catalog.cancers.map(x => x.id) },
++    { key: "image_types", label: t("t1.modality"), part: scope.image_types, choices: data.catalog.image_types.map(x => ({ id: x.id, name: x.name, description: x.description })), valid: images.map(x => x.id) },
+   ] as const;
+   function update(key: typeof layers[number]["key"], mode: "all" | "selected", ids: string[]) {
+-    onChange({ ...scope, [key]: key === "features" ? { mode, binding_ids: ids } : { mode, ids } });
++    onChange({ ...scope, [key]: { mode, ids } });
+   }
+   return <section className="t1-scope-editor"><h2>{t("t1.scopeTitle")}</h2>
+     {!data.restricted_available && <p className="t1-notice">{t("t1.restrictedUnavailable")}{data.restricted_reason && data.restricted_reason !== "medical_catalog_not_approved" && <small>{data.restricted_reason}</small>}</p>}
+@@ -32,10 +33,10 @@ export function ScopeEditor({ scope, data, onChange }: Props) {
+       <select aria-label={layer.label} value={layer.part.mode} onChange={e => update(layer.key, e.target.value as "all" | "selected", [])}><option value="all">{t("t1.all")}</option><option value="selected">{t("t1.selected")}</option></select>
+       {layer.part.mode === "selected" && <div className="t1-scope-options">
+         {!layer.part.ids.length && <p role="alert">{t("t1.emptySelection")}</p>}
+-        {data.restricted_available ? layer.choices.filter(choice => layer.valid.includes(choice.id) || layer.part.ids.includes(choice.id)).map(choice => {
++        {[...layer.choices, ...layer.part.ids.filter(id => !layer.choices.some(choice => choice.id === id)).map(id => ({ id, name: id, description: undefined }))].filter(choice => layer.valid.includes(choice.id) || layer.part.ids.includes(choice.id)).map(choice => {
+           const invalid = !layer.valid.includes(choice.id);
+-          return <label key={choice.id} className={invalid ? "t1-invalid-choice" : ""}><input type="checkbox" checked={layer.part.ids.includes(choice.id)} onChange={e => update(layer.key, "selected", e.target.checked ? [...layer.part.ids, choice.id] : layer.part.ids.filter(id => id !== choice.id))} />{choice.name}{invalid && <small>{t("t1.invalidSelection")}</small>}</label>;
+-        }) : null}
++          return <label key={choice.id} title={choice.description} className={invalid ? "t1-invalid-choice" : ""}><input type="checkbox" checked={layer.part.ids.includes(choice.id)} onChange={e => update(layer.key, "selected", e.target.checked ? [...layer.part.ids, choice.id] : layer.part.ids.filter(id => id !== choice.id))} />{choice.name}{invalid && <small>{t("t1.invalidSelection")}</small>}</label>;
++        })}
+         {(!data.restricted_available || !layer.valid.length) && <p>{t("t1.noChoices")}</p>}
+       </div>}
+     </fieldset>)}</div>
+diff --git a/code/apps/pi-web/t1/api.ts b/code/apps/pi-web/t1/api.ts
+index ece52d1..3823882 100644
+--- a/code/apps/pi-web/t1/api.ts
++++ b/code/apps/pi-web/t1/api.ts
+@@ -5,7 +5,7 @@ export async function request(path: string, init: RequestInit = {}) {
+   const response = await fetch(`/api/t1/${path}`, { ...init, cache: "no-store" });
+   if (!response.ok) {
+     const value = await response.json().catch(() => ({})) as { error?: string; message?: string; current_version?: number };
+-    throw new WorkbenchError(response.status, value.message ?? value.error ?? "request_failed", value.current_version);
++    throw new WorkbenchError(response.status, value.error ?? value.message ?? "request_failed", value.current_version);
+   }
+   return response;
+ }
+diff --git a/code/apps/pi-web/t1/scope.ts b/code/apps/pi-web/t1/scope.ts
+index 5a43454..a5dd019 100644
+--- a/code/apps/pi-web/t1/scope.ts
++++ b/code/apps/pi-web/t1/scope.ts
+@@ -6,25 +6,27 @@ export interface ScopeCatalog {
+ }
+ export function applicableChoices(scope: Scope, catalog: EvidenceCatalog) {
+   const images = catalog.image_types.filter(image => scope.cancers.mode === "all" || image.cancer_ids.some(id => scope.cancers.ids.includes(id)));
+-  const bindings = catalog.bindings.filter(binding =>
+-    (scope.cancers.mode === "all" || binding.cancer_ids.some(id => scope.cancers.ids.includes(id))) &&
+-    (scope.image_types.mode === "all" || binding.image_type_ids.some(id => scope.image_types.ids.includes(id))));
+-  return { images, bindings };
++  return { images };
++}
++/** Refresh adopts the new version without dropping any draft selection, including invalid IDs. */
++export function refreshDraftScope(scope: Scope | null, data: ScopeCatalog): Scope {
++  return scope ? { ...scope, catalog_version: data.catalog.catalog_version, matching_policy_version: data.default_scope.matching_policy_version } : data.default_scope;
+ }
+ /** Invalid selections are retained until the user explicitly removes or changes them. */
+ export function scopeProblems(scope: Scope, data: ScopeCatalog): string[] {
+-  const { images, bindings } = applicableChoices(scope, data.catalog), issues: string[] = [];
++  const { images } = applicableChoices(scope, data.catalog), issues: string[] = [];
+   if (scope.catalog_version !== data.catalog.catalog_version) issues.push("catalog_version_mismatch");
++  if (scope.features.mode !== "all" || scope.features.binding_ids.length) issues.push("feature_scope_removed");
+   for (const [key, mode, ids, available] of [
+     ["cancers", scope.cancers.mode, scope.cancers.ids, data.catalog.cancers.map(x => x.id)],
+     ["image_types", scope.image_types.mode, scope.image_types.ids, images.map(x => x.id)],
+-    ["features", scope.features.mode, scope.features.binding_ids, bindings.map(x => x.binding_id)],
+   ] as const) {
+     if (mode === "selected") {
+       if (!data.restricted_available) issues.push("restricted_unavailable");
+       if (!ids.length) issues.push(`${key}_selected_empty`);
+       if (ids.some(id => !available.includes(id))) issues.push(`${key}_invalid`);
+     }
++    if (mode === "all" && ids.length) issues.push(`${key}_all_has_selections`);
+   }
+   return [...new Set(issues)];
+ }
+diff --git a/code/apps/server/src/catalog-config.ts b/code/apps/server/src/catalog-config.ts
+index da93cf2..5a957e7 100644
+--- a/code/apps/server/src/catalog-config.ts
++++ b/code/apps/server/src/catalog-config.ts
+@@ -1,30 +1,43 @@
+-import { readFileSync } from 'node:fs';
++import { createHash } from 'node:crypto';
++import { closeSync, openSync, readSync } from 'node:fs';
++import { fileURLToPath } from 'node:url';
+ import { resolve } from 'node:path';
+-import { ContractError, EvidenceCatalogSchema, assertSchema, type EvidenceCatalog } from '@t1/contracts';
+-import { unavailableMedicalCatalog } from './workflow.js';
++import { ContractError, scopeCatalogConfigIssues, type EvidenceCatalog, type ScopeCatalogConfig, type ScopeCatalogIssue } from '@t1/contracts';
+ 
+-/** Trusted operator file only. No client path, implicit draft approval or fallback after bad configuration. */
+-export function configuredEvidenceCatalog(environment = process.env, root = process.cwd()): EvidenceCatalog {
+-  const path = environment.T1_WORKBENCH_CATALOG_FILE?.trim();
+-  if (!path) return structuredClone(unavailableMedicalCatalog);
++export const SCOPE_CATALOG_FILE = 'config/scope-catalog.json';
++export const MAX_SCOPE_CATALOG_BYTES = 1024 * 1024;
++const codeRoot = fileURLToPath(new URL('../../../', import.meta.url));
++export class ScopeCatalogConfigError extends ContractError {
++  constructor(code: string, readonly issues: ScopeCatalogIssue[] = []) { super(code); }
++}
++export function decodeScopeCatalog(bytes: Uint8Array) {
++  if (bytes.byteLength > MAX_SCOPE_CATALOG_BYTES) throw new ScopeCatalogConfigError('scope_catalog_too_large');
+   let value: unknown;
++  try { value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
++  catch { throw new ScopeCatalogConfigError('scope_catalog_json_invalid'); }
++  const issues = scopeCatalogConfigIssues(value);
++  if (issues.length) throw new ScopeCatalogConfigError('scope_catalog_invalid', issues);
++  const config = value as ScopeCatalogConfig, sha256 = createHash('sha256').update(bytes).digest('hex');
++  const source = SCOPE_CATALOG_FILE, status = 'operator_configured' as const;
++  const named = (entry: ScopeCatalogConfig['image_types'][number]) => ({ id: entry.id, name: entry.name,
++    synonyms: (entry.aliases ?? []).map(text => ({ text, source, approval_status: status })), source, approval_status: status,
++    ...(entry.description !== undefined ? { description: entry.description } : {}) });
++  const catalog: EvidenceCatalog = { catalog_version: `scope-${sha256}`, status, fixture: false,
++    cancers: config.cancers.map(named), image_types: config.image_types.map(entry => ({ ...named(entry),
++      cancer_ids: config.cancers.filter(cancer => cancer.image_type_ids.includes(entry.id)).map(cancer => cancer.id) })),
++    features: [], bindings: [] };
++  return { config, catalog, sha256, byte_length: bytes.byteLength };
++}
++/** Fixed operator source, bounded and re-read for each GET/admission. Invalid edits never reuse an old value. */
++export function readScopeCatalog(root = codeRoot) {
++  let fd: number | undefined;
+   try {
+-    const bytes = readFileSync(resolve(root, path));
+-    if (bytes.length > 4 * 1024 * 1024) throw new Error('size');
+-    value = JSON.parse(bytes.toString('utf8')); assertSchema(EvidenceCatalogSchema, value);
+-  } catch { throw new ContractError('configured_medical_catalog_invalid'); }
+-  const catalog = value as EvidenceCatalog;
+-  const entries = [...catalog.cancers, ...catalog.image_types, ...catalog.features, ...catalog.bindings];
+-  if (catalog.fixture || catalog.status !== 'approved' || entries.some(e => e.approval_status !== 'approved') ||
+-    [...catalog.cancers, ...catalog.image_types, ...catalog.features].some(e => e.synonyms.some(s => s.approval_status !== 'approved'))) {
+-    throw new ContractError('configured_medical_catalog_not_production_approved');
+-  }
+-  const cancers = new Set(catalog.cancers.map(e => e.id)), modalities = new Set(catalog.image_types.map(e => e.id)), features = new Set(catalog.features.map(e => e.feature_id));
+-  if (cancers.size !== catalog.cancers.length || modalities.size !== catalog.image_types.length || features.size !== catalog.features.length ||
+-    new Set(catalog.bindings.map(e => e.binding_id)).size !== catalog.bindings.length ||
+-    catalog.image_types.some(e => e.cancer_ids.some(id => !cancers.has(id))) ||
+-    catalog.bindings.some(e => !features.has(e.feature_id) || e.cancer_ids.some(id => !cancers.has(id)) || e.image_type_ids.some(id => !modalities.has(id)))) {
+-    throw new ContractError('configured_medical_catalog_invalid_relationships');
+-  }
+-  return structuredClone(catalog);
++    fd = openSync(resolve(root, SCOPE_CATALOG_FILE), 'r');
++    const bytes = Buffer.alloc(MAX_SCOPE_CATALOG_BYTES + 1); let length = 0;
++    while (length < bytes.length) { const read = readSync(fd, bytes, length, bytes.length - length, length); if (!read) break; length += read; }
++    return decodeScopeCatalog(bytes.subarray(0, length));
++  } catch (error) {
++    if (error instanceof ScopeCatalogConfigError) throw error;
++    throw new ScopeCatalogConfigError('scope_catalog_unavailable');
++  } finally { if (fd !== undefined) closeSync(fd); }
+ }
+diff --git a/code/apps/server/src/main.ts b/code/apps/server/src/main.ts
+index fc03f15..2c7c0f2 100644
+--- a/code/apps/server/src/main.ts
++++ b/code/apps/server/src/main.ts
+@@ -3,14 +3,14 @@ import { RunStore, ExtractionStore } from '@t1/agent';
+ import { buildApp } from './app.js';
+ import { WorkbenchWorkflow } from './workflow.js';
+ import { configuredWorkflowRunner } from './workflow-runner.js';
+-import { configuredEvidenceCatalog } from './catalog-config.js';
++import { readScopeCatalog } from './catalog-config.js';
+ import { serverRuntime } from './runtime-config.js';
+ 
+ const runtime = serverRuntime();
+ await mkdir(runtime.directory, { recursive: true, mode: 0o700 });
+ const store = new RunStore(runtime.database);
+ const extractionStore = new ExtractionStore(runtime.database);
+-const workflow = new WorkbenchWorkflow(extractionStore, { directory: runtime.workflowDirectory, catalog: configuredEvidenceCatalog(), ...(runtime.importRetained ? {} : { sources: false }), runner: configuredWorkflowRunner() });
++const workflow = new WorkbenchWorkflow(extractionStore, { directory: runtime.workflowDirectory, catalogProvider: () => readScopeCatalog().catalog, ...(runtime.importRetained ? {} : { sources: false }), runner: configuredWorkflowRunner() });
+ const app = buildApp(store, undefined, workflow);
+ await app.listen({ host: runtime.host, port: runtime.port });
+ console.log(`T1 workbench listening on ${runtime.host}:${runtime.port}; retained import=${runtime.importRetained}`);
+diff --git a/code/packages/agent/src/extraction-tools.ts b/code/packages/agent/src/extraction-tools.ts
+index 2523081..32f6eca 100644
+--- a/code/packages/agent/src/extraction-tools.ts
++++ b/code/packages/agent/src/extraction-tools.ts
+@@ -51,6 +51,7 @@ export class ExtractionTools {
+       let result: unknown;
+       if (name === 'get_document_context') result = { ...this.ids, source_binding: this.sourceBinding(),
+         scope: this.context.input.scope, catalog_version: this.catalog.catalog_version, catalog_status: this.catalog.status,
++        ...(this.catalog.status === 'operator_configured' ? { scope_catalog: this.catalog, feature_vocabulary: 'open', medical_scope_approved: false } : {}),
+         batch: this.batch, title: this.context.metadata.bibliographic_identity?.title ?? this.document.title,
+         source_policy: { authoritative: 'individual_decoded_source_fragments', composite_quote: 'display_only',
+           source_glyph_quarantined_block_ids: sourceGlyphQuarantine(this.document), quarantine_is_unresolved_coverage_gap: true,
+diff --git a/code/packages/agent/src/scope-matching.ts b/code/packages/agent/src/scope-matching.ts
+index 189450c..7cc31a7 100644
+--- a/code/packages/agent/src/scope-matching.ts
++++ b/code/packages/agent/src/scope-matching.ts
+@@ -21,7 +21,7 @@ export function containsLiteral(source: string, value: string): boolean {
+ }
+ 
+ function catalogEnabled(catalog: EvidenceCatalog, options: ScopeMatchOptions): boolean {
+-  return catalog.status === 'approved' && (!catalog.fixture || options.fixture === true) ||
++  return catalog.status === 'operator_configured' && !catalog.fixture || catalog.status === 'approved' && (!catalog.fixture || options.fixture === true) ||
+     catalog.status === 'development_only' && options.allowDevelopmentCatalog === true;
+ }
+ function usable(entry: { approval_status: EvidenceCatalog['status']; source: string }, catalog: EvidenceCatalog): boolean {
+@@ -42,6 +42,8 @@ function observedGrounding(observation: Observation): boolean {
+ export function evidenceScopeIssues(scope: EvidenceScope, catalog: EvidenceCatalog, options: ScopeMatchOptions = {}): string[] {
+   if (!Value.Check(EvidenceCatalogSchema, catalog)) return ['evidence_catalog_schema_invalid'];
+   const issues: string[] = [];
++  if (catalog.status === 'operator_configured' && (scope.features.mode !== 'all' || scope.features.binding_ids.length)) issues.push('feature_scope_removed');
++  if (catalog.status === 'operator_configured' && (catalog.features.length || catalog.bindings.length)) issues.push('operator_catalog_features_not_supported');
+   if (scope.catalog_version !== catalog.catalog_version) issues.push('catalog_version_mismatch');
+   const selected = scope.cancers.mode === 'selected' || scope.image_types.mode === 'selected' || scope.features.mode === 'selected';
+   const enabled = catalogEnabled(catalog, options);
+@@ -112,6 +114,16 @@ export function matchEvidenceScope(evidence: EvidenceSubmission | EvidenceRecord
+   };
+   const cancerIds = resolveObserved('cancer', evidence.disease_or_lesion, catalog.cancers, scope.cancers.ids, scope.cancers.mode);
+   const modalityIds = resolveObserved('modality', evidence.modality, catalog.image_types, scope.image_types.ids, scope.image_types.mode);
++  // Current operator choices only restrict cancer/modality. Feature names remain open original-source observations.
++  if (catalog.status === 'operator_configured') {
++    if (scope.cancers.mode === 'selected' && scope.image_types.mode === 'selected' && cancerIds.length && modalityIds.length &&
++      !catalog.image_types.some(image => modalityIds.includes(image.id) && image.cancer_ids.some(id => cancerIds.includes(id)))) {
++      mark('out_of_scope', 'cancer_modality_pair_not_configured');
++    }
++    if ('feature_binding_id' in evidence && evidence.feature_binding_id !== null) mark('out_of_scope', 'feature_binding_removed');
++    result.feature_match = 'new_term';
++    return result;
++  }
+   const requestedBinding = 'feature_binding_id' in evidence ? evidence.feature_binding_id : evidence.normalized_terms[0]?.binding_id ?? null;
+   const matchingBindings = enabled && evidence.feature_name_raw ? catalog.bindings.flatMap(binding => {
+     const feature = catalog.features.find(f => f.feature_id === binding.feature_id);
+diff --git a/code/packages/contracts/src/extraction-evidence.ts b/code/packages/contracts/src/extraction-evidence.ts
+index 3ed5a16..bf260cd 100644
+--- a/code/packages/contracts/src/extraction-evidence.ts
++++ b/code/packages/contracts/src/extraction-evidence.ts
+@@ -53,12 +53,12 @@ export type EvidenceSubmission = Static<typeof EvidenceSubmissionSchema>;
+ export const ExtractionSubmissionSchema = EvidenceSubmissionSchema;
+ export type ExtractionSubmission = EvidenceSubmission;
+ 
+-export const CatalogApprovalSchema = Type.Enum(['approved', 'development_only', 'unavailable']);
++export const CatalogApprovalSchema = Type.Enum(['approved', 'development_only', 'unavailable', 'operator_configured']);
+ const synonym = Type.Object({ text: Type.String({ minLength: 1 }), source: Type.String({ minLength: 1 }),
+   approval_status: CatalogApprovalSchema }, closed);
+ const namedEntry = { id, name: Type.String({ minLength: 1 }), synonyms: Type.Array(synonym),
+-  source: text, approval_status: CatalogApprovalSchema };
+-/** This is separate from the S1 demo Catalog. A draft never becomes approved by conversion. */
++  source: text, approval_status: CatalogApprovalSchema, description: Type.Optional(text) };
++/** Historical approvals and operator configuration stay distinct; configured never means medically approved. */
+ export const EvidenceCatalogSchema = Type.Object({
+   catalog_version: id, status: CatalogApprovalSchema, fixture: Type.Boolean(),
+   cancers: Type.Array(Type.Object(namedEntry, closed)),
+--- /dev/null
++++ after/code/config/scope-catalog.json
+@@ -0,0 +1,13 @@
++{
++  "schema_version": "scope-catalog-1",
++  "cancers": [
++    { "id": "CANCER-LUNG", "name": "肺癌", "aliases": ["lung cancer"], "image_type_ids": ["MODALITY-CT", "MODALITY-MRI"] },
++    { "id": "CANCER-BOWEL", "name": "肠癌", "aliases": ["bowel cancer"], "image_type_ids": ["MODALITY-CT", "MODALITY-MRI"] },
++    { "id": "CANCER-COLON", "name": "结肠癌", "aliases": ["colon cancer"], "image_type_ids": ["MODALITY-CT", "MODALITY-MRI"] },
++    { "id": "CANCER-RECTUM", "name": "直肠癌", "aliases": ["rectal cancer"], "image_type_ids": ["MODALITY-CT", "MODALITY-MRI"] }
++  ],
++  "image_types": [
++    { "id": "MODALITY-CT", "name": "CT", "aliases": ["computed tomography", "计算机断层成像"] },
++    { "id": "MODALITY-MRI", "name": "MRI", "aliases": ["magnetic resonance imaging", "磁共振成像"] }
++  ]
++}

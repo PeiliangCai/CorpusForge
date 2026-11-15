@@ -1,0 +1,151 @@
+{
+  "schema_version": "t1-linear-ui-documentation-sync-1",
+  "status": "passed",
+  "checked_at_utc": "2026-11-11T16:46:14.361923+00:00",
+  "scope": "Minimal UI iteration only; plan 0.8/execution guide 0.6 retained. No duplicated policy or new plan.",
+  "changed_files": [
+    {
+      "path": "方案/子任务T1/T1智能体开发计划.docx",
+      "before_sha256": "9261cb140a4bf3dc4e13274259eb825cf14193cb7389fa137f5497ab65d6e3e2",
+      "after_sha256": "c4c0dae52208c02aef74f8df68835d7b8ec6306c56747f9bb8fb3dd7ba17d646",
+      "changed_paragraph_indices": [
+        52
+      ],
+      "paragraph_count": 65,
+      "table_rows": [
+        3,
+        9
+      ],
+      "all_other_paragraphs_and_package_parts_unchanged": true
+    },
+    {
+      "path": "方案/子任务T1/T1开发执行说明.docx",
+      "before_sha256": "fc6b83b5e682dbdbced852e90687e08f303bba8b5d81e06d96922b801fbbd373",
+      "after_sha256": "bef929cb874bf41bb8d918d417d9f98f59faf329a3706f2375cda157953752ac",
+      "changed_paragraph_indices": [
+        25
+      ],
+      "paragraph_count": 84,
+      "table_rows": [
+        9,
+        3,
+        3
+      ],
+      "all_other_paragraphs_and_package_parts_unchanged": true
+    },
+    {
+      "path": "方案/子任务T1/当前版本.json",
+      "before_sha256": "5b3455f9db0e03dd3675f001692d63d077cd8dfb6b31f9982eb9827a6be1fc8c",
+      "after_sha256": "a46def5e1d040da680ae91c9caf799c8d4f01a2c24ed146a6bcc632b6d59eda9",
+      "allowed_paths": [
+        "current_UI_refinement",
+        "current_document_fingerprints",
+        "execution_guide/sha256",
+        "execution_guide/current_plan_sha256"
+      ],
+      "protected_remaining_JSON_sha256": "c4c6b2ec55a0d469a57654679d9f8979bb3d9a88624e749ad2776c8430853863"
+    },
+    {
+      "path": "方案/子任务T1/开发计划.json",
+      "before_sha256": "22495fb24432353d6c95f40d99f2e01b6aa8cfcd03762e4f200a32fc591144e8",
+      "after_sha256": "3eb0b65137afded9afecca53febf708e1c8f077b3a1d8267951d7e4ebe39edaf",
+      "allowed_paths": [
+        "current_document_fingerprints"
+      ],
+      "protected_remaining_JSON_sha256": "24d8daa8c2ce2d9f285ddaee02cebdff4d778b4cb54aefeeda0ff3ab93a88e08"
+    },
+    {
+      "path": "方案/子任务T1/质量与性能验收契约.json",
+      "before_sha256": "5a6091acef8f260bf757bf977d09efbeaf33f3a9a35e639c2b4f98d338032d9f",
+      "after_sha256": "50aa508efcd4fe6126f0347fc1f204ba9f496dba48eb2f9de9ff72b3a492142b",
+      "allowed_paths": [
+        "current_document_fingerprints"
+      ],
+      "protected_remaining_JSON_sha256": "935e081c11fadfc1d1195e26a3be7c095a107bbc021b390a78924fb184eee82a"
+    },
+    {
+      "path": "方案/子任务T1/材料检查结果.json",
+      "before_sha256": "604046b40685060bc9358bd48dd4222fbd8d28f69ff46b01a6fccafeebeddb82",
+      "after_sha256": "713e6380544ffca80f401e126e4f5a7a4a27a4ec5ad3e404cda0292965add300",
+      "allowed_paths": [
+        "current_document_fingerprints",
+        "current_document_checks",
+        "current_document_validation",
+        "counts/current_document_files_in_this_increment"
+      ],
+      "protected_remaining_JSON_sha256": "15c5f1049569f0f05d09fe667c58c96eb5365018d7554e8729eb4d37d3be1e23"
+    },
+    {
+      "path": "方案/当前版本.json",
+      "before_sha256": "dffb79c034b725b8bcd2ec83d52720b488ac9ec1e7f086c4b6bba01d08fda77e",
+      "after_sha256": "278d7e0e0f28ef6590cb4e71b280a098694f2d49c92e482e519286f25dba0d2d",
+      "allowed_paths": [
+        "latest_t1_scope_revision/current_plan_sha256",
+        "latest_t1_scope_revision/current_execution_guide_sha256",
+        "latest_t1_scope_revision/current_document_validation",
+        "latest_t1_scope_revision/current_runtime_evidence",
+        "latest_t1_scope_revision/current_UI_refinement"
+      ],
+      "protected_remaining_JSON_sha256": "65365e274a75b83236f6ca6cd7897d7d7ae2398e56cc570703f07b3263194b49"
+    },
+    {
+      "path": "code/README.md",
+      "before_sha256": "3be95741ddaf8fd7e869e841375cc1539e7b6bf3abd344e2a1c9654e39ab6326",
+      "after_sha256": "0417d8b2ce50a4fba66b97ad6b6f7efdfaf255c9af25374966f8fd2cc8d53e94"
+    },
+    {
+      "path": "code/deploy/README.md",
+      "before_sha256": "a094a0e4ccb051b5e609d899fd5a66b2c2a100d9e7a054ecd1a07532fa1d7893",
+      "after_sha256": "f657f6c25af509a1eff26063797af05ba12901e2476afd04c45dd6b7266a25ac"
+    }
+  ],
+  "current_UI_record": "方案/子任务T1/当前版本.json#/current_UI_refinement",
+  "engineering_report": "code/docs/acceptance/linear-ui-2026-11-12/report.json",
+  "runtime_report": "code/docs/acceptance/linear-ui-2026-11-12/ordinary-runtime.json",
+  "unchanged_CSV_and_previous_report_sha256": {
+    "方案/子任务T1/开源项目调研.csv": "43f0d3b82f40ef7a0ff8b045f25fbde8ecf066a19c7fff5edad257c63175f0c4",
+    "方案/子任务T1/验收清单.csv": "61044c97b1ad5d80b0ff387a4d8396cd409f0a534f503fee16aed118cfe21879",
+    "方案/子任务T1/开发任务清单.csv": "45f3b29d678b61e2c98f93128343a71f4baef0faf333da86f0a11b20e4fcccda",
+    "方案/子任务T1/开发阶段与验收.csv": "0926040243d7555e83499c45977026e2aca4fb702bdefa5b06e3adef5aaebc46",
+    "方案/子任务T1/抽取结果字段规范.csv": "fcf56075caf8f6bc96a338946f161afa6785a3e7e4f42427bb2318ecbd8bb992",
+    "方案/子任务T1/待讨论实现决策.csv": "455de05301b0e3b34f2df3de58dc7b8ed9b8aafa619a55d2cfd762452fae6b5e",
+    "code/docs/acceptance/retention-workflow-2026-11-11/report.json": "6cb7e7eea823bc06926a63a9e344347c0c0a2d9c83dba82ee3cd7153271bcad6",
+    "code/docs/acceptance/retention-workflow-2026-11-11/documentation-sync.json": "cda2b147ff0caca90ced1cfe36596dd034f9367bea80ee92b331603df4c3a7ff",
+    "code/docs/acceptance/retention-workflow-2026-11-11/ordinary-runtime.json": "bf810852708548631a99aed580e8843c50e6248a2147a647b10958adaf6174cd",
+    "code/docs/acceptance/resume-2026-11-11/report.json": "58206dade98dcdd5f8c1b2132f5354084f17c6380e98b2c84880153bf51e8145"
+  },
+  "business_protected_JSON_regions_unchanged": true,
+  "previous_task_formal_counters_unchanged": true,
+  "current_UI_task_formal_reviews": {
+    "used": 2,
+    "limit": 3,
+    "record": "code/docs/acceptance/linear-ui-2026-11-12/report.json#/formal_reviews",
+    "scope": "This Linear UI task only; prior retention task2/3 and older3/3 remain untouched.",
+    "remaining": 1,
+    "final_decision": "继续"
+  },
+  "new_user_note_storage": false,
+  "paid_calls": 0,
+  "application_tests_run_by_document_agent": false,
+  "Word_pagination_visually_reviewed": false,
+  "temporary_notes_cleanup_complete": true,
+  "final_standalone_check": {
+    "passed": true,
+    "current_file_hashes_match": true,
+    "protected_non_UI_JSON_content_unchanged": true,
+    "six_CSV_and_four_old_reports_unchanged": true,
+    "business_versions": [
+      "0.8",
+      "0.6"
+    ],
+    "no_new_plan_or_note_storage": true,
+    "owner_engineering_status": "completed",
+    "runtime_status": "passed",
+    "UI_BUILD_ID": "CZGDzqRNcIxnpa5kJ1sVe",
+    "backend_restarted": false,
+    "all_14_tables_env_and_37_source_artifacts_unchanged": true,
+    "paid_calls": 0,
+    "no_temporary_file_dependency": true
+  },
+  "cleanup_scope": "Only this documentation task’s owned temporary helpers/baseline/continuity note; permanent .agent, all other notes and all acceptance evidence retained."
+}

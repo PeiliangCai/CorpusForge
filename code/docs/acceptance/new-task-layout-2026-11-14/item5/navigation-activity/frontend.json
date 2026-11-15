@@ -1,0 +1,103 @@
+{
+  "status": "frontend_verified_not_deployed",
+  "owner": "/root/batch_delete_progress_overlay_1115 GPT-6.1-Sol(max)",
+  "formal_review_shared_used": 3,
+  "formal_review_limit": 3,
+  "baseline_BUILD_ID": "3vStVJbusRhBDfrFvff4U",
+  "BUILD_ID": "ROz92W9UBZF3KuLyh7zeJ",
+  "dist": "apps/pi-web/build/navigation-activity-delivery-validated-20261115",
+  "source_files": [
+    "apps/pi-web/t1/T1Workbench.tsx",
+    "apps/pi-web/t1/workbench.css",
+    "apps/pi-web/t1/RunProgress.tsx",
+    "apps/pi-web/t1/TaskCompletionNotes.tsx",
+    "apps/pi-web/t1/messages.mjs",
+    "apps/pi-web/e2e/navigation-context.mjs",
+    "apps/pi-web/t1/run-activity.ts",
+    "apps/pi-web/t1/run-activity.test.ts",
+    "apps/pi-web/t1/RunActivityDetails.tsx",
+    "apps/pi-web/e2e/navigation-activity.mjs"
+  ],
+  "source_review_diff": "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-activity/frontend.diff",
+  "source_review_diff_sha256": "70e325ce064f4ea2c9335364d875cd5fb49edad46f9c596311737335f23e2a6a",
+  "production_builds": 1,
+  "production_business_writes": 0,
+  "production_exports": 0,
+  "paid_calls": 0,
+  "production_processes_changed": false,
+  "original_note_report_README_written_by_this_owner": false,
+  "checks": {
+    "new_activity_unit_passed": 6,
+    "unit_log": "runtime-data/logs/navigation-activity-1115-unit-final.log",
+    "web_typecheck": "passed; final production build also checks current source types",
+    "touched_lint": "passed_no_errors_or_warnings",
+    "lint_log": "runtime-data/logs/navigation-activity-1115-lint-final.log",
+    "build_log": "runtime-data/logs/navigation-activity-1115-build.log",
+    "same_build_browser": "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-activity/browser-summary.json",
+    "browser_unique_passed": 7,
+    "browser_harness_timing_recheck": 1,
+    "browser_product_rebuild_after_recheck": false
+  },
+  "navigation": {
+    "expanded": "The single collapse control sits next to 抽取任务 in sidebar heading. No top/global toggle remains.",
+    "collapsed": "One visible expand control with icon and 任务 label in left fixed rail; width 44px desktop, 36px mobile.",
+    "mobile": "Existing drawer overlays from the left; its fixed 36px underlying navigation slot keeps main-area geometry constant while opening/closing. Escape closes it.",
+    "accessibility": "Native keyboard buttons, aria-expanded/aria-controls and focus transfer to counterpart on explicit open/close; selecting a global page/task on mobile also closes drawer. Existing desktop separator keyboard resizing and width persistence retained.",
+    "source_panel_bounds": "Collapsed rail width participates in desktop source-panel maximum width. No original-PDF action moved into navigation.",
+    "prior_scope_preserved": "Creation/history remain global with no old source/errors/restore controls; visited tabs, explicit run/source binding and mounted unsubmitted draft are preserved."
+  },
+  "activity": {
+    "authority": "Optional host operation/current_batch/last_request/final termination_reason only. No fabricated token progress or percentage.",
+    "main_display": "One activity line; waiting/receiving/tool/retry based on actual operation receipt. Technical start/attempt/tool/error details stay inside Notes.",
+    "elapsed": "Recorded host elapsed_ms plus local elapsed since the successful exact-run detail receipt while fresh/live. SSE keepalive never refreshes observation.",
+    "freshness": "Disconnected live stream or no successful detail observation for over 30 seconds (three existing ten-second polling intervals) displays recent snapshot and freezes local operation elapsed; this is an observation threshold, not a provider timeout/cancel/retry policy.",
+    "legacy": "No operation receipt means activity unrecorded with latest event time, not assumed model work.",
+    "batches": "Current N only with explicit current_batch_index during extracting; completed/failed batch totals are separate observed facts. Reconciling/terminal states hide current index.",
+    "terminal_priority": "Cancelled/failed/interrupted override leftover operation receipts, stop local timers/indeterminate state and clearly show stopped. Other ended incomplete runs clearly say ended.",
+    "quota_reason": "Only known final host reason on ready partial/failed shows 已停止：调用额度不足，已保留结果. Known time limits use separate truthful time-limit text. Unknown reason or a single provider request failure does not imply quota/provider stop.",
+    "reason_contract_owner": "summary_completion_item5_1115 supplies run-bound final persisted blocker/error projection; frontend did not rewrite histories, ledgers or task state.",
+    "budgets_and_retries": "Existing budgets, provider timeout/retry policy and completion counters untouched."
+  },
+  "selectors": {
+    "collapse": "getByRole(button,{name:收起任务导航,exact:true}) or .t1-sidebar-heading .t1-nav-toggle",
+    "expand": "getByRole(button,{name:展开任务导航,exact:true}) or .t1-nav-rail .t1-nav-toggle",
+    "top_toggle_count_expected": 0,
+    "activity": ".t1-progress-activity[data-activity-status]",
+    "verified_stop": ".t1-progress-activity[data-activity-status=\"stopped\"]",
+    "current_and_completed_batches": ".t1-progress-detail",
+    "notes_technical_details": ".t1-operation-details"
+  },
+  "diagnostics": {
+    "typecheck_duplicate_name": "Renamed the existing event timestamp local from observedAt to eventAt so the new observation prop is distinct; no running product error.",
+    "browser_counter_timing": "Initial one fixed-delay assertion failed; same-build targeted recheck using eventual elapsed transition passed. Six other initial scenarios remained passed."
+  },
+  "limitations": [
+    "Browser actions/data fulfilled in isolated Chromium; no real upload/create/delete/cancel/provider request.",
+    "Desktop and 390px emulation, not a physical mobile-device acceptance.",
+    "Real final quota projection/idle safety and deployment/GET-HEAD preservation owned by summary agent.",
+    "No general performance/medical/throughput claim or storage cleanup scope."
+  ],
+  "screenshots": [
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-activity/after-cancelled.png",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-activity/after-drawer-mobile.png",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-activity/after-quota-stopped.png",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-activity/after-rail-desktop.png",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-activity/after-results-mobile.png",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-activity/after-sidebar-desktop.png",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-activity/after-stale.png",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-activity/counter-fixed-waiting-desktop.png"
+  ],
+  "updated_at_utc": "2026-11-15T11:39:12.323534+00:00",
+  "next": "Root reviews screenshots; summary owner safely deploys this same validated frontend with backend and performs limited real GET/HEAD checks.",
+  "cleanup": {
+    "owned_isolated_frontend_30158_stopped": true,
+    "owned_temporary_baseline_directory_removed": "runtime-data/agent-notes/navigation-activity-1115",
+    "generated_tsconfig_and_next_env_restored": true,
+    "final_same_build_retained": "apps/pi-web/build/navigation-activity-delivery-validated-20261115",
+    "necessary_evidence_screenshots_logs_and_exact_diff_retained": true,
+    "production_processes_signalled": false,
+    "production_business_data_cleaned": false
+  },
+  "root_daily_screenshot_review": "passed; no additional UI change requested; formal reviews remain 3/3",
+  "handoff_completed_at_utc": "2026-11-15T11:40:15.355276+00:00"
+}

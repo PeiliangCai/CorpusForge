@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { resolve, relative } from 'node:path';
-import { ModelConfig, S4_LIMITS } from '@t1/agent';
+import { ExtractionBudget, ModelConfig, S4_LIMITS } from '@t1/agent';
 import type { RunInput } from '@t1/contracts';
 import { unavailableMedicalCatalog } from '../apps/server/src/workflow.js';
-import { assertContainerPlan, ContainerOneRunAllowance, type ContainerRunPlan } from './one-run-allowance.js';
+import { assertContainerPlan, containerResponseModelAliasPolicy, ContainerOneRunAllowance, type ContainerRunPlan } from './one-run-allowance.js';
 
 test('one-container admission binds source/scope, survives restart, starts clock at HTTP and closes remainder without requests', async () => {
   const root = await mkdtemp(resolve('runtime-data/s7-allowance-offline-')), pin = resolve(root, 'pin.txt'), directory = resolve(root, 'workbench/runs/test');
@@ -47,4 +47,40 @@ test('one-container admission binds source/scope, survives restart, starts clock
     await writeFile(pin, 'changed');
     assert.throws(() => new ContainerOneRunAllowance(plan, 'b'.repeat(64), config, process.cwd(), root), /pin_changed/);
   } finally { allowance.close('offline_test_cleanup'); await rm(root, { recursive: true, force: true }); }
+});
+
+test('a one-run trial retains the ordinary exact choices without duplicate aliases or wildcard expansion', async () => {
+  const root = await mkdtemp(resolve('runtime-data/s7-trial-alias-offline-'));
+  const model = { provider: 'agicto', endpoint: 'https://api.agicto.cn/v1', model_id: 'gpt-6-luna', reasoning_effort: 'medium' } as const;
+  const config = new ModelConfig(model.provider, model.endpoint, model.model_id, 'offline-dummy-no-network');
+  const plan: ContainerRunPlan = { schema_version: 's7-one-container-run-1', plan_id: 'offline-exact-name', model,
+    authorization: { authorized_runs: 1, scope: 'S7_single_container_deployment_reverification', observed_at: '2026-11-11T09:03:55Z' },
+    input: { document_id: 'IN04', sha256: 'a'.repeat(64) }, hard_stop_utc: '2026-11-11T10:03:55Z',
+    limits: { ...S4_LIMITS, requests: 24, input_tokens: 600_000, output_tokens: 32_000, seconds: 900, document_seconds: 900, batch_responses: 16 },
+    scope: { scope_version: '1', cancers: { mode: 'all', ids: [] }, image_types: { mode: 'all', ids: [] }, features: { mode: 'all', binding_ids: [] },
+      catalog_version: unavailableMedicalCatalog.catalog_version, matching_policy_version: 'exact-explicit-synonyms-1' },
+    code_sha256: { 'deploy/one-run-allowance.ts': 'a'.repeat(64) },
+    trial_response_model_alias: { basis: 'user_accepted_for_this_trial_only', recorded_at: '2026-11-11T09:03:55Z',
+      authority_path: 'docs/acceptance/continuation-2026-11-11/authority.json', authority_sha256: 'b'.repeat(64),
+      requested_model: 'gpt-6-luna', response_model: 'data-zone-standard-gpt-6-luna', supplier_confirmed: false, weight_identity_verified: false } };
+  try {
+    const original = containerResponseModelAliasPolicy({ ...plan, trial_response_model_alias: undefined }, config)!;
+    const accepted = containerResponseModelAliasPolicy(plan, config)!;
+    assert.deepEqual(accepted.exact_pairs, original.exact_pairs);
+    assert.equal(original.exact_pairs.some(pair => pair.response_model === 'data-zone-standard-gpt-6-luna'), true);
+    for (const [index, name] of ['gpt-6-luna', 'igpt-6-luna', 'data-zone-standard-gpt-6-luna', 'data-zone-standard-gpt-6-luna-v2', 'iigpt-6-luna'].entries()) {
+      const budget = new ExtractionBudget(resolve(root, index + '.json'), 'http://127.0.0.1:1/v1', Date.now, { responseModelAliasPolicy: accepted });
+      const entry = budget.begin('gpt-6-luna', 'offline-no-dispatch', 0, '{}', 100); budget.observeResponseModel(entry, name, 'response.completed');
+      assert.equal(entry.provider_response_model, name);
+      assert.equal(entry.response_model_identity_status, index === 0 ? 'matched' : index < 3 ? 'confirmed_alias' : 'mismatch');
+      assert.equal(budget.ledger.halted, index < 3 ? null : 'response_model_identity_mismatch');
+    }
+    const ordinary = new ExtractionBudget(resolve(root, 'ordinary.json'), 'http://127.0.0.1:1/v1', Date.now, { responseModelAliasPolicy: original });
+    const entry = ordinary.begin('gpt-6-luna', 'ordinary-policy-no-dispatch', 0, '{}', 100);
+    ordinary.observeResponseModel(entry, 'data-zone-standard-gpt-6-luna', 'response.completed'); assert.equal(entry.response_model_identity_status, 'confirmed_alias');
+    assert.throws(() => containerResponseModelAliasPolicy(plan, new ModelConfig('other-provider', model.endpoint, model.model_id, 'offline')), /config_differs/);
+    for (const patch of [{ response_model: 'other-gpt-6-luna' }, { requested_model: 'gpt-6-astra' }, { supplier_confirmed: true }, { authority_path: 'docs/acceptance/../authority.json' }])
+      assert.throws(() => assertContainerPlan({ ...plan, trial_response_model_alias: { ...plan.trial_response_model_alias, ...patch } } as ContainerRunPlan), /invalid_container_trial_response_alias/);
+    assert.deepEqual(containerResponseModelAliasPolicy({ ...plan, trial_response_model_alias: undefined }, config), original);
+  } finally { await rm(root, { recursive: true, force: true }); }
 });

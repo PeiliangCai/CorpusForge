@@ -1,0 +1,1868 @@
+{
+  "schema_version": "verbatim-figure-delivery-1",
+  "output_policy": "verbatim-fragments-1",
+  "document_id": "paper-281379c7-3582-4f64-a6c4-9af96ea83e60",
+  "file_sha256": "50427f2871550116a3ef9530b09fe5a8591299f6352ab58af1aaa46273437a3b",
+  "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+  "fixture": false,
+  "scope_snapshots": [
+    {
+      "scope_version": "1",
+      "cancers": {
+        "mode": "all",
+        "ids": []
+      },
+      "image_types": {
+        "mode": "all",
+        "ids": []
+      },
+      "features": {
+        "mode": "all",
+        "binding_ids": []
+      },
+      "catalog_version": "medical-unavailable-1",
+      "matching_policy_version": "exact-explicit-synonyms-1"
+    }
+  ],
+  "records": [
+    {
+      "record_id": "ev-169072043bf2f62ed0dcce9b9586475064a4c4b3",
+      "record_version": 4,
+      "run_id": "run-1cd86d00-1256-465a-8a9a-cddd2a8294ac",
+      "document_id": "paper-281379c7-3582-4f64-a6c4-9af96ea83e60",
+      "original_fragments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000013",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 55,
+          "exact_quote": "PET-CT demonstrated intense FDG uptake (SUVmax 14.0) in",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            63.61029999999995,
+            282.5469000000003,
+            290.6721999999999,
+            290.81470196629243
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000014",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 66,
+          "exact_quote": "the dominant lesion without metabolically active satellite nodules",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            49.60719999999995,
+            295.0758000000003,
+            290.656,
+            303.34360196629245
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000015",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 11,
+          "exact_quote": "(Figure 2).",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            49.60719999999995,
+            307.54800000000034,
+            290.7000999999998,
+            315.8158019662925
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "context_fragments": [],
+      "source_record_sha256": "289aa2550c5ceba11ccdb1e18170f9a7819d49c390469747daf96283d02fb7d7",
+      "evidence_policy_version": "visual-statements-2",
+      "source_evidence_unit_version": "literal-source-sentences-4",
+      "text_fingerprint": "9f9d31ab26db0a657183c9b62f5fb8b5bbdc73698b61c245bbdb9633007267ff",
+      "figure_association": {
+        "status": "pending",
+        "figure_ids": [],
+        "proposed_figure_ids": [
+          "figure-238cb9a0ed7333a79112612d"
+        ],
+        "exact_markers": [
+          {
+            "number": "2",
+            "panel": null,
+            "exact_marker": "Figure 2",
+            "complex": false
+          }
+        ],
+        "reasons": [
+          "Figure 2: complete Figure region/panels and caption identity need source-page verification."
+        ],
+        "no_figure_claimed": false,
+        "human_approved": false
+      },
+      "review_status": "needs_context",
+      "primary_assessment": {
+        "policy_version": "model-primary-assessment-1",
+        "value": "visual_evidence_suggested",
+        "status": "reviewed_unapproved",
+        "model_id": "gpt-6-luna",
+        "record_version": 4,
+        "source_record_sha256": "289aa2550c5ceba11ccdb1e18170f9a7819d49c390469747daf96283d02fb7d7",
+        "record_actor": "automatic",
+        "effective_role": "primary_candidate",
+        "human_approved": false
+      },
+      "delivery_fingerprint": "a472eb323919f3b258bf11cf1ce6fac58afd6ae2ab28471c066b24707e0a952e",
+      "export_review_status": "candidate",
+      "human_confirmation": null,
+      "legacy_text_review_events": []
+    },
+    {
+      "record_id": "ev-20c09b458a99fd0c8f03a32e8c011c33df7305e2",
+      "record_version": 3,
+      "run_id": "run-1cd86d00-1256-465a-8a9a-cddd2a8294ac",
+      "document_id": "paper-281379c7-3582-4f64-a6c4-9af96ea83e60",
+      "original_fragments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000013",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 55,
+          "exact_quote": "PET-CT demonstrated intense FDG uptake (SUVmax 14.0) in",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            63.61029999999995,
+            282.5469000000003,
+            290.6721999999999,
+            290.81470196629243
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000014",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 66,
+          "exact_quote": "the dominant lesion without metabolically active satellite nodules",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            49.60719999999995,
+            295.0758000000003,
+            290.656,
+            303.34360196629245
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000015",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 11,
+          "exact_quote": "(Figure 2).",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            49.60719999999995,
+            307.54800000000034,
+            290.7000999999998,
+            315.8158019662925
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "context_fragments": [],
+      "source_record_sha256": "02977f805a538f33e3135b7f7f6ed6657bc40eb5f0276de8b5c3495b4c21e195",
+      "evidence_policy_version": "visual-statements-2",
+      "source_evidence_unit_version": "literal-source-sentences-4",
+      "text_fingerprint": "b1749db2ed5b8a45442c04b85692c74035be9ccda042081f64385b2151a9b14c",
+      "figure_association": {
+        "status": "pending",
+        "figure_ids": [],
+        "proposed_figure_ids": [
+          "figure-238cb9a0ed7333a79112612d"
+        ],
+        "exact_markers": [
+          {
+            "number": "2",
+            "panel": null,
+            "exact_marker": "Figure 2",
+            "complex": false
+          }
+        ],
+        "reasons": [
+          "Figure 2: complete Figure region/panels and caption identity need source-page verification."
+        ],
+        "no_figure_claimed": false,
+        "human_approved": false
+      },
+      "review_status": "needs_context",
+      "primary_assessment": {
+        "policy_version": "model-primary-assessment-1",
+        "value": "visual_evidence_suggested",
+        "status": "reviewed_unapproved",
+        "model_id": "gpt-6-luna",
+        "record_version": 3,
+        "source_record_sha256": "02977f805a538f33e3135b7f7f6ed6657bc40eb5f0276de8b5c3495b4c21e195",
+        "record_actor": "automatic",
+        "effective_role": "primary_candidate",
+        "human_approved": false
+      },
+      "delivery_fingerprint": "b07e4b48316681396a47c821ff5930df46164dff9d22c5ed67a3ac071901fefd",
+      "export_review_status": "candidate",
+      "human_confirmation": null,
+      "legacy_text_review_events": []
+    },
+    {
+      "record_id": "ev-67fb7ed4ab45267553f5f62a9fdc8340ab954d4c",
+      "record_version": 3,
+      "run_id": "run-1cd86d00-1256-465a-8a9a-cddd2a8294ac",
+      "document_id": "paper-281379c7-3582-4f64-a6c4-9af96ea83e60",
+      "original_fragments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0004-l000062",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 8,
+          "exact_quote": "FIGURE 3",
+          "occurrence": 0,
+          "physical_page": 4,
+          "bbox": [
+            60.8315,
+            342.488729,
+            85.06769065,
+            347.548821
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0004-l000063",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 132,
+          "exact_quote": "Core biopsies showing the tumor with glandular architecture [H&E stain, power of magnification ×100 (A), ×200 (B, C), and ×400 (D)].",
+          "occurrence": 0,
+          "physical_page": 4,
+          "bbox": [
+            60.8315,
+            350.43807100000004,
+            487.11841010000006,
+            356.87797900000004
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "context_fragments": [],
+      "source_record_sha256": "ed9128feeb464cca1fb25510b144b3ac654180cac755ced00e166f9dc41926a0",
+      "evidence_policy_version": "visual-statements-2",
+      "source_evidence_unit_version": "literal-source-sentences-4",
+      "text_fingerprint": "30f9b05e58cbc1dd0296ea3d61ab0eaad23df1716a272041205fb725b6050754",
+      "figure_association": {
+        "status": "pending",
+        "figure_ids": [],
+        "proposed_figure_ids": [
+          "figure-585f21cde5ec4e495da3bc44"
+        ],
+        "exact_markers": [
+          {
+            "number": "3",
+            "panel": null,
+            "exact_marker": "FIGURE 3",
+            "complex": false
+          }
+        ],
+        "reasons": [
+          "Figure 3: complete Figure region/panels and caption identity need source-page verification."
+        ],
+        "no_figure_claimed": false,
+        "human_approved": false
+      },
+      "review_status": "needs_context",
+      "primary_assessment": {
+        "policy_version": "model-primary-assessment-1",
+        "value": "visual_evidence_suggested",
+        "status": "reviewed_unapproved",
+        "model_id": "gpt-6-luna",
+        "record_version": 3,
+        "source_record_sha256": "ed9128feeb464cca1fb25510b144b3ac654180cac755ced00e166f9dc41926a0",
+        "record_actor": "automatic",
+        "effective_role": "primary_candidate",
+        "human_approved": false
+      },
+      "delivery_fingerprint": "f0a9cebab4d785d569590d50a9e8ed2cef60bbde43d7a8007af6c16c5940783c",
+      "export_review_status": "candidate",
+      "human_confirmation": null,
+      "legacy_text_review_events": []
+    },
+    {
+      "record_id": "ev-6a79fb134428ff73881043af1ef00770738f5769",
+      "record_version": 6,
+      "run_id": "run-1cd86d00-1256-465a-8a9a-cddd2a8294ac",
+      "document_id": "paper-281379c7-3582-4f64-a6c4-9af96ea83e60",
+      "original_fragments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000005",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 59,
+          "exact_quote": "A 70-year-old male ex-smoker (30 pack-years) presented with",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            63.6094,
+            182.54250000000002,
+            290.6614000000002,
+            190.81030196629217
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000006",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 58,
+          "exact_quote": "an incidentally detected 18×11 mm spiculated nodule in the",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            49.606300000000005,
+            195.07140000000004,
+            290.69830000000013,
+            203.3392019662922
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000007",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 63,
+          "exact_quote": "anterior segment of the left upper lobe on chest CT (Figure 1).",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            49.606300000000005,
+            207.54360000000008,
+            290.66859999999997,
+            215.81140196629224
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "context_fragments": [],
+      "source_record_sha256": "fe5f119c2280b0f834959ceb1a7646b2b3491f92987420bfddfb5158c10b9420",
+      "evidence_policy_version": "visual-statements-2",
+      "source_evidence_unit_version": "literal-source-sentences-4",
+      "text_fingerprint": "8c1b0d7f4751c84c413793906aff0c074dc972eebfba5d98a9715884fbd73896",
+      "figure_association": {
+        "status": "pending",
+        "figure_ids": [],
+        "proposed_figure_ids": [
+          "figure-6f0c283fc60db961c220377d"
+        ],
+        "exact_markers": [
+          {
+            "number": "1",
+            "panel": null,
+            "exact_marker": "Figure 1",
+            "complex": false
+          }
+        ],
+        "reasons": [
+          "Figure 1: complete Figure region/panels and caption identity need source-page verification."
+        ],
+        "no_figure_claimed": false,
+        "human_approved": false
+      },
+      "review_status": "needs_context",
+      "primary_assessment": {
+        "policy_version": "model-primary-assessment-1",
+        "value": "visual_evidence_suggested",
+        "status": "reviewed_unapproved",
+        "model_id": "gpt-6-luna",
+        "record_version": 6,
+        "source_record_sha256": "fe5f119c2280b0f834959ceb1a7646b2b3491f92987420bfddfb5158c10b9420",
+        "record_actor": "automatic",
+        "effective_role": "primary_candidate",
+        "human_approved": false
+      },
+      "delivery_fingerprint": "133149fd30aebc6415a111225b9f51aa0f936dcbbc053ec04ca96d5dec2df2e7",
+      "export_review_status": "candidate",
+      "human_confirmation": null,
+      "legacy_text_review_events": []
+    },
+    {
+      "record_id": "ev-711ce8cd831a3c30385344e9adc6974da54fc7d1",
+      "record_version": 3,
+      "run_id": "run-1cd86d00-1256-465a-8a9a-cddd2a8294ac",
+      "document_id": "paper-281379c7-3582-4f64-a6c4-9af96ea83e60",
+      "original_fragments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000063",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 134,
+          "exact_quote": "Chest CT images [lung window (A)/mediastinal window (B)] demonstrate an 18×11 mm spiculated nodule in the left upper lobe (red arrow).",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            60.8315,
+            753.241071,
+            502.9332841699999,
+            759.680979
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "context_fragments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000062",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 8,
+          "exact_quote": "FIGURE 1",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            60.8315,
+            745.348429,
+            84.72668445000001,
+            750.4085210000001
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "source_record_sha256": "80b9b39a3cfae7c7a7a0f00c9574ebb2a74637146c764db45c2222beaef3ca46",
+      "evidence_policy_version": "visual-statements-2",
+      "source_evidence_unit_version": "literal-source-sentences-4",
+      "text_fingerprint": "cbe4b72951b9f46a7738ed36f0ae9f72d0156e24dae1d9f289527c980b0653b4",
+      "figure_association": {
+        "status": "pending",
+        "figure_ids": [],
+        "proposed_figure_ids": [
+          "figure-6f0c283fc60db961c220377d"
+        ],
+        "exact_markers": [],
+        "reasons": [
+          "Figure 1: complete Figure region/panels and caption identity need source-page verification."
+        ],
+        "no_figure_claimed": false,
+        "human_approved": false
+      },
+      "review_status": "needs_context",
+      "primary_assessment": {
+        "policy_version": "model-primary-assessment-1",
+        "value": "visual_evidence_suggested",
+        "status": "reviewed_unapproved",
+        "model_id": "gpt-6-luna",
+        "record_version": 3,
+        "source_record_sha256": "80b9b39a3cfae7c7a7a0f00c9574ebb2a74637146c764db45c2222beaef3ca46",
+        "record_actor": "automatic",
+        "effective_role": "primary_candidate",
+        "human_approved": false
+      },
+      "delivery_fingerprint": "438403169a0d6166b49f18d0dbeb62b5380c0352972e9c60407a7a5dbf0942c2",
+      "export_review_status": "candidate",
+      "human_confirmation": null,
+      "legacy_text_review_events": []
+    },
+    {
+      "record_id": "ev-95f8b56dbae85c149e7f596a725a271a9a62192a",
+      "record_version": 3,
+      "run_id": "run-1cd86d00-1256-465a-8a9a-cddd2a8294ac",
+      "document_id": "paper-281379c7-3582-4f64-a6c4-9af96ea83e60",
+      "original_fragments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000005",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 59,
+          "exact_quote": "A 70-year-old male ex-smoker (30 pack-years) presented with",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            63.6094,
+            182.54250000000002,
+            290.6614000000002,
+            190.81030196629217
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000006",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 58,
+          "exact_quote": "an incidentally detected 18×11 mm spiculated nodule in the",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            49.606300000000005,
+            195.07140000000004,
+            290.69830000000013,
+            203.3392019662922
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000007",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 63,
+          "exact_quote": "anterior segment of the left upper lobe on chest CT (Figure 1).",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            49.606300000000005,
+            207.54360000000008,
+            290.66859999999997,
+            215.81140196629224
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "context_fragments": [],
+      "source_record_sha256": "412d2faec439cde58fcf9b7a3901d11e09905e35b06ad929d2a97877b2eed117",
+      "evidence_policy_version": "visual-statements-2",
+      "source_evidence_unit_version": "literal-source-sentences-4",
+      "text_fingerprint": "93e95c6a8f4a50e67b52faf83a4d71d8a8335e6781816a56c69d47a6a8cd8e82",
+      "figure_association": {
+        "status": "pending",
+        "figure_ids": [],
+        "proposed_figure_ids": [
+          "figure-6f0c283fc60db961c220377d"
+        ],
+        "exact_markers": [
+          {
+            "number": "1",
+            "panel": null,
+            "exact_marker": "Figure 1",
+            "complex": false
+          }
+        ],
+        "reasons": [
+          "Figure 1: complete Figure region/panels and caption identity need source-page verification."
+        ],
+        "no_figure_claimed": false,
+        "human_approved": false
+      },
+      "review_status": "needs_context",
+      "primary_assessment": {
+        "policy_version": "model-primary-assessment-1",
+        "value": "visual_evidence_suggested",
+        "status": "reviewed_unapproved",
+        "model_id": "gpt-6-luna",
+        "record_version": 3,
+        "source_record_sha256": "412d2faec439cde58fcf9b7a3901d11e09905e35b06ad929d2a97877b2eed117",
+        "record_actor": "automatic",
+        "effective_role": "primary_candidate",
+        "human_approved": false
+      },
+      "delivery_fingerprint": "b1ad585f3093313cd89a1e6b1f0f6e48b935c5ac9637e333caed26a478484d16",
+      "export_review_status": "candidate",
+      "human_confirmation": null,
+      "legacy_text_review_events": []
+    },
+    {
+      "record_id": "ev-e3d9c217754234522cbcc56566ce3e23fdffbde5",
+      "record_version": 5,
+      "run_id": "run-1cd86d00-1256-465a-8a9a-cddd2a8294ac",
+      "document_id": "paper-281379c7-3582-4f64-a6c4-9af96ea83e60",
+      "original_fragments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000013",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 55,
+          "exact_quote": "PET-CT demonstrated intense FDG uptake (SUVmax 14.0) in",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            63.61029999999995,
+            282.5469000000003,
+            290.6721999999999,
+            290.81470196629243
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000014",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 66,
+          "exact_quote": "the dominant lesion without metabolically active satellite nodules",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            49.60719999999995,
+            295.0758000000003,
+            290.656,
+            303.34360196629245
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000015",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 11,
+          "exact_quote": "(Figure 2).",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            49.60719999999995,
+            307.54800000000034,
+            290.7000999999998,
+            315.8158019662925
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "context_fragments": [],
+      "source_record_sha256": "ceb11658852b2a06e25ef12b0c92f11400db0872c3e5fc4d497beea42cf2d7d1",
+      "evidence_policy_version": "visual-statements-2",
+      "source_evidence_unit_version": "literal-source-sentences-4",
+      "text_fingerprint": "6bfcb83eb7d6f24c4d125df8765d7d564c1b8f2ddeddf1e774a512d08f12ba83",
+      "figure_association": {
+        "status": "pending",
+        "figure_ids": [],
+        "proposed_figure_ids": [
+          "figure-238cb9a0ed7333a79112612d"
+        ],
+        "exact_markers": [
+          {
+            "number": "2",
+            "panel": null,
+            "exact_marker": "Figure 2",
+            "complex": false
+          }
+        ],
+        "reasons": [
+          "Figure 2: complete Figure region/panels and caption identity need source-page verification."
+        ],
+        "no_figure_claimed": false,
+        "human_approved": false
+      },
+      "review_status": "needs_context",
+      "primary_assessment": {
+        "policy_version": "model-primary-assessment-1",
+        "value": "visual_evidence_suggested",
+        "status": "reviewed_unapproved",
+        "model_id": "gpt-6-luna",
+        "record_version": 5,
+        "source_record_sha256": "ceb11658852b2a06e25ef12b0c92f11400db0872c3e5fc4d497beea42cf2d7d1",
+        "record_actor": "automatic",
+        "effective_role": "primary_candidate",
+        "human_approved": false
+      },
+      "delivery_fingerprint": "5ec2925bd4e625a7049eb20c713460ff8dda4cd2be15e80d66316634e9988739",
+      "export_review_status": "candidate",
+      "human_confirmation": null,
+      "legacy_text_review_events": []
+    },
+    {
+      "record_id": "ev-f9e62b0aaae636ded5408e867574942248c9c82d",
+      "record_version": 3,
+      "run_id": "run-1cd86d00-1256-465a-8a9a-cddd2a8294ac",
+      "document_id": "paper-281379c7-3582-4f64-a6c4-9af96ea83e60",
+      "original_fragments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0003-l000039",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 138,
+          "exact_quote": "Head + torso 18F-FDG PET/CT revealed a heterogeneous FDG uptake in the left upper lobe (SUVmax = 14.0), with no evidence of hypermetabolic",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            60.8315,
+            487.8539703,
+            526.6132458799999,
+            494.244879
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0003-l000040",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 38,
+          "exact_quote": "lesions in the gastrointestinal tract.",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            60.8315,
+            496.81944222000004,
+            531.9170701099998,
+            503.25935022000004
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "context_fragments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0003-l000038",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 8,
+          "exact_quote": "FIGURE 2",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            60.8315,
+            479.912329,
+            85.06769065,
+            484.972421
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "source_record_sha256": "860d1f1c87f97865d5543c1ba6b4c890f5fa1f8d15d9413c29009803fbb5e37d",
+      "evidence_policy_version": "visual-statements-2",
+      "source_evidence_unit_version": "literal-source-sentences-4",
+      "text_fingerprint": "5c28ff4cbffba3f2cd427bbe8bc21f9654612fc9b288231575fa4177bac82dfb",
+      "figure_association": {
+        "status": "pending",
+        "figure_ids": [],
+        "proposed_figure_ids": [
+          "figure-238cb9a0ed7333a79112612d"
+        ],
+        "exact_markers": [],
+        "reasons": [
+          "Figure 2: complete Figure region/panels and caption identity need source-page verification."
+        ],
+        "no_figure_claimed": false,
+        "human_approved": false
+      },
+      "review_status": "needs_context",
+      "primary_assessment": {
+        "policy_version": "model-primary-assessment-1",
+        "value": "visual_evidence_suggested",
+        "status": "reviewed_unapproved",
+        "model_id": "gpt-6-luna",
+        "record_version": 3,
+        "source_record_sha256": "860d1f1c87f97865d5543c1ba6b4c890f5fa1f8d15d9413c29009803fbb5e37d",
+        "record_actor": "automatic",
+        "effective_role": "primary_candidate",
+        "human_approved": false
+      },
+      "delivery_fingerprint": "62c9aeba955f095ef684a30f59ef9d88533af513e42234a2646afb7e14ad1480",
+      "export_review_status": "candidate",
+      "human_confirmation": null,
+      "legacy_text_review_events": []
+    }
+  ],
+  "primary_assessment_policy_version": "model-primary-assessment-1",
+  "background_records": [],
+  "figures": [
+    {
+      "figure_id": "figure-6f0c283fc60db961c220377d",
+      "figure_number": "1",
+      "caption_segments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000062",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 8,
+          "exact_quote": "FIGURE 1",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            60.8315,
+            745.348429,
+            84.72668445000001,
+            750.4085210000001
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0002-l000063",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 134,
+          "exact_quote": "Chest CT images [lung window (A)/mediastinal window (B)] demonstrate an 18×11 mm spiculated nodule in the left upper lobe (red arrow).",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            60.8315,
+            753.241071,
+            502.9332841699999,
+            759.680979
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "panel_labels": [
+        "(A)",
+        "(B)"
+      ],
+      "native_picture_ids": [
+        "dcb0bc03c894af51-u-d979464646c855f5"
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Standalone original label and adjoining same-style caption lines retained by source geometry; relation and completeness require original-page review. Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      },
+      "regions": [
+        {
+          "asset_id": "figure-6f0c283fc60db961c220377d-0",
+          "path": "runtime-data/workbench/runs/run-1cd86d00-1256-465a-8a9a-cddd2a8294ac/figure-assets/figure-6f0c283fc60db961c220377d-p2-0.png",
+          "sha256": "6824bc255b89b6aceaadf6e229945cf144d2a1c09286f39e21f11da6ee5aebd0",
+          "mime_type": "image/png",
+          "physical_page": 2,
+          "bbox": [
+            98.28714390130011,
+            537.4424630374139,
+            496.66651946355836,
+            736.8437633353843
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 798,
+          "height_px": 400,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "50427f2871550116a3ef9530b09fe5a8591299f6352ab58af1aaa46273437a3b",
+          "visual_modification": "none"
+        }
+      ]
+    },
+    {
+      "figure_id": "figure-585f21cde5ec4e495da3bc44",
+      "figure_number": "3",
+      "caption_segments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0004-l000062",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 8,
+          "exact_quote": "FIGURE 3",
+          "occurrence": 0,
+          "physical_page": 4,
+          "bbox": [
+            60.8315,
+            342.488729,
+            85.06769065,
+            347.548821
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0004-l000063",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 132,
+          "exact_quote": "Core biopsies showing the tumor with glandular architecture [H&E stain, power of magnification ×100 (A), ×200 (B, C), and ×400 (D)].",
+          "occurrence": 0,
+          "physical_page": 4,
+          "bbox": [
+            60.8315,
+            350.43807100000004,
+            487.11841010000006,
+            356.87797900000004
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "panel_labels": [
+        "(A)",
+        "(D)"
+      ],
+      "native_picture_ids": [
+        "dcb0bc03c894af51-u-c8f62683e6875b47"
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      },
+      "regions": [
+        {
+          "asset_id": "figure-585f21cde5ec4e495da3bc44-0",
+          "path": "runtime-data/workbench/runs/run-1cd86d00-1256-465a-8a9a-cddd2a8294ac/figure-assets/figure-585f21cde5ec4e495da3bc44-p4-0.png",
+          "sha256": "c33d71e300a7a7e6e2178e50a138e56109e7539526b2972c06935a9ae3eb40b0",
+          "mime_type": "image/png",
+          "physical_page": 4,
+          "bbox": [
+            84.16683829637822,
+            93.64265858009139,
+            511.0765363059844,
+            333.94767847045756
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 855,
+          "height_px": 482,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "50427f2871550116a3ef9530b09fe5a8591299f6352ab58af1aaa46273437a3b",
+          "visual_modification": "none"
+        }
+      ]
+    },
+    {
+      "figure_id": "figure-238cb9a0ed7333a79112612d",
+      "figure_number": "2",
+      "caption_segments": [
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0003-l000038",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 8,
+          "exact_quote": "FIGURE 2",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            60.8315,
+            479.912329,
+            85.06769065,
+            484.972421
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0003-l000039",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 138,
+          "exact_quote": "Head + torso 18F-FDG PET/CT revealed a heterogeneous FDG uptake in the left upper lobe (SUVmax = 14.0), with no evidence of hypermetabolic",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            60.8315,
+            487.8539703,
+            526.6132458799999,
+            494.244879
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "e81cc534bfd4ea6029d8-p0003-l000040",
+          "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+          "start": 0,
+          "end": 153,
+          "exact_quote": "lesions in the gastrointestinal tract. (A) PET maximum intensity projection (MIP) image, (B) axial PET image, (C) axial CT image, (D) axial fusion image.",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            60.8315,
+            496.81944222000004,
+            531.9170701099998,
+            503.25935022000004
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "panel_labels": [
+        "F-F",
+        "(A)",
+        "(B)",
+        "(C)",
+        "(D)"
+      ],
+      "native_picture_ids": [
+        "dcb0bc03c894af51-u-6b09bd1511e2a8e5"
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Standalone original label and adjoining same-style caption lines retained by source geometry; relation and completeness require original-page review. Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      },
+      "regions": [
+        {
+          "asset_id": "figure-238cb9a0ed7333a79112612d-0",
+          "path": "runtime-data/workbench/runs/run-1cd86d00-1256-465a-8a9a-cddd2a8294ac/figure-assets/figure-238cb9a0ed7333a79112612d-p3-0.png",
+          "sha256": "44cc7d85f36622c53d91c360e67ea18d4555fafe4b7aa66c43a567d27c998d45",
+          "mime_type": "image/png",
+          "physical_page": 3,
+          "bbox": [
+            98.69626232490283,
+            94.05326077744394,
+            496.54640347115946,
+            471.49718769202155
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 797,
+          "height_px": 756,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "50427f2871550116a3ef9530b09fe5a8591299f6352ab58af1aaa46273437a3b",
+          "visual_modification": "none"
+        }
+      ]
+    }
+  ],
+  "full_recall_claimed": false,
+  "medical_quality_approved": false,
+  "source_glyph_check": {
+    "status": "checked_with_gaps",
+    "detects_all_font_encoding_errors": false,
+    "source_page_review_still_required": true
+  },
+  "strict_source_groups": [
+    {
+      "group_id": "source-group-04a223e2ba7ac95491ebb186cbed189b6a8b898d0e59c432b60af28e5fbb60f2",
+      "member_count": 1,
+      "members": [
+        {
+          "record_id": "ev-67fb7ed4ab45267553f5f62a9fdc8340ab954d4c",
+          "record_version": 3,
+          "source_record_sha256": "ed9128feeb464cca1fb25510b144b3ac654180cac755ced00e166f9dc41926a0",
+          "record_actor": "automatic",
+          "review_status": "needs_context",
+          "review_events": [],
+          "source_attribution": {
+            "origin": "study_authors",
+            "cited_references": [],
+            "evidence": [
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0004-l000062",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 8,
+                "exact_quote": "FIGURE 3",
+                "occurrence": 0,
+                "physical_page": 4,
+                "bbox": [
+                  60.8315,
+                  342.488729,
+                  85.06769065,
+                  347.548821
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              },
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0004-l000063",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 132,
+                "exact_quote": "Core biopsies showing the tumor with glandular architecture [H&E stain, power of magnification ×100 (A), ×200 (B, C), and ×400 (D)].",
+                "occurrence": 0,
+                "physical_page": 4,
+                "bbox": [
+                  60.8315,
+                  350.43807100000004,
+                  487.11841010000006,
+                  356.87797900000004
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              }
+            ]
+          },
+          "feature_name_raw": "glandular architecture",
+          "feature_category": "Tumor histologic architecture",
+          "model_semantic_review_unapproved": {
+            "status": "reviewed_unapproved",
+            "model_id": "gpt-6-luna",
+            "issue_codes": [
+              "histology_visual_caption",
+              "magnification_and_panels_retained",
+              "Figure_reference_not_external_citation"
+            ],
+            "primary_assessment": "visual_evidence_suggested",
+            "assessment_policy_version": "model-primary-assessment-1"
+          },
+          "effective_role": "primary_candidate",
+          "structure_references_untrusted": [],
+          "figure_association": {
+            "status": "pending",
+            "figure_ids": [],
+            "proposed_figure_ids": [
+              "figure-585f21cde5ec4e495da3bc44"
+            ],
+            "exact_markers": [
+              {
+                "number": "3",
+                "panel": null,
+                "exact_marker": "FIGURE 3",
+                "complex": false
+              }
+            ],
+            "reasons": [
+              "Figure 3: complete Figure region/panels and caption identity need source-page verification."
+            ],
+            "no_figure_claimed": false,
+            "human_approved": false
+          },
+          "human_confirmation": null
+        }
+      ],
+      "attribution_conflict": false,
+      "role_conflict": false,
+      "figure_association_conflict": false,
+      "human_review_disagreement": false,
+      "internal_reference_attribution_needs_review": false,
+      "status": "single_source_candidate",
+      "needs_review": false,
+      "mechanical_only": true,
+      "medical_quality_approved": false,
+      "automatic_member_selection": false
+    },
+    {
+      "group_id": "source-group-2f867da1e0d6c0f0d98c41e5f2537f8c49b12b3817e1335fe94087a50c2bd738",
+      "member_count": 1,
+      "members": [
+        {
+          "record_id": "ev-f9e62b0aaae636ded5408e867574942248c9c82d",
+          "record_version": 3,
+          "source_record_sha256": "860d1f1c87f97865d5543c1ba6b4c890f5fa1f8d15d9413c29009803fbb5e37d",
+          "record_actor": "automatic",
+          "review_status": "needs_context",
+          "review_events": [],
+          "source_attribution": {
+            "origin": "study_authors",
+            "cited_references": [],
+            "evidence": [
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0003-l000039",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 138,
+                "exact_quote": "Head + torso 18F-FDG PET/CT revealed a heterogeneous FDG uptake in the left upper lobe (SUVmax = 14.0), with no evidence of hypermetabolic",
+                "occurrence": 0,
+                "physical_page": 3,
+                "bbox": [
+                  60.8315,
+                  487.8539703,
+                  526.6132458799999,
+                  494.244879
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              },
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0003-l000040",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 38,
+                "exact_quote": "lesions in the gastrointestinal tract.",
+                "occurrence": 0,
+                "physical_page": 3,
+                "bbox": [
+                  60.8315,
+                  496.81944222000004,
+                  531.9170701099998,
+                  503.25935022000004
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              }
+            ]
+          },
+          "feature_name_raw": "heterogeneous FDG uptake",
+          "feature_category": "PET/CT uptake and lesion distribution",
+          "model_semantic_review_unapproved": {
+            "status": "reviewed_unapproved",
+            "model_id": "gpt-6-luna",
+            "issue_codes": [
+              "caption_uptake_and_negated_GI_lesions",
+              "caption_panel_image_types_retained",
+              "Figure_number_not_proof_of_external_source"
+            ],
+            "primary_assessment": "visual_evidence_suggested",
+            "assessment_policy_version": "model-primary-assessment-1"
+          },
+          "effective_role": "primary_candidate",
+          "structure_references_untrusted": [],
+          "figure_association": {
+            "status": "pending",
+            "figure_ids": [],
+            "proposed_figure_ids": [
+              "figure-238cb9a0ed7333a79112612d"
+            ],
+            "exact_markers": [],
+            "reasons": [
+              "Figure 2: complete Figure region/panels and caption identity need source-page verification."
+            ],
+            "no_figure_claimed": false,
+            "human_approved": false
+          },
+          "human_confirmation": null
+        }
+      ],
+      "attribution_conflict": false,
+      "role_conflict": false,
+      "figure_association_conflict": false,
+      "human_review_disagreement": false,
+      "internal_reference_attribution_needs_review": false,
+      "status": "single_source_candidate",
+      "needs_review": false,
+      "mechanical_only": true,
+      "medical_quality_approved": false,
+      "automatic_member_selection": false
+    },
+    {
+      "group_id": "source-group-35144447287447c491fe64ae57b1c128179df85ee4662a4923935c78ddf9d7f8",
+      "member_count": 1,
+      "members": [
+        {
+          "record_id": "ev-95f8b56dbae85c149e7f596a725a271a9a62192a",
+          "record_version": 3,
+          "source_record_sha256": "412d2faec439cde58fcf9b7a3901d11e09905e35b06ad929d2a97877b2eed117",
+          "record_actor": "automatic",
+          "review_status": "needs_context",
+          "review_events": [],
+          "source_attribution": {
+            "origin": "study_authors",
+            "cited_references": [
+              "Figure 1"
+            ],
+            "evidence": [
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000005",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 59,
+                "exact_quote": "A 70-year-old male ex-smoker (30 pack-years) presented with",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  63.6094,
+                  182.54250000000002,
+                  290.6614000000002,
+                  190.81030196629217
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              },
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000006",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 58,
+                "exact_quote": "an incidentally detected 18×11 mm spiculated nodule in the",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  49.606300000000005,
+                  195.07140000000004,
+                  290.69830000000013,
+                  203.3392019662922
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              },
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000007",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 63,
+                "exact_quote": "anterior segment of the left upper lobe on chest CT (Figure 1).",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  49.606300000000005,
+                  207.54360000000008,
+                  290.66859999999997,
+                  215.81140196629224
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              }
+            ]
+          },
+          "feature_name_raw": "spiculated",
+          "feature_category": "nodule morphology and dimensions",
+          "model_semantic_review_unapproved": {
+            "status": "reviewed_unapproved",
+            "model_id": "gpt-6-luna",
+            "issue_codes": [
+              "same_complete_case_sentence_duplicate_member",
+              "patient_context_not_independent"
+            ],
+            "primary_assessment": "visual_evidence_suggested",
+            "assessment_policy_version": "model-primary-assessment-1"
+          },
+          "effective_role": "primary_candidate",
+          "structure_references_untrusted": [],
+          "figure_association": {
+            "status": "pending",
+            "figure_ids": [],
+            "proposed_figure_ids": [
+              "figure-6f0c283fc60db961c220377d"
+            ],
+            "exact_markers": [
+              {
+                "number": "1",
+                "panel": null,
+                "exact_marker": "Figure 1",
+                "complex": false
+              }
+            ],
+            "reasons": [
+              "Figure 1: complete Figure region/panels and caption identity need source-page verification."
+            ],
+            "no_figure_claimed": false,
+            "human_approved": false
+          },
+          "human_confirmation": null
+        }
+      ],
+      "attribution_conflict": false,
+      "role_conflict": false,
+      "figure_association_conflict": false,
+      "human_review_disagreement": false,
+      "internal_reference_attribution_needs_review": false,
+      "status": "single_source_candidate",
+      "needs_review": false,
+      "mechanical_only": true,
+      "medical_quality_approved": false,
+      "automatic_member_selection": false
+    },
+    {
+      "group_id": "source-group-35e701d6dc6210e1dc570c3fe1fe14ecf5b9e65132973d6c2539bee9e6ee2148",
+      "member_count": 1,
+      "members": [
+        {
+          "record_id": "ev-711ce8cd831a3c30385344e9adc6974da54fc7d1",
+          "record_version": 3,
+          "source_record_sha256": "80b9b39a3cfae7c7a7a0f00c9574ebb2a74637146c764db45c2222beaef3ca46",
+          "record_actor": "automatic",
+          "review_status": "needs_context",
+          "review_events": [],
+          "source_attribution": {
+            "origin": "study_authors",
+            "cited_references": [],
+            "evidence": [
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000063",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 134,
+                "exact_quote": "Chest CT images [lung window (A)/mediastinal window (B)] demonstrate an 18×11 mm spiculated nodule in the left upper lobe (red arrow).",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  60.8315,
+                  753.241071,
+                  502.9332841699999,
+                  759.680979
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              }
+            ]
+          },
+          "feature_name_raw": "spiculated nodule",
+          "feature_category": "CT nodule morphology and dimensions",
+          "model_semantic_review_unapproved": {
+            "status": "reviewed_unapproved",
+            "model_id": "gpt-6-luna",
+            "issue_codes": [
+              "caption_actual_nodule_description",
+              "window_and_panel_labels_retained",
+              "same_lesion_context"
+            ],
+            "primary_assessment": "visual_evidence_suggested",
+            "assessment_policy_version": "model-primary-assessment-1"
+          },
+          "effective_role": "primary_candidate",
+          "structure_references_untrusted": [],
+          "figure_association": {
+            "status": "pending",
+            "figure_ids": [],
+            "proposed_figure_ids": [
+              "figure-6f0c283fc60db961c220377d"
+            ],
+            "exact_markers": [],
+            "reasons": [
+              "Figure 1: complete Figure region/panels and caption identity need source-page verification."
+            ],
+            "no_figure_claimed": false,
+            "human_approved": false
+          },
+          "human_confirmation": null
+        }
+      ],
+      "attribution_conflict": false,
+      "role_conflict": false,
+      "figure_association_conflict": false,
+      "human_review_disagreement": false,
+      "internal_reference_attribution_needs_review": false,
+      "status": "single_source_candidate",
+      "needs_review": false,
+      "mechanical_only": true,
+      "medical_quality_approved": false,
+      "automatic_member_selection": false
+    },
+    {
+      "group_id": "source-group-4ea77089e4d99f1d76454115b6f10001ab5bbc1c6e733aedbb86ef0f2c439693",
+      "member_count": 1,
+      "members": [
+        {
+          "record_id": "ev-20c09b458a99fd0c8f03a32e8c011c33df7305e2",
+          "record_version": 3,
+          "source_record_sha256": "02977f805a538f33e3135b7f7f6ed6657bc40eb5f0276de8b5c3495b4c21e195",
+          "record_actor": "automatic",
+          "review_status": "needs_context",
+          "review_events": [],
+          "source_attribution": {
+            "origin": "study_authors",
+            "cited_references": [
+              "Figure 2"
+            ],
+            "evidence": [
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000013",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 55,
+                "exact_quote": "PET-CT demonstrated intense FDG uptake (SUVmax 14.0) in",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  63.61029999999995,
+                  282.5469000000003,
+                  290.6721999999999,
+                  290.81470196629243
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              },
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000014",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 66,
+                "exact_quote": "the dominant lesion without metabolically active satellite nodules",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  49.60719999999995,
+                  295.0758000000003,
+                  290.656,
+                  303.34360196629245
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              },
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000015",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 11,
+                "exact_quote": "(Figure 2).",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  49.60719999999995,
+                  307.54800000000034,
+                  290.7000999999998,
+                  315.8158019662925
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              }
+            ]
+          },
+          "feature_name_raw": "intense FDG uptake",
+          "feature_category": "FDG uptake and satellite nodules",
+          "model_semantic_review_unapproved": {
+            "status": "reviewed_unapproved",
+            "model_id": "gpt-6-luna",
+            "issue_codes": [
+              "same_source_statement_duplicate_member",
+              "uptake_and_negation_preserved"
+            ],
+            "primary_assessment": "visual_evidence_suggested",
+            "assessment_policy_version": "model-primary-assessment-1"
+          },
+          "effective_role": "primary_candidate",
+          "structure_references_untrusted": [],
+          "figure_association": {
+            "status": "pending",
+            "figure_ids": [],
+            "proposed_figure_ids": [
+              "figure-238cb9a0ed7333a79112612d"
+            ],
+            "exact_markers": [
+              {
+                "number": "2",
+                "panel": null,
+                "exact_marker": "Figure 2",
+                "complex": false
+              }
+            ],
+            "reasons": [
+              "Figure 2: complete Figure region/panels and caption identity need source-page verification."
+            ],
+            "no_figure_claimed": false,
+            "human_approved": false
+          },
+          "human_confirmation": null
+        }
+      ],
+      "attribution_conflict": false,
+      "role_conflict": false,
+      "figure_association_conflict": false,
+      "human_review_disagreement": false,
+      "internal_reference_attribution_needs_review": false,
+      "status": "single_source_candidate",
+      "needs_review": false,
+      "mechanical_only": true,
+      "medical_quality_approved": false,
+      "automatic_member_selection": false
+    },
+    {
+      "group_id": "source-group-5e82ec44914e3de2dd11d1c4dae771c787c7bafb71d508a3ac35452902a10719",
+      "member_count": 1,
+      "members": [
+        {
+          "record_id": "ev-169072043bf2f62ed0dcce9b9586475064a4c4b3",
+          "record_version": 4,
+          "source_record_sha256": "289aa2550c5ceba11ccdb1e18170f9a7819d49c390469747daf96283d02fb7d7",
+          "record_actor": "automatic",
+          "review_status": "needs_context",
+          "review_events": [],
+          "source_attribution": {
+            "origin": "study_authors",
+            "cited_references": [
+              "Figure 2"
+            ],
+            "evidence": [
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000013",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 55,
+                "exact_quote": "PET-CT demonstrated intense FDG uptake (SUVmax 14.0) in",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  63.61029999999995,
+                  282.5469000000003,
+                  290.6721999999999,
+                  290.81470196629243
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              },
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000014",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 66,
+                "exact_quote": "the dominant lesion without metabolically active satellite nodules",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  49.60719999999995,
+                  295.0758000000003,
+                  290.656,
+                  303.34360196629245
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              },
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000015",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 11,
+                "exact_quote": "(Figure 2).",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  49.60719999999995,
+                  307.54800000000034,
+                  290.7000999999998,
+                  315.8158019662925
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              }
+            ]
+          },
+          "feature_name_raw": "intense FDG uptake",
+          "feature_category": "FDG uptake and satellite nodules",
+          "model_semantic_review_unapproved": {
+            "status": "reviewed_unapproved",
+            "model_id": "gpt-6-luna",
+            "issue_codes": [
+              "complete_statement_has_uptake_and_negated_satellite_nodules",
+              "source_duplicate_member",
+              "Figure_reference_not_external_citation"
+            ],
+            "primary_assessment": "visual_evidence_suggested",
+            "assessment_policy_version": "model-primary-assessment-1"
+          },
+          "effective_role": "primary_candidate",
+          "structure_references_untrusted": [],
+          "figure_association": {
+            "status": "pending",
+            "figure_ids": [],
+            "proposed_figure_ids": [
+              "figure-238cb9a0ed7333a79112612d"
+            ],
+            "exact_markers": [
+              {
+                "number": "2",
+                "panel": null,
+                "exact_marker": "Figure 2",
+                "complex": false
+              }
+            ],
+            "reasons": [
+              "Figure 2: complete Figure region/panels and caption identity need source-page verification."
+            ],
+            "no_figure_claimed": false,
+            "human_approved": false
+          },
+          "human_confirmation": null
+        }
+      ],
+      "attribution_conflict": false,
+      "role_conflict": false,
+      "figure_association_conflict": false,
+      "human_review_disagreement": false,
+      "internal_reference_attribution_needs_review": false,
+      "status": "single_source_candidate",
+      "needs_review": false,
+      "mechanical_only": true,
+      "medical_quality_approved": false,
+      "automatic_member_selection": false
+    },
+    {
+      "group_id": "source-group-d866fb3aeef071b06b6184b3a29a5802653e2c8b293fff5b1ee6ea0d6cdd139a",
+      "member_count": 1,
+      "members": [
+        {
+          "record_id": "ev-e3d9c217754234522cbcc56566ce3e23fdffbde5",
+          "record_version": 5,
+          "source_record_sha256": "ceb11658852b2a06e25ef12b0c92f11400db0872c3e5fc4d497beea42cf2d7d1",
+          "record_actor": "automatic",
+          "review_status": "needs_context",
+          "review_events": [],
+          "source_attribution": {
+            "origin": "study_authors",
+            "cited_references": [
+              "Figure 2"
+            ],
+            "evidence": [
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000013",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 55,
+                "exact_quote": "PET-CT demonstrated intense FDG uptake (SUVmax 14.0) in",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  63.61029999999995,
+                  282.5469000000003,
+                  290.6721999999999,
+                  290.81470196629243
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              },
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000014",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 66,
+                "exact_quote": "the dominant lesion without metabolically active satellite nodules",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  49.60719999999995,
+                  295.0758000000003,
+                  290.656,
+                  303.34360196629245
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              },
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000015",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 11,
+                "exact_quote": "(Figure 2).",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  49.60719999999995,
+                  307.54800000000034,
+                  290.7000999999998,
+                  315.8158019662925
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              }
+            ]
+          },
+          "feature_name_raw": "intense FDG uptake",
+          "feature_category": "FDG uptake and satellite nodules",
+          "model_semantic_review_unapproved": {
+            "status": "reviewed_unapproved",
+            "model_id": "gpt-6-luna",
+            "issue_codes": [
+              "complete_statement_has_uptake_and_negated_satellite_nodules",
+              "duplicate_member",
+              "Figure_reference_not_external_citation"
+            ],
+            "primary_assessment": "visual_evidence_suggested",
+            "assessment_policy_version": "model-primary-assessment-1"
+          },
+          "effective_role": "primary_candidate",
+          "structure_references_untrusted": [],
+          "figure_association": {
+            "status": "pending",
+            "figure_ids": [],
+            "proposed_figure_ids": [
+              "figure-238cb9a0ed7333a79112612d"
+            ],
+            "exact_markers": [
+              {
+                "number": "2",
+                "panel": null,
+                "exact_marker": "Figure 2",
+                "complex": false
+              }
+            ],
+            "reasons": [
+              "Figure 2: complete Figure region/panels and caption identity need source-page verification."
+            ],
+            "no_figure_claimed": false,
+            "human_approved": false
+          },
+          "human_confirmation": null
+        }
+      ],
+      "attribution_conflict": false,
+      "role_conflict": false,
+      "figure_association_conflict": false,
+      "human_review_disagreement": false,
+      "internal_reference_attribution_needs_review": false,
+      "status": "single_source_candidate",
+      "needs_review": false,
+      "mechanical_only": true,
+      "medical_quality_approved": false,
+      "automatic_member_selection": false
+    },
+    {
+      "group_id": "source-group-e2c2885b0cb609c2e0c79a5aa91ca481a53ffb5931c4373f5c1d200ee13bba98",
+      "member_count": 1,
+      "members": [
+        {
+          "record_id": "ev-6a79fb134428ff73881043af1ef00770738f5769",
+          "record_version": 6,
+          "source_record_sha256": "fe5f119c2280b0f834959ceb1a7646b2b3491f92987420bfddfb5158c10b9420",
+          "record_actor": "automatic",
+          "review_status": "needs_context",
+          "review_events": [],
+          "source_attribution": {
+            "origin": "study_authors",
+            "cited_references": [
+              "Figure 1"
+            ],
+            "evidence": [
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000005",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 59,
+                "exact_quote": "A 70-year-old male ex-smoker (30 pack-years) presented with",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  63.6094,
+                  182.54250000000002,
+                  290.6614000000002,
+                  190.81030196629217
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              },
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000006",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 58,
+                "exact_quote": "an incidentally detected 18×11 mm spiculated nodule in the",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  49.606300000000005,
+                  195.07140000000004,
+                  290.69830000000013,
+                  203.3392019662922
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              },
+              {
+                "block_id": "e81cc534bfd4ea6029d8-p0002-l000007",
+                "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+                "start": 0,
+                "end": 63,
+                "exact_quote": "anterior segment of the left upper lobe on chest CT (Figure 1).",
+                "occurrence": 0,
+                "physical_page": 2,
+                "bbox": [
+                  49.606300000000005,
+                  207.54360000000008,
+                  290.66859999999997,
+                  215.81140196629224
+                ],
+                "location_precision": "whole_textline_not_exact_glyph"
+              }
+            ]
+          },
+          "feature_name_raw": "spiculated",
+          "feature_category": "nodule morphology and dimensions",
+          "model_semantic_review_unapproved": {
+            "status": "reviewed_unapproved",
+            "model_id": "gpt-6-luna",
+            "issue_codes": [
+              "complete_case_sentence",
+              "nodule_morphology_and_dimensions",
+              "same_source_duplicate_member"
+            ],
+            "primary_assessment": "visual_evidence_suggested",
+            "assessment_policy_version": "model-primary-assessment-1"
+          },
+          "effective_role": "primary_candidate",
+          "structure_references_untrusted": [],
+          "figure_association": {
+            "status": "pending",
+            "figure_ids": [],
+            "proposed_figure_ids": [
+              "figure-6f0c283fc60db961c220377d"
+            ],
+            "exact_markers": [
+              {
+                "number": "1",
+                "panel": null,
+                "exact_marker": "Figure 1",
+                "complex": false
+              }
+            ],
+            "reasons": [
+              "Figure 1: complete Figure region/panels and caption identity need source-page verification."
+            ],
+            "no_figure_claimed": false,
+            "human_approved": false
+          },
+          "human_confirmation": null
+        }
+      ],
+      "attribution_conflict": false,
+      "role_conflict": false,
+      "figure_association_conflict": false,
+      "human_review_disagreement": false,
+      "internal_reference_attribution_needs_review": false,
+      "status": "single_source_candidate",
+      "needs_review": false,
+      "mechanical_only": true,
+      "medical_quality_approved": false,
+      "automatic_member_selection": false
+    }
+  ],
+  "source_grouping_policy_version": "strict-source-groups-1",
+  "unique_source_group_count": 8
+}

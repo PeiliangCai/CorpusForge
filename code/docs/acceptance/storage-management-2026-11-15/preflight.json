@@ -1,0 +1,23 @@
+{
+  "at_utc": "2026-11-15T13:14:09.229866+00:00",
+  "health": {
+    "status": "ok",
+    "service": "t1-workbench",
+    "runtime_mode": "workflow",
+    "backend_pi_sdk": "1.4.0",
+    "controlled_fixture": false,
+    "extraction_available": true
+  },
+  "run_count": 2,
+  "paper_count": 10,
+  "active": [],
+  "parser_pids": [],
+  "pending_existing_cleanup": [],
+  "business_GET_hashes": {
+    "runs": "7037a5d588f123db7b94824501161303f82c06dc3f03f6f65beef3835dcd2ab6",
+    "papers": "4e25f8d5eeb9511df8498e2336db6b132b543691be0841ec4b2ae2cc5be39a63",
+    "models": "69e642831328b1eca75b4d09e6d7467270ca2002f807d772c33185993241399f"
+  },
+  "production_business_writes": 0,
+  "new_model_calls": 0
+}

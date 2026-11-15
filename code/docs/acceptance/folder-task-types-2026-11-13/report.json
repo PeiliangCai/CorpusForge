@@ -1,0 +1,376 @@
+{
+  "schema_version": "folder-task-types-acceptance-1",
+  "updated_at": "2026-11-13T03:49:51.758171+00:00",
+  "status": "completed",
+  "scope": [
+    "browser folder picker alongside multiple files",
+    "durable single/batch submission metadata and badges in pending list/history/result picker"
+  ],
+  "behavior": {
+    "folder": "recursive .pdf case-insensitive filter; skip non-PDF without reading/uploading; empty and over-limit keep existing list; same basenames retained separately with relative-path default titles",
+    "limits": "20 members per selection, 50 MiB/file, two-slot FIFO, existing per-run budgets unchanged",
+    "type_freeze": "single for one valid selected member; batch for multiple valid selected members including uploadFailed; scope/kind/batch_id freeze on first Start; retries preserve identity",
+    "legacy": "missing metadata stays unrecorded; no inferred labels or rewrites",
+    "request": "optional strict submission {kind: single} or {kind: batch, batch_id: UUIDv4}; metadata included in start idempotency hash; absent metadata preserves pre-upgrade hash",
+    "storage": "optional payload_json field in existing workbench_runs; no new tables"
+  },
+  "build": {
+    "dist": "apps/pi-web/build/folder-task-types-20261113",
+    "BUILD_ID": "m-Ego_yBjEjvFl6Lq2PJq",
+    "status": "passed",
+    "rollback_dist": "apps/pi-web/build/refresh-center-20261113",
+    "rollback_BUILD_ID": "P9BrVIAb0Rx5_DxE67B0f"
+  },
+  "verification": {
+    "typecheck": "passed",
+    "submission_api_tests": {
+      "passed": 6,
+      "cases": [
+        "old hash exact replay",
+        "strict malicious metadata and immutable server fields",
+        "same key concurrent single admission",
+        "kind/batch identity conflicts",
+        "persisted list/detail and restart without rescheduling",
+        "FIFO limits and per-item failure behavior"
+      ]
+    },
+    "existing_queue_finalization_navigation_tests": {
+      "passed": 8
+    },
+    "gateway_metadata_forwarding_test": {
+      "passed": 1,
+      "runner": "TSX_TSCONFIG_PATH=apps/pi-web/tsconfig.json"
+    },
+    "controlled_browser": {
+      "origin": "http://127.0.0.1:30152",
+      "backend": "http://127.0.0.1:3212",
+      "BUILD_ID": "m-Ego_yBjEjvFl6Lq2PJq",
+      "controlled": true,
+      "checks": [
+        "two_clear_picker_entries_and_unsupported_folder_fallback",
+        "folder_with_one_pdf_is_single_and_keeps_metadata_after_upload_and_start",
+        "real_directory_recurses_filters_case_insensitively_and_preserves_same_basename_paths",
+        "empty_and_oversized_directory_additions_are_explicit_and_leave_existing_selection_untouched",
+        "failed_upload_is_counted_at_first_start_and_start_response_loss_keeps_batch_identity_on_single_item_retries",
+        "multiple_file_picker_remains_available_and_invalid_members_do_not_make_a_single_task_batch",
+        "identical_basenames_in_different_subfolders_remain_distinct_after_upload_and_start",
+        "dedicated_paper_start_always_records_single",
+        "task_history_and_selected_result_show_persisted_types_and_legacy_is_unrecorded",
+        "metadata_survives_real_fixture_process_restart_without_new_admission",
+        "mobile_task_and_directory_controls_fit_and_refresh_keeps_one_centered_arrow_without_layout_shift"
+      ],
+      "errors": [],
+      "blocked": [],
+      "paid_model_calls": 0,
+      "production_write_requests": 0,
+      "max_layout_delta_px": 0,
+      "max_center_delta_px": 0,
+      "single_run": "run-006ce86b-9918-436d-955d-945a1fb598cb",
+      "batch_id": "68835248-cfca-47fb-932d-664bb8a7d0f1",
+      "batch_runs": [
+        "run-df2ac736-5340-4ac2-aeb6-6cff728be2b0",
+        "run-d2fec309-7a7c-4d0a-8639-d0cdda708c4a",
+        "run-efbb792c-37cf-48c5-95e0-f7848be6c6d1"
+      ],
+      "status": "passed"
+    },
+    "read_only_preview_refresh": {
+      "origin": "http://127.0.0.1:30152",
+      "BUILD_ID": "m-Ego_yBjEjvFl6Lq2PJq",
+      "checks": [
+        "one_workspace_centered_arrow_with_PDF_and_sidebar_shown_or_hidden",
+        "failure_and_toast_retry_preserve_geometry_without_inline_error",
+        "reader_and_list_scroll_stay_put_with_visible_centered_spinner",
+        "scrolled_new_task_keeps_file_title_and_scope_during_refresh",
+        "mobile_reduced_motion_static_icon_and_floating_toast_leave_retention_actions_clear",
+        "success_dismisses_and_background_polling_does_not_show_overlay_or_toast"
+      ],
+      "errors": [],
+      "blocked": [],
+      "max_layout_delta_px": 0,
+      "max_center_delta_px": 0,
+      "paid_model_calls": 0,
+      "write_requests": 0,
+      "status": "passed"
+    },
+    "read_only_live_refresh": {
+      "origin": "http://127.0.0.1:30141",
+      "BUILD_ID": "m-Ego_yBjEjvFl6Lq2PJq",
+      "checks": [
+        "one_workspace_centered_arrow_with_PDF_and_sidebar_shown_or_hidden",
+        "failure_and_toast_retry_preserve_geometry_without_inline_error",
+        "reader_and_list_scroll_stay_put_with_visible_centered_spinner",
+        "scrolled_new_task_keeps_file_title_and_scope_during_refresh",
+        "mobile_reduced_motion_static_icon_and_floating_toast_leave_retention_actions_clear",
+        "success_dismisses_and_background_polling_does_not_show_overlay_or_toast"
+      ],
+      "errors": [],
+      "blocked": [],
+      "max_layout_delta_px": 0,
+      "max_center_delta_px": 0,
+      "paid_model_calls": 0,
+      "write_requests": 0,
+      "status": "passed"
+    }
+  },
+  "formal_review": {
+    "used": 2,
+    "limit": 3,
+    "round1": "继续；目录漏选、重试类型变化、旧任务误标",
+    "round2": "判断：继续。风险：1. 超过20篇需拆分提交；2. 旧任务没有类型记录；3. 浏览器验证目前覆盖Chromium。",
+    "deployment_authorized": true
+  },
+  "production": {
+    "state": "deployed_verified",
+    "runtime": {
+      "backend_pid": 41713,
+      "frontend_pid": 41732,
+      "frontend_launcher_pid": 41725,
+      "dist": "apps/pi-web/build/folder-task-types-20261113",
+      "BUILD_ID": "m-Ego_yBjEjvFl6Lq2PJq",
+      "health": {
+        "status": "ok",
+        "service": "t1-workbench",
+        "runtime_mode": "workflow",
+        "backend_pi_sdk": "1.4.0",
+        "controlled_fixture": false,
+        "extraction_available": true
+      },
+      "frontend_origin": "http://127.0.0.1:30141",
+      "backend_origin": "http://127.0.0.1:3210",
+      "rollback_frontend_dist": "apps/pi-web/build/refresh-center-20261113",
+      "rollback_backend": "runtime-data/folder-task-types-deployment/rollback",
+      "at": 1794541332.5521328,
+      "admission_preflight": {
+        "active_runs": 0,
+        "new_requests": 0,
+        "read_only_SSE_closed_by_existing_preClose": true
+      },
+      "old_frontend_retired": {
+        "graceful_listener_shutdown": true,
+        "lingering_read_only_connections_closed_after_verifying_no_active_runs": true,
+        "old_frontend_pid": 32446,
+        "backend_forced_kill": false,
+        "old_frontend_forced_stop_after_listener_closed": true
+      }
+    },
+    "http_checks": {
+      "frontend": 200,
+      "backend_health": "ok",
+      "matching_build_manifest": 200
+    },
+    "data_integrity": {
+      "table_count": 15,
+      "all_tables_unchanged_after_deployment_and_browser": true,
+      "env_file_count": 2,
+      "env_bytes_unchanged": true,
+      "sqlite_integrity": "ok",
+      "table_fingerprints_unchanged": {
+        "events": {
+          "rows": 5,
+          "sha256": "6c0530c5385c682795f7e07bfe8da8e981db395fc233b0deb4dae95221ec60db"
+        },
+        "records": {
+          "rows": 1,
+          "sha256": "aefa6fbb7d03457bb107b1c342f18249616c36f52266bf28d10c127ef8244b3d"
+        },
+        "runs": {
+          "rows": 1,
+          "sha256": "d0e9ad23d5adcd92fb93b0aad8bc1288f6ee831ea1595778541907cdcbf31160"
+        },
+        "s4_batches": {
+          "rows": 5,
+          "sha256": "729cd2c6f5d45a80d9ed7898ae752bd9fb9c1f0721f306df070a6bad49a951d2"
+        },
+        "s4_events": {
+          "rows": 67,
+          "sha256": "23aa44509c48ddd1a4d1fd73d9fc2d3ca6e9d946f5a7fec58b1c3cdc7751e6d8"
+        },
+        "s4_runs": {
+          "rows": 9,
+          "sha256": "7ff143fd69dac6578756657b7d105d4ece5de4b5a2305ed3d1e1aa9236b616f8"
+        },
+        "s4_versions": {
+          "rows": 262,
+          "sha256": "83b7d3e7467bb465bc006eafe017e416f07eda6f60a99641aa8aa48d0906815d"
+        },
+        "workbench_annotations": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "workbench_deleted_sources": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "workbench_exports": {
+          "rows": 3,
+          "sha256": "3757627a722a0780bda4e203371b7b467b8af3ab092e8aa2901c7ffec2cb0753"
+        },
+        "workbench_papers": {
+          "rows": 6,
+          "sha256": "603dee97ae201af8ec1411f5fae4dd049663b9de8af37046465915b68ee25102"
+        },
+        "workbench_requests": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "workbench_retentions": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "workbench_reviews": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "workbench_runs": {
+          "rows": 9,
+          "sha256": "5e897ff8e235b95bcdb47235512e410c3e64c81e30b80845aa7473e028a04aef"
+        }
+      }
+    },
+    "legacy_run_count": 9,
+    "legacy_metadata_inferred": false,
+    "active_or_finalizing_at_deployment": 0,
+    "test_mutations": 0,
+    "paid_model_calls": 0
+  },
+  "paid_model_calls": 0,
+  "production_test_mutations": 0,
+  "medical_quality_approved": false,
+  "S6_S7_status": "unchanged",
+  "documentation_sync": {
+    "owner": "folder_docs",
+    "state": "completed",
+    "status": "passed_semantic_and_archive_preservation",
+    "scope": {
+      "DOCX": 2,
+      "active_JSON": 4,
+      "targeted_CSV": 4,
+      "README": 2,
+      "total_files": 12
+    },
+    "DOCX": {
+      "方案/子任务T1/T1智能体开发计划.docx": {
+        "paragraphs": 65,
+        "tables": 2,
+        "changed_paragraphs": [
+          1,
+          4,
+          9,
+          31,
+          52,
+          59,
+          64
+        ],
+        "other_zip_entries_byte_identical": 14,
+        "formatting_and_structure_outside_text_unchanged": true,
+        "all_XML_parsed": true,
+        "zip_CRC": "passed",
+        "before_sha256": "944640175b98b68e0ac61e6d225be8057ab47e22176f09ffe8149087d07c7cff"
+      },
+      "方案/子任务T1/T1开发执行说明.docx": {
+        "paragraphs": 84,
+        "tables": 3,
+        "changed_paragraphs": [
+          1,
+          3,
+          25,
+          26,
+          38,
+          56,
+          68,
+          83
+        ],
+        "other_zip_entries_byte_identical": 14,
+        "formatting_and_structure_outside_text_unchanged": true,
+        "all_XML_parsed": true,
+        "zip_CRC": "passed",
+        "before_sha256": "351c321f986ab4295cebfe00bc7ab2c84bccd1e67c4988bcbb1a436556451c1e"
+      }
+    },
+    "active_JSON": {
+      "方案/子任务T1/当前版本.json": {
+        "preexisting_historical_subtrees_preserved": 22,
+        "old_batch_and_review_states_preserved": true
+      },
+      "方案/子任务T1/开发计划.json": {
+        "preexisting_historical_subtrees_preserved": 15,
+        "old_batch_and_review_states_preserved": true
+      },
+      "方案/子任务T1/材料检查结果.json": {
+        "preexisting_historical_subtrees_preserved": 19,
+        "old_batch_and_review_states_preserved": true
+      },
+      "方案/子任务T1/质量与性能验收契约.json": {
+        "preexisting_historical_subtrees_preserved": 34,
+        "old_batch_and_review_states_preserved": true
+      }
+    },
+    "CSV": {
+      "方案/子任务T1/开发任务清单.csv": {
+        "changed_row": "T1-R13",
+        "rows_including_header": 28,
+        "other_rows_and_header_unchanged": true
+      },
+      "方案/子任务T1/验收清单.csv": {
+        "changed_row": "F09",
+        "rows_including_header": 28,
+        "other_rows_and_header_unchanged": true
+      },
+      "方案/子任务T1/开发阶段与验收.csv": {
+        "changed_row": "S5",
+        "rows_including_header": 9,
+        "other_rows_and_header_unchanged": true
+      },
+      "方案/子任务T1/待讨论实现决策.csv": {
+        "changed_row": "D20",
+        "rows_including_header": 26,
+        "other_rows_and_header_unchanged": true
+      }
+    },
+    "semantic_checks": {
+      "R13_and_D20_plan_CSV_match": true,
+      "F09_quality_contract_CSV_match": true,
+      "DOCX_fingerprints_match_active_JSON": true,
+      "README_uses_deployed_build": true,
+      "new_requirement_formal_reviews": "2/3 continue",
+      "old_batch_refresh_formal_reviews": "3/3 preserved",
+      "old_retention_and_other_formal_review_states_preserved": true,
+      "S2_S6_S7_states_unchanged": true,
+      "runtime_types_are_Workbench_metadata_not_clinical_EvidenceRecord_fields": true
+    },
+    "application_tests_run_by_documentation_owner": false,
+    "engineering_evidence_owner": "folder_task_types",
+    "Word_pagination_visually_reviewed": false,
+    "new_paid_model_calls": 0,
+    "historical_source_PDF_and_acceptance_reports_written": false,
+    "file_sha256": {
+      "方案/子任务T1/T1智能体开发计划.docx": "f7becf1930758d3cf17816c0387e3aee06b22f2f5fad37ec6cfafd77f34bfd58",
+      "方案/子任务T1/T1开发执行说明.docx": "7d174d9618210da179d8af553941e149a85510e05a7f53a16a08ea5a28320544",
+      "方案/子任务T1/当前版本.json": "1b2d71331142b0ea1e57b17a90c3fbd3d022f69bae66f29dbd25149917b910e3",
+      "方案/子任务T1/开发计划.json": "be5b7d45dce360a6846f0fe100d5fd9fc352af72d49a2756b3ff55e37d82be7e",
+      "方案/子任务T1/材料检查结果.json": "23643dff848201c00c35367c418591f171bdb0aa8979d636baa87c772e3a7e50",
+      "方案/子任务T1/质量与性能验收契约.json": "6f05f264d115b920de70a3a1fba0f690c1dba0e1d8a2a9bd342fe403933cbb2a",
+      "方案/子任务T1/开发任务清单.csv": "d68b9aaf63417bd463932f705e343aa3d19510883cc505a300831323fc3e04e0",
+      "方案/子任务T1/验收清单.csv": "7734a63285c9c8d6eb7ad992d6de0a50e76b47fb0fea3cba7b3d3200c8073502",
+      "方案/子任务T1/开发阶段与验收.csv": "2133184839ac42ad43cd1a5753631147935ad9d5f4519df1e040e71a3c4910cc",
+      "方案/子任务T1/待讨论实现决策.csv": "eda1ddb5033010339c412b3519ebde27181bf57083046afc0fe77f2543a6f5b1",
+      "code/README.md": "146d9c60bde71aad537533b0fdf134c692b7ba07059093b22f862ba77d2548eb",
+      "code/deploy/README.md": "e2deeacfabc683b7d437e2062a6b30b3b6224306160631d9684107fa2ac2b88f"
+    },
+    "file_hashes_verified_by_engineering_owner": true
+  },
+  "tooling_notes": [
+    "with-node.sh has no execute bit; invoked through bash without changing permissions",
+    "initial gateway test invoked with root tsconfig could not resolve @ alias; corrected scoped-tsconfig run passed; no application error found"
+  ],
+  "cleanup": {
+    "preview_30152": "stopped",
+    "controlled_fixture_3212": "stopped",
+    "generated_tsconfig_change": "removed without altering user configuration",
+    "temporary_fixture_data": "removed; fixture server stopped; reproducible fixture source and tests retained",
+    "runtime_and_rollback": "runtime-data/folder-task-types-deployment; two backend originals and previous frontend build retained",
+    "temporary_agent_notes_and_baseline": "removed after formal handoff; permanent rules and other tasks untouched",
+    "old_live_frontend": "retired; only current 30141 listener remains"
+  }
+}

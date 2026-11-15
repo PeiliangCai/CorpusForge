@@ -1,10 +1,13 @@
+/** HISTORICAL individual-approval UI check. New daily retention workbenches fail before browser/data actions. */
 /** S5 HTTP/browser verification against the explicitly controlled local runner. Never calls a model. */
 import assert from 'node:assert/strict';
+import { requireLegacyReviewWorkflow } from './legacy-review-guard.mjs';
 import { setTimeout as delay } from 'node:timers/promises';
 import { mkdir, readFile, writeFile, rename, rm } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 const code = resolve('../..'), origin = 'http://127.0.0.1:30141';
+await requireLegacyReviewWorkflow(origin, 't1-workflow.mjs');
 process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
 process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
 const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
@@ -22,8 +25,8 @@ const persist = () => writeFile(join(evidence, 'results.json'), JSON.stringify(r
 async function check(name, work) { if (skipping && name !== resumeFrom) { const previous = prior.checks.find(check => check.name === name && check.status === 'passed'); assert.ok(previous, 'resumed check must have passed: ' + name); checks.push({ ...previous, executed_in: 'attempt-4-results.json' }); await persist(); return; } skipping = false; const start = Date.now(); try { const detail = await work(); checks.push({ name, status: 'passed', elapsed_ms: Date.now() - start, detail }); console.log(`passed: ${name}`); } catch (e) { checks.push({ name, status: 'failed', elapsed_ms: Date.now() - start, error: e.stack ?? String(e) }); console.error(`failed: ${name}: ${e.message}`); throw e; } finally { await persist(); } }
 async function json(path) { const response = await context.request.get(origin + '/api/t1/' + path); assert.equal(response.status(), 200, path); return response.json(); }
 async function current(id = runB.run_id) { return json(`workbench/runs/${encodeURIComponent(id)}`); }
-async function newTask() { await page.getByRole('tab', { name: '新任务', exact: true }).click(); await page.locator('.t1-scope-editor').waitFor(); }
-async function upload(path, title) { await newTask(); await page.getByLabel('选择 PDF', { exact: true }).setInputFiles(path); await page.getByLabel('论文标题（可选）', { exact: true }).fill(title); const response = page.waitForResponse(response => response.url().endsWith('/api/t1/workbench/papers') && response.request().method() === 'POST'); await page.getByRole('button', { name: '上传论文', exact: true }).click(); const saved = await response; assert.equal(saved.status(), 201); const value = (await json("workbench/papers")).papers.find(paper => paper.title === title); assert.ok(value); await page.getByLabel('本次任务论文', { exact: true }).selectOption(value.id); return value; }
+async function newTask() { await page.getByRole('tab', { name: '创建任务', exact: true }).click(); await page.locator('.t1-scope-editor').waitFor(); }
+async function upload(path, title) { await newTask(); await page.getByLabel('选择 PDF', { exact: true }).setInputFiles(path); await page.getByLabel('任务标题（可选）', { exact: true }).fill(title); const response = page.waitForResponse(response => response.url().endsWith('/api/t1/workbench/papers') && response.request().method() === 'POST'); await page.getByRole('button', { name: '上传论文', exact: true }).click(); const saved = await response; assert.equal(saved.status(), 201); const value = (await json("workbench/papers")).papers.find(paper => paper.title === title); assert.ok(value); await page.getByLabel('本次任务论文', { exact: true }).selectOption(value.id); return value; }
 async function start() { const previous = new Set((await json('workbench/runs')).runs.map(run => run.run_id)); const response = page.waitForResponse(response => response.url().endsWith('/runs') && response.request().method() === 'POST'); await page.getByRole('button', { name: '开始抽取', exact: true }).click(); const saved = await response; assert.equal(saved.status(), 202); const run = (await json('workbench/runs')).runs.find(run => !previous.has(run.run_id)); assert.ok(run); return run; }
 async function selectRecord(id, target = page) { await target.getByLabel('原文记录', { exact: true }).selectOption(id); await target.locator(`article[data-record-id="${id}"]`).waitFor(); }
 async function openRun(run, recordId) { await page.goto(`${origin}/?paper=${run.document_id}&run=${encodeURIComponent(run.run_id)}${recordId ? '&record=' + encodeURIComponent(recordId) : ''}&view=records`); await page.locator('.t1-task-progress').waitFor(); await page.waitForFunction(id => document.querySelector('.t1-output-toolbar select')?.value === `run:${id}`, run.run_id); }
@@ -114,7 +117,7 @@ try {
     await verification.getByRole('button', { name: '保存此图来源核验', exact: true }).click(); assert.equal((await checked).status(), 200);
     value = await current(); assert.equal(value.output.records.filter(record => record.text_approved || record.figures_approved).length, 0);
     const paired = value.output.records.find(record => record.association === 'paired' && record.figure_ids.length); assert.ok(paired, 'paired controlled candidate required after explicit full-Figure source verification');
-    await page.getByRole('tab', { name: '原文与审核', exact: true }).click();
+    await page.getByRole('tab', { name: '抽取结果', exact: true }).click();
     await selectRecord(paired.id); await page.locator('.t1-evidence-card > .t1-fragments button').first().click();
     const physicalPage = paired.fragments[0].physical_page;
     await page.locator(`.t1-pdf-reader canvas[data-page="${physicalPage}"]`).waitFor();
@@ -222,8 +225,8 @@ try {
   await check('responsive_and_three_locales_without_runtime_errors', async () => {
     await openRun(runB); await page.setViewportSize({ width: 390, height: 844 }); await page.screenshot({ path: join(evidence, '05-mobile.png'), fullPage: true });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
-    await page.getByLabel('界面语言', { exact: true }).selectOption('en'); await page.getByRole('heading', { name: 'Evidence and review', exact: true }).waitFor();
-    await page.getByLabel('Interface language', { exact: true }).selectOption('zh-TW'); await page.getByRole('heading', { name: '原文與審核', exact: true }).waitFor();
+    await page.getByLabel('界面语言', { exact: true }).selectOption('en'); await page.getByRole('heading', { name: 'Extraction results', exact: true }).waitFor();
+    await page.getByLabel('Interface language', { exact: true }).selectOption('zh-TW'); await page.getByRole('heading', { name: '擷取結果', exact: true }).waitFor();
     await page.getByLabel('介面語言', { exact: true }).selectOption('zh-CN');
     assert.deepEqual(pageErrors, []); assert.deepEqual(blocked, []); assert.deepEqual(failures, []);
     return { mobile_no_horizontal_overflow: true, locales: ['en', 'zh-CN', 'zh-TW'], browser_errors: 0, external_requests: 0 };

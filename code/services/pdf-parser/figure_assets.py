@@ -8,7 +8,7 @@ Even a clean native rectangle is not proof that every panel belongs to a Figure.
 from copy import deepcopy
 from hashlib import sha256
 from pathlib import Path
-from ctypes import byref, c_int
+from ctypes import byref, c_int, c_uint, c_float
 from datetime import datetime, timezone
 import argparse
 import json
@@ -210,7 +210,76 @@ def raw_caption_segments(document, label):
     return result
 
 
-def discover_figures(document, image_inventory=None):
+def supplemental_framed_captions(document, captions, components, frames):
+    """Read literal continuation only inside one independently drawn caption box.
+
+    A light filled PDF rectangle, one numbered title and one adjacent picture
+    supply an explicit boundary. No words or publisher templates decide scope.
+    Same-frame paragraph spacing is allowed; outside text, competing columns or
+    labels, source-order ambiguity and a changed established body style stop it.
+    The new relation always needs review; raw blocks and native units stay intact.
+    """
+    result = {id(c): [] for c in captions}
+    blocks = {b['block_id']: b for b in document['blocks']}
+    def contained(inner, outer, margin=.6):
+        return inner[0] >= outer[0] - margin and inner[1] >= outer[1] - margin and inner[2] <= outer[2] + margin and inner[3] <= outer[3] + margin
+    protected = {s['block_id'] for u in document['structure']['units']
+                 if u['kind'] in ['section_header', 'table', 'table_cell', 'page_header', 'page_footer'] for s in u['source_segments']}
+    for caption in captions:
+        segments = caption['segments']
+        if len({s['physical_page'] for s in segments}) != 1 or any(s['start'] != 0 or s['end'] != len(blocks[s['block_id']]['text']) for s in segments):
+            continue
+        page = segments[0]['physical_page']; capbox = union([s['bbox'] for s in segments])
+        bounded = [f['bbox'] for f in frames if f['page'] == page and contained(capbox, f['bbox'])]
+        if len(bounded) != 1:
+            continue
+        frame = bounded[0]
+        owners = [c for c in components if c['page'] == page and 0 <= frame[1] - c['bbox'][3] <= 16
+                  and frame[0] >= c['bbox'][0] - 12 and frame[2] <= c['bbox'][2] + 12
+                  and overlap([frame[0], c['bbox'][1], frame[2], c['bbox'][3]], c['bbox']) >=
+                  .8 * (frame[2] - frame[0]) * (c['bbox'][3] - c['bbox'][1])]
+        if len(owners) != 1:
+            continue
+        inside = [b for b in document['blocks'] if b['page'] == page and b['text'].strip() and overlap(b['bbox'], frame) > 0]
+        current = {s['block_id'] for s in segments}
+        if (any(not contained(b['bbox'], frame) for b in inside) or
+                sum(bool(FIGURE_START.match(b['text'])) for b in inside) != 1 or
+                any(b['block_id'] in protected and b['block_id'] not in current for b in inside)):
+            continue
+        previous = blocks[segments[-1]['block_id']]
+        label = blocks[segments[0]['block_id']]
+        label_height = label['bbox'][3] - label['bbox'][1]
+        previous_height = previous['bbox'][3] - previous['bbox'][1]
+        # Wrapped title lines can share the larger heading style. Establish the
+        # body style only after the first smaller source line, even when a native
+        # caption already contains more than one title line.
+        body_height = previous_height if previous_height < label_height * .9 else None
+        for _ in range(24):
+            candidates = [b for b in inside if b['block_id'] not in current and b['bbox'][1] >= previous['bbox'][3] - .25]
+            if not candidates:
+                break
+            candidates.sort(key=lambda b: (b['bbox'][1], b['bbox'][0])); following = candidates[0]
+            height = following['bbox'][3] - following['bbox'][1]
+            source_next = sorted([b for b in inside if b['block_id'] not in current and b['reading_order'] > previous['reading_order']],
+                                 key=lambda b: b['reading_order'])
+            if (sum(abs(b['bbox'][1] - following['bbox'][1]) <= 1 for b in candidates) != 1 or
+                    not source_next or source_next[0]['block_id'] != following['block_id'] or
+                    following['reading_order'] <= previous['reading_order'] or abs(following['bbox'][0] - label['bbox'][0]) > 6 or
+                    following['bbox'][1] - previous['bbox'][3] > min(24, max(18, (body_height or label_height) * 3)) or
+                    not .45 * label_height <= height <= label_height * 1.2 or
+                    body_height is not None and abs(height - body_height) > max(.8, body_height * .2) or
+                    re.match(r'^\s*(?:fig(?:ure)?\.?\s*\d|table\s*\d|[图表]\s*\d)', following['text'], re.I)):
+                break
+            result[id(caption)].append({'block_id': following['block_id'], 'text_version': document['text_version'],
+                'start': 0, 'end': len(following['text']), 'exact_quote': following['text'], 'occurrence': 0,
+                'physical_page': page, 'bbox': list(following['bbox']), 'location_precision': 'whole_textline_not_exact_glyph'})
+            current.add(following['block_id']); previous = following
+            if body_height is None and height < label_height * .9:
+                body_height = height
+    return result
+
+
+def discover_figures(document, image_inventory=None, caption_frames=()):
     if document['schema_version'] != '3':
         return []
     units = {u['unit_id']: u for u in document['structure']['units']}
@@ -286,10 +355,15 @@ def discover_figures(document, image_inventory=None):
             continue
         captions.append({'number': marker[1], 'segments': segments, 'text': '\n'.join(s['exact_quote'] for s in segments),
                          'unit_id': None, 'raw_geometry_caption': True})
+    framed = supplemental_framed_captions(document, captions, components, caption_frames)
+    for caption in captions:
+        caption['numbered_identity_segments'] = list(caption['segments'])
+        if framed[id(caption)]:
+            caption['segments'] += framed[id(caption)]
+            caption['text'] = '\n'.join(s['exact_quote'] for s in caption['segments'])
     continued = supplemental_caption_columns(document, captions, components)
     for caption in captions:
         extra = continued[id(caption)]
-        caption['numbered_identity_segments'] = list(caption['segments'])
         if extra:
             # Native/source column boundaries remain separate literal segments.
             caption['segments'] = caption['segments'] + extra
@@ -303,7 +377,7 @@ def discover_figures(document, image_inventory=None):
         extra = notes[id(caption)]
         if extra:
             blocks = {b['block_id']: b for b in document['blocks']}
-            by_span = {(s['block_id'], s['start'], s['end']): s for s in identity_segments + extra}
+            by_span = {(s['block_id'], s['start'], s['end']): s for s in caption['segments'] + extra}
             caption['segments'] = sorted(by_span.values(), key=lambda s: (blocks[s['block_id']]['reading_order'], s['start']))
             caption['text'] = '\n'.join(s['exact_quote'] for s in caption['segments'])
         pages = {s['physical_page'] for s in caption['segments']}
@@ -333,9 +407,10 @@ def discover_figures(document, image_inventory=None):
         figures.append({'figure_id': 'figure-' + identity, 'figure_number': caption['number'], 'caption_segments': caption['segments'],
                         'panel_labels': panel_labels(caption['text']), 'native_picture_ids': [i for c in selected for i in c['ids']],
                         'region_specs': [{'physical_page': c['page'], 'bbox': c['bbox']} for c in selected],
-                        'caption_continuation_unverified': bool(continued[id(caption)]) or caption.get('raw_geometry_caption', False),
+                        'caption_continuation_unverified': bool(framed[id(caption)] or continued[id(caption)]) or caption.get('raw_geometry_caption', False),
                         'verification': {'status': 'needs_review', 'method': 'native_candidate_only', 'actor': None, 'checked_at': None,
                          'notes': ('Standalone original label and adjoining same-style caption lines retained by source geometry; relation and completeness require original-page review. ' if caption.get('raw_geometry_caption') else '') +
+                                  ('Literal caption continuation inside one original PDF filled rectangle retained; relation and completeness require original-page review. ' if framed[id(caption)] else '') +
                                   ('Same-band cross-column caption continuation retained as separate source segments; relation and caption completeness remain unverified. ' if continued[id(caption)] else '') +
                                   ('Separately parsed explicit Note retained as source segments after unique native-link and same-page geometry checks; Note/caption relation remains unverified. ' if extra else '') +
                                   ('Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.' if unique else
@@ -373,6 +448,53 @@ def original_image_objects(page, info):
         objects.append({'bbox': [min(p[0] for p in points), min(p[1] for p in points), max(p[0] for p in points), max(p[1] for p in points)],
                         'top_level': image.level == 0})
     return objects
+
+
+def original_caption_frames(page, info):
+    """Light filled source rectangles, with actual path corners and page transform.
+
+    White page backgrounds, tiny rules, nested Forms and arbitrary curved paths
+    cannot provide a caption boundary. No raster/OCR or native label is trusted.
+    """
+    import pypdfium2 as pdfium
+    frames = []; sx, sy = math.ceil(info['width'] * 16), math.ceil(info['height'] * 16)
+    for obj in page.get_objects(filter=[pdfium.raw.FPDF_PAGEOBJ_PATH]):
+        if obj.level != 0:
+            continue
+        red, green, blue, alpha = [c_uint() for _ in range(4)]; fill, stroke = c_int(), c_int()
+        if not (pdfium.raw.FPDFPageObj_GetFillColor(obj, byref(red), byref(green), byref(blue), byref(alpha)) and
+                pdfium.raw.FPDFPath_GetDrawMode(obj, byref(fill), byref(stroke)) and fill.value and alpha.value == 255 and
+                min(red.value, green.value, blue.value) >= 160 and max(red.value, green.value, blue.value) <= 250):
+            continue
+        count = pdfium.raw.FPDFPath_CountSegments(obj)
+        if count not in [4, 5]:
+            continue
+        left, bottom, right, top = obj.get_bounds(); corners = [(left, bottom), (left, top), (right, bottom), (right, top)]
+        points = []
+        for i in range(count):
+            segment = pdfium.raw.FPDFPath_GetPathSegment(obj, i); x, y = c_float(), c_float()
+            if not pdfium.raw.FPDFPathSegment_GetPoint(segment, byref(x), byref(y)):
+                break
+            # Path segments use object-local coordinates; bounds use the page.
+            # Apply the original PDF object matrix before checking its corners.
+            px, py = obj.get_matrix().on_point(x.value, y.value)
+            point = next((p for p in corners if abs(p[0] - px) < .2 and abs(p[1] - py) < .2), None)
+            if point is None or points and point[0] != points[-1][0] and point[1] != points[-1][1]:
+                break
+            points.append(point)
+        if len(points) != count or len(set(points)) != 4:
+            continue
+        mapped = []
+        for x, y in corners:
+            dx, dy = c_int(), c_int()
+            if pdfium.raw.FPDF_PageToDevice(page, 0, 0, sx, sy, 0, x, y, byref(dx), byref(dy)):
+                mapped.append((dx.value * info['width'] / sx, dy.value * info['height'] / sy))
+        if len(mapped) != 4:
+            continue
+        box = [min(p[0] for p in mapped), min(p[1] for p in mapped), max(p[0] for p in mapped), max(p[1] for p in mapped)]
+        if box[2] - box[0] >= 48 and 16 <= box[3] - box[1] <= min(200, info['height'] * .25):
+            frames.append({'page': info['physical_page'], 'bbox': box})
+    return frames
 
 
 def complete_bitmap_render_bounds(figure, image_objects, page_info, document=None):
@@ -478,16 +600,17 @@ def extract_catalog(document, output_directory, *, scale=2):
         validate_structured(document)
     pdf = pdfium.PdfDocument(pdf_path)
     try:
-        image_inventory = {}
+        image_inventory, caption_frames = {}, []
         for info in document['pages']:
             if info['status'] == 'failed':
                 continue
             page = pdf[info['physical_page']-1]
             try:
                 image_inventory[info['physical_page']] = original_image_objects(page, info)
+                caption_frames.extend(original_caption_frames(page, info))
             finally:
                 page.close()
-        candidates = discover_figures(document, image_inventory)
+        candidates = discover_figures(document, image_inventory, caption_frames)
         for candidate in candidates:
             figure = deepcopy(candidate)
             figure.pop('caption_continuation_unverified', None)

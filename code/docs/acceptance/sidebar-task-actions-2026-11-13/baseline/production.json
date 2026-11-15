@@ -1,0 +1,82 @@
+{
+  "db": "runtime-data/t1.sqlite",
+  "table_count": 16,
+  "table_manifest": {
+    "events": {
+      "rows": 5,
+      "sha256": "21d2f02b0a78d2c1b2e7c98de7e937bc68c971681349d1ec1690a701c1ee4b26"
+    },
+    "records": {
+      "rows": 1,
+      "sha256": "9c13a950ec91d12b21961dd066d7b1bc77cd9d6a19fe2a93cd51e5c3e598daf2"
+    },
+    "runs": {
+      "rows": 1,
+      "sha256": "f68fc5f71a3b65d7af4cf381b2d96b4161c4abf69368ca937cb7bd091db8a216"
+    },
+    "s4_batches": {
+      "rows": 5,
+      "sha256": "b69903ea02a32cd705a679dbcd7a6582c85e8f95d27cd4e7a6e941a83901380f"
+    },
+    "s4_events": {
+      "rows": 67,
+      "sha256": "c873d3432d51bb2c2bd4265fe5994f8fc0f4c200ebf7388df3da5637094d3146"
+    },
+    "s4_runs": {
+      "rows": 9,
+      "sha256": "8c0850c27a238c78cb5b274b8615a46a0fc4b7416fd88750752ae60b5a89bc59"
+    },
+    "s4_versions": {
+      "rows": 262,
+      "sha256": "0bba5ca8b7e99a36870a453209d5447fa3d2f335d0741b5ff5e0ea6df627fea5"
+    },
+    "workbench_annotations": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_deleted_sources": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_exports": {
+      "rows": 3,
+      "sha256": "7c6d616cd6a29812423360d1fa27e4023fbdfc00f6630aafbaa16716eff13c52"
+    },
+    "workbench_model_profiles": {
+      "rows": 1,
+      "sha256": "1a5bf11dec54f5ca4d6a6575f501cd8044d2cd4fed8db82f123724fd5b1a4111"
+    },
+    "workbench_papers": {
+      "rows": 6,
+      "sha256": "6d2be76551b6fd866b6ecbfda6f3ddefdfc2f7e790eb1495733a8a747210df73"
+    },
+    "workbench_requests": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_retentions": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_reviews": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_runs": {
+      "rows": 9,
+      "sha256": "20bf4f0407fc840c005406e82097fbfe2f531888502bb1c8d54f1a89872477b9"
+    }
+  },
+  "runs": 9,
+  "active_runs": [],
+  "model_profiles": 1,
+  "default_profile_id": "model-5aa7649633b13e6c9c91f26cd5580846",
+  "backend_pid": 58379,
+  "frontend_launcher_pid": 58402,
+  "frontend_pid": 58409,
+  "BUILD_ID": "UJ2UUlfLzdmh_OcyhFLrq",
+  "env_sha256": {
+    ".env": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+    "deploy/local/workbench.env": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea"
+  }
+}

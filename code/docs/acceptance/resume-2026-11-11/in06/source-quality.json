@@ -1,0 +1,19 @@
+{
+  "schema_version": "t1-IN06-current-source-quality-2",
+  "status": "generic_caption_frame_and_complete_bibliography_format_repairs_frozen_targeted_regressions_passed",
+  "source_role": "Parser regression after its observed original-version defects were used for repair; extraction model unseen and no complete pipeline independent success claim.",
+  "original_identity": "PDF-identity.json",
+  "exposure_audit": "exposure-audit.json",
+  "unmodified_original_baseline": "baseline/freeze.json",
+  "current_repair_evidence": "repair-report.json",
+  "current_figure_catalog": "repaired/figure-assets/catalog.json",
+  "current_input_source_selection": "repaired-source-selection.json",
+  "original_source_PDF_and_text_version_preserved": true,
+  "new_model_calls": 1,
+  "source_structure_clinical_quality_approved": false,
+  "current_effective_API_allowance": 0,
+  "model_input_dispatched_to_provider": true,
+  "model_trial_report": "model-regression/report.json",
+  "model_trial_status": "failed_provider_reported_high_load_identified_later_by_exact_SDK_error_hash",
+  "later_exact_error_correlation": "model-regression/diagnostic-correlation.json"
+}

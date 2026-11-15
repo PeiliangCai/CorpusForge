@@ -1,0 +1,65 @@
+{
+  "status": "passed",
+  "observed_at_utc": "2026-11-15T11:32:23.953Z",
+  "run_id": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6",
+  "document_id": "paper-9b9afd8c-736e-49f6-9f2d-68f7f1b9549b",
+  "raw_run_error": null,
+  "source": "same-run persisted coverage.task_processing_blockers selected through workbench_runs/s4_runs identity join",
+  "final_saved_blockers": [
+    "selected_input_processing_incomplete",
+    "summary_incomplete",
+    "experiment_input_token_limit"
+  ],
+  "projection": {
+    "schema_version": "t1-workbench-progress-1",
+    "stage": "partial",
+    "updated_at": "2026-11-15T11:22:31.129Z",
+    "stage_started_at": "2026-11-15T11:22:26.558Z",
+    "elapsed_ms": 1171483,
+    "execution_elapsed_ms": 1171456,
+    "queue_wait_ms": 27,
+    "completed": 304,
+    "unit": "content_units",
+    "total": 547,
+    "unit_counts": {
+      "source_fragment": 94,
+      "text_item": 3,
+      "heading": 49,
+      "list_item": 3,
+      "paragraph": 394,
+      "caption": 4
+    },
+    "completed_unit_counts": {
+      "source_fragment": 66,
+      "text_item": 0,
+      "heading": 45,
+      "list_item": 0,
+      "paragraph": 190,
+      "caption": 3
+    },
+    "completed_batches": 19,
+    "total_batches": 24,
+    "failed_batches": 2,
+    "termination_reason": "experiment_input_token_limit",
+    "candidate_records": 20,
+    "source_gap_blocks": 0,
+    "summary_completed": false,
+    "telemetry": "events"
+  },
+  "source_sha256_before": {
+    "document-ir.json": "3acf0bf58ee2601b02fffb44702b7564d93f5cff44f110447230250cfd447745",
+    "paragraph-plan.json": "40e4e8cdbb872513c9b6e575a8df05e65eeb812e049c45a954e9287c44176cdf",
+    "batch-plan.json": "dad2f1afa451d21f3282fb32252d6517197607ee9ea9283d2023ac15ae2458e3",
+    "result.json": "ec08496b977e044edb4ce827c81d5783370e0c499a19efce6033b61be81038a4",
+    "request-ledger.json": "d3e16825979aaf6f885b0dfb3debf384f542a7df569ff2ab1013af18d82fd169"
+  },
+  "source_sha256_after": {
+    "document-ir.json": "3acf0bf58ee2601b02fffb44702b7564d93f5cff44f110447230250cfd447745",
+    "paragraph-plan.json": "40e4e8cdbb872513c9b6e575a8df05e65eeb812e049c45a954e9287c44176cdf",
+    "batch-plan.json": "dad2f1afa451d21f3282fb32252d6517197607ee9ea9283d2023ac15ae2458e3",
+    "result.json": "ec08496b977e044edb4ce827c81d5783370e0c499a19efce6033b61be81038a4",
+    "request-ledger.json": "d3e16825979aaf6f885b0dfb3debf384f542a7df569ff2ab1013af18d82fd169"
+  },
+  "production_business_writes": 0,
+  "paid_calls": 0
+}

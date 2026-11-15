@@ -1,0 +1,406 @@
+{
+  "status": "readonly_diagnosis_complete_no_engineering_defect_evidenced",
+  "completed_at_utc": "2026-11-15T12:14:26.999035+00:00",
+  "run_id": "run-264ad45e-5964-4b1d-a415-06712d83c083",
+  "paper_id": "paper-87679b4c-12be-49c2-92ec-3df9f81610ff",
+  "task_filename": "例子2.pdf",
+  "separate_other_run": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6 remains the distinct20-candidate quota-stopped task; no results borrowed",
+  "scope": {
+    "cancers": {
+      "mode": "all",
+      "ids": []
+    },
+    "image_types": {
+      "mode": "all",
+      "ids": []
+    },
+    "features": {
+      "mode": "all",
+      "binding_ids": []
+    },
+    "host_all_mode": "scope-matching.ts100-125 only marks cancer/modality unmatched out-of-scope in selected mode; all does not hard-exclude breast because it is absent from configured choices."
+  },
+  "model": {
+    "provider": "agicto",
+    "model_id": "gpt-6-luna",
+    "reasoning_effort": "medium",
+    "api": "openai-responses"
+  },
+  "record_path": {
+    "task_API_output_records": 0,
+    "DB_s4_versions": 0,
+    "DB_retentions_annotations_reviews": 0,
+    "result_records": 0,
+    "result_versions": 0,
+    "delivery_records": 0,
+    "posthoc_filter_or_delete_evidence": false,
+    "nonempty_candidate_submissions": 0,
+    "host_rejected_candidate_count": 0,
+    "batch_empty_submit_count": 15,
+    "all_batch_receipts": [
+      {
+        "file": "batch-0001-attempt-0.json",
+        "batch_id": "batch-0001",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      },
+      {
+        "file": "batch-0002-attempt-0.json",
+        "batch_id": "batch-0002",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      },
+      {
+        "file": "batch-0003-attempt-0.json",
+        "batch_id": "batch-0003",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      },
+      {
+        "file": "batch-0004-attempt-0.json",
+        "batch_id": "batch-0004",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      },
+      {
+        "file": "batch-0005-attempt-0.json",
+        "batch_id": "batch-0005",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      },
+      {
+        "file": "batch-0006-attempt-0.json",
+        "batch_id": "batch-0006",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      },
+      {
+        "file": "batch-0007-attempt-0.json",
+        "batch_id": "batch-0007",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      },
+      {
+        "file": "batch-0008-attempt-0.json",
+        "batch_id": "batch-0008",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      },
+      {
+        "file": "batch-0009-attempt-0.json",
+        "batch_id": "batch-0009",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      },
+      {
+        "file": "batch-0010-attempt-0.json",
+        "batch_id": "batch-0010",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      },
+      {
+        "file": "batch-0011-attempt-0.json",
+        "batch_id": "batch-0011",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      },
+      {
+        "file": "batch-0012-attempt-0.json",
+        "batch_id": "batch-0012",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      },
+      {
+        "file": "batch-0013-attempt-0.json",
+        "batch_id": "batch-0013",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      },
+      {
+        "file": "batch-0014-attempt-0.json",
+        "batch_id": "batch-0014",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      },
+      {
+        "file": "batch-0015-attempt-0.json",
+        "batch_id": "batch-0015",
+        "status": "completed",
+        "explicit_completion_received": true,
+        "candidate_submissions": [
+          {
+            "record_count": 0,
+            "batch_complete": true
+          }
+        ],
+        "candidate_count_so_far": 0
+      }
+    ],
+    "context_reports": "Only2 stored context issues, about statistical mutation/pathway charts not medical-image descriptions; these were not rejected candidate records. No individual rationale was persisted for the other empty submissions."
+  },
+  "execution": {
+    "created_at": "2026-11-15T11:58:02.547Z",
+    "finished_at": "2026-11-15T12:03:28.380Z",
+    "raw_state": "partial",
+    "persisted_task_processing_complete": true,
+    "effective_rule_origin": "persisted",
+    "rule_version": "task-flow-completion-2",
+    "completed_content_units": 447,
+    "total_content_units": 447,
+    "completed_processing_parts": 448,
+    "all_source_lines": 1687,
+    "completed_batches": 15,
+    "failed_batches": 0,
+    "summary_complete": true,
+    "delivery_validation": "passed",
+    "run_result_saved": {
+      "timestamp": "2026-11-15T12:03:28.408Z",
+      "coverage_saved": true,
+      "finalization_complete": true
+    },
+    "requests": 37,
+    "retries": 0,
+    "request_errors": 0,
+    "ledger_halted": null,
+    "summary_exact": "本批次无待核候选记录，亦无同源组或语义审计案例。当前上下文没有提供可验证的候选原文，因此未新增或改写任何描述；不推断病种、模态或图像关联。"
+  },
+  "completion_explanation": {
+    "raw_partial": "Legacy rawstate still requires parser.status parsed; this parser has structure-mapping limitations (17unmapped/16ambiguous), so rawpartial is retained.",
+    "flow_completed": "All authorized nonempty input parts were explicitly completed, summary completed, delivery validated and final coverage/result saved; zero candidates is permitted by the existing rule.",
+    "not_a_medical_claim": "No candidates and processing receipts do not prove that no eligible description was missed.",
+    "code_references": [
+      "packages/agent/src/extraction-run.ts:280",
+      "packages/agent/src/extraction-run.ts:308",
+      "packages/agent/src/extraction-run.ts:356",
+      "apps/server/src/workflow.ts:272",
+      "apps/server/src/workflow.ts:698"
+    ]
+  },
+  "source_identity": {
+    "pdf_SHA256": "1f37f00d6da38c52513a3aad11f0c639b25ec3a3979de3a6c1507080901c43bc",
+    "PDF_file_RunInput_IR_artifact_SHA_match": true,
+    "heading_from_original_page1": "Comprehensive molecular portraits of human breast tumours",
+    "ir_title_metadata": null,
+    "DOI": "10.1038/nature11412",
+    "physical_pages": 10,
+    "independent_PDF_read": "pdf-direct-read.json",
+    "original_pages_visually_inspected": [
+      "source-page-1.png",
+      "source-page-2.png",
+      "source-page-5.png"
+    ],
+    "keywords_are_auxiliary_only": true,
+    "interpretation": "Representative original prose and Figures1-5 captions describe genomic mutations, expression/protein platforms, pathway activity and molecular comparisons; sampled original Figures1/3 are statistical charts/heatmaps. The p2 lobular histological subtype statement concerns CDH1 mutations and mRNA/protein expression; Fig1 T1/T2-4 is a clinical grouping legend. These observations support the mainly non-target molecular content interpretation, not a guarantee of complete medical recall.",
+    "representative_IR_original_lines": [
+      {
+        "label": "abstract_genomic_platforms",
+        "physical_page": 1,
+        "first_block_id": "4ec0ca364af44ead902b-p0001-l000005",
+        "last_block_id": "4ec0ca364af44ead902b-p0001-l000016",
+        "exact_original_lines": [
+          "We analysed primary breast cancers by genomic DNA copy number arrays, DNA methylation, exome sequencing,",
+          "messenger RNA arrays, microRNA sequencing and reverse-phase protein arrays. Our ability to integrate information",
+          "across platforms provided key insights into previously defined gene expression subtypes and demonstrated the existence",
+          "of four main breast cancer classes when combining data from five platforms, each of which shows significant molecular",
+          "heterogeneity. Somatic mutations in only three genes (TP53, PIK3CA and GATA3) occurred at .10% incidence across all",
+          "breast cancers; however, there were numerous subtype-associated and novel gene mutations including the enrichment",
+          "of specific mutations in GATA3, PIK3CA and MAP3K1 with the luminal A subtype. We identified two novel",
+          "protein-expression-defined subgroups, possibly produced by stromal/microenvironmental elements, and integrated",
+          "analyses identified specific signalling pathways dominant in each molecular subtype including a HER2/phosphorylated",
+          "HER2/EGFR/phosphorylated EGFR signature within the HER2-enriched expression subtype. Comparison of basal-like",
+          "breast tumours with high-grade serous ovarian tumours showed many molecular commonalities, indicating a related",
+          "aetiology and similar therapeutic opportunities. The biological finding of the four main breast cancer subtypes caused by"
+        ]
+      },
+      {
+        "label": "borderline_histological_word_in_mutation_context",
+        "physical_page": 2,
+        "first_block_id": "4ec0ca364af44ead902b-p0002-l000052",
+        "last_block_id": "4ec0ca364af44ead902b-p0002-l000059",
+        "exact_original_lines": [
+          "cancers. PIK3CA mutation frequency and spectrum also varied by",
+          "mRNA subtype (Supplementary Fig. 3); the recurrent PIK3CA",
+          "E545K mutation was present almost exclusively within luminal A",
+          "(25 out of 27) tumours. CDH1 mutations were common (30 out of",
+          "36) within the lobular histological subtype and corresponded with",
+          "lower CDH1 mRNA (Supplementary Fig. 4) and protein expression.",
+          "Finally, we identified 4 out of 8 somatic variants in HER2 within lobular",
+          "cancers, three of which were within the tyrosine kinase domain."
+        ]
+      },
+      {
+        "label": "figure1_clinical_stage_group_legend",
+        "physical_page": 2,
+        "first_block_id": "4ec0ca364af44ead902b-p0002-l000244",
+        "last_block_id": "4ec0ca364af44ead902b-p0002-l000253",
+        "exact_original_lines": [
+          "Figure 1 | Significantly mutated genes and correlations with genomic and",
+          "clinical features. Tumour samples are grouped by mRNA subtype: luminal A",
+          "(n5225), luminal B (n5126), HER2E (n557) and basal-like (n593). The",
+          "left panel shows non-silent somatic mutation patterns and frequencies for",
+          "significantly mutated genes. The middle panel shows clinical features: dark",
+          "grey, positive or T2-4; white, negative or T1; light grey, N/A or equivocal.",
+          "N, node status; T, tumour size. The right panel shows significantly mutated",
+          "genes with frequent copy number amplifications (red) or deletions (blue). The",
+          "far-right panel shows non-silent mutation rate per tumour (mutations per",
+          "megabase, adjusted for coverage). The average mutation rate for each"
+        ]
+      },
+      {
+        "label": "figure2_genomic_proteomic_heatmap",
+        "physical_page": 4,
+        "first_block_id": "4ec0ca364af44ead902b-p0004-l000152",
+        "last_block_id": "4ec0ca364af44ead902b-p0004-l000158",
+        "exact_original_lines": [
+          "Figure 2 | Coordinated analysis of breast cancer subtypes defined from five",
+          "different genomic/proteomic platforms. a, Consensus clustering analysis of",
+          "the subtypes identifies four major groups (samples, n5348). The blue and",
+          "white heat map displays sample consensus. b, Heat-map display of the subtypes",
+          "defined independently by miRNAs, DNA methylation, copy number (CN),",
+          "PAM50 mRNA expression, and RPPA expression. The red bar indicates",
+          "membership of a cluster type. c, Associations with molecular and clinical"
+        ]
+      },
+      {
+        "label": "figure3_pathway_activity",
+        "physical_page": 5,
+        "first_block_id": "4ec0ca364af44ead902b-p0005-l000194",
+        "last_block_id": "4ec0ca364af44ead902b-p0005-l000205",
+        "exact_original_lines": [
+          "Figure 3 | Integratedanalysis of thePI(3)K,TP53andRB1pathways. Breast",
+          "cancer subtypes differ by genetic and genomic targeting events, with",
+          "corresponding effects on pathway activity. a-c, For PI(3)K (a), TP53 (b) and",
+          "RB1 (c) pathways, key genes were selected using prior biological knowledge.",
+          "Multiple mRNA expression signatures for a given pathway were defined",
+          "(details in Supplementary Methods; PI(3)K:Saal, PTEN loss in human breast",
+          "tumours; CMap, PI(3)K/mTOR inhibitor treatment in vitro; Majumder, Akt",
+          "overexpression in mouse model; TP53: IARC, expert-curated p53 targets; GSK,",
+          "TP53 mutant versus wild-type cell lines; KANNAN, TP53 overexpression in",
+          "vitro; TROESTER, TP53 knockdown in vitro; RB: CHICAS, RB1 mouse",
+          "knockout versus wild type; LARA, RB1 knockdown in vitro;",
+          "HERSCHKOWITZ, RB1 loss of heterozygosity (LOH) in human breast"
+        ]
+      }
+    ]
+  },
+  "conclusion": "This model run never submitted nonempty eligible-description candidates. No engineering evidence of filtering, rejection, deletion or delivery loss was found; representative original-source inspection supports primarily molecular research outside the current visual-description target. No code/prompt/scope/model/limit change or forced nonempty result.",
+  "source_artifact_SHA256": {
+    "runtime-data/workbench/runs/run-264ad45e-5964-4b1d-a415-06712d83c083/document-ir.json": "39dedb533bf1ccca8a37476d0c2dfec240fe5946d03a355793cedab0e8f95024",
+    "runtime-data/workbench/runs/run-264ad45e-5964-4b1d-a415-06712d83c083/paragraph-plan.json": "68656490895fc1edf45f4e3007e26c165d99218d43b3f64517603f29d9d1c1fd",
+    "runtime-data/workbench/runs/run-264ad45e-5964-4b1d-a415-06712d83c083/batch-plan.json": "ad67445048650c8e3f8b0937fcc648e4d1d576756ddc2babb4d346a1809039d9",
+    "runtime-data/workbench/runs/run-264ad45e-5964-4b1d-a415-06712d83c083/result.json": "f737476a75693c7fb4c52ec9223dd56a103232459c427bab3f196a384871f21a",
+    "runtime-data/workbench/runs/run-264ad45e-5964-4b1d-a415-06712d83c083/delivery.json": "9dcb704b1e36d2e312d61e584f9e1edee9e352384914c30d9ba8734d814ba0f1",
+    "runtime-data/workbench/runs/run-264ad45e-5964-4b1d-a415-06712d83c083/request-ledger.json": "3a2983e6dc5ca3bef01b01f1a93f7a00757cf5c5ffcd0b6431bc229dd45ddc6c",
+    "runtime-data/workbench/pdf/1f37f00d6da38c52513a3aad11f0c639b25ec3a3979de3a6c1507080901c43bc.pdf": "1f37f00d6da38c52513a3aad11f0c639b25ec3a3979de3a6c1507080901c43bc"
+  },
+  "formal_review_shared_used": 3,
+  "formal_review_limit": 3,
+  "new_paid_calls": 0,
+  "production_business_writes": 0,
+  "source_data_modified": false,
+  "application_tests": 0,
+  "deployment_or_restart": false,
+  "limitations": [
+    "No exhaustive sentence-by-sentence medical audit or recall guarantee.",
+    "No new real model re-evaluation; stored model completion and human/agent source sampling are separate evidence."
+  ],
+  "cleanup": "No own temporary diagnostic script, clone DB or baseline created; inline commands only. Retain this JSON, direct PDF-read summary and3 original page renders."
+}

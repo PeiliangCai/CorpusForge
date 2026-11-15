@@ -38,6 +38,8 @@ COPY packages/ packages/
 COPY apps/server/ apps/server/
 COPY services/pdf-parser/ services/pdf-parser/
 COPY config/pdf-parser.json config/pdf-parser.json
+COPY config/workbench-response-model-policy.json config/workbench-response-model-policy.json
+COPY config/scope-catalog.json config/scope-catalog.json
 COPY docs/acceptance/s3/parser-selection-2026-11-03/decision.json docs/acceptance/s3/parser-selection-2026-11-03/decision.json
 COPY docs/acceptance/s4/selection-optimization/continuation-2026-11-03/supplier-alias-confirmation.json docs/acceptance/s4/selection-optimization/continuation-2026-11-03/supplier-alias-confirmation.json
 COPY tests/extraction/fixtures/runtime-responses.ts tests/extraction/fixtures/runtime-responses.ts

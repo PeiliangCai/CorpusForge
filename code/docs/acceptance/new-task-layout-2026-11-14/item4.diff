@@ -1,0 +1,575 @@
+--- a/apps/pi-web/t1/result-navigation.ts
++++ b/apps/pi-web/t1/result-navigation.ts
+@@ -9,21 +9,24 @@
+ }
+ 
+ export function initialWorkbenchSelection(params: URLSearchParams, papers: WorkbenchPaper[], runs: WorkbenchRun[]) {
+-  const linkedRun = runs.find(run => run.run_id === params.get("run"));
++  const requestedRunId = params.get("run"), requestedHistoryId = requestedRunId ? "" : params.get("history") ?? "";
++  const linkedRun = runs.find(run => run.run_id === (requestedRunId || requestedHistoryId));
+   const linkedPaper = papers.find(paper => paper.id === params.get("paper"));
+   const paper = papers.find(paper => paper.id === linkedRun?.document_id)
+     ?? linkedPaper
+-    ?? papers.find(paper => runs.some(run => run.document_id === paper.id && run.candidate_count > 0))
+-    ?? papers.find(paper => paper.output_ids.length > 0)
+-    ?? papers[0];
+-  const historyId = linkedRun ? "" : params.get("history") ?? "";
+-  const run = linkedRun ?? (historyId ? undefined : resultRunForPaper(paper?.id ?? "", runs));
++    ?? (requestedRunId || requestedHistoryId ? undefined :
++      papers.find(paper => runs.some(run => run.document_id === paper.id && run.candidate_count > 0))
++      ?? papers.find(paper => paper.output_ids.length > 0)
++      ?? papers[0]);
++  const historyId = linkedRun || requestedRunId ? "" : requestedHistoryId;
++  const run = linkedRun ?? (requestedRunId || historyId ? undefined : resultRunForPaper(paper?.id ?? "", runs));
++  const runId = requestedRunId || run?.run_id || null;
+   const view = params.get("view");
+   return {
+     paperId: paper?.id ?? "",
+-    runId: run?.run_id ?? null,
++    runId,
+     historyId,
+     recordId: params.get("record") ?? "",
+-    activeTab: views.includes(view ?? "") ? view! : run || historyId || paper?.output_ids.length ? "records" : "newTask",
++    activeTab: views.includes(view ?? "") ? view! : runId || historyId || paper?.output_ids.length ? "records" : "newTask",
+   };
+ }
+--- a/apps/pi-web/t1/T1Workbench.tsx
++++ b/apps/pi-web/t1/T1Workbench.tsx
+@@ -97,6 +97,12 @@
+   const displayedRun = currentRun?.run ?? selectedRun;
+   const currentPaper = detail?.paper.id === paperId ? detail : null;
+   const output = runId ? currentRun?.output : currentPaper?.outputs.find(item => item.id === historyId);
++  // Paper details carry the latest source across all its runs. Only an exact
++  // run snapshot may supply task figures/source; unmapped legacy text has none.
++  const sourceDetail = runId ? currentRun : historyId ? null : currentPaper;
++  const loadingRun = Boolean((runId && !currentRun || historyId && paperId && !currentPaper) && !detailError);
++  const unavailableHistory = Boolean(historyId && (!paperId || currentPaper && !output));
++  const missingHistoricalSource = Boolean(historyId && output);
+   const records = output?.records.filter(record => !record.deleted) ?? [];
+   const query = recordQuery.trim().toLocaleLowerCase();
+   const retainedStatus = (item: typeof records[number]) => item.retention?.status ?? (item.review_status === "rejected" ? "excluded" : "kept");
+@@ -108,12 +114,12 @@
+   const recordPosition = record ? visibleRecords.indexOf(record) : -1;
+   const firstSourcePage = record?.fragments[0]?.physical_page;
+   const paper = currentRun?.paper ?? currentPaper?.paper ?? papers.find(item => item.id === paperId);
+-  const figures = currentRun?.figures ?? currentPaper?.figures ?? [];
+-  const sourceStatus = currentRun?.source_status ?? currentPaper?.source_status ?? (currentPaper?.source_verified ? "valid" : "not_parsed");
+-  const sourceIssues = currentRun?.source_issues ?? currentPaper?.source_issues ?? [];
++  const figures = sourceDetail?.figures ?? [];
++  const sourceStatus = sourceDetail?.source_status ?? (sourceDetail && "source_verified" in sourceDetail && sourceDetail.source_verified ? "valid" : "not_parsed");
++  const sourceIssues = sourceDetail?.source_issues ?? [];
+   const sourceBlocked = sourceStatus === "missing" || sourceStatus === "mismatch";
+-  const pdfUrl = currentRun?.pdf_url ?? currentPaper?.pdf_url;
+-  const units = currentRun?.source_units ?? currentPaper?.source_units ?? [];
++  const pdfUrl = sourceDetail?.pdf_url;
++  const units = sourceDetail?.source_units ?? [];
+   const editable = Boolean(runId && currentRun && capabilities?.persisted_review);
+   const paperRuns = runs.filter(run => run.document_id === paperId);
+   const pairedFigures = record?.association === "paired" ? figures.filter(figure => record.figure_ids.includes(figure.id)) : [];
+@@ -154,6 +160,7 @@
+     if (cause instanceof WorkbenchError && ["batch_scope_frozen", "batch_model_frozen", "batch_task_title_frozen"].includes(cause.code)) return t("t1.submissionConflict");
+     if (cause instanceof WorkbenchError && ["invalid_model_profile", "model_profile_limit"].includes(cause.code)) return t("t1.invalidModelProfile");
+     if (cause instanceof WorkbenchError && ["invalid_model_profile_id", "model_profile_not_found"].includes(cause.code)) return t("t1.missingSavedModel");
++    if (cause instanceof WorkbenchError && ["workbench_run_not_found", "s4_run_not_found"].includes(cause.code)) return t("t1.selectedRunUnavailable");
+     if (cause instanceof WorkbenchError && cause.code.includes("source_glyph_check_missing")) return t("t1.sourceGlyphLegacy");
+     if (cause instanceof WorkbenchError && cause.code.includes("source_glyph_fidelity_unverified")) return t("t1.sourceGlyphUnreliable");
+     if (cause instanceof WorkbenchError && cause.code === "restore_requires_identical_pdf") return t("t1.restoreMismatch");
+@@ -257,7 +264,7 @@
+       flight = api<WorkbenchPaperDetail>(`workbench/papers/${encodeURIComponent(paperId)}`, { signal: controller.signal }).then(value => {
+       if (controller.signal.aborted) return;
+       const cleaned = cleanPaperDetail(value); setDetail(cleaned);
+-      if (!selectionRef.current.runId) setHistoryId(current => cleaned.outputs.some(item => item.id === current) ? current : cleaned.outputs.find(item => item.strategy === "B0")?.id ?? cleaned.outputs[0]?.id ?? "");
++      if (!selectionRef.current.runId && !selectionRef.current.historyId) setHistoryId(cleaned.outputs.find(item => item.strategy === "B0")?.id ?? cleaned.outputs[0]?.id ?? "");
+       }).catch(cause => { if (!controller.signal.aborted && !refreshingRef.current) setDetailError(errorText(cause)); throw cause; }).finally(() => { flight = null; });
+       return flight;
+     }
+@@ -450,6 +457,7 @@
+               </div>
+             </div>
+             {state && <RunProgress run={displayedRun} state={state} coverage={output?.coverage} events={progressEvents} onDetails={() => setShowNotes(true)} />}
++            {missingHistoricalSource && <p className="t1-alert" role="status">{t("t1.historicalSourceUnavailable")}</p>}
+             {exportError && <div className="t1-alert t1-export-error" role="alert">{exportError}<button className="t1-button" onClick={() => { setExportError(""); setShowNotes(true); }}>{t("t1.viewDetails")}</button></div>}
+             {download && <span className="t1-sr-only" role="status">{t("t1.downloading")}</span>}
+             <section className="t1-results-panel" aria-label={t("t1.extractionResults")}>
+@@ -457,7 +465,7 @@
+                 <label className="t1-record-search"><SearchIcon size={14} /><input type="search" aria-label={t("t1.findRecord")} placeholder={t("t1.findRecord")} value={recordQuery} onChange={e => setRecordQuery(e.target.value)} /></label>
+                 <label className="t1-role-filter"><span className="t1-sr-only">{t("t1.candidateRole")}</span><select aria-label={t("t1.candidateRole")} value={recordRole} onChange={e => { setRecordRole(e.target.value); setRecordId(""); }}><option value="all">{t("t1.allCandidates")}</option><option value="primary_candidate">{t("t1.primaryDescriptions")}</option><option value="background_suggestion">{t("t1.backgroundSuggestions")}</option></select></label>
+               </div>
+-              {!records.length ? <div className="t1-empty"><p>{t(output ? "t1.noRecords" : "t1.noRun")}</p><button onClick={() => openTab("newTask")}>{t("t1.newTask")}</button></div> : <>
++              {!records.length ? <div className="t1-empty"><p>{t(loadingRun ? "t1.loadingSelectedRun" : unavailableHistory ? "t1.selectedRunUnavailable" : output ? "t1.noRecords" : "t1.noRun")}</p><button onClick={() => openTab("newTask")}>{t("t1.newTask")}</button></div> : <>
+                 <div className="t1-record-step"><label className="t1-record-selector"><span className="t1-sr-only">{t("t1.record")}</span><select aria-label={t("t1.record")} value={record?.id ?? ""} onChange={e => setRecordId(e.target.value)}>{!visibleRecords.length && <option value="">{t("t1.noMatchingRecords")}</option>}{visibleRecords.map(item => <option key={item.id} value={item.id}>{records.indexOf(item) + 1} · {item.fragments[0]?.exact_quote.slice(0, 82)}</option>)}</select></label><span className="t1-record-position">{recordPosition + 1} / {visibleRecords.length}</span><button aria-label={t("t1.previousRecord")} title={t("t1.previousRecord")} disabled={recordPosition <= 0} onClick={() => setRecordId(visibleRecords[recordPosition - 1].id)}><ChevronIcon size={15} className="t1-chevron-back" /></button><button aria-label={t("t1.nextRecord")} title={t("t1.nextRecord")} disabled={recordPosition < 0 || recordPosition >= visibleRecords.length - 1} onClick={() => setRecordId(visibleRecords[recordPosition + 1].id)}><ChevronIcon size={15} /></button></div>
+                 {!visibleRecords.length ? <p className="t1-empty t1-search-empty" role="status">{t("t1.noMatchingRecords")}</p> : <div className="t1-results-layout"><ResultIndex records={records} visibleRecords={visibleRecords} selectedId={record?.id} onSelect={setRecordId} />
+                   {record && <article className="t1-evidence-card" data-record-id={record.id} data-record-version={record.version}>
+@@ -475,7 +483,7 @@
+               </>}
+             </section>
+           </>}
+-          {activeTab === "figures" && <><div className="t1-heading"><h1>{t("t1.figures")}</h1></div><p className="t1-lead">{t("t1.independentFigure")}</p>{figures.length ? figures.map(figure => <FigureView key={figure.id} figure={figure} onPage={sourcePage} />) : <p className="t1-empty">{t("t1.noFigures")}</p>}</>}
++          {activeTab === "figures" && <><div className="t1-heading"><h1>{t("t1.figures")}</h1></div><p className="t1-lead">{t("t1.independentFigure")}</p>{figures.length ? figures.map(figure => <FigureView key={figure.id} figure={figure} onPage={sourcePage} />) : <p className="t1-empty">{t(loadingRun ? "t1.loadingSelectedRun" : missingHistoricalSource ? "t1.historicalSourceUnavailable" : unavailableHistory ? "t1.selectedRunUnavailable" : runId && !currentRun ? "t1.runSourceUnavailable" : "t1.noFigures")}</p>}</>}
+           {activeTab === "tasks" && <><div className="t1-heading"><h1>{t("t1.tasks")}</h1><span className="t1-badge">{t("t1.submittedTaskCount", { count: runs.length })}</span></div><p className="t1-lead">{t("t1.groupedTasksHelp")}</p><label className="t1-record-search"><SearchIcon size={14} /><input type="search" aria-label={t("t1.findTask")} placeholder={t("t1.findTask")} value={taskQuery} onChange={event => setTaskQuery(event.target.value)} /></label><SubmissionRunList query={taskQuery} variant="history" runs={runs} papers={papers} selectedId={runId ?? historyId} expanded={expandedGroups} menuRunId={taskMenu?.runId} onToggle={(id, value) => setExpandedGroups(current => ({ ...current, [id]: value }))} onSelect={selectRun} onMenu={openRunMenu} statusLabel={runLabel} /></>}
+ 
+         </div>{refreshing && <div className="t1-refresh-overlay" aria-hidden="true" />}</div>
+--- a/apps/pi-web/t1/useRunEvents.ts
++++ b/apps/pi-web/t1/useRunEvents.ts
+@@ -5,12 +5,13 @@
+ export interface RunEvent { seq: number; type: string; summary: string; stage: string; timestamp: string; fixture: boolean; detail?: Record<string, unknown> }
+ /** Generic SSE framing; unlike a fixed event-name list, this keeps every typed business event. */
+ export function useRunEvents(runId: string | null, workbench = false) {
+-  const [events, setEvents] = useState<RunEvent[]>([]);
++  const [eventSnapshot, setEventSnapshot] = useState<{ id: string | null; items: RunEvent[] }>({ id: null, items: [] });
+   const [progressSnapshot, setProgressSnapshot] = useState<{ id: string | null; items: readonly ProgressEvent[] }>({ id: null, items: [] });
+-  const [connection, setConnection] = useState("noSelectedTask");
++  const [connectionSnapshot, setConnectionSnapshot] = useState({ id: runId, status: "noSelectedTask" });
+   useEffect(() => {
+-    setEvents([]);
++    setEventSnapshot({ id: runId, items: [] });
+     setProgressSnapshot({ id: runId, items: [] });
++    const setConnection = (status: string) => setConnectionSnapshot({ id: runId, status });
+     if (!runId) { setConnection("noSelectedTask"); return; }
+     const controller = new AbortController();
+     let cursor = 0;
+@@ -19,6 +20,7 @@
+         try {
+           setConnection(cursor ? "reconnecting" : "connecting");
+           const response = await fetch(`/api/t1/${workbench ? "workbench/" : ""}runs/${encodeURIComponent(runId!)}/events?after=${cursor}`, { signal: controller.signal, cache: "no-store" });
++          if (controller.signal.aborted) { await response.body?.cancel().catch(() => {}); return; }
+           if (!response.ok || !response.body) throw new Error("stream_unavailable");
+           setConnection("connected");
+           const reader = response.body.getReader(), decoder = new TextDecoder();
+@@ -26,10 +28,10 @@
+           try {
+             while (!controller.signal.aborted) {
+               const { done, value } = await reader.read();
+-              if (done) break;
++              if (done || controller.signal.aborted) break;
+               pending += decoder.decode(value, { stream: true }).replaceAll("\r\n", "\n");
+               let boundary;
+-              while ((boundary = pending.indexOf("\n\n")) >= 0) {
++              while (!controller.signal.aborted && (boundary = pending.indexOf("\n\n")) >= 0) {
+                 const frame = pending.slice(0, boundary); pending = pending.slice(boundary + 2);
+                 const data = frame.split("\n").filter(line => line.startsWith("data:")).map(line => line.slice(5).trimStart()).join("\n");
+                 if (!data) continue;
+@@ -38,7 +40,7 @@
+                 const event: RunEvent = { ...value, summary: value.summary ?? value.detail?.summary ?? value.type, stage: value.stage ?? value.detail?.state ?? "", fixture: value.fixture ?? value.detail?.controlled_fixture ?? false };
+                 if (!Number.isSafeInteger(event.seq) || event.seq <= cursor) continue;
+                 cursor = event.seq;
+-                setEvents(previous => [...previous.filter(item => item.seq !== event.seq), event].slice(-500));
++                setEventSnapshot(previous => ({ id: runId, items: [...(previous.id === runId ? previous.items : []).filter(item => item.seq !== event.seq), event].slice(-500) }));
+                 if (["state", "coverage_inventory", "batch"].includes(event.type)) setProgressSnapshot(previous => ({ id: runId, items: retainProgressEvent(previous.id === runId ? previous.items : [], event) }));
+               }
+             }
+@@ -58,5 +60,7 @@
+     void connect();
+     return () => controller.abort();
+   }, [runId, workbench]);
+-  return { events, progressEvents: progressSnapshot.id === runId ? progressSnapshot.items : [], connection };
++  return { events: eventSnapshot.id === runId ? eventSnapshot.items : [],
++    progressEvents: progressSnapshot.id === runId ? progressSnapshot.items : [],
++    connection: connectionSnapshot.id === runId ? connectionSnapshot.status : runId ? "connecting" : "noSelectedTask" };
+ }
+--- a/apps/pi-web/t1/messages.mjs
++++ b/apps/pi-web/t1/messages.mjs
+@@ -284,6 +284,10 @@
+   close: ["Close", "关闭", "關閉"],
+   retry: ["Try again", "重试", "重試"],
+   loading: ["Loading saved evidence…", "正在读取已保存成果…", "正在讀取已儲存成果…"],
++  loadingSelectedRun: ["Loading this task…", "正在读取当前任务…", "正在讀取目前任務…"],
++  selectedRunUnavailable: ["This task is unavailable or has been deleted. Select another task to view its results.", "当前任务不可用或已删除。请选择其他任务查看对应结果。", "目前任務無法使用或已刪除。請選擇其他任務查看對應結果。"],
++  runSourceUnavailable: ["Could not load this task's source.", "当前任务的来源读取失败。", "目前任務的來源讀取失敗。"],
++  historicalSourceUnavailable: ["This historical result has no available task source. Its saved text is shown; figures and source locations are unavailable.", "这次历史结果缺少可用的任务来源。已保存文字仍可查看，图片与来源定位不可用。", "這次歷史結果缺少可用的任務來源。已儲存文字仍可查看，圖片與來源定位無法使用。"],
+   readFailed: ["Could not load this data.", "数据读取失败", "資料讀取失敗"],
+   backendUnavailable: ["The T1 service is unavailable.", "尚未连接到 T1 服务", "尚未連線至 T1 服務"],
+   notFound: ["Paper or task was not found.", "未找到所选论文或任务", "找不到所選論文或任務"],
+--- a/apps/pi-web/t1/result-navigation.test.ts
++++ b/apps/pi-web/t1/result-navigation.test.ts
+@@ -45,3 +45,27 @@
+   assert.equal(selected.runId, null);
+   assert.equal(selected.activeTab, "newTask");
+ });
++
++test("an explicit unavailable run never opens a different run of the same paper", () => {
++  const selected = initialWorkbenchSelection(new URLSearchParams("paper=paper-a&run=deleted-run&record=old-record"), papers, runs);
++  assert.equal(selected.runId, "deleted-run");
++  assert.equal(selected.historyId, "");
++  assert.equal(selected.paperId, "paper-a");
++  assert.equal(selected.activeTab, "records");
++});
++
++test("a known history id resolves to the real run and its own source snapshot", () => {
++  const selected = initialWorkbenchSelection(new URLSearchParams("paper=paper-b&history=old-a"), papers, runs);
++  assert.equal(selected.runId, "old-a");
++  assert.equal(selected.paperId, "paper-a");
++  assert.equal(selected.historyId, "");
++});
++
++test("unavailable explicit links without a paper do not borrow any other paper", () => {
++  for (const query of ["run=deleted-run", "history=unknown-output"]) {
++    const selected = initialWorkbenchSelection(new URLSearchParams(query), papers, runs);
++    assert.equal(selected.paperId, "");
++    assert.equal(selected.activeTab, "records");
++  }
++});
++
+--- a/tests/extraction/model-profile-transport.test.ts
++++ b/tests/extraction/model-profile-transport.test.ts
+@@ -52,3 +52,37 @@
+     assert.equal(created.audit.model_capacity_source, 'user_configured_local_limits_not_verified_supplier_capacity');
+   } finally { await rm(directory, { recursive: true, force: true }); }
+ });
++
++test('Luna medium reaches the installed Responses SDK with fixed reasoning/output and no unverified sampling parameters', async context => {
++  const directory = await mkdtemp(resolve('runtime-data/profile-luna-transport-'));
++  const config = new ModelConfig('agicto', 'https://api.agicto.cn/v1', 'gpt-6-luna', 'synthetic-placeholder-only');
++  const requests: Record<string, unknown>[] = [];
++  context.mock.method(globalThis, 'fetch', async (request: Request) => {
++    assert.equal(request.url, 'https://api.agicto.cn/v1/responses'); requests.push(await request.clone().json());
++    return Response.json({ error: { message: 'Synthetic transport rejection. No provider request sent.' } }, { status: 400 });
++  });
++  // Advance the actual Date constructor and Date.now across different days.
++  // The SDK system-prompt renderer also gets inspected in the acceptance record.
++  context.mock.timers.enable({ apis: ['Date'], now: Date.UTC(2026, 10, 1) });
++  try {
++    for (const name of ['first', 'second']) {
++      if (name === 'second') context.mock.timers.setTime(Date.UTC(2040, 5, 1));
++      const budget = new ExtractionBudget(resolve(directory, name + '-ledger.json'), config.baseUrl);
++      const created = await createExtractionSession(config, developmentProfile(config.modelId), [], resolve(directory, name), budget, 'synthetic-luna-repeated-input');
++      await promptExtractionSession(created, 'Identical synthetic source input for transport inspection only.', budget);
++    }
++    assert.equal(requests.length, 2);
++    for (const request of requests) {
++      assert.equal(request.model, 'gpt-6-luna'); assert.deepEqual(request.reasoning, { effort: 'medium', summary: 'auto' });
++      assert.equal(request.max_output_tokens, 8192); assert.equal(request.store, false);
++      assert.equal(request.temperature, undefined); assert.equal(request.top_p, undefined); assert.equal(request.seed, undefined);
++      assert.equal(request.previous_response_id, undefined); assert.equal(request.prompt_cache_key, undefined);
++    }
++    assert.deepEqual(requests[0], requests[1], 'fresh sessions with identical model-visible input produce identical request bodies');
++    assert.match(JSON.stringify(requests[0]!.input), /pi-evidence-context/);
++    assert.doesNotMatch(JSON.stringify(requests[0]!.input), /2026-11-01|2040-06-01/);
++    console.log(JSON.stringify({ sdk: 'installed_pi_responses', model: 'gpt-6-luna', reasoning: 'medium', max_output_tokens: 8192,
++      temperature: 'omitted', top_p: 'omitted', seed: 'omitted', store: false, fresh_session_bodies_identical: true,
++      simulated_dates: ['2026-11-01', '2040-06-01'], clock_fields_in_model_input: false, neutral_cwd: true, external_requests: 0, paid_calls: 0 }));
++  } finally { await rm(directory, { recursive: true, force: true }); }
++});
+--- a/apps/server/test/run-isolation-fixture.ts
++++ b/apps/server/test/run-isolation-fixture.ts
+@@ -0,0 +1,76 @@
++/** Isolated saved-development-source replay. No provider, credentials, parser or paid calls. */
++import assert from 'node:assert/strict';
++import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
++import { resolve } from 'node:path';
++import { pathToFileURL } from 'node:url';
++import { ExtractionStore, RunStore } from '@t1/agent';
++import type { EvidenceVersion } from '@t1/contracts';
++import { WorkbenchSources } from '../src/workbench.js';
++import { WorkbenchWorkflow, type WorkflowOptions } from '../src/workflow.js';
++import { buildApp } from '../src/app.js';
++
++export async function runIsolationFixture() {
++  const directory = await mkdtemp(resolve('runtime-data/run-isolation-'));
++  const store = new ExtractionStore(resolve(directory, 'fixture.sqlite')), legacy = new RunStore(':memory:');
++  const seed = (await new WorkbenchSources().retained()).find(value => value.row.id === 'L05')!;
++  assert.ok(seed);
++  const replay = (seed.outputs[0]!.result.records as EvidenceVersion[]).filter((version, index, all) =>
++    all.findIndex(other => JSON.stringify(other.record.quote_span.segments) === JSON.stringify(version.record.quote_span.segments)) === index);
++  assert.ok(replay.length >= 3);
++  const selections = [[0], [1, 2], []];
++  let executions = 0;
++  const options: WorkflowOptions = {
++    directory: resolve(directory, 'workbench'), sources: false,
++    parse: async (input, path) => {
++      const document = structuredClone(seed.document);
++      document.document_id = input.document_id; document.source.file_reference = path;
++      for (const block of document.blocks) block.document_id = input.document_id;
++      return document;
++    },
++    discover: async document => { const catalog = structuredClone(seed.catalog); catalog.document_id = document.document_id; return catalog; },
++    runner: { controlled: true, provider: 'controlled-local-replay', model_id: 'saved-development-records-no-model', execute: async context => {
++      const indices = selections[executions++] ?? [];
++      context.store.transition(context.input.run_id, 'extracting');
++      context.store.event(context.input.run_id, 'controlled_fixture', { paid_requests: 0, replay_only: true });
++      for (const [position, index] of indices.entries()) {
++        const record = structuredClone(replay[index]!.record);
++        // The first candidate deliberately has the same id in both runs. The
++        // composite run/record identity must still keep content and retention apart.
++        record.record_id = position === 0 ? 'replay-shared-record' : `replay-record-${index}`;
++        record.document_id = context.input.document_id; record.article_family_id = context.metadata.article_family_id;
++        record.source_version = structuredClone(context.metadata.source_version);
++        Object.assign(record.extraction_trace, { task_id: context.metadata.task_id, run_id: context.input.run_id,
++          scope: structuredClone(context.input.scope), catalog_version: context.input.scope.catalog_version,
++          provider: 'controlled-local-replay', model_id: 'saved-development-records-no-model' });
++        Object.assign(record.extraction_trace.source_binding, { task_id: context.metadata.task_id, run_id: context.input.run_id,
++          document_id: context.input.document_id, source_version: context.metadata.source_version.version });
++        record.review_status = 'pending'; record.review_events = []; record.handoff_status = 'candidate_only'; record.duplicate_and_conflict_links = [];
++        context.store.apply(context.input.run_id, { action: 'insert', record, expected_version: null, target_record_id: null, related_record_ids: [], issues: [],
++          changes: [{ kind: 'insert', record_id: record.record_id, expected_version: null, record }] });
++      }
++      context.store.transition(context.input.run_id, 'reconciling'); context.store.transition(context.input.run_id, 'completed');
++      return { summary: `Controlled replay: ${indices.length} records; no model called.`, coverage: { controlled_saved_source_replay: true, new_model_requests: 0 } };
++    } },
++  };
++  const workflow = new WorkbenchWorkflow(store, options), app = buildApp(legacy, undefined, workflow);
++  await app.ready();
++  const pdf = await readFile(seed.row.pdf.path), paper = (await workflow.upload(pdf, 'same-paper.pdf')).paper;
++  const repeated = await workflow.upload(pdf, 'renamed-same-paper.pdf'); assert.equal(repeated.paper.id, paper.id);
++  const ids: Record<string, string> = {};
++  for (const name of ['older', 'newer', 'empty']) {
++    ids[name] = (await workflow.start(paper.id, workflow.scopeCatalog().default_scope, 'isolation-' + name, { kind: 'single' }, undefined, `Replay ${name}`)).run.run_id;
++    await workflow.waitForIdle();
++  }
++  const close = async () => { await app.close(); legacy.close(); store.close(); await rm(directory, { recursive: true, force: true }); };
++  return { directory, store, legacy, workflow, app, paper, ids, close, paid_calls: 0 };
++}
++
++if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
++  const fixture = await runIsolationFixture();
++  const port = Number(process.env.T1_RUN_ISOLATION_PORT ?? '3216');
++  await fixture.app.listen({ host: '127.0.0.1', port });
++  await writeFile('runtime-data/agent-notes/run-isolation-runtime.json', JSON.stringify({ directory: fixture.directory, pid: process.pid,
++    port, paper_id: fixture.paper.id, ids: fixture.ids, controlled: true, paid_calls: 0 }) + '\n');
++  console.log(`No-model isolated run fixture ready on ${port}`);
++  process.once('SIGTERM', () => void fixture.close()); process.once('SIGINT', () => void fixture.close());
++}
+--- a/apps/server/test/run-isolation.test.ts
++++ b/apps/server/test/run-isolation.test.ts
+@@ -0,0 +1,47 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { createHash } from 'node:crypto';
++import { runIsolationFixture } from './run-isolation-fixture.js';
++
++test('same-content runs keep records, versions, assets, events, retention and exports bound to the exact run', async () => {
++  const f = await runIsolationFixture();
++  try {
++    const { older, newer, empty } = f.ids as { older: string; newer: string; empty: string };
++    const get = async (id: string) => {
++      const response = await f.app.inject(`/api/workbench/runs/${id}`); assert.equal(response.statusCode, 200); return response.json();
++    };
++    const a = await get(older), b = await get(newer), c = await get(empty);
++    assert.deepEqual([a.output.records.length, b.output.records.length, c.output.records.length], [1, 2, 0]);
++    assert.equal(a.paper.id, b.paper.id); assert.equal(b.paper.id, c.paper.id);
++    assert.notDeepEqual(a.output.records[0].fragments, b.output.records[0].fragments);
++    for (const [id, detail] of [[older, a], [newer, b], [empty, c]] as const) {
++      assert.equal(detail.run.run_id, id); assert.equal(detail.output.id, id);
++      assert.ok(detail.output.records.every((record: { run_id: string }) => record.run_id === id));
++      assert.ok(detail.figures.flatMap((figure: { assets: Array<{ url: string }> }) => figure.assets).every((asset: { url: string }) => asset.url.includes(`/runs/${id}/figures/`)));
++      assert.ok(f.workflow.events(id).every(event => event.run_id === id));
++      assert.ok(f.store.versions(id).every(version => version.record.extraction_trace.run_id === id));
++    }
++    const shared = a.output.records[0], sharedInB = b.output.records.find((record: { id: string }) => record.id === shared.id)!;
++    assert.ok(sharedInB);
++    await f.workflow.retainRecord(older, shared.id, { expected_version: shared.version, expected_retention_revision: 0, status: 'excluded' });
++    assert.equal((await get(older)).output.records[0].retention.status, 'excluded');
++    assert.equal((await get(newer)).output.records.find((record: { id: string }) => record.id === shared.id).retention.status, 'kept');
++    const before = createHash('sha256').update(JSON.stringify(f.store.versions(older))).digest('hex');
++    await f.workflow.revise(newer, shared.id, { expected_version: sharedInB.version, reviewer: 'isolated-engineering-test', labels: { comment: 'Only this task.' } });
++    assert.equal(createHash('sha256').update(JSON.stringify(f.store.versions(older))).digest('hex'), before);
++    const csv = (await f.workflow.export(newer, 'retained_csv')).bytes.toString();
++    const exported = (await f.workflow.export(newer, 'retained_jsonl')).bytes.toString().trim().split('\n').map(line => JSON.parse(line));
++    assert.equal(exported.length, 2); assert.ok(exported.every(record => record.run_id === newer));
++    assert.ok(!csv.includes(older));
++    assert.deepEqual(exported.map(record => record.original_fragments), (await get(newer)).output.records.map((record: { fragments: unknown }) => record.fragments));
++    const paper = await f.workflow.detail(f.paper.id);
++    assert.equal(paper.outputs.length, 3);
++    assert.deepEqual(paper.outputs.map(output => [output.id, output.records.length]).sort(), [[older, 1], [newer, 2], [empty, 0]].sort());
++    const mismatch = structuredClone(f.store.current(older)[0]!.record);
++    f.store.db.prepare("UPDATE s4_runs SET state='extracting' WHERE id=?").run(newer);
++    assert.throws(() => f.store.apply(newer, { action: 'insert', record: mismatch, expected_version: null, target_record_id: null, related_record_ids: [], issues: [],
++      changes: [{ kind: 'insert', record_id: mismatch.record_id, expected_version: null, record: mismatch }] }), /s4_cross_run_evidence/);
++    console.log(JSON.stringify({ same_pdf: true, candidate_counts: [1, 2, 0], isolated_record_id_collision: true,
++      api_store_assets_events_retention_export_separate: true, production_business_writes: 0, paid_calls: 0 }));
++  } finally { await f.close(); }
++});
+--- a/apps/pi-web/e2e/run-isolation.mjs
++++ b/apps/pi-web/e2e/run-isolation.mjs
+@@ -0,0 +1,136 @@
++/** Exact-task boundaries against an isolated no-model workflow; never reaches production business APIs. */
++import assert from 'node:assert/strict';
++import { readFile, writeFile } from 'node:fs/promises';
++import { dirname, join, resolve } from 'node:path';
++import { fileURLToPath, pathToFileURL } from 'node:url';
++const code = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
++const origin = 'http://127.0.0.1:30157', backend = 'http://127.0.0.1:3216';
++const phase = process.env.T1_ISOLATION_PHASE ?? 'after', evidence = join(code, 'docs/acceptance/new-task-layout-2026-11-14');
++const runtime = JSON.parse(await readFile(join(code, 'runtime-data/agent-notes/run-isolation-runtime.json'), 'utf8'));
++const result = { status: 'running', origin, isolated_backend: backend, phase, controlled: true, checks: [], errors: [], blocked: [], observations: [], paid_calls: 0, production_business_writes: 0, exports_requested: 0 };
++result.dist = phase === 'before' ? 'apps/pi-web/build/remove-explicit-reuse-validated-20261114' : 'apps/pi-web/build/run-isolation-validated-20261114';
++result.BUILD_ID = (await readFile(join(code, result.dist, 'BUILD_ID'), 'utf8')).trim();
++process.env.PLAYWRIGHT_BROWSERS_PATH = join(code, '.tools/annotation-browser/browsers');
++process.env.LD_LIBRARY_PATH = [join(code, '.tools/annotation-browser/sysroot/usr/lib/x86_64-linux-gnu'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
++const { chromium } = await import(pathToFileURL(join(code, '.tools/annotation-browser/node_modules/playwright/index.mjs')).href);
++const browser = await chromium.launch({ headless: true, channel: 'chromium', chromiumSandbox: false });
++const context = await browser.newContext({ locale: 'zh-CN', viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
++await context.addInitScript(expected => { if (location.origin === expected) { localStorage.setItem('pi-locale', 'zh-CN'); localStorage.setItem('pi-theme', 'light'); } }, origin);
++let holdRun = '', failRun = '', release = () => {}, requested = () => {}, detailRequested = Promise.resolve();
++let hideRun = '';
++const paperReads = new Set();
++function hold(id) { holdRun = id; detailRequested = new Promise(resolve => { requested = resolve; }); return new Promise(resolve => { release = resolve; }); }
++let held = Promise.resolve();
++context.on('page', page => page.on('pageerror', error => result.errors.push(String(error))));
++await context.route(/^https?:\/\//, async route => {
++  const request = route.request(), url = new URL(request.url()), path = url.pathname, method = request.method();
++  if (url.origin !== origin || !['GET', 'HEAD'].includes(method) || path.includes('/exports/')) { result.blocked.push({ method, path }); return route.abort('blockedbyclient'); }
++  if (!path.startsWith('/api/t1/')) return route.continue();
++  if (path.endsWith('/events')) {
++    const id = decodeURIComponent(path.split('/').at(-2)), known = Object.values(runtime.ids).includes(id);
++    const event = run_id => ({ run_id, seq: 1, type: 'state', timestamp: '2026-11-14T00:00:00Z', detail: { state: 'extracting', summary: `ONLY ${run_id} EVENT` } });
++    const events = known ? (id === runtime.ids.newer ? [event(runtime.ids.older), event(id)] : [event(id)]) : [];
++    return route.fulfill({ contentType: 'text/event-stream', body: events.map(value => `data: ${JSON.stringify(value)}\n\n`).join('') + ': finite snapshot\n\n' });
++  }
++  const run = path.match(/^\/api\/t1\/workbench\/runs\/([^/]+)$/)?.[1];
++  if (run === holdRun) { requested(); await held; }
++  if (run === failRun) return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'isolated_detail_unavailable' }) });
++  const response = await fetch(backend + path.replace(/^\/api\/t1/, '/api') + url.search);
++  let body = Buffer.from(await response.arrayBuffer());
++  if (hideRun && path === '/api/t1/workbench/runs') { const value = JSON.parse(body); value.runs = value.runs.filter(run => run.run_id !== hideRun); body = Buffer.from(JSON.stringify(value)); }
++  if (/\/workbench\/papers\/[^/]+$/.test(path)) paperReads.add(path);
++  try { await route.fulfill({ status: response.status, contentType: response.headers.get('content-type') ?? 'application/json', body }); } catch { /* A delayed old read may have been aborted by task navigation. */ }
++});
++const page = await context.newPage(); page.setDefaultTimeout(12_000);
++const query = (run, view = 'records', legacy = false) => origin + '/?' + new URLSearchParams({ paper: runtime.paper_id, [legacy ? 'history' : 'run']: run, view });
++async function save() { const path = join(evidence, 'report.json'), report = JSON.parse(await readFile(path, 'utf8')); report.item4[`browser_${phase}`] = result; await writeFile(path, JSON.stringify(report, null, 2) + '\n'); }
++async function check(name, work) { try { await work(); result.checks.push({ name, status: 'passed' }); console.log('PASS ' + name); } catch (error) { result.checks.push({ name, status: 'failed', error: String(error) }); console.log('FAIL ' + name + '\n' + String(error)); } finally { release(); holdRun = ''; failRun = ''; hideRun = ''; await save(); } }
++async function selected(id) { await page.waitForFunction(id => document.querySelector(`[data-submission-list="sidebar"] [data-run-id="${id}"]`)?.getAttribute('aria-current') === 'page', id); }
++async function figures() { return page.locator('.t1-figure img').evaluateAll(images => images.map(image => image.getAttribute('src'))); }
++try {
++  const caps = await (await fetch(backend + '/api/workbench/capabilities')).json(); assert.equal(caps.controlled_fixture, true);
++  await check('exact_runs_and_zero_result_never_accumulate_same_paper_records', async () => {
++    for (const [name, count] of [['older', 1], ['newer', 2], ['empty', 0]]) {
++      const id = runtime.ids[name]; await page.goto(query(id)); await selected(id);
++      if (count) await page.locator('.t1-evidence-card').waitFor();
++      else await page.waitForFunction(() => !document.querySelector('.t1-evidence-card') && document.querySelector('[data-retention-count="kept"]')?.textContent === '0');
++      assert.equal(await page.locator('[data-retention-count="kept"]').innerText(), String(count));
++      assert.equal(new URL(page.url()).searchParams.get('run'), id);
++      if (count) { const detail = await (await fetch(backend + '/api/workbench/runs/' + id)).json(); assert.equal(await page.locator('.t1-evidence-card').getAttribute('data-record-id'), detail.output.records[0].id); }
++    }
++  });
++  await check('loading_exact_run_does_not_borrow_paper_latest_figures_or_sources', async () => {
++    paperReads.clear(); held = hold(runtime.ids.older);
++    await page.goto(query(runtime.ids.older, 'figures')); await detailRequested;
++    await page.waitForFunction(() => document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.includes('Figure'));
++    for (let n = 0; n < 50 && !paperReads.size; n++) await new Promise(resolve => setTimeout(resolve, 20));
++    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
++    const sources = await figures(); result.observations.push({ case: 'loading_exact_run', figure_urls: sources });
++    await page.screenshot({ path: join(evidence, `item4-${phase}-loading.png`) });
++    assert.deepEqual(sources, []); assert.equal(await page.locator('.t1-source').count(), 0); assert.equal(await page.locator('.t1-exports').count(), 0);
++    release(); holdRun = ''; await page.locator('.t1-figure img').first().waitFor();
++    assert.ok((await figures()).every(url => url.includes(`/runs/${runtime.ids.older}/figures/`)));
++  });
++  await check('failed_exact_run_does_not_borrow_latest_source_or_figure_views', async () => {
++    failRun = runtime.ids.older; await page.goto(query(runtime.ids.older, 'figures')); await selected(runtime.ids.older);
++    await page.getByRole('alert').filter({ hasText: 'isolated_detail_unavailable' }).waitFor();
++    const sources = await figures(); result.observations.push({ case: 'failed_exact_run', figure_urls: sources }); assert.deepEqual(sources, []);
++    assert.equal(await page.locator('.t1-evidence-card').count(), 0); assert.equal(await page.locator('.t1-exports').count(), 0);
++  });
++  await check('unavailable_or_deleted_explicit_run_never_substitutes_a_different_task', async () => {
++    await page.goto(query('deleted-run')); await page.locator('.t1-workbench').waitFor();
++    await page.waitForFunction(() => document.querySelector('[data-submission-list="sidebar"] [data-run-id]'));
++    const actual = new URL(page.url()).searchParams.get('run'); result.observations.push({ case: 'unavailable_explicit_run', actual_run: actual });
++    assert.equal(actual, 'deleted-run'); assert.equal(await page.locator('.t1-evidence-card').count(), 0); assert.equal(await page.locator('.t1-exports').count(), 0);
++  });
++  await check('valid_historical_run_link_uses_its_own_source_and_figures', async () => {
++    await page.goto(query(runtime.ids.older, 'figures', true)); await page.locator('.t1-figure img').first().waitFor();
++    const sources = await figures(); result.observations.push({ case: 'historical_exact_run', figure_urls: sources });
++    assert.ok(sources.length > 0 && sources.every(url => url.includes(`/runs/${runtime.ids.older}/figures/`)));
++  });
++  if (phase === 'after') {
++    await check('an_unmapped_historical_output_keeps_only_its_exact_text_and_declares_source_missing', async () => {
++      hideRun = runtime.ids.older;
++      await page.goto(query(runtime.ids.older, 'records', true)); await page.locator('.t1-evidence-card').waitFor();
++      assert.equal(new URL(page.url()).searchParams.get('history'), runtime.ids.older);
++      assert.equal(await page.locator('[data-retention-count="kept"]').innerText(), '1');
++      await page.getByText('这次历史结果缺少可用的任务来源。已保存文字仍可查看，图片与来源定位不可用。', { exact: true }).waitFor();
++      assert.equal(await page.locator('.t1-retention').count(), 0); assert.equal(await page.locator('.t1-exports').count(), 0);
++      await page.getByRole('tab', { name: '原 Figure 目录', exact: true }).click(); assert.deepEqual(await figures(), []);
++      await page.screenshot({ path: join(evidence, 'item4-after-legacy-source-missing.png') });
++      await page.goto(query('unknown-history', 'records', true));
++      await page.getByText('当前任务不可用或已删除。请选择其他任务查看对应结果。', { exact: true }).waitFor();
++      assert.equal(new URL(page.url()).searchParams.get('history'), 'unknown-history'); assert.equal(await page.locator('.t1-evidence-card').count(), 0);
++    });
++    await check('a_late_previous_detail_and_foreign_SSE_event_do_not_replace_the_selected_task', async () => {
++      held = hold(runtime.ids.older); await page.goto(query(runtime.ids.older)); await detailRequested;
++      await page.locator(`[data-submission-list="sidebar"] [data-run-id="${runtime.ids.newer}"]`).click(); await selected(runtime.ids.newer);
++      release(); holdRun = ''; await page.locator('.t1-evidence-card').waitFor();
++      await page.waitForFunction(() => document.querySelector('[data-retention-count="kept"]')?.textContent === '2');
++      await page.locator('.t1-notes-toggle').click(); await page.getByText('这次抽取的事件', { exact: true }).click();
++      await page.waitForFunction(id => document.querySelector('.t1-events')?.textContent?.includes(`ONLY ${id} EVENT`), runtime.ids.newer);
++      const events = await page.locator('.t1-events').innerText(); assert.ok(!events.includes(`ONLY ${runtime.ids.older} EVENT`));
++      assert.equal(new URL(page.url()).searchParams.get('run'), runtime.ids.newer); await page.keyboard.press('Escape');
++    });
++    await check('same_record_id_keeps_source_editor_drafts_separate_between_tasks', async () => {
++      async function openEditor(id) {
++        await page.locator(`[data-submission-list="sidebar"] [data-run-id="${id}"]`).click(); await selected(id); await page.locator('.t1-evidence-card').waitFor();
++        await page.locator('[data-index-record-id="replay-shared-record"]').click();
++        await page.locator('.t1-notes-toggle').click(); await page.getByRole('button', { name: '修订来源或标签…', exact: true }).click();
++        return page.getByLabel('审核人补充（与原文分开）', { exact: true });
++      }
++      const a = await openEditor(runtime.ids.older); await a.fill('Task A draft only'); await page.keyboard.press('Escape');
++      const b = await openEditor(runtime.ids.newer); assert.equal(await b.inputValue(), ''); await b.fill('Task B draft only'); await page.keyboard.press('Escape');
++      const restored = await openEditor(runtime.ids.older); assert.equal(await restored.inputValue(), 'Task A draft only');
++      const keys = await page.evaluate(() => Object.keys(sessionStorage).filter(key => key.startsWith('t1:source-draft:')));
++      assert.ok(keys.some(key => key.includes(runtime.ids.older)) && keys.some(key => key.includes(runtime.ids.newer))); await page.keyboard.press('Escape');
++    });
++    await page.goto(query(runtime.ids.older)); await selected(runtime.ids.older); await page.locator('.t1-evidence-card').waitFor();
++    await page.screenshot({ path: join(evidence, 'item4-after-current-task.png') });
++    await page.setViewportSize({ width: 390, height: 844 });
++    await page.screenshot({ path: join(evidence, 'item4-after-mobile.png') });
++  }
++  result.status = result.checks.every(check => check.status === 'passed') && !result.errors.length && !result.blocked.length ? 'passed' : 'failed';
++  console.log(JSON.stringify({ status: result.status, passed: result.checks.filter(check => check.status === 'passed').length, failed: result.checks.filter(check => check.status === 'failed').length }));
++  if (result.status !== 'passed') process.exitCode = 1;
++} finally { release(); await browser.close(); await save(); }
+--- a/README.md
++++ b/README.md
+@@ -2,9 +2,9 @@
+ 
+ 从文本型PDF提取肿瘤影像外观原文，保留出处、必要语境、整幅Figure和原图注，供逐篇核对与导出。正式主流程为B0；F仅保留实验实现与历史对照。
+ 
+-当前普通工作台为 **http://127.0.0.1:30141/**，后端为 **http://127.0.0.1:3210**；已验构建为`apps/pi-web/build/remove-explicit-reuse-validated-20261114`，BUILD_ID `7k-AKSqL1i6sLB7gjmNJi`。创建任务页面按“上传论文 PDF”“本次抽取范围”“模型配置”分为独立卡片，宽屏两列底边对齐、窄屏单列；论文清单固定高度并内部滚动。范围修改、添加模型/高级配置及每任务额度通过弹窗展示，展开时保持背景布局；范围取消不提交草稿。本地PDF仍先上传后开始。统一通过本地PDF文件或文件夹创建任务；相同内容仍自动复用服务器文件，历史任务保留。任务进度使用后台真实阶段与计数，未知总量不显示假百分比；部分结果、来源字形缺口和未完成汇总不会显示成全部完成。明确配对的整幅Figure和原图注直接显示在描述下，未明确配对的记录保留文字与状态提示。
++当前普通工作台为 **http://127.0.0.1:30141/**，后端为 **http://127.0.0.1:3210**；已验构建为`apps/pi-web/build/run-isolation-validated-20261114`，BUILD_ID `zSHx4g4SHXphtO9icZvXV`。创建任务页面按“上传论文 PDF”“本次抽取范围”“模型配置”分为独立卡片，宽屏两列底边对齐、窄屏单列；论文清单固定高度并内部滚动。范围修改、添加模型/高级配置及每任务额度通过弹窗展示，展开时保持背景布局；范围取消不提交草稿。本地PDF仍先上传后开始。统一通过本地PDF文件或文件夹创建任务；相同内容仍自动复用服务器文件，历史任务保留。任务进度使用后台真实阶段与计数，未知总量不显示假百分比；部分结果、来源字形缺口和未完成汇总不会显示成全部完成。明确配对的整幅Figure和原图注直接显示在描述下，未明确配对的记录保留文字与状态提示。
+ 
+-[本轮记录](docs/acceptance/new-task-layout-2026-11-14/report.json)中的第1、2项已获用户审核通过；第3项已移除“复用已上传论文”和菜单“再次抽取”入口，限定检查和仅前端上线完成，待用户审核；第4、5项尚未开始。后台完整内容SHA去重、独立任务标题及历史数据保留，后端148878未重启。原五项共用正式审查2/3；本项生产业务测试写入与额外付费模型调用均为0。
++[本轮记录](docs/acceptance/new-task-layout-2026-11-14/report.json)中的第1、2、3项已获用户审核通过。第4项已按同一构建仅更新前端，限定检查与4组线上只读核验通过，待用户审核；第5项尚未开始。后端记录与导出未复现跨任务合并；前端已修复无效任务链接自动跳到另次运行，以及详情读取中/失败、旧history链接借用论文最新来源的问题。能够对应真实run的历史链接读取其自己的IR与整图快照；无法映射的旧结果只显示精确保存的文字并说明来源缺失。后台完整内容SHA去重、独立任务标题及历史数据保留，后端148878未重启。原五项共用正式审查3/3；本项生产业务测试写入与额外付费模型调用均为0。
+ 
+ [前轮工作台体验报告](docs/acceptance/workbench-experience-2026-11-14/report.json)记录正式审查3/3、71项后端与346项抽取回归、14项界面单测、16组同构建隔离浏览器与5组真实只读核验。新增任务用相同授权原文投影预载，免去重复索取输入的模型往返；SSE仅查询游标后的新事件。本地SDK与查询基准通过，尚未新增付费任务验证真实总耗时收益。原用户任务自然结束为partial，13条候选和唯一明确配对Figure5保留；上线核验时为17表、8run、8篇论文记录、1模型配置，逻辑数据、两份env与手工目录均保持。代理生产业务写入与额外付费模型调用均为0。
+ 
+@@ -38,7 +38,7 @@
+ 复用本次已验证构建并重启前端时，先确认原前端进程已停止，然后在`code/`运行（普通重新构建流程仍使用上方`build:web`）：
+ 
+ ```bash
+-T1_NEXT_DIST_DIR=build/remove-explicit-reuse-validated-20261114 bash scripts/with-node.sh npm run start:web
++T1_NEXT_DIST_DIR=build/run-isolation-validated-20261114 bash scripts/with-node.sh npm run start:web
+ ```
+ 
+ 开发时可用`bash scripts/with-node.sh npm run dev:web`替代生产前端，默认仍30141。`npm run dev:server`不自动载入工作台开关/限额；不要仅改`.env`就假定这些已生效。首次依赖/CPU模型准备及Docker启动按[部署说明](deploy/README.md)执行，不运行上游通用pi-web入口或另建前端。
+@@ -57,6 +57,8 @@
+ ## 模型与限额
+ 
+ 默认模型已选AGICTO **gpt-6-luna / medium / openai-responses**，这是成本方向与工程兼容性选择。默认模型已选定，普通服务已启用，用户手动开始后按每run独立限额执行；已有结果仍可查看、审核与导出。 普通服务接纳gpt-6-luna→data-zone-standard-gpt-6-luna精确返回对，依据用户/委托部署选择；旧igpt厂商确认独立留证，不将新对或底层权重写成已认证，其它未知返回名仍停止。
++
++用户选择继续保留Luna medium。本轮核验的是既有固定配置：medium、8192输出上限、新建内存session、固定中立cwd、无环境规则自动加载及关闭SDK自动重试；未新增模型参数或修改额度。默认Luna medium不加入未经兼容证实的temperature、top_p或seed；本地SDK跨模拟日期的相同输入请求体一致，只证明工程传输稳定，不保证完整多轮抽取完全同答。真实任务与来源标识保持独立，不用旧回答充作新任务；本轮未做付费医学输出复验，参数来源及限制见本轮报告`item4.model_parameters`。
+ 
+ 在“创建任务”的“模型配置”中选择AGICTO模型，或点击“添加模型”填写模型ID并保存选择；高级设置折叠提供Responses/Chat Completions、medium/不发送推理参数、本地上下文与输出上限。新增默认上下文32768、输出4096 token，使用Chat Completions且不发送推理参数；这些是本地守卫配置，不证明供应商容量或模型可用性，本轮未进行真实模型调用验证。配置以不可变档案保存，修改时另存新档案；新增模型只接受其model_id的精确返回，不继承Luna别名。选择只影响新任务；准入、排队、重试和同一批次首启均使用冻结的范围、submission及模型快照。
+ 
+--- a/deploy/README.md
++++ b/deploy/README.md
+@@ -1,15 +1,17 @@
+ # T1 本机 Docker 交付
+ 
+-## 当前宿主工作台（2026-11-14）
++## 当前宿主工作台（2026-11-15）
+ 
+-普通入口为`http://127.0.0.1:30141/`，后端为`http://127.0.0.1:3210`。当前已验构建为`apps/pi-web/build/remove-explicit-reuse-validated-20261114`、BUILD_ID `7k-AKSqL1i6sLB7gjmNJi`；前端Next155411（wrapper155404）、后端148878，后续PID以监听和[创建任务布局报告](../docs/acceptance/new-task-layout-2026-11-14/report.json)为准。创建任务桌面两列底边对齐，固定论文清单内部滚动，范围/添加模型/额度通过弹窗展示；第1、2项已审核通过，第3项显式复用/再次抽取入口已移除并上线待用户审核，第4、5项未开始，正式审查共用2/3。统一通过本地PDF创建，后台内容SHA去重仍保留；本项仅切前端，后端148878未重启，17表逻辑行、配置及产物保全。B0、两层范围快照、两FIFO槽及每run额度保持。
++普通入口为`http://127.0.0.1:30141/`，后端为`http://127.0.0.1:3210`。当前已验构建为`apps/pi-web/build/run-isolation-validated-20261114`、BUILD_ID `zSHx4g4SHXphtO9icZvXV`；前端Next164399（wrapper164392）、后端148878，后续PID以监听和[创建任务布局报告](../docs/acceptance/new-task-layout-2026-11-14/report.json)为准。创建任务桌面两列底边对齐，固定论文清单内部滚动，范围/添加模型/额度通过弹窗展示；第1、2、3项已审核通过，第4项已同构建仅更新前端且4组线上只读核验通过，待用户审核；第5项未开始，正式审查共用3/3。统一通过本地PDF创建，后台内容SHA去重仍保留；后端148878未重启，17表/8run/8篇论文记录、配置与43产物逻辑hash前后保持。B0、两层范围快照、两FIFO槽及每run额度保持。前一已验构建`build/remove-explicit-reuse-validated-20261114`保留回退。
++
++第4项当前记录与导出未复现跨任务合并，已验证的修复限定在精确任务/历史链接、任务来源和SSE显示归属：任务详情加载或失败时不借用论文最新来源；可映射历史项读取其自己的来源快照，缺失时保留该项文字并明确来源不可用。根/web类型检查、触及lint、10项导航/SDK测试、1项无模型同PDF多run综合隔离及8组同构建浏览器通过；不将回放视为新医学抽取验证。用户选择保留Luna medium，现有8192输出上限与内存session等固定行为本轮只核验，未增加temperature/top_p/seed或修改服务器配置；无动态时钟注入，相同输入跨模拟日期请求体相同，不保证完整多轮医学输出一致，真实收费复验未执行。
+ 
+ 前轮[工作台体验验收](../docs/acceptance/workbench-experience-2026-11-14/report.json)记录：正式审查3/3；71项后端、346项抽取回归、14项界面单测、16组同构建隔离与5组真实只读核验通过。切换前3次确认无活动任务，原任务先已自然partial；17表/8run/8篇论文记录的逻辑行与hash、两份env及手工目录前后相同，integrity正常、外键错误0。SQLite一致备份为`runtime-data/backups/workbench-experience-20261114-before/t1.sqlite`，旧已验构建`build/two-layer-catalog-validated-20261114`保留回退。本轮没有新增付费模型请求、业务测试写入或任务中断；本地请求数/查询耗时改善不等于真实总抽取速度已验证。原13条候选、唯一明确配对Figure5、41处字形缺口与未完成汇总保持。S2准备/配置工程结论沿用，医学与S6/S7未升级。
+ 
+ 需复用当前构建启动前端时，先确认原前端监听已经关闭，从`code/`执行：
+ 
+ ```bash
+-T1_NEXT_DIST_DIR=build/remove-explicit-reuse-validated-20261114 bash scripts/with-node.sh npm run start:web
++T1_NEXT_DIST_DIR=build/run-isolation-validated-20261114 bash scripts/with-node.sh npm run start:web
+ ```
+ 
+ 后续历史段中的构建、PID、数据计数和命令只对应各交付时点；当前宿主状态以本节与本轮报告为准。Docker30142使用下述独立部署，不承载现有30141数据。

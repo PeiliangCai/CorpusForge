@@ -1,0 +1,722 @@
+{
+  "schema_version": "s2-catalog-source-acceptance-1",
+  "task": "s2-catalog-source-2026-11-14",
+  "recorded_at": "2026-11-14T06:26:14Z",
+  "status": "scoped_material_engineering_delivery_passed_medical_review_pending",
+  "user_request": "继续S2，并将目录材料存成可维护文件，便于后续网页读取及核验人员审核/增删改。",
+  "delivery": {
+    "maintenance_source": "code/config/medical-catalog-material.json",
+    "material_version": "s2-material-2026-11-14-2",
+    "sha256": "2923c710343b526c3371d4742b4bdabf8271190c086aa941d16d33ff08fcfd51",
+    "bytes": 178700,
+    "summary": {
+      "features": 35,
+      "historical_records": 35,
+      "sources": 8,
+      "source_checks": {
+        "identity_checked": 5,
+        "not_checked": 3
+      },
+      "entities": 7,
+      "evidence": {
+        "historical_lead": 23,
+        "text_located": 33
+      },
+      "feature_roles": {
+        "background_only": 3,
+        "candidate_measurement": 6,
+        "candidate_visual_description": 10,
+        "excluded": 6,
+        "needs_split": 10
+      },
+      "lexical_relations": 14,
+      "hierarchy_relations": 2,
+      "applicability_relations": 35,
+      "conditions": 29,
+      "reviews": {
+        "pending": 130
+      },
+      "open_preparation_gaps": 10
+    },
+    "original_35_records_preserved": true,
+    "historical_inputs_kept_byte_for_byte": true,
+    "single_current_manual_source": true
+  },
+  "scope": {
+    "starting_scope": "肺癌/肠癌与CT/MRI，沿用既有用户确认；不是T1所有癌种限制。",
+    "relationship_policy": "癌种/模态/特征是适用关联，真正上下位另列；全部适用关系unknown，空数组不代表all。",
+    "original_text": "目录名称规范化不授权改写论文原文；本材料不是逐篇完整标准答案。",
+    "current_purpose": "候选/需拆分/仅背景/排除的提议及其来源/关系核验，不是已批准医学白名单。"
+  },
+  "implemented_files": [
+    {
+      "path": "code/config/medical-catalog-material.json",
+      "sha256": "2923c710343b526c3371d4742b4bdabf8271190c086aa941d16d33ff08fcfd51"
+    },
+    {
+      "path": "code/packages/contracts/src/catalog-material.ts",
+      "sha256": "e845d0bd6692a7b0f9f81b51bcf99d4da40b63fdd7ebac70c86399a60bbf62c7"
+    },
+    {
+      "path": "code/packages/contracts/src/index.ts",
+      "sha256": "103bd5920544c90dcae91bb8b42277c025d8b51239c9f230de75149b6620902b"
+    },
+    {
+      "path": "code/apps/server/src/catalog-material.ts",
+      "sha256": "55c979ed273663170feceacfccd4249d011bc945654e2a3d8cf74d1fdfbd8321"
+    },
+    {
+      "path": "code/apps/server/test/catalog-material.test.ts",
+      "sha256": "1e800818d2a63faf6d49cde1597e101dd2a742f45648dbc9061c3b615eb9a164"
+    },
+    {
+      "path": "code/scripts/check-catalog-material.ts",
+      "sha256": "7e9a58383e223b2a6ad2f0a35df4b02b73844841c30fcf21498781c2b5bd914b"
+    },
+    {
+      "path": "code/package.json",
+      "sha256": "f353a8d0c3b41d4bbb8b592593b6a155b047ffafda51cae3b122f4e245ad9912"
+    },
+    {
+      "path": "code/deploy/README.md",
+      "sha256": "be7549f06c5b74e0806b20e3d4906213a7b7331f8f069f06187e06dff5be8a26"
+    },
+    {
+      "path": "方案/子任务T1/T1智能体开发计划.docx",
+      "sha256": "5d782be1635f3342d5e3e566037d9f54c932ae49b08223a9b24983cd86a409db"
+    },
+    {
+      "path": "方案/子任务T1/T1开发执行说明.docx",
+      "sha256": "75f844c6b9dd9764b9d8db8227b51e43634df56631a6af689de319926b45afc8"
+    },
+    {
+      "path": "方案/子任务T1/开发计划.json",
+      "sha256": "48dc39a59eece3c3f5d1085a2148fb8ecf8162b702540ebc241bbe31a0508004"
+    },
+    {
+      "path": "方案/子任务T1/当前版本.json",
+      "sha256": "f5d4e3b534d841576a7434a5c6070a5b269c9e06429492086f6a20dba4d174bf"
+    },
+    {
+      "path": "方案/当前版本.json",
+      "sha256": "f716c1ca813a3de429fa74e567b45a9998e6b9fb226af720e8b38b0eef1f28b7"
+    },
+    {
+      "path": "方案/子任务T1/开发任务清单.csv",
+      "sha256": "007fadd592aa6a11b02caef800d3350b121a0207039adce972561931c07dcac6"
+    },
+    {
+      "path": "方案/子任务T1/开发阶段与验收.csv",
+      "sha256": "2fdb3cff29de57bb22eeec46a0e003a5ae052f497a43d1de053b6f38b8d6a02e"
+    }
+  ],
+  "read_contract": {
+    "module": "code/apps/server/src/catalog-material.ts",
+    "entry": "readMedicalCatalogMaterial()",
+    "fixed_server_file": "config/medical-catalog-material.json",
+    "returns": [
+      "material",
+      "sha256",
+      "byte_length",
+      "summary"
+    ],
+    "revalidates_each_read": true,
+    "accepts_client_path": false,
+    "max_bytes": 4194304,
+    "converts_to_EvidenceCatalog": false,
+    "api_or_gateway_added": false,
+    "current_web_reads_material": false,
+    "web_followup": "后续接入需同时增加精确GET服务路由及前端网关；本轮未接入网页、编辑器、批准或发布流程。"
+  },
+  "verification": {
+    "initial_attempt": {
+      "status": "not_executed",
+      "reason": "npm/npx not on inherited shell PATH",
+      "evidence": "initial-test-launch.json",
+      "resolution": "Reused existing pinned code/.tools/node/bin in check subprocess PATH only."
+    },
+    "actual_runtime": "Existing Node 24.22.2; no dependency install or permission changes.",
+    "catalog_cli": {
+      "command": "bash scripts/with-node.sh npm run check:catalog-material",
+      "exit_code": 0,
+      "valid": true,
+      "evidence": "catalog-check.log"
+    },
+    "typecheck": {
+      "command": "bash scripts/with-node.sh npx tsc --noEmit",
+      "exit_code": 0,
+      "diagnostics": 0,
+      "evidence": "typecheck.log"
+    },
+    "tests": {
+      "command": "bash scripts/with-node.sh node --import tsx --test apps/server/test/catalog-material.test.ts apps/server/test/catalog-config.test.ts",
+      "exit_code": 0,
+      "passed": 26,
+      "failed": 0,
+      "new_material_checks": 24,
+      "existing_catalog_guard_checks": 2,
+      "evidence": "catalog-tests.log",
+      "covers": [
+        "合法新增开放范围条目/来源",
+        "改显示名称保持ID",
+        "删无引用项通过",
+        "删被引用项返回dangling_reference及字段路径",
+        "重复/跨集合ID、悬空引用、历史ID错配",
+        "同义/层级重复、自环及循环",
+        "适用unknown不当all、多对多proposed关联允许",
+        "非法状态/AI核验者/缺失真人结论拒绝",
+        "来源定位与医学review分离",
+        "原35项与旧输入字节保全",
+        "固定只读读取、内容hash更新、坏JSON/UTF8/超限拒绝",
+        "材料不能配置成生产抽取目录，默认仍unavailable",
+        "已批准目录向真实Pi B0的本地scripted回环传递",
+        "业务边界用独立小型内存fixture，不固定真实源的数量、用途或待核状态",
+        "合法synthetic human confirmed及多对多proposed适用正例可继续校验",
+        "可维护来源元数据SHA只作本次导入快照，不固定为未来通用测试要求"
+      ]
+    },
+    "loopback_scripted_requests": 4,
+    "external_paid_model_calls": 0,
+    "tests_performed_medical_validation": false,
+    "before_review_2": {
+      "tests_passed": 25,
+      "catalog_cli": "passed",
+      "typecheck": "passed",
+      "logs": [
+        "before-review-2-catalog-tests.log",
+        "before-review-2-catalog-check.log",
+        "before-review-2-typecheck.log"
+      ],
+      "interpretation": "第2轮要求改进测试维护性，修前通过不是医学核验；修后26项见当前日志。"
+    },
+    "loopback_scripted_requests_final_suite": 2,
+    "loopback_scripted_requests_total": 4,
+    "loopback_request_note": "两次已记录的相关测试套件各使用2个本地scripted请求，共4个；外部付费模型调用始终为0。"
+  },
+  "source_verification": {
+    "method": "在已曝光MED01–05公开原文/出版社页面定向核对题名、DOI及相关章节/表格；由工程助手执行，不冒充人工医学核验。",
+    "sources": [
+      {
+        "source_id": "ENG01",
+        "kind": "engineering_design",
+        "status": "not_checked",
+        "checked_url": null,
+        "doi": null,
+        "text_located_evidence_ids": [],
+        "medical_review_status": "pending",
+        "remaining_gaps": [
+          "尚未进行本次来源身份核对；作为历史工程线索保留。"
+        ]
+      },
+      {
+        "source_id": "MED01",
+        "kind": "medical_reference",
+        "status": "identity_checked",
+        "checked_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/",
+        "doi": "10.1118/1.3528204",
+        "text_located_evidence_ids": [
+          "EVID-LUNG02-MED01",
+          "EVID-LUNG03-MED01",
+          "EVID-LUNG04-MED01",
+          "EVID-LUNG05-MED01",
+          "EVID-LUNG06-MED01",
+          "EVID-LUNG07-MED01",
+          "EVID-LUNG08-MED01",
+          "EVID-LUNG09-MED01"
+        ],
+        "medical_review_status": "pending",
+        "remaining_gaps": [
+          "逐条中文名称/定义及关系仍待医学核验；网页文字定位不等于PDF逐字校验。"
+        ]
+      },
+      {
+        "source_id": "MED02",
+        "kind": "medical_reference",
+        "status": "identity_checked",
+        "checked_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10902601/",
+        "doi": "10.1148/radiol.232558",
+        "text_located_evidence_ids": [
+          "EVID-LUNG02-MED02",
+          "EVID-LUNG04-MED02"
+        ],
+        "medical_review_status": "pending",
+        "remaining_gaps": [
+          "逐条中文名称/定义及关系仍待医学核验；网页文字定位不等于PDF逐字校验。"
+        ]
+      },
+      {
+        "source_id": "MED03",
+        "kind": "medical_reference",
+        "status": "identity_checked",
+        "checked_url": "https://link.springer.com/article/10.1007/s11547-021-01418-9",
+        "doi": "10.1007/s11547-021-01418-9",
+        "text_located_evidence_ids": [
+          "EVID-COLON01-MED03",
+          "EVID-COLON02-MED03",
+          "EVID-COLON03-MED03",
+          "EVID-COLON04-MED03",
+          "EVID-COLON05-MED03",
+          "EVID-COLON06-MED03",
+          "EVID-COLON07-MED03",
+          "EVID-COLON08-MED03"
+        ],
+        "medical_review_status": "pending",
+        "remaining_gaps": [
+          "逐条中文名称/定义及关系仍待医学核验；网页文字定位不等于PDF逐字校验。",
+          "具体报告模板字段、枚举及适用条件尚未逐条核对附件Appendix 1。"
+        ]
+      },
+      {
+        "source_id": "MED04",
+        "kind": "medical_reference",
+        "status": "identity_checked",
+        "checked_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10444656/",
+        "doi": "10.1007/s00261-023-03893-2",
+        "text_located_evidence_ids": [
+          "EVID-RECT01-MED04",
+          "EVID-RECT03-MED04",
+          "EVID-RECT04-MED04",
+          "EVID-RECT06-MED04",
+          "EVID-RECT07-MED04",
+          "EVID-RECT08-MED04",
+          "EVID-RECT09-MED04",
+          "EVID-RECT10-MED04"
+        ],
+        "medical_review_status": "pending",
+        "remaining_gaps": [
+          "逐条中文名称/定义及关系仍待医学核验；网页文字定位不等于PDF逐字校验。",
+          "RECT02肿瘤高度的具体测量起止点未在本次定向检索中定位，不能据此宣称原文不存在。"
+        ]
+      },
+      {
+        "source_id": "MED05",
+        "kind": "medical_reference",
+        "status": "identity_checked",
+        "checked_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13212678/",
+        "doi": "10.1007/s00330-025-12274-w",
+        "text_located_evidence_ids": [
+          "EVID-RECT01-MED05",
+          "EVID-RECT02-MED05",
+          "EVID-RECT04-MED05",
+          "EVID-RECT05-MED05",
+          "EVID-RECT06-MED05",
+          "EVID-RECT07-MED05",
+          "EVID-RECT10-MED05"
+        ],
+        "medical_review_status": "pending",
+        "remaining_gaps": [
+          "逐条中文名称/定义及关系仍待医学核验；网页文字定位不等于PDF逐字校验。"
+        ]
+      },
+      {
+        "source_id": "MOD01",
+        "kind": "generation_backend_documentation",
+        "status": "not_checked",
+        "checked_url": null,
+        "doi": null,
+        "text_located_evidence_ids": [],
+        "medical_review_status": "pending",
+        "remaining_gaps": [
+          "尚未进行本次来源身份核对；作为历史工程线索保留。"
+        ]
+      },
+      {
+        "source_id": "MOD02",
+        "kind": "generation_backend_documentation",
+        "status": "not_checked",
+        "checked_url": null,
+        "doi": null,
+        "text_located_evidence_ids": [],
+        "medical_review_status": "pending",
+        "remaining_gaps": [
+          "尚未进行本次来源身份核对；作为历史工程线索保留。"
+        ]
+      }
+    ],
+    "access_issue": {
+      "source_id": "MED03",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8795004/",
+      "observed": "browser verification page",
+      "fallback": "https://link.springer.com/article/10.1007/s11547-021-01418-9"
+    },
+    "complete_medical_definition_or_synonym_verification": false,
+    "independent_IN_materials_consumed": false
+  },
+  "preparation_remaining": [
+    {
+      "id": "GAP-ENGINEERING-SOURCES",
+      "affected_ids": [
+        "ENG01",
+        "MOD01",
+        "MOD02"
+      ],
+      "owner": "engineering_preparation",
+      "action": "保留工程/生成后端线索；若要提出医学特征定义，另补医学原始/官方来源，不能用生成参数或掩膜公式替代。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-MEASUREMENT-DEFINITIONS",
+      "affected_ids": [
+        "GEO01",
+        "GEO02",
+        "COLON03"
+      ],
+      "owner": "engineering_preparation",
+      "action": "补齐原文测量对象、参照、单位及定义；目前GEO01/GEO02只有工程或间接概念线索，不能据旧定义批准医学测量。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-ENTITY-DEFINITIONS",
+      "affected_ids": [
+        "CANCER-LUNG",
+        "CANCER-BOWEL",
+        "CANCER-COLON",
+        "CANCER-RECTUM",
+        "CONTEXT-LUNG-NODULE",
+        "MODALITY-CT",
+        "MODALITY-MRI"
+      ],
+      "owner": "engineering_preparation",
+      "action": "准备癌种/研究对象/模态名称的可核对定义来源；已有起步范围标签不是医学术语批准。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-HIERARCHY-SOURCES",
+      "affected_ids": [
+        "HIER-BOWEL-COLON",
+        "HIER-BOWEL-RECTUM"
+      ],
+      "owner": "engineering_preparation",
+      "action": "补齐肠癌与结肠癌/直肠癌上/下位关系的明确分类来源和范围，不能把历史提议当来源。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-LUNG-LOCATION",
+      "affected_ids": [
+        "LUNG01"
+      ],
+      "owner": "engineering_preparation",
+      "action": "现有MED01给出空间标注线索，MED02给出位置术语线索；仍需定位支持当前左右肺/肺叶粒度的原文及具体术语。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-COLON-TEMPLATE",
+      "affected_ids": [
+        "MED03",
+        "COLON01",
+        "COLON02",
+        "COLON03",
+        "COLON04",
+        "COLON05",
+        "COLON06",
+        "COLON07",
+        "COLON08"
+      ],
+      "owner": "engineering_preparation",
+      "action": "已定位正文Report字段概述；继续核对同篇Appendix 1报告模板的具体字段、枚举与适用条件，本轮未把附件内容推定为已核。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-RECTAL-HEIGHT",
+      "affected_ids": [
+        "RECT02",
+        "MED04"
+      ],
+      "owner": "engineering_preparation",
+      "action": "本次未在MED04定向检索中找到对应高度测量定义，继续查原文/已有附件；MED05已定位Table 4与讨论，保留参照分歧和未达完整共识的范围。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-LEXICAL-CORRESPONDENCE",
+      "affected_ids": [
+        "LEX-LUNG04-01",
+        "LEX-LUNG05-01",
+        "LEX-LUNG06-01",
+        "LEX-LUNG08-01",
+        "LEX-LUNG09-01",
+        "LEX-COLON01-01",
+        "LEX-COLON02-01",
+        "LEX-COLON03-01",
+        "LEX-RECT01-01",
+        "LEX-RECT03-01",
+        "LEX-RECT05-01",
+        "LEX-RECT06-01",
+        "LEX-LUNG02-01",
+        "LEX-LUNG02-02"
+      ],
+      "owner": "engineering_preparation",
+      "action": "为每个对应词补足能支持精确含义的原文位置；已找到关键词不证明中文名称、程度评分、结构名或受累状态彼此等同。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-APPLICABILITY",
+      "affected_ids": [
+        "APPL-META01-UNRESOLVED",
+        "APPL-META02-UNRESOLVED",
+        "APPL-META03-UNRESOLVED",
+        "APPL-GEO01-UNRESOLVED",
+        "APPL-GEO02-UNRESOLVED",
+        "APPL-GEO03-UNRESOLVED",
+        "APPL-GEO04-UNRESOLVED",
+        "APPL-GEO05-UNRESOLVED",
+        "APPL-LUNG01-UNRESOLVED",
+        "APPL-LUNG02-UNRESOLVED",
+        "APPL-LUNG03-UNRESOLVED",
+        "APPL-LUNG04-UNRESOLVED",
+        "APPL-LUNG05-UNRESOLVED",
+        "APPL-LUNG06-UNRESOLVED",
+        "APPL-LUNG07-UNRESOLVED",
+        "APPL-LUNG08-UNRESOLVED",
+        "APPL-LUNG09-UNRESOLVED",
+        "APPL-COLON01-UNRESOLVED",
+        "APPL-COLON02-UNRESOLVED",
+        "APPL-COLON03-UNRESOLVED",
+        "APPL-COLON04-UNRESOLVED",
+        "APPL-COLON05-UNRESOLVED",
+        "APPL-COLON06-UNRESOLVED",
+        "APPL-COLON07-UNRESOLVED",
+        "APPL-COLON08-UNRESOLVED",
+        "APPL-RECT01-UNRESOLVED",
+        "APPL-RECT02-UNRESOLVED",
+        "APPL-RECT03-UNRESOLVED",
+        "APPL-RECT04-UNRESOLVED",
+        "APPL-RECT05-UNRESOLVED",
+        "APPL-RECT06-UNRESOLVED",
+        "APPL-RECT07-UNRESOLVED",
+        "APPL-RECT08-UNRESOLVED",
+        "APPL-RECT09-UNRESOLVED",
+        "APPL-RECT10-UNRESOLVED"
+      ],
+      "owner": "engineering_preparation",
+      "action": "逐条准备癌种/研究对象、模态及序列/时相/治疗阶段证据，随后送核验人员判断；当前全部unknown，不由来源主题自动填绑定。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-SPLIT-DESCRIPTIONS",
+      "affected_ids": [
+        "LUNG06",
+        "LUNG08",
+        "COLON04",
+        "COLON05",
+        "COLON06",
+        "RECT05",
+        "RECT06",
+        "RECT07",
+        "RECT08",
+        "RECT09"
+      ],
+      "owner": "engineering_preparation",
+      "action": "从既有原文补齐能够独立显示的视觉描述及对应结论/评分边界，未取得证据前不臆造细分词条。",
+      "status": "open",
+      "resolution": ""
+    }
+  ],
+  "medical_reviewer_work": [
+    "核对候选名称/含义与T1用途，区分视觉描述、测量、评分/结论和工程指标。",
+    "逐条判断词语为真同义、翻译对应、缩写、相关词或上下位，并给修改建议。",
+    "核对癌种/研究对象、模态、序列/时相、治疗阶段及测量参照；没有证据保持待核。",
+    "需要拆分的条目先由工程资料方补齐原文成分，再请核验人员判断；不要求专家从零找资料或制作论文标准答案。"
+  ],
+  "production_protection": {
+    "unchanged_files": [
+      {
+        "path": "code/apps/server/src/app.ts",
+        "baseline_sha256": "025ee341b2896dc796767b08da15840b2d79f9c673a99bc848d616ee1a991c85",
+        "current_sha256": "025ee341b2896dc796767b08da15840b2d79f9c673a99bc848d616ee1a991c85",
+        "unchanged": true
+      },
+      {
+        "path": "code/apps/server/src/workflow.ts",
+        "baseline_sha256": "668e59903653adca31ce93c3dca16633bf25f65472d735c1a24d2a05aec09515",
+        "current_sha256": "668e59903653adca31ce93c3dca16633bf25f65472d735c1a24d2a05aec09515",
+        "unchanged": true
+      },
+      {
+        "path": "code/apps/server/src/catalog-config.ts",
+        "baseline_sha256": "70057625d9a2f4f5d57c79e429619dd2ea0caafd7bb8fc4a7925f0cfedfe2fcb",
+        "current_sha256": "70057625d9a2f4f5d57c79e429619dd2ea0caafd7bb8fc4a7925f0cfedfe2fcb",
+        "unchanged": true
+      },
+      {
+        "path": "code/apps/pi-web/t1/gateway-policy.ts",
+        "baseline_sha256": "f1273b875f2827f4db82f0c1f0cf0a17817ad3c128b9f38041c436ee093e47bf",
+        "current_sha256": "f1273b875f2827f4db82f0c1f0cf0a17817ad3c128b9f38041c436ee093e47bf",
+        "unchanged": true
+      },
+      {
+        "path": "方案/首批医学影像特征清单.json",
+        "baseline_sha256": "3930b7ae0215ed4c738ff0b147562492a7bab43e8a95d64f55605efd1d25209f",
+        "current_sha256": "3930b7ae0215ed4c738ff0b147562492a7bab43e8a95d64f55605efd1d25209f",
+        "unchanged": true
+      },
+      {
+        "path": "code/evaluation/catalog/feature-screening-draft.json",
+        "baseline_sha256": "82ac7dc5b1bf00501f59ecc02ab45bc2235a99317082dd2f6edb38f1c56f91dc",
+        "current_sha256": "82ac7dc5b1bf00501f59ecc02ab45bc2235a99317082dd2f6edb38f1c56f91dc",
+        "unchanged": true
+      },
+      {
+        "path": "code/evaluation/catalog/feature-screening-draft.csv",
+        "baseline_sha256": "3442b5f84ccba8b00742f7f16444a69cfaabb1f267e5ef08569bbf16ff1ff6a6",
+        "current_sha256": "3442b5f84ccba8b00742f7f16444a69cfaabb1f267e5ef08569bbf16ff1ff6a6",
+        "unchanged": true
+      },
+      {
+        "path": "code/evaluation/catalog/evaluation-feature-catalog-draft.json",
+        "baseline_sha256": "09402be89fbbdfc11e39b9fb6bbfb683b866e537b4107b6492bb5a7a4079a54c",
+        "current_sha256": "09402be89fbbdfc11e39b9fb6bbfb683b866e537b4107b6492bb5a7a4079a54c",
+        "unchanged": true
+      }
+    ],
+    "all_unchanged": true,
+    "production_catalog_enabled": false,
+    "production_catalog_installed": false,
+    "production_env_changed": false,
+    "api_route_added": false,
+    "frontend_changed_by_this_task": false,
+    "services_restarted_or_deployed": false,
+    "live_business_tasks_mutated": false,
+    "real_user_data_deleted": false
+  },
+  "stage_decision": {
+    "S2_stage_passed": false,
+    "human_medical_reviews_performed": 0,
+    "medical_reviewer_identity_confirmed": false,
+    "medical_catalog_verified": false,
+    "full_S6_or_S7_promoted": false,
+    "reason": "文件与读取/校验工程已验证；真实医学名称、同义/分类/适用关系及完整医学核验仍未完成。"
+  },
+  "formal_review": {
+    "used": 3,
+    "maximum": 3,
+    "records": [
+      {
+        "round": 1,
+        "node": "before_implementation",
+        "verdict": "继续",
+        "risks": [
+          "旧草案混有不属于T1的工程指标",
+          "同义词与上下位关系可能被误合并",
+          "待核条目可能被误当作正式选项"
+        ]
+      },
+      {
+        "round": 2,
+        "node": "before_final_acceptance",
+        "verdict": "修改",
+        "risks": [
+          "测试固定全部待核初始状态，正常审核后可能误报失败",
+          "现行S2文档尚未指向这份材料",
+          "找到相关原文不等于医学结论正确"
+        ],
+        "requested_changes": [
+          "业务边界测试改为独立小型fixture，真实材料只作通用校验及不可变档案保全",
+          "补现行DOCX/S2状态及任务入口",
+          "维护命令提供with-node包装；可维护来源快照hash仅作本轮证据"
+        ]
+      },
+      {
+        "round": 3,
+        "node": "before_final_acceptance",
+        "verdict": "继续",
+        "risks": [
+          "部分来源与适用依据尚待补齐",
+          "医学名称及关系尚未经人工核验",
+          "后续网页接入须区分待核材料和正式选项"
+        ],
+        "conclusion": "本轮材料文件、维护校验及文档同步可以交付，S2整体仍待完成。"
+      }
+    ],
+    "final_review": "passed_for_scoped_engineering_delivery_only",
+    "previous_task_review_counters_changed": false
+  },
+  "limitations": [
+    "本轮未增加网页/API接入、可视化编辑、审批/发布或部署；当前网页不会自动读取这份新材料。",
+    "33处text_located仅证明找到相关原文，未证明中文映射、完整定义、适用或临床结论正确。",
+    "MED03具体模板附件、部分测量定义/位置及所有适用映射仍有列明缺口，准备责任在工程资料方。",
+    "130个独立review均pending；工程校验不能认证核验人员身份/资质，也不授医学或生产批准。"
+  ],
+  "review_round_2_corrections": {
+    "real_source_tests": "只做通用结构/引用/读取与不可变原始档案、明确历史草案保全，不假设真实源永远全部pending或unknown。",
+    "business_test_fixture": "测试函数内2特征的独立synthetic fixture；不复制大型材料文件，不保存人核状态到真实源。",
+    "editable_source_hashes": "source-register.json与资料与选型核验.json的SHA保留在本次导入/报告快照，通用测试不冻结其未来合法编辑。",
+    "maintenance_command": "README及材料使用说明提供现有with-node包装命令，未安装Node或扩大权限。",
+    "documentation": "现行S2两份DOCX、相关JSON/CSV及总入口增量指向本次材料和工程证据，阶段条件及旧审查记录保持。"
+  },
+  "documentation_sync": {
+    "status": "passed",
+    "evidence": "documentation-sync.json",
+    "files": [
+      "方案/子任务T1/T1智能体开发计划.docx",
+      "方案/子任务T1/T1开发执行说明.docx",
+      "方案/子任务T1/开发计划.json",
+      "方案/子任务T1/当前版本.json",
+      "方案/当前版本.json",
+      "方案/子任务T1/开发任务清单.csv",
+      "方案/子任务T1/开发阶段与验收.csv"
+    ],
+    "docx_other_parts_identical": true,
+    "historical_subtrees_and_other_formal_review_records_preserved": true,
+    "S2_stage_passed": false
+  },
+  "finalized_at": "2026-11-14T06:39:42Z",
+  "persistent_handoff": {
+    "original_goal": "继续S2；将医学目录核验材料保存为可维护文件，后续网页可读取、核验人员可审核及增删改。",
+    "latest_authorized_scope": {
+      "date": "2026-11-14",
+      "scope": [
+        "唯一人工维护源code/config/medical-catalog-material.json",
+        "contracts结构与引用校验",
+        "固定路径服务端只读加载模块",
+        "check CLI与必要测试",
+        "已有部署说明最小同步"
+      ],
+      "starting_scope": "沿用肺癌/肠癌CT/MRI起步，不限制T1全部癌种",
+      "no_new_permission_gate": true
+    },
+    "final_result": "唯一JSON人工维护源、结构/引用校验、固定路径只读加载、维护CLI、必要测试及现行S2入口增量同步完成限定工程交付。",
+    "material_source": "code/config/medical-catalog-material.json",
+    "current_medical_status": "130项review仍pending；无医学人工核验，不安装/批准正式抽取目录。",
+    "remaining_preparation_source": "code/config/medical-catalog-material.json#/preparation_gaps",
+    "remaining_medical_work": [
+      "核对候选名称/含义与T1用途，区分视觉描述、测量、评分/结论和工程指标。",
+      "逐条判断词语为真同义、翻译对应、缩写、相关词或上下位，并给修改建议。",
+      "核对癌种/研究对象、模态、序列/时相、治疗阶段及测量参照；没有证据保持待核。",
+      "需要拆分的条目先由工程资料方补齐原文成分，再请核验人员判断；不要求专家从零找资料或制作论文标准答案。"
+    ],
+    "future_web_boundary": "固定只读模块可供后续API/网页调用，但本轮未接入服务路由/网关/网页或发布；当前页面不读取新材料。",
+    "formal_reviews_used": 3,
+    "formal_review_limit": 3,
+    "S2_stage_passed": false,
+    "previous_task_formal_reviews": "原任务的历史正式审查记录和计数均保留，未重置。",
+    "paid_model_calls": 0,
+    "services_restarted_or_deployed": false
+  },
+  "cleanup": {
+    "persistent_handoff_completed": true,
+    "temporary_log_removed": "code/runtime-data/agent-notes/s2-catalog-source-2026-11-14.json",
+    "other_temporary_files_removed": [],
+    "retained_audit_evidence": [
+      "report.json",
+      "documentation-sync.json",
+      "review.diff",
+      "catalog-check.log",
+      "catalog-tests.log",
+      "typecheck.log",
+      "initial-test-launch.json",
+      "before-review-2-catalog-check.log",
+      "before-review-2-catalog-tests.log",
+      "before-review-2-typecheck.log"
+    ],
+    "note": "仅删除本任务临时连续性日志；生成过程使用内联脚本，测试临时目录已由测试finally清理。保留永久规则、其他任务日志、历史草案及全部审计证据。"
+  }
+}

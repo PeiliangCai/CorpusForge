@@ -1,0 +1,22 @@
+{
+  "status": "new_services_ready_pending_readonly_validation",
+  "started_at": "2026-11-14T09:04:25.422025+00:00",
+  "backend_pid": 65746,
+  "frontend_launcher_pid": 65769,
+  "backend_log": "runtime-data/logs/t1-backend-workbench-experience-20261114.log",
+  "frontend_log": "runtime-data/logs/pi-web-workbench-experience-20261114.log",
+  "dist": "apps/pi-web/build/workbench-experience-validated-20261114",
+  "BUILD_ID": "AvEqqRvnH42IteI6npju-",
+  "backend_health": {
+    "status": "ok",
+    "service": "t1-workbench",
+    "runtime_mode": "workflow",
+    "backend_pi_sdk": "1.4.0",
+    "controlled_fixture": false,
+    "extraction_available": true
+  },
+  "frontend_GET_bytes": 18833,
+  "paid_calls_by_engineering": 0,
+  "business_mutation_requests_by_engineering": 0,
+  "frontend_pid": 65790
+}

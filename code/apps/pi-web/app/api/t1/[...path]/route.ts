@@ -16,6 +16,11 @@ async function forward(request: Request, context: { params: Promise<{ path: stri
   const cursor = request.headers.get("last-event-id") ?? url.searchParams.get("after");
   if (cursor !== null && (!/^\d+$/.test(cursor) || !Number.isSafeInteger(Number(cursor)))) return Response.json({ error: "invalid_event_cursor" }, { status: 400 });
   const headers = new Headers();
+  const requestId = request.headers.get("x-t1-request-id");
+  if (requestId !== null && request.method === "POST" && (target === "/api/workbench/papers" || /^\/api\/workbench\/papers\/[^/]+\/runs$/.test(target))) {
+    if (!/^[A-Za-z0-9_-]{8,120}$/.test(requestId)) return Response.json({ error: "invalid_submission_request_id" }, { status: 400 });
+    headers.set("x-t1-request-id", requestId);
+  }
   if (isEvents && cursor !== null) headers.set("last-event-id", cursor);
   let body: Uint8Array | undefined;
   if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method)) {

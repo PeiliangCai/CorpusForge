@@ -1,0 +1,109 @@
+{
+  "schema_version": "t1-material-download-identity-1",
+  "source_id": "IN07",
+  "checked_at": "2026-11-11T09:51:37.169796+00:00",
+  "status": "downloaded-and-identity-checked-not-registered",
+  "identity": {
+    "title": "Synchronous Pulmonary Adenocarcinoma and Carcinoid Tumor Diagnosed via a Single-Session Robotic Bronchoscopy: A Case Report",
+    "doi": "10.7759/cureus.94044",
+    "publication_date": "2025-10-07",
+    "journal": "Cureus",
+    "first_authors_verified": [
+      "Joshua Wortsman",
+      "Syed M. Naqvi",
+      "Dean-Yar Tigrani"
+    ],
+    "first_page_title_normalized_match": true,
+    "first_page_doi_match": true,
+    "first_page_publication_label": "Published 10/07/2025",
+    "citation_date_corroborated": "October 07, 2025"
+  },
+  "license": {
+    "identifier": "CC-BY-4.0",
+    "evidence": "The official publisher PDF first-page license explicitly names Creative Commons Attribution License CC-BY 4.0.",
+    "verified_from_article_pdf": true
+  },
+  "download": {
+    "official_article_url": "https://www.cureus.com/articles/414941-synchronous-pulmonary-adenocarcinoma-and-carcinoid-tumor-diagnosed-via-a-single-session-robotic-bronchoscopy-a-case-report",
+    "official_pdf_url": "https://www.cureus.com/articles/414941-synchronous-pulmonary-adenocarcinoma-and-carcinoid-tumor-diagnosed-via-a-single-session-robotic-bronchoscopy-a-case-report.pdf",
+    "actual_public_pdf_redirect": "https://assets.cureus.com/uploads/case_report/pdf/414941/20251106-71775-xadaoe.pdf",
+    "article_page_normal_request": {
+      "http_status": 403,
+      "title": "Just a moment...",
+      "challenge_bypassed": false
+    },
+    "pdf_normal_request": {
+      "redirect_http_status": 302,
+      "final_http_status": 200,
+      "content_type": "application/pdf",
+      "starts_with_pdf_magic": true,
+      "challenge_in_pdf_response": false
+    },
+    "requests": "One normal curl request to each supplied official URL, with standard HTTPS redirects only. No account, cookie replay, challenge solving, alternate origin search or user-agent substitution.",
+    "path": "evaluation/corpus/independent-sealed/IN07.pdf",
+    "bytes": 1547592,
+    "sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+    "pages": 4,
+    "encrypted": false,
+    "pdf_file_metadata": {
+      "/Title": "",
+      "/Creator": "wkhtmltopdf 0.12.4",
+      "/Producer": "Qt 4.8.7",
+      "/CreationDate": "D:20251106170439Z"
+    },
+    "pdf_metadata_creation_date_is_not_publication_date": true
+  },
+  "collision_check": {
+    "existing_pdf_files_checked": 170,
+    "pdf_scan_root": "code/ (excluding dependency/tool/cache/build directories; candidate temporary download excluded)",
+    "sha256_collision_paths": [],
+    "manifest_and_history_search_roots": [
+      "code/evaluation",
+      "code/config",
+      "code/docs/acceptance (excluding this in07/)",
+      "research"
+    ],
+    "searched_identity_indicators": [
+      "10.7759/cureus.94044",
+      "414941",
+      "Synchronous Pulmonary Adenocarcinoma",
+      "Single-Session Robotic Bronchoscopy",
+      "Wortsman",
+      "Tigrani"
+    ],
+    "doi_title_family_indicator_matches": [],
+    "registered_or_historical_sha_matches": [],
+    "conclusion": "No target DOI/title/distinctive-family indicator was found in the checked registers/history or readable text of 45 unique prior PDFs (107 copies). The remaining 63 prior copies match three proven engineering-fixture SHA groups; no unresolved unsearchable group remains. This supports distinct project paper-family intake within the audited scope, without claiming global absence of exposure.",
+    "current_register_snapshots_sha256": {
+      "evaluation/manifests/family-split-draft.json": "97dfa27e95aba467a83373ebca87052ae3cae9747beb97c549e536b66b4cee2b",
+      "evaluation/manifests/independent-intake.json": "ffd1dff88a3cb2ec742abb2339559bf99268461c91b9f9688123c9fc0da95be3",
+      "evaluation/manifests/method-reference-register.json": "5253e9ced8295e76de9b5e60b1f7e8b0bddfcb43b3f31f04d2d1b90c90cef219",
+      "evaluation/manifests/source-register.json": "5a150d94b4375b23353af700fa817f7a001b5b517f3260b89ab8190336a9323d",
+      "evaluation/manifests/source-register.csv": "c29b52280636322f0552fad8acf3a24d90f692ee8bedc8f7dbf3a3cd5692c582"
+    },
+    "prior_pdf_readable_identity_audit": {
+      "path": "prior-pdf-identity-audit.json",
+      "sha256": "4e96e884c8365247a0076504d3f72ea9b797d3224764061cac8bd5d7a39e094c",
+      "existing_pdf_paths_hashed": 170,
+      "unique_prior_sha256": 48,
+      "readable_unique_pdf_count": 45,
+      "readable_copy_count": 107,
+      "unsearchable_copy_count": 63,
+      "known_unsearchable_fixture_sha_count": 3,
+      "unresolved_groups": 0,
+      "identity_or_family_matches": [],
+      "all_project_pdfs_readable_claimed": false,
+      "global_absence_of_exposure_claimed": false
+    }
+  },
+  "actions": {
+    "registry_modified": false,
+    "parser_or_prompt_modified": false,
+    "frontend_modified": false,
+    "ordinary_service_requests": 0,
+    "docling_runs": 0,
+    "figure_caption_diagnostics": 0,
+    "model_calls": 0
+  },
+  "next_owner_action": "Backend owner may independently verify this identity record, atomically register IN07, and parse it only after the generic repair. No model allowance is granted by this preparation."
+}

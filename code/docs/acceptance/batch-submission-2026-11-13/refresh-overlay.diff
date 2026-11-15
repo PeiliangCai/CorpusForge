@@ -1,0 +1,127 @@
+--- before/apps/pi-web/t1/T1Workbench.tsx
++++ after/apps/pi-web/t1/T1Workbench.tsx
+@@ -35,6 +35,10 @@
+ const terminal = new Set(["completed", "partial", "failed", "cancelled", "interrupted"]);
+ type RunDetail = WorkbenchRunDetail;
+ const exportKinds: WorkbenchExportKind[] = ["retained_jsonl", "retained_csv", "retained_package"];
++
++function RefreshOverlay({ label }: { label: string }) {
++  return <div className="t1-refresh-overlay" aria-hidden="true"><span><RefreshIcon size={24} className="t1-refresh-spinner" /><span>{label}</span></span></div>;
++}
+ 
+ export function T1Workbench() {
+   const { t, locale, setLocale, supportedLocales } = useI18n();
+@@ -93,6 +97,11 @@
+   const editable = Boolean(runId && currentRun && capabilities?.persisted_review);
+   const paperRuns = runs.filter(run => run.document_id === paperId);
+ 
++  useEffect(() => {
++    if (!refreshMessage || refreshMessage.failed) return;
++    const timer = window.setTimeout(() => setRefreshMessage(null), 5000);
++    return () => window.clearTimeout(timer);
++  }, [refreshMessage]);
+   useEffect(() => { if (mobile) setShowSidebar(false); }, [mobile]);
+   useEffect(() => { setRecordQuery(""); setRecordRole("all"); setRetentionView("kept"); }, [paperId, runId, historyId]);
+   useEffect(() => { setShowNotes(false); setEditor(null); setExportError(""); }, [paperId, runId, historyId]);
+@@ -142,7 +151,10 @@
+       while (true) {
+         const selected = selectionRef.current, paperRead = refreshPaperRef.current, runRead = refreshRunRef.current;
+         if (selected.paperId && paperRead?.id !== selected.paperId || selected.runId && runRead?.id !== selected.runId) { await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve())); continue; }
+-        try { await Promise.all([selected.paperId ? paperRead?.load() : undefined, selected.runId ? runRead?.load() : undefined]); }
++        try {
++          const reads = await Promise.allSettled([selected.paperId ? paperRead?.load() : undefined, selected.runId ? runRead?.load() : undefined]);
++          for (const read of reads) if (read.status === "rejected") throw read.reason;
++        }
+         catch (cause) { if (same(selected, selectionRef.current)) throw cause; }
+         if (same(selected, selectionRef.current) && runRead === refreshRunRef.current && paperRead === refreshPaperRef.current) break;
+       }
+@@ -167,7 +179,7 @@
+           setPaperId(selected.paperId); setRunId(selected.runId); setHistoryId(selected.historyId); setRecordId(selected.recordId); setActiveTab(selected.activeTab);
+           initialized.current = true;
+         }
+-      }).catch(cause => { if (!controller.signal.aborted) setError(errorText(cause)); throw cause; }).finally(() => { flight = null; if (!controller.signal.aborted) setLoading(false); });
++      }).catch(cause => { if (!controller.signal.aborted && !refreshingRef.current) setError(errorText(cause)); throw cause; }).finally(() => { flight = null; if (!controller.signal.aborted) setLoading(false); });
+       return flight;
+     }
+     refreshWorkspaceRef.current = load; void load().catch(() => {});
+@@ -185,7 +197,7 @@
+       if (controller.signal.aborted) return;
+       setDetail(value);
+       if (!selectionRef.current.runId) setHistoryId(current => value.outputs.some(item => item.id === current) ? current : value.outputs.find(item => item.strategy === "B0")?.id ?? value.outputs[0]?.id ?? "");
+-      }).catch(cause => { if (!controller.signal.aborted) setDetailError(errorText(cause)); throw cause; }).finally(() => { flight = null; });
++      }).catch(cause => { if (!controller.signal.aborted && !refreshingRef.current) setDetailError(errorText(cause)); throw cause; }).finally(() => { flight = null; });
+       return flight;
+     }
+     const reader = { id: paperId, load }; refreshPaperRef.current = reader; void load().catch(() => {});
+@@ -205,7 +217,7 @@
+           try {
+             const value = await api<RunDetail>(`workbench/runs/${encodeURIComponent(runId!)}`, { signal: controller.signal });
+             if (!controller.signal.aborted) { setRunDetail(value); setDetailError(""); setPapers(current => current.map(paper => paper.id === value.paper.id ? value.paper : paper)); }
+-          } catch (cause) { if (!controller.signal.aborted) setDetailError(errorText(cause)); throw cause; }
++          } catch (cause) { if (!controller.signal.aborted && !refreshingRef.current) setDetailError(errorText(cause)); throw cause; }
+         } while (dirty && !controller.signal.aborted);
+       })();
+       try { await flight; } finally { flight = null; }
+@@ -294,16 +306,17 @@
+     <header className="t1-topbar"><div className="t1-brand"><span>T1</span><strong>{t("t1.title")}</strong></div>
+       <div className="t1-top-actions"><select aria-label={t("t1.language")} value={locale} onChange={e => setLocale(e.target.value as typeof locale)}>{supportedLocales.map(item => <option value={item.id} key={item.id}>{item.label}</option>)}</select><button onClick={() => void refreshWorkspace()} disabled={loading || refreshing} aria-busy={refreshing} aria-label={t(refreshing ? "t1.refreshing" : "t1.refresh")} title={t(refreshing ? "t1.refreshing" : "t1.refresh")}><RefreshIcon size={16} /></button><button aria-label={t("t1.theme")} title={t("t1.theme")} onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); setMenu({ kind: "rect", rect, align: "end" }); }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M20.8 13.2A9 9 0 0 1 10.8 3.1 9 9 0 1 0 20.8 13.2Z" /></svg></button></div>
+     </header>
+-    {(refreshing || refreshMessage) && <div className="t1-refresh-feedback" data-failed={refreshMessage?.failed} role={refreshMessage?.failed ? "alert" : "status"}>{refreshing ? t("t1.refreshing") : refreshMessage?.text}<button aria-label={t("t1.close")} disabled={refreshing} onClick={() => setRefreshMessage(null)}><CloseIcon size={14} /></button></div>}
++    <span className="t1-sr-only" role="status" aria-live="polite">{refreshing ? t("t1.refreshing") : ""}</span>
++    {refreshMessage && <div className="t1-refresh-toast" data-failed={refreshMessage.failed} role={refreshMessage.failed ? "alert" : "status"}><span>{refreshMessage.text}</span>{refreshMessage.failed && <button className="t1-button" onClick={() => void refreshWorkspace()}>{t("t1.retry")}</button>}<button className="t1-refresh-dismiss" aria-label={t("t1.close")} onClick={() => setRefreshMessage(null)}><CloseIcon size={14} /></button></div>}
+     <div className="t1-body" ref={source.panelRef}>
+       {showSidebar && <><aside className="t1-sidebar" aria-label={t("t1.paperNav")}><div className="t1-sidebar-heading"><strong>{t("t1.papers")}</strong><span>{papers.length}</span><button className="t1-sidebar-close" aria-label={t("t1.close")} onClick={() => setShowSidebar(false)}><CloseIcon size={18} /></button></div>
+         <button className="t1-new-task" onClick={() => { openTab("newTask"); if (mobile) setShowSidebar(false); }}><PlusIcon size={16} />{t("t1.newTask")}</button>
+-        <div className="t1-paper-list">{papers.map(item => <button key={item.id} className={paperId === item.id ? "selected" : ""} aria-current={paperId === item.id ? "page" : undefined} title={item.title} onClick={() => selectPaper(item.id)}><span className="t1-paper-label"><GenericFileIcon size={14} /><b>{item.uploaded || item.id.startsWith("paper-") ? t("t1.uploadedPaper") : item.id}</b><small>{item.pages || "—"} {t("t1.pagesShort")}</small></span><strong>{item.title}</strong><em>{item.uploaded ? "PDF" : t("t1.historical")}</em></button>)}</div>
++        <div className="t1-paper-list-region" aria-busy={refreshing}><div className="t1-paper-list">{papers.map(item => <button key={item.id} className={paperId === item.id ? "selected" : ""} aria-current={paperId === item.id ? "page" : undefined} title={item.title} onClick={() => selectPaper(item.id)}><span className="t1-paper-label"><GenericFileIcon size={14} /><b>{item.uploaded || item.id.startsWith("paper-") ? t("t1.uploadedPaper") : item.id}</b><small>{item.pages || "—"} {t("t1.pagesShort")}</small></span><strong>{item.title}</strong><em>{item.uploaded ? "PDF" : t("t1.historical")}</em></button>)}</div>{refreshing && <RefreshOverlay label={t("t1.refreshing")} />}</div>
+         <div className="t1-sidebar-bottom"><button onClick={() => openTab("tasks")}><MessageIcon size={15} />{t("t1.tasks")}</button><details><summary>{t("t1.aboutWorkbench")}</summary><span>Pi Web 0.15.0 · T1 Pi SDK 1.4.0</span></details></div>
+         <SidebarToast toast={toast} onDismiss={() => setToast(null)} dismissLabel={t("t1.close")} /></aside><div className="t1-resize" {...sidebar.separatorProps} /></>}
+       <main className="t1-main"><div className="t1-workspace-bar"><button onClick={() => setShowSidebar(value => !value)} aria-label={t("t1.toggleNav")} title={t("t1.toggleNav")} aria-expanded={showSidebar}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></svg></button><span title={paper?.title}>{paper?.title ?? t("t1.newTask")}</span><button className="t1-source-toggle" aria-pressed={showSource} onClick={() => setShowSource(value => !value)}><EyeIcon size={15} />{t(showSource ? "t1.hideOriginal" : "t1.showOriginal")}</button>{pdfUrl && <a className="t1-mobile-source" href={`${pdfUrl}#page=${page}`} target="_blank" rel="noreferrer"><OpenInNewTabIcon size={14} />{t("t1.openOriginal")}</a>}</div>
+         <TabBar tabs={tabs} activeTabId={activeTab} onSelectTab={setActiveTab} onCloseTab={id => { const next = tabIds.filter(tab => tab !== id); setTabIds(next); if (activeTab === id) setActiveTab(next[0] ?? ""); }} onReorderTab={(from, to, after) => setTabIds(current => movePanelTab(current, from, to, after))} />
+-        <div className="t1-content" data-view={activeTab} data-source-blocked={sourceBlocked}>
++        <div className="t1-content-region" aria-busy={refreshing}><div className="t1-content" data-view={activeTab} data-source-blocked={sourceBlocked}>
+           {loading && <p className="t1-status" role="status">{t("t1.loading")}</p>}
+           {error && <div className="t1-alert" role="alert">{error}<button onClick={refresh}>{t("t1.retry")}</button></div>}
+           {actionError && <div className="t1-alert" role="alert">{actionError}</div>}
+@@ -360,7 +373,7 @@
+             {paper && <details className="t1-context"><summary>{t("t1.deletePaper")}</summary><p>{t("t1.deletePaperHelp")}</p><button onClick={() => setDeletePaperConfirm(true)}>{t("t1.deletePaper")}</button>{deletePaperConfirm && <button onClick={() => void deletePaper()}>{t("t1.confirmDeletePaper")}</button>}</details>}
+             <h2>{t("t1.events")}</h2><div className="t1-stream-status" role="status">{t(`t1.${connection}`)}</div>{events.length ? <ol className="t1-events">{events.map(event => <li key={event.seq}><span>#{event.seq} · {event.type}</span><p>{event.summary}</p><time>{event.timestamp}</time></li>)}</ol> : <p>{t("t1.noEvents")}</p>}
+           </>}
+-        </div>
++        </div>{refreshing && <RefreshOverlay label={t("t1.refreshing")} />}</div>
+       </main>
+       {showSource && paper && pdfUrl && <><div className="t1-resize" {...source.separatorProps} /><aside className="t1-source" aria-label={t("t1.originalPdf")}><div className="t1-source-heading"><strong><GenericFileIcon size={15} />{t("t1.originalPdf")}</strong><a href={`${pdfUrl}#page=${page}`} target="_blank" rel="noreferrer">{t("t1.openOriginal")}<OpenInNewTabIcon size={13} /></a></div>{sourceBlocked ? <p className="t1-alert">{t("t1.sourceProblem")}</p> : <PdfSource key={`${paper.id}:${paper.sha256}`} url={pdfUrl} sha256={paper.sha256} page={page} pages={paper.pages} onPage={sourcePage} />}<div className="t1-source-footer"><small>{t("t1.sourceUnchanged")}</small><details><summary>{t("t1.sourceVersion")}</summary><code>SHA256 {paper.sha256}</code></details></div></aside></>}
+     </div>
+--- before/apps/pi-web/t1/workbench.css
++++ after/apps/pi-web/t1/workbench.css
+@@ -7,9 +7,15 @@
+ }
+ 
+ /* T1 uses Pi Web's existing theme and panels with a quiet, neutral workspace. */
+-.t1-refresh-feedback { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: 0 0 auto; padding: 8px 18px; border-bottom: 1px solid var(--border); background: var(--bg-panel); color: var(--text-muted); font-size: 12px; }
+-.t1-refresh-feedback[data-failed="true"] { color: var(--t1-warning); background: var(--t1-warning-bg); }
+-.t1-refresh-feedback button { display: flex; padding: 3px; }
++.t1-content-region, .t1-paper-list-region { position: relative; display: flex; flex: 1; min-height: 0; min-width: 0; flex-direction: column; }
++.t1-refresh-overlay { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgb(205 208 214 / 58%); pointer-events: none; }
++html.dark .t1-refresh-overlay, [data-theme="dark"] .t1-refresh-overlay { background: rgb(72 74 82 / 62%); }
++.t1-refresh-overlay > span { display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 16px 20px; border: 1px solid var(--border); border-radius: 10px; background: var(--t1-surface); color: var(--text-muted); box-shadow: var(--t1-shadow); font-size: 12px; }
++.t1-refresh-toast { position: fixed; z-index: 110; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: flex; align-items: center; gap: 12px; width: max-content; max-width: min(540px, calc(100vw - 28px)); padding: 12px 14px; border: 1px solid var(--border); border-radius: 9px; background: var(--t1-surface); color: var(--text); box-shadow: var(--t1-shadow); font-size: 12px; }
++.t1-refresh-toast > span { min-width: 0; overflow-wrap: anywhere; }
++.t1-refresh-toast[data-failed="true"] { color: var(--t1-warning); border-color: var(--t1-warning); }
++.t1-refresh-toast button { flex-shrink: 0; }
++.t1-refresh-dismiss { display: flex; padding: 3px; border: 0; border-radius: 4px; background: transparent; color: var(--text-muted); }
+ .t1-new-task-panel[hidden] { display: none; }
+ .t1-batch-members { margin: 12px 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+ .t1-batch-members > li { padding: 12px; border: 1px solid var(--border); border-radius: 7px; background: var(--t1-surface); }
+@@ -21,9 +27,9 @@
+ .t1-batch-member-actions { margin-top: 6px; }
+ .t1-batch-error { color: var(--t1-warning); font-size: 12px; margin: 8px 0 0; }
+ .t1-batch-scope { margin-top: 12px; padding: 12px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 7px; }
+-.t1-top-actions button[aria-busy="true"] svg { animation: t1-refresh-spin 1.2s linear infinite; }
++.t1-refresh-spinner, .t1-top-actions button[aria-busy="true"] svg { animation: t1-refresh-spin 1.2s linear infinite; }
+ @keyframes t1-refresh-spin { to { transform: rotate(360deg); } }
+-@media (prefers-reduced-motion: reduce) { .t1-top-actions button[aria-busy="true"] svg { animation: none; } }
++@media (prefers-reduced-motion: reduce) { .t1-refresh-spinner, .t1-top-actions button[aria-busy="true"] svg { animation: none; } }
+ :root, [data-theme="light"] {
+   --font-ui: Arial, T1CJK, sans-serif;
+   --font-ui-weight: 400;

@@ -1,0 +1,234 @@
+{
+  "schema_version": "t1-IN04-new-current-root-source-review-1",
+  "recorded_at_utc": "2026-11-11T09:32:09.870841+00:00",
+  "reviewer_kind": "delegated_ai_operator",
+  "performed_by": "Main session GPT-6-Astra max",
+  "transcribed_and_bound_by": "/root/resume_s6_s7 GPT-6.1-Sol max",
+  "source": "Main-session actual readback of this run’s8 current records and same-SHA original PNG pages1/2/3/4 plus3 wholeFigure PNGs; not an inherited review of old candidate versions.",
+  "review_pack": {
+    "path": "code/docs/acceptance/resume-2026-11-11/review-pack.json",
+    "sha256": "f82c3ab2e545ebbc36f6a289f3a6b6b02f702dee50bd4d16df2960afb7d967ba"
+  },
+  "candidate_export": {
+    "path": "code/docs/acceptance/resume-2026-11-11/candidate_jsonl.jsonl",
+    "sha256": "48c5be2cc0b203af9eb428402ff4b4730afe121037574d79ad438cc924afdb0d"
+  },
+  "PDF_sha256": "50427f2871550116a3ef9530b09fe5a8591299f6352ab58af1aaa46273437a3b",
+  "run_id": "run-1cd86d00-1256-465a-8a9a-cddd2a8294ac",
+  "sample": {
+    "seed": "t1-s6-20261109-v1",
+    "sampled_current_records": 8,
+    "current_output_records": 8,
+    "method": "All8 because current N<10; fixed source/current-version/fingerprint selection",
+    "new_independent_S6_sources": 0,
+    "not8_independent_facts": true
+  },
+  "reviewed_original_physical_pages": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "record_checks": [
+    {
+      "record_id": "ev-f9e62b0aaae636ded5408e867574942248c9c82d",
+      "version": 3,
+      "delivery_fingerprint": "62c9aeba955f095ef684a30f59ef9d88533af513e42234a2646afb7e14ad1480",
+      "source_record_sha256": "860d1f1c87f97865d5543c1ba6b4c890f5fa1f8d15d9413c29009803fbb5e37d",
+      "physical_pages": [
+        3
+      ],
+      "original_quote_visible_on_reported_pages": true,
+      "visible_rewrite_or_wrong_page_observed": false,
+      "review_status_unchanged": true,
+      "figure_pairing_unchanged_pending": true
+    },
+    {
+      "record_id": "ev-67fb7ed4ab45267553f5f62a9fdc8340ab954d4c",
+      "version": 3,
+      "delivery_fingerprint": "f0a9cebab4d785d569590d50a9e8ed2cef60bbde43d7a8007af6c16c5940783c",
+      "source_record_sha256": "ed9128feeb464cca1fb25510b144b3ac654180cac755ced00e166f9dc41926a0",
+      "physical_pages": [
+        4
+      ],
+      "original_quote_visible_on_reported_pages": true,
+      "visible_rewrite_or_wrong_page_observed": false,
+      "review_status_unchanged": true,
+      "figure_pairing_unchanged_pending": true
+    },
+    {
+      "record_id": "ev-711ce8cd831a3c30385344e9adc6974da54fc7d1",
+      "version": 3,
+      "delivery_fingerprint": "438403169a0d6166b49f18d0dbeb62b5380c0352972e9c60407a7a5dbf0942c2",
+      "source_record_sha256": "80b9b39a3cfae7c7a7a0f00c9574ebb2a74637146c764db45c2222beaef3ca46",
+      "physical_pages": [
+        2
+      ],
+      "original_quote_visible_on_reported_pages": true,
+      "visible_rewrite_or_wrong_page_observed": false,
+      "review_status_unchanged": true,
+      "figure_pairing_unchanged_pending": true
+    },
+    {
+      "record_id": "ev-6a79fb134428ff73881043af1ef00770738f5769",
+      "version": 6,
+      "delivery_fingerprint": "133149fd30aebc6415a111225b9f51aa0f936dcbbc053ec04ca96d5dec2df2e7",
+      "source_record_sha256": "fe5f119c2280b0f834959ceb1a7646b2b3491f92987420bfddfb5158c10b9420",
+      "physical_pages": [
+        2
+      ],
+      "original_quote_visible_on_reported_pages": true,
+      "visible_rewrite_or_wrong_page_observed": false,
+      "review_status_unchanged": true,
+      "figure_pairing_unchanged_pending": true
+    },
+    {
+      "record_id": "ev-e3d9c217754234522cbcc56566ce3e23fdffbde5",
+      "version": 5,
+      "delivery_fingerprint": "5ec2925bd4e625a7049eb20c713460ff8dda4cd2be15e80d66316634e9988739",
+      "source_record_sha256": "ceb11658852b2a06e25ef12b0c92f11400db0872c3e5fc4d497beea42cf2d7d1",
+      "physical_pages": [
+        2
+      ],
+      "original_quote_visible_on_reported_pages": true,
+      "visible_rewrite_or_wrong_page_observed": false,
+      "review_status_unchanged": true,
+      "figure_pairing_unchanged_pending": true
+    },
+    {
+      "record_id": "ev-169072043bf2f62ed0dcce9b9586475064a4c4b3",
+      "version": 4,
+      "delivery_fingerprint": "a472eb323919f3b258bf11cf1ce6fac58afd6ae2ab28471c066b24707e0a952e",
+      "source_record_sha256": "289aa2550c5ceba11ccdb1e18170f9a7819d49c390469747daf96283d02fb7d7",
+      "physical_pages": [
+        2
+      ],
+      "original_quote_visible_on_reported_pages": true,
+      "visible_rewrite_or_wrong_page_observed": false,
+      "review_status_unchanged": true,
+      "figure_pairing_unchanged_pending": true
+    },
+    {
+      "record_id": "ev-95f8b56dbae85c149e7f596a725a271a9a62192a",
+      "version": 3,
+      "delivery_fingerprint": "b1ad585f3093313cd89a1e6b1f0f6e48b935c5ac9637e333caed26a478484d16",
+      "source_record_sha256": "412d2faec439cde58fcf9b7a3901d11e09905e35b06ad929d2a97877b2eed117",
+      "physical_pages": [
+        2
+      ],
+      "original_quote_visible_on_reported_pages": true,
+      "visible_rewrite_or_wrong_page_observed": false,
+      "review_status_unchanged": true,
+      "figure_pairing_unchanged_pending": true
+    },
+    {
+      "record_id": "ev-20c09b458a99fd0c8f03a32e8c011c33df7305e2",
+      "version": 3,
+      "delivery_fingerprint": "b07e4b48316681396a47c821ff5930df46164dff9d22c5ed67a3ac071901fefd",
+      "source_record_sha256": "02977f805a538f33e3135b7f7f6ed6657bc40eb5f0276de8b5c3495b4c21e195",
+      "physical_pages": [
+        2
+      ],
+      "original_quote_visible_on_reported_pages": true,
+      "visible_rewrite_or_wrong_page_observed": false,
+      "review_status_unchanged": true,
+      "figure_pairing_unchanged_pending": true
+    }
+  ],
+  "specific_readback": {
+    "numeric_literals_checked": [
+      "18×11 mm",
+      "SUVmax 14.0",
+      "×100",
+      "×200",
+      "×400"
+    ],
+    "negation_checked": "No visible alteration of the retained negative wording was observed.",
+    "whole_figures": {
+      "Figure1": {
+        "panels": 2,
+        "whole_image_and_caption_visibly_correspond": true
+      },
+      "Figure2": {
+        "panels": 4,
+        "whole_image_and_caption_visibly_correspond": true
+      },
+      "Figure3": {
+        "panels": 4,
+        "whole_image_and_caption_visibly_correspond": true
+      }
+    },
+    "medical_correctness_of_figure_type_approved": false,
+    "in_figure_text_checked_character_by_character": false
+  },
+  "same_source_duplication": [
+    {
+      "member_record_ids": [
+        "ev-6a79fb134428ff73881043af1ef00770738f5769",
+        "ev-95f8b56dbae85c149e7f596a725a271a9a62192a"
+      ],
+      "member_versions": [
+        6,
+        3
+      ],
+      "count": 2,
+      "mechanical_same_source_sentence_only": true,
+      "independent_fact_count": null
+    },
+    {
+      "member_record_ids": [
+        "ev-e3d9c217754234522cbcc56566ce3e23fdffbde5",
+        "ev-169072043bf2f62ed0dcce9b9586475064a4c4b3",
+        "ev-20c09b458a99fd0c8f03a32e8c011c33df7305e2"
+      ],
+      "member_versions": [
+        5,
+        4,
+        3
+      ],
+      "count": 3,
+      "mechanical_same_source_sentence_only": true,
+      "independent_fact_count": null
+    }
+  ],
+  "context_risks": [
+    {
+      "record_ids": [
+        "ev-e3d9c217754234522cbcc56566ce3e23fdffbde5",
+        "ev-169072043bf2f62ed0dcce9b9586475064a4c4b3",
+        "ev-20c09b458a99fd0c8f03a32e8c011c33df7305e2"
+      ],
+      "risk": "The3 PET body records have an empty explicit context while dominant lesion depends on the earlier case subject; necessary subject context remains for true human review."
+    },
+    {
+      "record_ids": [
+        "ev-67fb7ed4ab45267553f5f62a9fdc8340ab954d4c"
+      ],
+      "risk": "Pathology caption the tumor depends on earlier case context; necessary subject context remains for true human review."
+    }
+  ],
+  "remaining_source_gaps": {
+    "glyph_quarantined_blocks": 14,
+    "glyph_gap_resolved": false,
+    "image_text_unverified_pages": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "conclusion": "8/8 new-current source fragments were visible at their reported pages with no observed visible rewriting/wrong page in this limited delegated source check. This is not medical validation, full recall, complete S6 independent acceptance, or per-record business approval.",
+  "actual_human_reviewed_count": 0,
+  "medical_quality_approved": false,
+  "product_export_approved": false,
+  "production_record_approvals": 0,
+  "figure_pairings_promoted_to_paired": 0,
+  "source_fidelity_globally_certified": false,
+  "population_precision": null,
+  "recall": null,
+  "formal_reviews": {
+    "used": 3,
+    "maximum": 3,
+    "additional": 0
+  }
+}

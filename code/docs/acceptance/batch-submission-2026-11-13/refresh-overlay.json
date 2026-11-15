@@ -1,0 +1,83 @@
+{
+  "origin": "http://127.0.0.1:30141",
+  "BUILD_ID": "YTpZzGuo2GSU-SmVJuXUK",
+  "checks": [
+    "desktop_gray_overlay_rotates_without_moving_body_title_source_or_pdf",
+    "failure_and_toast_retry_preserve_geometry_without_inline_error",
+    "reader_and_list_scroll_stay_put_with_visible_centered_spinner",
+    "scrolled_new_task_keeps_file_title_and_scope_during_refresh",
+    "mobile_reduced_motion_static_icon_and_floating_toast_leave_retention_actions_clear",
+    "success_dismisses_and_background_polling_does_not_show_overlay_or_toast"
+  ],
+  "errors": [],
+  "blocked": [],
+  "max_layout_delta_px": 0,
+  "paid_model_calls": 0,
+  "write_requests": 0,
+  "status": "passed",
+  "runtime": {
+    "at": "2026-11-13T02:46:37.837095+00:00",
+    "frontend": "http://127.0.0.1:30141/",
+    "UI_dist": "apps/pi-web/build/refresh-overlay-20261113",
+    "BUILD_ID": "YTpZzGuo2GSU-SmVJuXUK",
+    "frontend_launcher_pid": 27990,
+    "backend_pid_unchanged": 20779,
+    "backend_restarted": false,
+    "all_15_tables_unchanged": true,
+    "env_bytes_unchanged": true,
+    "integrity": "ok",
+    "active_runs_before": 0,
+    "paid_model_calls": 0,
+    "production_test_mutations": 0,
+    "rollback_dist": "apps/pi-web/build/batch-submission-20261113",
+    "formal_reviews_used": 3,
+    "browser": "passed",
+    "browser_checks": 6,
+    "max_layout_delta_px": 0,
+    "all_15_tables_unchanged_after_browser": true,
+    "env_bytes_unchanged_after_browser": true,
+    "frontend_pid": 28000
+  },
+  "preview": {
+    "status": "passed",
+    "BUILD_ID": "YTpZzGuo2GSU-SmVJuXUK",
+    "checks": 6,
+    "max_layout_delta_px": 0
+  },
+  "formal_review": {
+    "used": 3,
+    "limit": 3,
+    "decision": "继续",
+    "risks": [
+      "滚动遮罩错位",
+      "失败提示推挤",
+      "手机提示遮挡；6场景覆盖且0px"
+    ]
+  },
+  "typecheck": "passed",
+  "production_build": "passed",
+  "scope": "UI refresh presentation follow-up only; existing batch/backend validation stays at its original time. No new backend, paid, medical or 20-paper long-load claim.",
+  "documentation_sync": {
+    "changed_files": [
+      "code/README.md",
+      "code/deploy/README.md",
+      "方案/子任务T1/当前版本.json"
+    ],
+    "file_sha256": {
+      "code/README.md": "4f0d80bcaabc2a1c848ee6129489eef637b0e625be99f78aedb2cabefb07abfd",
+      "code/deploy/README.md": "acfc6ca8edb461f15d965b227490d3525b1b45e764cdfdb07fd3296e24cf3c99",
+      "方案/子任务T1/当前版本.json": "b1db75cff4f9d7ba2e76174c1c8ff196702755d50bf5a079ca094df7af59d527"
+    },
+    "Word_CSV": "Existing descriptions are generic processing/completion feedback; no contradictory top-flow-bar wording found, so Word/CSV and Word hashes remain unchanged."
+  },
+  "cleanup": {
+    "preview_30152": "stopped",
+    "temporary_baseline_and_log": "removed",
+    "generated_tsconfig_change": "reverted",
+    "retained_live_build": "build/refresh-overlay-20261113",
+    "retained_rollback_build": "build/batch-submission-20261113",
+    "superseded_task_owned_priority_build": "removed",
+    "other_old_materials": "preserved",
+    "historical_batch_report": "unchanged"
+  }
+}

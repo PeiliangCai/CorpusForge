@@ -1,0 +1,46 @@
+{
+  "schema_version": "t1-ordinary-final-UI-runtime-1",
+  "observed_at": "2026-11-11T09:39:54.224780+00:00",
+  "ordinary_frontend": "http://127.0.0.1:30141/",
+  "backend": "http://127.0.0.1:3210",
+  "backend_process_untouched": true,
+  "previous_frontend_PID": 8989,
+  "switch": "Gracefully stopped old Next and started independently validated production dist; no shared .next rebuild",
+  "dist_directory": "apps/pi-web/build/ui-next-20261111",
+  "startup_cwd": "code/apps/pi-web",
+  "startup_command": "T1_NEXT_DIST_DIR=build/ui-next-20261111 NEXT_TELEMETRY_DISABLED=1 ../../.tools/node/bin/node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 30141",
+  "model_enabled": false,
+  "controlled_fixture": false,
+  "production_tables": 13,
+  "all_13_tables_rows_unchanged": true,
+  "private_env_bytes_unchanged": true,
+  "health": [
+    {
+      "url": "http://127.0.0.1:3210/health",
+      "http_status": 200
+    },
+    {
+      "url": "http://127.0.0.1:30141/api/t1/workbench/capabilities",
+      "http_status": 200,
+      "extraction_start": false,
+      "controlled_fixture": false
+    },
+    {
+      "url": "http://127.0.0.1:30141/",
+      "http_status": 200
+    }
+  ],
+  "API_model_requests_for_switch": 0,
+  "UI_owner_ordinary_port_browser_smoke": {
+    "status": "passed",
+    "checks": 10,
+    "page_errors": 0,
+    "HTTP_errors": 0,
+    "production_writes": 0,
+    "exports": 0,
+    "record": "ui/report.json"
+  },
+  "subsequent_runtime_state": "Model subsequently enabled under root delegation; earlier readonly UI smoke remains a timed snapshot.",
+  "current_runtime_report": "ordinary-enabled-runtime.json",
+  "record_role": "Earlier timed final-UI check while model disabled; latest enabled runtime is ordinary-enabled-runtime.json, never infer current model flag from this earlier snapshot."
+}

@@ -1,0 +1,661 @@
+{
+  "status": "deployed_and_current_data_preserved",
+  "started_at_utc": "2026-11-15T08:43:42.542555+00:00",
+  "steps": [
+    "preflight_current_services_healthy_and_idle",
+    "entry_listener_closed_to_new_submissions",
+    "consistent_SQLite_backup_and_prechange_backend_sources_preserved",
+    "idle_backend_stopped_gracefully_to_release_SSE",
+    "new_backend_healthy_all_current_tables_artifacts_configuration_models_preserved",
+    "same_validated_frontend_online_GET_200"
+  ],
+  "paid_calls": 0,
+  "production_business_writes": 0,
+  "BUILD_ID": "3vStVJbusRhBDfrFvff4U",
+  "dist": "apps/pi-web/build/navigation-content-delivery-final-validated-20261115",
+  "old_processes": {
+    "backend_pid": 109795,
+    "frontend_pid": 109824,
+    "frontend_wrapper_pid": 109816
+  },
+  "last_idle_check": {
+    "runs": 1,
+    "active": [],
+    "parser_prepare_pids": []
+  },
+  "before_database": {
+    "tables": {
+      "events": {
+        "rows": 5,
+        "sha256": "0cce36023a57a5d15170afecc3948a61f8f6e060ca0370d92295d93c088976a4"
+      },
+      "records": {
+        "rows": 1,
+        "sha256": "f76d61870bf7a125fce7418afc751fa4603d923dc1cffe6305dd35b5d5e6e89a"
+      },
+      "runs": {
+        "rows": 1,
+        "sha256": "d9b9fdf5eff6120aae042947b77a3f01d4df2c4111cf9090b344a6631a18bbc4"
+      },
+      "s4_batches": {
+        "rows": 5,
+        "sha256": "18d01e69f4e588befa76a230de3558c116804619d678ad299859fea939338e1c"
+      },
+      "s4_events": {
+        "rows": 47,
+        "sha256": "7d59c88b1c2371ee832bbd8f255699ec6501aa999f2a89a39b5e551f44219654"
+      },
+      "s4_runs": {
+        "rows": 1,
+        "sha256": "0c4857322fd22f42ae3f008d8b890a25996732555d4b9da566bd39108166188c"
+      },
+      "s4_versions": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_annotations": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_deleted_batches": {
+        "rows": 4,
+        "sha256": "3104dcb9c6a04ad41481dc18cca635ac685489adf2bf67b7346e0f3ca9e8bad7"
+      },
+      "workbench_deleted_runs": {
+        "rows": 23,
+        "sha256": "92a7dcd04ded5476d9c8cfd1939e46c5576dc1c8515a5db57c5008bc7b3107ae"
+      },
+      "workbench_deleted_sources": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_exports": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_model_profiles": {
+        "rows": 1,
+        "sha256": "a125b996c6cdd75bf3a7a6b306e56df669cff6c683630308b27054575ff130cd"
+      },
+      "workbench_papers": {
+        "rows": 10,
+        "sha256": "e633ef48e422bd177cac1290d91585b1790c4cf6f8c0e0215d25598d14b8d5b8"
+      },
+      "workbench_requests": {
+        "rows": 31,
+        "sha256": "eb29716a4dbe8aac4084b1fb0e00c97d15f5406215827df546bd7eeda27392d4"
+      },
+      "workbench_retentions": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_reviews": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_runs": {
+        "rows": 1,
+        "sha256": "d8b0552add2330af171a7340584f06b941efd3d4390d3b83bd8d48a0003a57dc"
+      }
+    },
+    "integrity": "ok",
+    "foreign_key_errors": 0
+  },
+  "before_artifacts": {
+    "docs/acceptance/requirement-revision-2026-11-04/real-figures-final/L02/catalog.json": "e0abbc80fd9d79b949d24658de534e58bc8abe5fa9a8f252d18ac685978dbf8e",
+    "docs/acceptance/requirement-revision-2026-11-04/real-figures-final/L02/figure-00dcbabaf6323d24b782fa4c-p2-0.png": "2f28492bf056aae81adb9f6bd1f9a6c5d49ffa54f7313c46f9fb73471702eb52",
+    "docs/acceptance/requirement-revision-2026-11-04/real-figures-final/MED03/catalog.json": "e77cc0c634b16a05eb8b561d51aac82ca35097372592c5a3d619597b89761010",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L01/figure-assets/catalog.json": "6463b1a6e4079ee7309926463d529fdd43f333f5045bfcfcad690874e5ba267b",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L01/figure-assets/figure-b93d8c5215cb3cbef32cb573-p2-0.png": "8677a837131696001b7db9e7297a6d91b1788fc364123da0a709289df1e65250",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L01/parser-result.json": "7c465f648693b331d57d3b1b8c908c66a7c39b9b6e0a83e7034281b9c317cd12",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L05/figure-assets/catalog.json": "edea628b5a95a016e56911e83fdb479236ada2663e697e41e59900fd937fb8e5",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L05/figure-assets/figure-880dfc0b9224e9c952104630-p8-0.png": "3218360d2938159d6312be2fe6810a22c1c21615be82c5542524d94a70534bd6",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L05/figure-assets/figure-b2140f310b6144f155708d04-p4-0.png": "4f622bd386562fc6a9cee49f281fcac4a8c2c85cfa817832f5f8c9a34efad4f4",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L05/figure-assets/region-4c0408a21bde5b2c3e9b3bda-p5-0.png": "1e412bd04bd576f1df8f463fef0325297c81cb243dab6ae1195f8bd0b427bcce",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L05/parser-result.json": "5ce774e085b9e82d4c678cf412919bdada2687fefc3671fc0921aebc91d3cf0d",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/catalog.json": "9c0d81121abea2a60e0590e81329dbf8eb9c30ad2e6b8c2ce8a30971ae229900",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/figure-113d3c1be73afc371539955f-p9-0.png": "e1c0f533de6b1eae95de57afe55911256d0d4072ae9c61559e326ba712c89dbd",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/figure-129e93446c1153dde54d14ba-p7-0.png": "3be8a233be39baee2e1be508cc1df702e3b340ed90810bcd567798cd71a71add",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/figure-505a46fc6b413830ca0b8070-p6-0.png": "dae3c2ca8da3bbb32bf395dbf29e476c50ebbd33a5ede0ac00f2bd9bb9f13c1b",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/figure-c1475bb24da39c2836110ac4-p8-0.png": "c93911eb84a508edc7ecc80cd47676d269b1837633b5a6e635bce79974c14932",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/figure-d27c34012b81ea974679bc66-p4-0.png": "55a9a2241324174a720221c918e013a8da008db9baf1ef50510c6b319b691145",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/figure-feda211a5502ecb992848bb3-p3-0.png": "aeda95cfe2fc125c540bb5919f70e100e089f3e13ca3e165bd5ee6762c01ab9c",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/region-17ac787151b791c2ddfc2a27-p2-0.png": "071efffc5ee53ce022d561b60e19dfda5fb4a14a62a097f49b4c49aa86a7b5d3",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/parser-result.json": "8354fa99a43cc71e0a5880a7791b9ef133d4202006025843c6c3664b410f6c76",
+    "docs/acceptance/s3/comparison-2026-11-02/runs/guarded-v4/reuse/docling-standard-cpu/L02.json": "a40beb92c657527da88d0c0e55c4970ee91fcf44070785acc21b12e627a1ec56",
+    "docs/acceptance/s3/comparison-2026-11-02/runs/guarded-v4/reuse/docling-standard-cpu/MED03.json": "4e6546c908351dc68b765dc93296586ee36881863a7e0177209d86aa1d351df3",
+    "evaluation/corpus/development-candidates/L01.pdf": "8f5e38ac6575cd776469506fece887e85acb95bf4df0d61ae489cc88cf0de267",
+    "evaluation/corpus/development-candidates/L02.pdf": "14a37c26847110e3dce0fad50e95cec4459348b0c6da7ef793a1d333bd6e1c12",
+    "evaluation/corpus/development-candidates/L05.pdf": "bd60db7e7fe5c7950ac85264c653f48feeb9c503eca76147da26d297f830535f",
+    "evaluation/corpus/development-candidates/L07.pdf": "b7850a291694e3c7018f1acbe29c0a31333442f1b1b35154de30ac44662719ff",
+    "evaluation/corpus/development-candidates/MED03.pdf": "36038f5e0ad453343334326a3ba03e6c94e3687ca88574640d54be7056ffa760",
+    "runtime-data/s3-native-artifacts/paper-4d36e87d-f172-47b3-a2cf-105bbf7667b3/docling-standard-cpu-cae7c6def0835c2f7e31cbf4b5dc5992008676bc77ad1395d5237b58e88f590b.json": "cae7c6def0835c2f7e31cbf4b5dc5992008676bc77ad1395d5237b58e88f590b",
+    "runtime-data/s3-native-artifacts/paper-7afa27bc-f111-4f86-b287-795f81a583fd/docling-standard-cpu-15a8d628cf86f4b664b9a3e8b3e5b3bdf58428b5cec48761e4bc6d07c4314eb7.json": "15a8d628cf86f4b664b9a3e8b3e5b3bdf58428b5cec48761e4bc6d07c4314eb7",
+    "runtime-data/s3-native-artifacts/paper-fe4f0223-34a5-4941-a668-1a2c53a8300d/docling-standard-cpu-fa502b087c550a647654dad8ae23c6ac4afaaec6912cb7f80b7cfae44f3d0ac2.json": "fa502b087c550a647654dad8ae23c6ac4afaaec6912cb7f80b7cfae44f3d0ac2",
+    "runtime-data/s3-native-artifacts/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/docling-standard-cpu-b711f0c10960753c562228473f5b746f7644259cef08a565f9b8ec96f274e438.json": "b711f0c10960753c562228473f5b746f7644259cef08a565f9b8ec96f274e438",
+    "runtime-data/s3-native-artifacts/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/docling-standard-cpu-c6501e8df21bf5dc04538ffd5b3ff784b0ca5cc7cd4d14b5e88210428ef54aa7.json": "c6501e8df21bf5dc04538ffd5b3ff784b0ca5cc7cd4d14b5e88210428ef54aa7",
+    "runtime-data/s3-native-artifacts/run-c81de6e7-2a4b-47ec-afff-9b75341300c3/docling-standard-cpu-50d8be45ce1a884a4a66688498bcb7eca2cc02024422253dbb742fc7b6fbacef.json": "50d8be45ce1a884a4a66688498bcb7eca2cc02024422253dbb742fc7b6fbacef",
+    "runtime-data/s3-native-artifacts/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/docling-standard-cpu-90d8b85ee2bad6d94fe71cd19da1bd55c73e81ece7a67958ed9b71ecdfa2be7b.json": "90d8b85ee2bad6d94fe71cd19da1bd55c73e81ece7a67958ed9b71ecdfa2be7b",
+    "runtime-data/s3-native-artifacts/run-f5dc6144-9308-4875-ac96-269a645b10ca/docling-standard-cpu-90d8b85ee2bad6d94fe71cd19da1bd55c73e81ece7a67958ed9b71ecdfa2be7b.json": "90d8b85ee2bad6d94fe71cd19da1bd55c73e81ece7a67958ed9b71ecdfa2be7b",
+    "runtime-data/s3-native-artifacts/s3-cpu-comparison-reuse/docling-standard-cpu-5cd8ca94eb1b2213dd15a5312bec81d605b786e643b2e93fec438f667699fd51.json": "5cd8ca94eb1b2213dd15a5312bec81d605b786e643b2e93fec438f667699fd51",
+    "runtime-data/s3-native-artifacts/s3-cpu-comparison-reuse/docling-standard-cpu-9834f2ef3ea07f3804b182365d38f9493d148970c577f2fe09f94015e56fe1eb.json": "9834f2ef3ea07f3804b182365d38f9493d148970c577f2fe09f94015e56fe1eb",
+    "runtime-data/s5-real-workbench/s5-L05-4daecedc-b122-479b-ad1a-7a75f55dbbc3/pdf/bd60db7e7fe5c7950ac85264c653f48feeb9c503eca76147da26d297f830535f.pdf": "bd60db7e7fe5c7950ac85264c653f48feeb9c503eca76147da26d297f830535f",
+    "runtime-data/s5-real-workbench/s5-L05-4daecedc-b122-479b-ad1a-7a75f55dbbc3/runs/run-c81de6e7-2a4b-47ec-afff-9b75341300c3/document-ir.json": "cecd93c8011832c861d6da58612327bd92b957c502c275c9fe4390ab0a23ffef",
+    "runtime-data/s5-real-workbench/s5-L05-4daecedc-b122-479b-ad1a-7a75f55dbbc3/runs/run-c81de6e7-2a4b-47ec-afff-9b75341300c3/figure-assets/figure-270eb3f186e9ae66923205a0-p8-0.png": "3218360d2938159d6312be2fe6810a22c1c21615be82c5542524d94a70534bd6",
+    "runtime-data/s5-real-workbench/s5-L05-4daecedc-b122-479b-ad1a-7a75f55dbbc3/runs/run-c81de6e7-2a4b-47ec-afff-9b75341300c3/figure-assets/figure-74ff2e3f50195cbc7f5e3eb4-p4-0.png": "4f622bd386562fc6a9cee49f281fcac4a8c2c85cfa817832f5f8c9a34efad4f4",
+    "runtime-data/s5-real-workbench/s5-L05-4daecedc-b122-479b-ad1a-7a75f55dbbc3/runs/run-c81de6e7-2a4b-47ec-afff-9b75341300c3/figure-assets/region-65c02dea9e4bc18deb81b2aa-p5-0.png": "1e412bd04bd576f1df8f463fef0325297c81cb243dab6ae1195f8bd0b427bcce",
+    "runtime-data/s5-real-workbench/s5-L05-4daecedc-b122-479b-ad1a-7a75f55dbbc3/runs/run-c81de6e7-2a4b-47ec-afff-9b75341300c3/figure-catalog.json": "2a90e57aed57606bb783080f1f6150029c7ef4875ee6f281e77cdc691506f778",
+    "runtime-data/workbench/pdf/1f37f00d6da38c52513a3aad11f0c639b25ec3a3979de3a6c1507080901c43bc.pdf": "1f37f00d6da38c52513a3aad11f0c639b25ec3a3979de3a6c1507080901c43bc",
+    "runtime-data/workbench/pdf/5139371b256163e1f9e0855f8b7ca3a1da9a7e82649437127c496747f21ae76f.pdf": "5139371b256163e1f9e0855f8b7ca3a1da9a7e82649437127c496747f21ae76f",
+    "runtime-data/workbench/pdf/84fd59338ea6600130b04e36cdc56051e586e4de48c273318143a9d62e6be05e.pdf": "84fd59338ea6600130b04e36cdc56051e586e4de48c273318143a9d62e6be05e",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/document-ir.json": "5c3cb225da12075ef7082b66dfb89af701da9cf3dc3eec61ad2bafb3fd81da9a",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/figure-assets/figure-178cd971cda22b0290082f71-p5-0.png": "093b17652231482feeecadb70b6d7f1b6d7cfd6f60f1e6c1de2285932725672b",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/figure-assets/figure-1aaabba14e3005436390ffe9-p4-0.png": "ab6a3866bcf9f66997b4b1d58cd6ad2555c597ab4a65d3161378a45faf985a9b",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/figure-assets/figure-3947381a3f7a18f730cf462e-p7-0.png": "621c92bd8d38d4bbc4010166905722dcd288d03e1358561f9a12d9ca1ccbf7ac",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/figure-assets/region-2cf6a692fbcb2b80d47ed79a-p6-0.png": "eb0b7b38fd5e0631bdc1765ee7be1ec7f007273dbc115cc706417d3db277c02c",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/figure-assets/region-53ed5bf139a69a70989133ba-p5-0.png": "fef772b6a3201aa004a6923dcf064b61760d22ce330e2888b5babf7df9e88d39",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/figure-assets/region-aa2a8c10e5f22470ae132354-p2-0.png": "d56f70b272da7017c0a5af018b48acfe54014eacdb3491489f41b99b86ff7245",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/figure-catalog.json": "5d2fa632640cbd675be2d5b29db4c435f4b12b4e41e570601741ea507e8ae405",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/article-scope.json": "015673f68681eb33c510a4b3ca7d15b36da267b285337b5a2bec78733b29f0db",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/batch-0001-attempt-0.json": "4ac36bd98e52af02fbbde502e42eb22959cef0b7f444b1adedad2ed61c0aafbc",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/batch-0002-attempt-0.json": "783dc60f030b7695a37ab47f924b3c94788234954ecf2fc4ee24ed641e60c973",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/batch-0003-attempt-0.json": "2e4985337d3205529dfdc74a2a442986d28ab774eb8293c1bb96f039e2400c03",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/batch-0004-attempt-0.json": "8e4fcb6c0e0afe3a26b64d6c48d71c79d136351c304317837bcf8195f1190a50",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/batch-0005-attempt-0.json": "982a1868dbbc0e53c0a3751a37631aa64d194353fefb1feb7f44e162cfdfe5e9",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/batch-plan.json": "f386c7e681e07ef115801c8328139f808ffe537d997f8cb8c61a737befbf8910",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/delivery.json": "856fe6ca7f4b64bcb29061eaccefc6cd7ef2c200757c7c6ba1dce39b9e7c6d11",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/docling-standard-cpu-116343-1794729406492955264.stderr.log": "5693cd67c11bd9e02b6038657bb20cc276efd46b77ea868111b2bc3081a0849c",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/document-ir.json": "b50f6b3b288739094d94a4a39eaf6c3091f374b0f405de8646e66aaf22d11228",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/catalog.json": "0d8bf6244ce6ec24d66dcb0a90302003e1fcec90e2ba7d90686331706f60e18b",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/figure-5881eaf0f6df6defa695ec44-p7-0.png": "2028fabbeaef55e9a099ec0cd184ea620fa439c55b5df8b97f418ef6c1449d47",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/figure-6169c4c6823d0c7977323f85-p9-0.png": "e1241c3d3ba4e103ce79fd2372fb06fa1d6f650f60e742c81f216bb5c3976430",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/figure-940fa47693d45ded190f0f15-p4-0.png": "9b222ddbb496f709782c1f9d5dfe19c1ec11b1894cb9b2f7a3743a987b34daf0",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-0411743d6d71ddea3cef0658-p35-0.png": "c9be90724716d8615d5ddb978a9ac4b3540d6ad026f255ce816426ab40ff691b",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-233a441058de17442e375a46-p31-0.png": "63f5608a417968a4d62341066d405bd0ddbb3b6dd9f7a507c739b8a14e749844",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-238316a2a47dff1172785370-p6-0.png": "a2eda51152eaffd362655130d03312cc22633a5599c63c80e65c460f8b9503c6",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-273d902a32e8d3a6010b7bcb-p26-0.png": "0262467e232399a6d6601195cc3b5c8b5fdad3947207b745b7047afef95a11ba",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-4812f4276dc201e33f2e22fb-p24-0.png": "c526ab2b598e7829b948ed47e49f06a967cf47d32af3ac3cffe99727ba5c7114",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-641faee93891f92045aba05d-p29-0.png": "c8eb7a99889589f5d69e1e7b57d37b3d0e5a5c465f58409c2b5ded3c6e405587",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-68e953790747e98bccd8e491-p3-0.png": "30c2ae1cf39c8a80d0251fbdf60b42de75634dccd542be1493f47f98f8293a4d",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-840517d00bc4cccc0caf9109-p22-0.png": "6b8feb8c7ca9a96314c505026c8dafc22727afac27e69683d24f718e62e1269b",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-8a10b8ec94033d0fb8a04756-p33-0.png": "053ee14028e48ebd0a61a3d7a0edd8be4042233c045976752c5806d206f47d8c",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-9276e8d7a660f193cec94120-p36-0.png": "d1851ffd498cf6f4a7a78fadc4f4d99afe086d9f15d6e33aa22c48b6bc8771af",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-bd55b5a914eacf44b4281813-p32-0.png": "83c2298adb9e0980561a415ac7d1554279bc767700a922e85fb03312aa64e715",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-ef7e5ffbf9f4b2f8fda33525-p28-0.png": "f4a5e5454a48cbdf126cae30d37e7abfdc1befd7f61cf9c6437ba0a946f073f5",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-catalog.json": "040bf109248a7af23cb49f6f9310c9be2e9143965a0176d15161cd7edd2c02f1",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-discovery-input.json": "b50f6b3b288739094d94a4a39eaf6c3091f374b0f405de8646e66aaf22d11228",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/paragraph-plan.json": "15a307b43a2474eb889829a49907d66979b6fffecb6c528954b0b3cb2f7ba419",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/request-ledger.json": "17bac6edbf70558fc000ac6d34820f75922ab58d1bcf35284dfd70ef44813342",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/result.json": "dffd5341340dcd33399e21ab2917e98d92e2179280a2aba52735c8f0e96105ed",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/source-selection.json": "ce424378b28c853a361e485650d09ebe009b492d27b8c2c7d1a512fc09d3b77d",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/document-ir.json": "8f7a8b59d1bf10957802cf5c51286d96c43f7518d1735bd45141964828e49028",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/figure-assets/figure-3f74a5175559ce452509ee11-p21-0.png": "3bb200caa8631837214a85769164e6b645b7558792a87ead4bb223d4aed6d302",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/figure-assets/figure-4b0c9e97e06ac486191366fe-p23-0.png": "d2debd9e8c4fa971e84c70a528b70b159ef42a8e0fe0aae88a14ac8e75ccc34c",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/figure-assets/figure-ac3ebde7636b99a3edd81672-p12-0.png": "9f229803c0e1389ff534190b3b89807d7a183cdddb8a8f48bf557d19c7e0deb0",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/figure-assets/region-89cfa5b0fa32378280a30ea2-p2-0.png": "ae40cdac939173dfbf8ce04d434083b8a19264070a9858194d6b0d50b8814bb4",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/figure-assets/region-aa08f4e23cbfc34e19fb17c3-p17-0.png": "4d44b56fc65e67f6fa4354282a0e220b7f1beb6d49c18ad6682b453c5cef9cf8",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/figure-assets/region-fae43c81bafd1b873dd67393-p13-0.png": "696cfef3ba1e5f238facdbf400fdd5abd28d49497cfe93d71431ce25f6229f2f",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/figure-catalog.json": "0ce1fa6296b0c80be260b236c97ffd96102bcb54dff22e0327f538e2c4623406",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/document-ir.json": "802a2234c93902a57033bf999fff1bf2eb9cdf2e9adbb8f1db91ee6b4b5d7371",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/figure-assets/figure-3f74a5175559ce452509ee11-p21-0.png": "3bb200caa8631837214a85769164e6b645b7558792a87ead4bb223d4aed6d302",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/figure-assets/figure-4b0c9e97e06ac486191366fe-p23-0.png": "d2debd9e8c4fa971e84c70a528b70b159ef42a8e0fe0aae88a14ac8e75ccc34c",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/figure-assets/figure-ac3ebde7636b99a3edd81672-p12-0.png": "9f229803c0e1389ff534190b3b89807d7a183cdddb8a8f48bf557d19c7e0deb0",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/figure-assets/region-89cfa5b0fa32378280a30ea2-p2-0.png": "ae40cdac939173dfbf8ce04d434083b8a19264070a9858194d6b0d50b8814bb4",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/figure-assets/region-aa08f4e23cbfc34e19fb17c3-p17-0.png": "4d44b56fc65e67f6fa4354282a0e220b7f1beb6d49c18ad6682b453c5cef9cf8",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/figure-assets/region-fae43c81bafd1b873dd67393-p13-0.png": "696cfef3ba1e5f238facdbf400fdd5abd28d49497cfe93d71431ce25f6229f2f",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/figure-catalog.json": "4f7ee01686e761a731bf429f34b078b164c11ed88f099b1729ddeaf8a26b62f3",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/document-ir.json": "a9e71868d9401c48ca9c727ad4a8fb028bce30a8d3ba00e62e9f5f232c023552",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/figure-assets/figure-0869e4d4c48e55f71186ff94-p23-0.png": "d2debd9e8c4fa971e84c70a528b70b159ef42a8e0fe0aae88a14ac8e75ccc34c",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/figure-assets/figure-150c651a804ac08bd1027463-p21-0.png": "3bb200caa8631837214a85769164e6b645b7558792a87ead4bb223d4aed6d302",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/figure-assets/figure-f3d2f882937db582eea042ba-p12-0.png": "9f229803c0e1389ff534190b3b89807d7a183cdddb8a8f48bf557d19c7e0deb0",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/figure-assets/region-5217a7e0a2285009ec823e56-p2-0.png": "ae40cdac939173dfbf8ce04d434083b8a19264070a9858194d6b0d50b8814bb4",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/figure-assets/region-8f3f94463a5697ffa085f203-p13-0.png": "696cfef3ba1e5f238facdbf400fdd5abd28d49497cfe93d71431ce25f6229f2f",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/figure-assets/region-cbbd86fcab9bdf773cbf983d-p17-0.png": "4d44b56fc65e67f6fa4354282a0e220b7f1beb6d49c18ad6682b453c5cef9cf8",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/figure-catalog.json": "c3ab3c175b310edf1ddf102ee59cbded7a521112b5cf3f681ca295fb8b541095"
+  },
+  "before_configuration_sha256": {
+    ".env": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+    "deploy/local/workbench.env": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea",
+    "config/b0-s4-revalidation.json": "550d202022a7069ab54de7cdce405df584d35f5eba8827381db18a2499557e66",
+    "config/extraction-development.json": "0ab921c94e5c2392ef8abeb7dc5648d063387ce4f7ba450c302eafefa068b6d5",
+    "config/pdf-parser.json": "91529ba7f8e30f5c620712c3d74b49183252b250a80f11ed02972802f9e88698",
+    "config/pi-web-workbench.json": "3e09bf5de90c07eb50e3043b286f02c342d8cd2cfbe27dfa3466cc153492189a",
+    "config/scope-catalog.json": "cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+    "config/three-method-comparison.json": "dcf6b349996878b54911339f2d1934e9132293d17f3916717bbf13b1ef516b69",
+    "config/two-method-comparison.json": "2535586825e6b4b64746b98609899e6c5bc23e1d387e9bd21ff288866e0daf2a",
+    "config/workbench-response-model-policy.json": "9c261cd263921b5c949926da4448dcf10c9e971e2ed43f814015a4025ab1d9a1"
+  },
+  "models_before": {
+    "provider": "agicto",
+    "default_profile_id": "model-5aa7649633b13e6c9c91f26cd5580846",
+    "profiles": [
+      {
+        "profile_id": "model-5aa7649633b13e6c9c91f26cd5580846",
+        "provider": "agicto",
+        "model_id": "gpt-6-luna",
+        "api": "openai-responses",
+        "reasoning_effort": "medium",
+        "context_window": 1050000,
+        "max_output_tokens": 8192,
+        "configuration_source": "server"
+      }
+    ]
+  },
+  "backup": "runtime-data/backups/content-units-navigation-20261115-before/t1.sqlite",
+  "rollback_sources": "runtime-data/rollbacks/content-units-navigation-20261115-before",
+  "rollback_frontend": "apps/pi-web/build/paragraph-glyph-table-values-validated-20261115",
+  "backend_pid": 134658,
+  "models_after": {
+    "provider": "agicto",
+    "default_profile_id": "model-5aa7649633b13e6c9c91f26cd5580846",
+    "profiles": [
+      {
+        "profile_id": "model-5aa7649633b13e6c9c91f26cd5580846",
+        "provider": "agicto",
+        "model_id": "gpt-6-luna",
+        "api": "openai-responses",
+        "reasoning_effort": "medium",
+        "context_window": 1050000,
+        "max_output_tokens": 8192,
+        "configuration_source": "server"
+      }
+    ]
+  },
+  "runs_after_backend_start": [
+    {
+      "run_id": "run-18bcf139-49ed-45c8-8d71-a0bf0249f09c",
+      "document_id": "paper-a71b4dfe-55ea-49a4-a485-ec993a86555e",
+      "state": "cancelled",
+      "fixture": false,
+      "candidate_count": 0,
+      "scope": {
+        "scope_version": "1",
+        "cancers": {
+          "mode": "all",
+          "ids": []
+        },
+        "image_types": {
+          "mode": "all",
+          "ids": []
+        },
+        "features": {
+          "mode": "all",
+          "binding_ids": []
+        },
+        "catalog_version": "scope-cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+        "matching_policy_version": "exact-explicit-synonyms-1"
+      },
+      "scope_catalog": {
+        "catalog_version": "scope-cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+        "status": "operator_configured",
+        "fixture": false,
+        "cancers": [
+          {
+            "id": "CANCER-LUNG",
+            "name": "肺癌",
+            "synonyms": [
+              {
+                "text": "lung cancer",
+                "source": "config/scope-catalog.json",
+                "approval_status": "operator_configured"
+              }
+            ],
+            "source": "config/scope-catalog.json",
+            "approval_status": "operator_configured"
+          },
+          {
+            "id": "CANCER-BOWEL",
+            "name": "肠癌",
+            "synonyms": [
+              {
+                "text": "bowel cancer",
+                "source": "config/scope-catalog.json",
+                "approval_status": "operator_configured"
+              }
+            ],
+            "source": "config/scope-catalog.json",
+            "approval_status": "operator_configured"
+          },
+          {
+            "id": "CANCER-COLON",
+            "name": "结肠癌",
+            "synonyms": [
+              {
+                "text": "colon cancer",
+                "source": "config/scope-catalog.json",
+                "approval_status": "operator_configured"
+              }
+            ],
+            "source": "config/scope-catalog.json",
+            "approval_status": "operator_configured"
+          },
+          {
+            "id": "CANCER-RECTUM",
+            "name": "直肠癌",
+            "synonyms": [
+              {
+                "text": "rectal cancer",
+                "source": "config/scope-catalog.json",
+                "approval_status": "operator_configured"
+              }
+            ],
+            "source": "config/scope-catalog.json",
+            "approval_status": "operator_configured"
+          }
+        ],
+        "image_types": [
+          {
+            "id": "MODALITY-CT",
+            "name": "CT",
+            "synonyms": [
+              {
+                "text": "computed tomography",
+                "source": "config/scope-catalog.json",
+                "approval_status": "operator_configured"
+              },
+              {
+                "text": "计算机断层成像",
+                "source": "config/scope-catalog.json",
+                "approval_status": "operator_configured"
+              }
+            ],
+            "source": "config/scope-catalog.json",
+            "approval_status": "operator_configured",
+            "cancer_ids": [
+              "CANCER-LUNG",
+              "CANCER-BOWEL",
+              "CANCER-COLON",
+              "CANCER-RECTUM"
+            ]
+          },
+          {
+            "id": "MODALITY-MRI",
+            "name": "MRI",
+            "synonyms": [
+              {
+                "text": "magnetic resonance imaging",
+                "source": "config/scope-catalog.json",
+                "approval_status": "operator_configured"
+              },
+              {
+                "text": "磁共振成像",
+                "source": "config/scope-catalog.json",
+                "approval_status": "operator_configured"
+              }
+            ],
+            "source": "config/scope-catalog.json",
+            "approval_status": "operator_configured",
+            "cancer_ids": [
+              "CANCER-LUNG",
+              "CANCER-BOWEL",
+              "CANCER-COLON",
+              "CANCER-RECTUM"
+            ]
+          }
+        ],
+        "features": [],
+        "bindings": []
+      },
+      "origin": "workbench_run",
+      "created_at": "2026-11-15T07:56:46.329Z",
+      "provider": "agicto",
+      "model_id": "gpt-6-luna",
+      "task_title": "测试1",
+      "original_filename": "s41586-026-11066-6.pdf",
+      "task_processing_complete": false,
+      "model_profile": {
+        "profile_id": "model-5aa7649633b13e6c9c91f26cd5580846",
+        "provider": "agicto",
+        "model_id": "gpt-6-luna",
+        "api": "openai-responses",
+        "reasoning_effort": "medium",
+        "context_window": 1050000,
+        "max_output_tokens": 8192,
+        "configuration_source": "server"
+      },
+      "result_ready": true,
+      "submission": {
+        "kind": "single"
+      },
+      "finished_at": "2026-11-15T08:00:15.648Z",
+      "execution_started_at": "2026-11-15T07:56:46.379Z",
+      "queue_wait_ms": 50,
+      "runtime_deadline": "2026-11-15T08:26:46.379Z",
+      "task_completion": {
+        "rule_version": "task-flow-completion-2",
+        "rule_origin": "persisted",
+        "processing_complete": false,
+        "source_gap_blocks": 0,
+        "original_task_processing_complete": false
+      },
+      "progress": {
+        "schema_version": "t1-workbench-progress-1",
+        "stage": "cancelled",
+        "updated_at": "2026-11-15T08:00:15.729Z",
+        "stage_started_at": "2026-11-15T08:00:15.397Z",
+        "elapsed_ms": 209319,
+        "execution_elapsed_ms": 209269,
+        "queue_wait_ms": 50,
+        "completed": 271,
+        "unit": "paragraphs",
+        "total": 2158,
+        "completed_batches": 4,
+        "total_batches": 39,
+        "candidate_records": 0,
+        "source_gap_blocks": 0,
+        "summary_completed": false,
+        "telemetry": "events"
+      }
+    }
+  ],
+  "after_database": {
+    "tables": {
+      "events": {
+        "rows": 5,
+        "sha256": "0cce36023a57a5d15170afecc3948a61f8f6e060ca0370d92295d93c088976a4"
+      },
+      "records": {
+        "rows": 1,
+        "sha256": "f76d61870bf7a125fce7418afc751fa4603d923dc1cffe6305dd35b5d5e6e89a"
+      },
+      "runs": {
+        "rows": 1,
+        "sha256": "d9b9fdf5eff6120aae042947b77a3f01d4df2c4111cf9090b344a6631a18bbc4"
+      },
+      "s4_batches": {
+        "rows": 5,
+        "sha256": "18d01e69f4e588befa76a230de3558c116804619d678ad299859fea939338e1c"
+      },
+      "s4_events": {
+        "rows": 47,
+        "sha256": "7d59c88b1c2371ee832bbd8f255699ec6501aa999f2a89a39b5e551f44219654"
+      },
+      "s4_runs": {
+        "rows": 1,
+        "sha256": "0c4857322fd22f42ae3f008d8b890a25996732555d4b9da566bd39108166188c"
+      },
+      "s4_versions": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_annotations": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_deleted_batches": {
+        "rows": 4,
+        "sha256": "3104dcb9c6a04ad41481dc18cca635ac685489adf2bf67b7346e0f3ca9e8bad7"
+      },
+      "workbench_deleted_runs": {
+        "rows": 23,
+        "sha256": "92a7dcd04ded5476d9c8cfd1939e46c5576dc1c8515a5db57c5008bc7b3107ae"
+      },
+      "workbench_deleted_sources": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_exports": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_model_profiles": {
+        "rows": 1,
+        "sha256": "a125b996c6cdd75bf3a7a6b306e56df669cff6c683630308b27054575ff130cd"
+      },
+      "workbench_papers": {
+        "rows": 10,
+        "sha256": "e633ef48e422bd177cac1290d91585b1790c4cf6f8c0e0215d25598d14b8d5b8"
+      },
+      "workbench_requests": {
+        "rows": 31,
+        "sha256": "eb29716a4dbe8aac4084b1fb0e00c97d15f5406215827df546bd7eeda27392d4"
+      },
+      "workbench_retentions": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_reviews": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_runs": {
+        "rows": 1,
+        "sha256": "d8b0552add2330af171a7340584f06b941efd3d4390d3b83bd8d48a0003a57dc"
+      }
+    },
+    "integrity": "ok",
+    "foreign_key_errors": 0
+  },
+  "after_artifacts": {
+    "docs/acceptance/requirement-revision-2026-11-04/real-figures-final/L02/catalog.json": "e0abbc80fd9d79b949d24658de534e58bc8abe5fa9a8f252d18ac685978dbf8e",
+    "docs/acceptance/requirement-revision-2026-11-04/real-figures-final/L02/figure-00dcbabaf6323d24b782fa4c-p2-0.png": "2f28492bf056aae81adb9f6bd1f9a6c5d49ffa54f7313c46f9fb73471702eb52",
+    "docs/acceptance/requirement-revision-2026-11-04/real-figures-final/MED03/catalog.json": "e77cc0c634b16a05eb8b561d51aac82ca35097372592c5a3d619597b89761010",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L01/figure-assets/catalog.json": "6463b1a6e4079ee7309926463d529fdd43f333f5045bfcfcad690874e5ba267b",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L01/figure-assets/figure-b93d8c5215cb3cbef32cb573-p2-0.png": "8677a837131696001b7db9e7297a6d91b1788fc364123da0a709289df1e65250",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L01/parser-result.json": "7c465f648693b331d57d3b1b8c908c66a7c39b9b6e0a83e7034281b9c317cd12",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L05/figure-assets/catalog.json": "edea628b5a95a016e56911e83fdb479236ada2663e697e41e59900fd937fb8e5",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L05/figure-assets/figure-880dfc0b9224e9c952104630-p8-0.png": "3218360d2938159d6312be2fe6810a22c1c21615be82c5542524d94a70534bd6",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L05/figure-assets/figure-b2140f310b6144f155708d04-p4-0.png": "4f622bd386562fc6a9cee49f281fcac4a8c2c85cfa817832f5f8c9a34efad4f4",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L05/figure-assets/region-4c0408a21bde5b2c3e9b3bda-p5-0.png": "1e412bd04bd576f1df8f463fef0325297c81cb243dab6ae1195f8bd0b427bcce",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L05/parser-result.json": "5ce774e085b9e82d4c678cf412919bdada2687fefc3671fc0921aebc91d3cf0d",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/catalog.json": "9c0d81121abea2a60e0590e81329dbf8eb9c30ad2e6b8c2ce8a30971ae229900",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/figure-113d3c1be73afc371539955f-p9-0.png": "e1c0f533de6b1eae95de57afe55911256d0d4072ae9c61559e326ba712c89dbd",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/figure-129e93446c1153dde54d14ba-p7-0.png": "3be8a233be39baee2e1be508cc1df702e3b340ed90810bcd567798cd71a71add",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/figure-505a46fc6b413830ca0b8070-p6-0.png": "dae3c2ca8da3bbb32bf395dbf29e476c50ebbd33a5ede0ac00f2bd9bb9f13c1b",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/figure-c1475bb24da39c2836110ac4-p8-0.png": "c93911eb84a508edc7ecc80cd47676d269b1837633b5a6e635bce79974c14932",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/figure-d27c34012b81ea974679bc66-p4-0.png": "55a9a2241324174a720221c918e013a8da008db9baf1ef50510c6b319b691145",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/figure-feda211a5502ecb992848bb3-p3-0.png": "aeda95cfe2fc125c540bb5919f70e100e089f3e13ca3e165bd5ee6762c01ab9c",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/figure-assets/region-17ac787151b791c2ddfc2a27-p2-0.png": "071efffc5ee53ce022d561b60e19dfda5fb4a14a62a097f49b4c49aa86a7b5d3",
+    "docs/acceptance/s0-s4-recheck-2026-11-08/production/L07/parser-result.json": "8354fa99a43cc71e0a5880a7791b9ef133d4202006025843c6c3664b410f6c76",
+    "docs/acceptance/s3/comparison-2026-11-02/runs/guarded-v4/reuse/docling-standard-cpu/L02.json": "a40beb92c657527da88d0c0e55c4970ee91fcf44070785acc21b12e627a1ec56",
+    "docs/acceptance/s3/comparison-2026-11-02/runs/guarded-v4/reuse/docling-standard-cpu/MED03.json": "4e6546c908351dc68b765dc93296586ee36881863a7e0177209d86aa1d351df3",
+    "evaluation/corpus/development-candidates/L01.pdf": "8f5e38ac6575cd776469506fece887e85acb95bf4df0d61ae489cc88cf0de267",
+    "evaluation/corpus/development-candidates/L02.pdf": "14a37c26847110e3dce0fad50e95cec4459348b0c6da7ef793a1d333bd6e1c12",
+    "evaluation/corpus/development-candidates/L05.pdf": "bd60db7e7fe5c7950ac85264c653f48feeb9c503eca76147da26d297f830535f",
+    "evaluation/corpus/development-candidates/L07.pdf": "b7850a291694e3c7018f1acbe29c0a31333442f1b1b35154de30ac44662719ff",
+    "evaluation/corpus/development-candidates/MED03.pdf": "36038f5e0ad453343334326a3ba03e6c94e3687ca88574640d54be7056ffa760",
+    "runtime-data/s3-native-artifacts/paper-4d36e87d-f172-47b3-a2cf-105bbf7667b3/docling-standard-cpu-cae7c6def0835c2f7e31cbf4b5dc5992008676bc77ad1395d5237b58e88f590b.json": "cae7c6def0835c2f7e31cbf4b5dc5992008676bc77ad1395d5237b58e88f590b",
+    "runtime-data/s3-native-artifacts/paper-7afa27bc-f111-4f86-b287-795f81a583fd/docling-standard-cpu-15a8d628cf86f4b664b9a3e8b3e5b3bdf58428b5cec48761e4bc6d07c4314eb7.json": "15a8d628cf86f4b664b9a3e8b3e5b3bdf58428b5cec48761e4bc6d07c4314eb7",
+    "runtime-data/s3-native-artifacts/paper-fe4f0223-34a5-4941-a668-1a2c53a8300d/docling-standard-cpu-fa502b087c550a647654dad8ae23c6ac4afaaec6912cb7f80b7cfae44f3d0ac2.json": "fa502b087c550a647654dad8ae23c6ac4afaaec6912cb7f80b7cfae44f3d0ac2",
+    "runtime-data/s3-native-artifacts/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/docling-standard-cpu-b711f0c10960753c562228473f5b746f7644259cef08a565f9b8ec96f274e438.json": "b711f0c10960753c562228473f5b746f7644259cef08a565f9b8ec96f274e438",
+    "runtime-data/s3-native-artifacts/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/docling-standard-cpu-c6501e8df21bf5dc04538ffd5b3ff784b0ca5cc7cd4d14b5e88210428ef54aa7.json": "c6501e8df21bf5dc04538ffd5b3ff784b0ca5cc7cd4d14b5e88210428ef54aa7",
+    "runtime-data/s3-native-artifacts/run-c81de6e7-2a4b-47ec-afff-9b75341300c3/docling-standard-cpu-50d8be45ce1a884a4a66688498bcb7eca2cc02024422253dbb742fc7b6fbacef.json": "50d8be45ce1a884a4a66688498bcb7eca2cc02024422253dbb742fc7b6fbacef",
+    "runtime-data/s3-native-artifacts/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/docling-standard-cpu-90d8b85ee2bad6d94fe71cd19da1bd55c73e81ece7a67958ed9b71ecdfa2be7b.json": "90d8b85ee2bad6d94fe71cd19da1bd55c73e81ece7a67958ed9b71ecdfa2be7b",
+    "runtime-data/s3-native-artifacts/run-f5dc6144-9308-4875-ac96-269a645b10ca/docling-standard-cpu-90d8b85ee2bad6d94fe71cd19da1bd55c73e81ece7a67958ed9b71ecdfa2be7b.json": "90d8b85ee2bad6d94fe71cd19da1bd55c73e81ece7a67958ed9b71ecdfa2be7b",
+    "runtime-data/s3-native-artifacts/s3-cpu-comparison-reuse/docling-standard-cpu-5cd8ca94eb1b2213dd15a5312bec81d605b786e643b2e93fec438f667699fd51.json": "5cd8ca94eb1b2213dd15a5312bec81d605b786e643b2e93fec438f667699fd51",
+    "runtime-data/s3-native-artifacts/s3-cpu-comparison-reuse/docling-standard-cpu-9834f2ef3ea07f3804b182365d38f9493d148970c577f2fe09f94015e56fe1eb.json": "9834f2ef3ea07f3804b182365d38f9493d148970c577f2fe09f94015e56fe1eb",
+    "runtime-data/s5-real-workbench/s5-L05-4daecedc-b122-479b-ad1a-7a75f55dbbc3/pdf/bd60db7e7fe5c7950ac85264c653f48feeb9c503eca76147da26d297f830535f.pdf": "bd60db7e7fe5c7950ac85264c653f48feeb9c503eca76147da26d297f830535f",
+    "runtime-data/s5-real-workbench/s5-L05-4daecedc-b122-479b-ad1a-7a75f55dbbc3/runs/run-c81de6e7-2a4b-47ec-afff-9b75341300c3/document-ir.json": "cecd93c8011832c861d6da58612327bd92b957c502c275c9fe4390ab0a23ffef",
+    "runtime-data/s5-real-workbench/s5-L05-4daecedc-b122-479b-ad1a-7a75f55dbbc3/runs/run-c81de6e7-2a4b-47ec-afff-9b75341300c3/figure-assets/figure-270eb3f186e9ae66923205a0-p8-0.png": "3218360d2938159d6312be2fe6810a22c1c21615be82c5542524d94a70534bd6",
+    "runtime-data/s5-real-workbench/s5-L05-4daecedc-b122-479b-ad1a-7a75f55dbbc3/runs/run-c81de6e7-2a4b-47ec-afff-9b75341300c3/figure-assets/figure-74ff2e3f50195cbc7f5e3eb4-p4-0.png": "4f622bd386562fc6a9cee49f281fcac4a8c2c85cfa817832f5f8c9a34efad4f4",
+    "runtime-data/s5-real-workbench/s5-L05-4daecedc-b122-479b-ad1a-7a75f55dbbc3/runs/run-c81de6e7-2a4b-47ec-afff-9b75341300c3/figure-assets/region-65c02dea9e4bc18deb81b2aa-p5-0.png": "1e412bd04bd576f1df8f463fef0325297c81cb243dab6ae1195f8bd0b427bcce",
+    "runtime-data/s5-real-workbench/s5-L05-4daecedc-b122-479b-ad1a-7a75f55dbbc3/runs/run-c81de6e7-2a4b-47ec-afff-9b75341300c3/figure-catalog.json": "2a90e57aed57606bb783080f1f6150029c7ef4875ee6f281e77cdc691506f778",
+    "runtime-data/workbench/pdf/1f37f00d6da38c52513a3aad11f0c639b25ec3a3979de3a6c1507080901c43bc.pdf": "1f37f00d6da38c52513a3aad11f0c639b25ec3a3979de3a6c1507080901c43bc",
+    "runtime-data/workbench/pdf/5139371b256163e1f9e0855f8b7ca3a1da9a7e82649437127c496747f21ae76f.pdf": "5139371b256163e1f9e0855f8b7ca3a1da9a7e82649437127c496747f21ae76f",
+    "runtime-data/workbench/pdf/84fd59338ea6600130b04e36cdc56051e586e4de48c273318143a9d62e6be05e.pdf": "84fd59338ea6600130b04e36cdc56051e586e4de48c273318143a9d62e6be05e",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/document-ir.json": "5c3cb225da12075ef7082b66dfb89af701da9cf3dc3eec61ad2bafb3fd81da9a",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/figure-assets/figure-178cd971cda22b0290082f71-p5-0.png": "093b17652231482feeecadb70b6d7f1b6d7cfd6f60f1e6c1de2285932725672b",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/figure-assets/figure-1aaabba14e3005436390ffe9-p4-0.png": "ab6a3866bcf9f66997b4b1d58cd6ad2555c597ab4a65d3161378a45faf985a9b",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/figure-assets/figure-3947381a3f7a18f730cf462e-p7-0.png": "621c92bd8d38d4bbc4010166905722dcd288d03e1358561f9a12d9ca1ccbf7ac",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/figure-assets/region-2cf6a692fbcb2b80d47ed79a-p6-0.png": "eb0b7b38fd5e0631bdc1765ee7be1ec7f007273dbc115cc706417d3db277c02c",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/figure-assets/region-53ed5bf139a69a70989133ba-p5-0.png": "fef772b6a3201aa004a6923dcf064b61760d22ce330e2888b5babf7df9e88d39",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/figure-assets/region-aa2a8c10e5f22470ae132354-p2-0.png": "d56f70b272da7017c0a5af018b48acfe54014eacdb3491489f41b99b86ff7245",
+    "runtime-data/workbench/runs/run-0ff275e5-ddee-458b-ae89-410bb4c0da88/figure-catalog.json": "5d2fa632640cbd675be2d5b29db4c435f4b12b4e41e570601741ea507e8ae405",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/article-scope.json": "015673f68681eb33c510a4b3ca7d15b36da267b285337b5a2bec78733b29f0db",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/batch-0001-attempt-0.json": "4ac36bd98e52af02fbbde502e42eb22959cef0b7f444b1adedad2ed61c0aafbc",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/batch-0002-attempt-0.json": "783dc60f030b7695a37ab47f924b3c94788234954ecf2fc4ee24ed641e60c973",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/batch-0003-attempt-0.json": "2e4985337d3205529dfdc74a2a442986d28ab774eb8293c1bb96f039e2400c03",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/batch-0004-attempt-0.json": "8e4fcb6c0e0afe3a26b64d6c48d71c79d136351c304317837bcf8195f1190a50",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/batch-0005-attempt-0.json": "982a1868dbbc0e53c0a3751a37631aa64d194353fefb1feb7f44e162cfdfe5e9",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/batch-plan.json": "f386c7e681e07ef115801c8328139f808ffe537d997f8cb8c61a737befbf8910",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/delivery.json": "856fe6ca7f4b64bcb29061eaccefc6cd7ef2c200757c7c6ba1dce39b9e7c6d11",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/docling-standard-cpu-116343-1794729406492955264.stderr.log": "5693cd67c11bd9e02b6038657bb20cc276efd46b77ea868111b2bc3081a0849c",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/document-ir.json": "b50f6b3b288739094d94a4a39eaf6c3091f374b0f405de8646e66aaf22d11228",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/catalog.json": "0d8bf6244ce6ec24d66dcb0a90302003e1fcec90e2ba7d90686331706f60e18b",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/figure-5881eaf0f6df6defa695ec44-p7-0.png": "2028fabbeaef55e9a099ec0cd184ea620fa439c55b5df8b97f418ef6c1449d47",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/figure-6169c4c6823d0c7977323f85-p9-0.png": "e1241c3d3ba4e103ce79fd2372fb06fa1d6f650f60e742c81f216bb5c3976430",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/figure-940fa47693d45ded190f0f15-p4-0.png": "9b222ddbb496f709782c1f9d5dfe19c1ec11b1894cb9b2f7a3743a987b34daf0",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-0411743d6d71ddea3cef0658-p35-0.png": "c9be90724716d8615d5ddb978a9ac4b3540d6ad026f255ce816426ab40ff691b",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-233a441058de17442e375a46-p31-0.png": "63f5608a417968a4d62341066d405bd0ddbb3b6dd9f7a507c739b8a14e749844",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-238316a2a47dff1172785370-p6-0.png": "a2eda51152eaffd362655130d03312cc22633a5599c63c80e65c460f8b9503c6",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-273d902a32e8d3a6010b7bcb-p26-0.png": "0262467e232399a6d6601195cc3b5c8b5fdad3947207b745b7047afef95a11ba",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-4812f4276dc201e33f2e22fb-p24-0.png": "c526ab2b598e7829b948ed47e49f06a967cf47d32af3ac3cffe99727ba5c7114",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-641faee93891f92045aba05d-p29-0.png": "c8eb7a99889589f5d69e1e7b57d37b3d0e5a5c465f58409c2b5ded3c6e405587",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-68e953790747e98bccd8e491-p3-0.png": "30c2ae1cf39c8a80d0251fbdf60b42de75634dccd542be1493f47f98f8293a4d",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-840517d00bc4cccc0caf9109-p22-0.png": "6b8feb8c7ca9a96314c505026c8dafc22727afac27e69683d24f718e62e1269b",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-8a10b8ec94033d0fb8a04756-p33-0.png": "053ee14028e48ebd0a61a3d7a0edd8be4042233c045976752c5806d206f47d8c",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-9276e8d7a660f193cec94120-p36-0.png": "d1851ffd498cf6f4a7a78fadc4f4d99afe086d9f15d6e33aa22c48b6bc8771af",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-bd55b5a914eacf44b4281813-p32-0.png": "83c2298adb9e0980561a415ac7d1554279bc767700a922e85fb03312aa64e715",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-assets/region-ef7e5ffbf9f4b2f8fda33525-p28-0.png": "f4a5e5454a48cbdf126cae30d37e7abfdc1befd7f61cf9c6437ba0a946f073f5",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-catalog.json": "040bf109248a7af23cb49f6f9310c9be2e9143965a0176d15161cd7edd2c02f1",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/figure-discovery-input.json": "b50f6b3b288739094d94a4a39eaf6c3091f374b0f405de8646e66aaf22d11228",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/paragraph-plan.json": "15a307b43a2474eb889829a49907d66979b6fffecb6c528954b0b3cb2f7ba419",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/request-ledger.json": "17bac6edbf70558fc000ac6d34820f75922ab58d1bcf35284dfd70ef44813342",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/result.json": "dffd5341340dcd33399e21ab2917e98d92e2179280a2aba52735c8f0e96105ed",
+    "runtime-data/workbench/runs/run-18bcf139-49ed-45c8-8d71-a0bf0249f09c/source-selection.json": "ce424378b28c853a361e485650d09ebe009b492d27b8c2c7d1a512fc09d3b77d",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/document-ir.json": "8f7a8b59d1bf10957802cf5c51286d96c43f7518d1735bd45141964828e49028",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/figure-assets/figure-3f74a5175559ce452509ee11-p21-0.png": "3bb200caa8631837214a85769164e6b645b7558792a87ead4bb223d4aed6d302",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/figure-assets/figure-4b0c9e97e06ac486191366fe-p23-0.png": "d2debd9e8c4fa971e84c70a528b70b159ef42a8e0fe0aae88a14ac8e75ccc34c",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/figure-assets/figure-ac3ebde7636b99a3edd81672-p12-0.png": "9f229803c0e1389ff534190b3b89807d7a183cdddb8a8f48bf557d19c7e0deb0",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/figure-assets/region-89cfa5b0fa32378280a30ea2-p2-0.png": "ae40cdac939173dfbf8ce04d434083b8a19264070a9858194d6b0d50b8814bb4",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/figure-assets/region-aa08f4e23cbfc34e19fb17c3-p17-0.png": "4d44b56fc65e67f6fa4354282a0e220b7f1beb6d49c18ad6682b453c5cef9cf8",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/figure-assets/region-fae43c81bafd1b873dd67393-p13-0.png": "696cfef3ba1e5f238facdbf400fdd5abd28d49497cfe93d71431ce25f6229f2f",
+    "runtime-data/workbench/runs/run-23a2a061-0ebc-4440-981a-32b73c9e27df/figure-catalog.json": "0ce1fa6296b0c80be260b236c97ffd96102bcb54dff22e0327f538e2c4623406",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/document-ir.json": "802a2234c93902a57033bf999fff1bf2eb9cdf2e9adbb8f1db91ee6b4b5d7371",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/figure-assets/figure-3f74a5175559ce452509ee11-p21-0.png": "3bb200caa8631837214a85769164e6b645b7558792a87ead4bb223d4aed6d302",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/figure-assets/figure-4b0c9e97e06ac486191366fe-p23-0.png": "d2debd9e8c4fa971e84c70a528b70b159ef42a8e0fe0aae88a14ac8e75ccc34c",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/figure-assets/figure-ac3ebde7636b99a3edd81672-p12-0.png": "9f229803c0e1389ff534190b3b89807d7a183cdddb8a8f48bf557d19c7e0deb0",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/figure-assets/region-89cfa5b0fa32378280a30ea2-p2-0.png": "ae40cdac939173dfbf8ce04d434083b8a19264070a9858194d6b0d50b8814bb4",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/figure-assets/region-aa08f4e23cbfc34e19fb17c3-p17-0.png": "4d44b56fc65e67f6fa4354282a0e220b7f1beb6d49c18ad6682b453c5cef9cf8",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/figure-assets/region-fae43c81bafd1b873dd67393-p13-0.png": "696cfef3ba1e5f238facdbf400fdd5abd28d49497cfe93d71431ce25f6229f2f",
+    "runtime-data/workbench/runs/run-e0d527c6-31c2-4f28-a1b0-9b19afcbe13c/figure-catalog.json": "4f7ee01686e761a731bf429f34b078b164c11ed88f099b1729ddeaf8a26b62f3",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/document-ir.json": "a9e71868d9401c48ca9c727ad4a8fb028bce30a8d3ba00e62e9f5f232c023552",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/figure-assets/figure-0869e4d4c48e55f71186ff94-p23-0.png": "d2debd9e8c4fa971e84c70a528b70b159ef42a8e0fe0aae88a14ac8e75ccc34c",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/figure-assets/figure-150c651a804ac08bd1027463-p21-0.png": "3bb200caa8631837214a85769164e6b645b7558792a87ead4bb223d4aed6d302",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/figure-assets/figure-f3d2f882937db582eea042ba-p12-0.png": "9f229803c0e1389ff534190b3b89807d7a183cdddb8a8f48bf557d19c7e0deb0",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/figure-assets/region-5217a7e0a2285009ec823e56-p2-0.png": "ae40cdac939173dfbf8ce04d434083b8a19264070a9858194d6b0d50b8814bb4",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/figure-assets/region-8f3f94463a5697ffa085f203-p13-0.png": "696cfef3ba1e5f238facdbf400fdd5abd28d49497cfe93d71431ce25f6229f2f",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/figure-assets/region-cbbd86fcab9bdf773cbf983d-p17-0.png": "4d44b56fc65e67f6fa4354282a0e220b7f1beb6d49c18ad6682b453c5cef9cf8",
+    "runtime-data/workbench/runs/run-f5dc6144-9308-4875-ac96-269a645b10ca/figure-catalog.json": "c3ab3c175b310edf1ddf102ee59cbded7a521112b5cf3f681ca295fb8b541095"
+  },
+  "after_configuration_sha256": {
+    ".env": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+    "deploy/local/workbench.env": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea",
+    "config/b0-s4-revalidation.json": "550d202022a7069ab54de7cdce405df584d35f5eba8827381db18a2499557e66",
+    "config/extraction-development.json": "0ab921c94e5c2392ef8abeb7dc5648d063387ce4f7ba450c302eafefa068b6d5",
+    "config/pdf-parser.json": "91529ba7f8e30f5c620712c3d74b49183252b250a80f11ed02972802f9e88698",
+    "config/pi-web-workbench.json": "3e09bf5de90c07eb50e3043b286f02c342d8cd2cfbe27dfa3466cc153492189a",
+    "config/scope-catalog.json": "cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+    "config/three-method-comparison.json": "dcf6b349996878b54911339f2d1934e9132293d17f3916717bbf13b1ef516b69",
+    "config/two-method-comparison.json": "2535586825e6b4b64746b98609899e6c5bc23e1d387e9bd21ff288866e0daf2a",
+    "config/workbench-response-model-policy.json": "9c261cd263921b5c949926da4448dcf10c9e971e2ed43f814015a4025ab1d9a1"
+  },
+  "frontend_wrapper_pid": 134693,
+  "frontend_pid": 134701,
+  "old_process_exit_at_online": {
+    "109795": true,
+    "109824": false,
+    "109816": false
+  },
+  "completed_at_utc": "2026-11-15T08:43:46.334051+00:00"
+}

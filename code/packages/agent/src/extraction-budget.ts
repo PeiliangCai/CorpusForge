@@ -45,7 +45,7 @@ function validAliasPolicy(value: unknown): value is ResponseModelAliasPolicy {
 }
 export type ResponseModelIdentityStatus = 'unknown' | 'matched' | 'confirmed_alias' | 'mismatch';
 export interface ResponseModelObservation {
-  source: 'provider_stream_event.response.model'; event_type: string; observed_at: string;
+  source: 'provider_stream_event.response.model' | 'provider_stream_event.chat_completion.model'; event_type: string; observed_at: string;
   expected_model: string; actual_model?: string; status: ResponseModelIdentityStatus;
   alias_policy_id?: string; alias_confirmation_source?: string;
 }
@@ -160,11 +160,11 @@ export class ExtractionBudget {
     this.ledger.requests.push(entry); this.persist(); return entry;
   }
   /** Compare literal provider event metadata; this neither authenticates model weights nor stores the HTTP body. */
-  observeResponseModel(entry: RequestAccounting, actualModel: unknown, eventType: string) {
+  observeResponseModel(entry: RequestAccounting, actualModel: unknown, eventType: string, source: ResponseModelObservation['source'] = 'provider_stream_event.response.model') {
     const status: ResponseModelIdentityStatus = typeof actualModel !== 'string' ? 'unknown' :
       actualModel === entry.model_id ? 'matched' : this.responseModelAliasPolicy?.exact_pairs.some(pair =>
         pair.requested_model === entry.model_id && pair.response_model === actualModel) ? 'confirmed_alias' : 'mismatch';
-    const observation: ResponseModelObservation = { source: 'provider_stream_event.response.model', event_type: eventType,
+    const observation: ResponseModelObservation = { source, event_type: eventType,
       observed_at: new Date(this.now()).toISOString(), expected_model: entry.model_id, status,
       ...(typeof actualModel === 'string' ? { actual_model: actualModel } : {}),
       ...(status === 'confirmed_alias' ? { alias_policy_id: this.responseModelAliasPolicy!.policy_id,
@@ -195,7 +195,8 @@ export class ExtractionBudget {
   }
   guardedFetch(modelId: string, purpose: string, attempt: number, entries: RequestAccounting[], maxRequests = this.limits.batch_responses,
     maxOutput: number = this.limits.response_output_tokens, requestTimeoutMs = this.limits.request_seconds * 1000,
-    contextMetadata?: { application_context_estimate: number; model_context_window_metadata: number }): typeof fetch {
+    contextMetadata?: { application_context_estimate: number; model_context_window_metadata: number },
+    onRequestStarted?: (entry: RequestAccounting) => void): typeof fetch {
     if (requestTimeoutMs < 1 || requestTimeoutMs > this.limits.request_seconds * 1000) throw new ContractError('request_deadline_exceeds_authorized_limit');
     const expected = new URL(this.endpoint.replace(/\/+$/, '') + '/');
     const original = globalThis.fetch;
@@ -213,10 +214,12 @@ export class ExtractionBudget {
       if (typeof requestedOutput === 'number') entry.requested_max_output_tokens = requestedOutput;
       const reasoning = body.reasoning as { effort?: unknown } | undefined;
       if (typeof reasoning?.effort === 'string' && ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'].includes(reasoning.effort)) entry.requested_reasoning_effort = reasoning.effort;
+      if (typeof body.reasoning_effort === 'string') entry.requested_reasoning_effort = body.reasoning_effort;
       if (contextMetadata) Object.assign(entry, contextMetadata);
       const globalRemaining = Math.max(1, (this.wallClockSeconds - this.totals().elapsed_seconds) * 1000);
       const effectiveTimeout = Math.min(requestTimeoutMs, globalRemaining);
       entry.configured_deadline_ms = effectiveTimeout;
+      onRequestStarted?.(entry);
       const transportController = new AbortController();
       let streamController: ReadableStreamDefaultController<Uint8Array> | undefined;
       let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;

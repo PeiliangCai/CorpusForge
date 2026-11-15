@@ -1,0 +1,203 @@
+{
+  "schema_version": "figure-asset-catalog-1",
+  "document_id": "IN06",
+  "file_sha256": "1784b4b7ab855b3d0dbe6797b2cf7d340ac90b750844c4d8a7df79aeb802a4c1",
+  "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+  "figures": [
+    {
+      "figure_id": "figure-3e7d783da5425c0c0e0f027c",
+      "figure_number": "1",
+      "caption_segments": [
+        {
+          "block_id": "25c82e492c8344a71988-p0002-l000009",
+          "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+          "start": 0,
+          "end": 23,
+          "exact_quote": "FIGURE 1: CT brain scan",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            348.99082912266465,
+            303.8131516070586,
+            359.7188218036558
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "panel_labels": [],
+      "native_picture_ids": [
+        "25a6d72764d18bfa-u-d979464646c855f5"
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      },
+      "regions": [
+        {
+          "asset_id": "figure-3e7d783da5425c0c0e0f027c-0",
+          "path": "docs/acceptance/resume-2026-11-11/in06/parser/figure-assets/figure-3e7d783da5425c0c0e0f027c-p2-0.png",
+          "sha256": "fb43eff6771349beb5264698c792db25c2551da493ba022f5ffd90a8aa559fd5",
+          "mime_type": "image/png",
+          "physical_page": 2,
+          "bbox": [
+            182.11756896972656,
+            172.13258361816406,
+            530.2838134765625,
+            337.40032958984375
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 697,
+          "height_px": 331,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "1784b4b7ab855b3d0dbe6797b2cf7d340ac90b750844c4d8a7df79aeb802a4c1",
+          "visual_modification": "none"
+        }
+      ]
+    },
+    {
+      "figure_id": "figure-9955a8b764e9d23102f63c60",
+      "figure_number": "2",
+      "caption_segments": [
+        {
+          "block_id": "25c82e492c8344a71988-p0002-l000018",
+          "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+          "start": 0,
+          "end": 29,
+          "exact_quote": "FIGURE 2: Axial chest CT scan",
+          "occurrence": 0,
+          "physical_page": 2,
+          "bbox": [
+            190.5452042775,
+            599.2606446179147,
+            330.4174481658125,
+            609.9886372989058
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "panel_labels": [],
+      "native_picture_ids": [
+        "25a6d72764d18bfa-u-6b09bd1511e2a8e5"
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      },
+      "regions": [
+        {
+          "asset_id": "figure-9955a8b764e9d23102f63c60-0",
+          "path": "docs/acceptance/resume-2026-11-11/in06/parser/figure-assets/figure-9955a8b764e9d23102f63c60-p2-0.png",
+          "sha256": "8bfe7c8b7e64fa4cf2107330bbbc8ea8701c34afbf35d26582e5684958650565",
+          "mime_type": "image/png",
+          "physical_page": 2,
+          "bbox": [
+            182.28517150878906,
+            485.80303955078125,
+            530.721435546875,
+            587.5625
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 698,
+          "height_px": 205,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "1784b4b7ab855b3d0dbe6797b2cf7d340ac90b750844c4d8a7df79aeb802a4c1",
+          "visual_modification": "none"
+        }
+      ]
+    },
+    {
+      "figure_id": "figure-e36bbdf655d987d3e73315ff",
+      "figure_number": "3",
+      "caption_segments": [
+        {
+          "block_id": "25c82e492c8344a71988-p0003-l000000",
+          "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+          "start": 0,
+          "end": 55,
+          "exact_quote": "FIGURE 3: Histological examination of the bronchobiopsy",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            190.5452042775,
+            249.9632088771648,
+            454.1335601248745,
+            260.6912015581561
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        },
+        {
+          "block_id": "25c82e492c8344a71988-p0003-l000001",
+          "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+          "start": 0,
+          "end": 106,
+          "exact_quote": "A: tumor proliferation arranged in diffuse sheets (hematoxylin and eosin (H&E), 100X); (B): cells that are",
+          "occurrence": 0,
+          "physical_page": 3,
+          "bbox": [
+            190.5452042775,
+            267.68397258851996,
+            493.504167985435,
+            275.05946755670107
+          ],
+          "location_precision": "whole_textline_not_exact_glyph"
+        }
+      ],
+      "panel_labels": [
+        "(B)"
+      ],
+      "native_picture_ids": [
+        "25a6d72764d18bfa-u-fae1d8e12507de07"
+      ],
+      "verification": {
+        "status": "needs_review",
+        "method": "native_candidate_only",
+        "actor": null,
+        "checked_at": null,
+        "notes": "Independent numbered source caption + unique connected picture region + adjacency + no paragraph barrier; whole-Figure/panel completeness still needs source-page check.",
+        "all_panels_included": false,
+        "caption_figure_identity_checked": false,
+        "human_approved": false
+      },
+      "regions": [
+        {
+          "asset_id": "figure-e36bbdf655d987d3e73315ff-0",
+          "path": "docs/acceptance/resume-2026-11-11/in06/parser/figure-assets/figure-e36bbdf655d987d3e73315ff-p3-0.png",
+          "sha256": "f6efc7c84d182b8babc5113e509189ac4ea7ae6d4f92f1b833a69220b99ba3ab",
+          "mime_type": "image/png",
+          "physical_page": 3,
+          "bbox": [
+            183.3125,
+            57.0,
+            530.9314575195312,
+            238.25
+          ],
+          "coordinate_system": "crop_rotated_top_left_pt",
+          "width_px": 696,
+          "height_px": 363,
+          "render_scale": 2,
+          "extraction_method": "original_pdf_region_render",
+          "source_pdf_sha256": "1784b4b7ab855b3d0dbe6797b2cf7d340ac90b750844c4d8a7df79aeb802a4c1",
+          "visual_modification": "none"
+        }
+      ]
+    }
+  ],
+  "inventory_complete": false,
+  "original_pdf_modified": false,
+  "generated_images_used": false
+}

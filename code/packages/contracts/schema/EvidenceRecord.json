@@ -689,6 +689,310 @@
                   "additionalProperties": false
                 }
               },
+              "description_evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "block_id",
+                    "text_version",
+                    "start",
+                    "end",
+                    "exact_quote",
+                    "occurrence",
+                    "physical_page",
+                    "bbox",
+                    "location_precision"
+                  ],
+                  "properties": {
+                    "block_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "text_version": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "start": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "end": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "exact_quote": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "occurrence": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "physical_page": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "bbox": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      },
+                      "minItems": 4,
+                      "maxItems": 4
+                    },
+                    "location_precision": {
+                      "type": "string",
+                      "const": "whole_textline_not_exact_glyph"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "value_contexts": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "cell_id",
+                    "row_start",
+                    "row_end",
+                    "col_start",
+                    "col_end",
+                    "mapping_status",
+                    "fragments",
+                    "context_fragments"
+                  ],
+                  "properties": {
+                    "cell_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "row_start": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "row_end": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "col_start": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "col_end": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "mapping_status": {
+                      "enum": [
+                        "source_geometry_checked_semantics_unapproved",
+                        "native_mapping_unapproved"
+                      ]
+                    },
+                    "fragments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "block_id",
+                          "text_version",
+                          "start",
+                          "end",
+                          "exact_quote",
+                          "occurrence",
+                          "physical_page",
+                          "bbox",
+                          "location_precision"
+                        ],
+                        "properties": {
+                          "block_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          "text_version": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          "start": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "end": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "exact_quote": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "occurrence": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "physical_page": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "bbox": {
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            },
+                            "minItems": 4,
+                            "maxItems": 4
+                          },
+                          "location_precision": {
+                            "type": "string",
+                            "const": "whole_textline_not_exact_glyph"
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "context_fragments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "block_id",
+                          "text_version",
+                          "start",
+                          "end",
+                          "exact_quote",
+                          "occurrence",
+                          "physical_page",
+                          "bbox",
+                          "location_precision"
+                        ],
+                        "properties": {
+                          "block_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          "text_version": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          "start": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "end": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "exact_quote": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "occurrence": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "physical_page": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "bbox": {
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            },
+                            "minItems": 4,
+                            "maxItems": 4
+                          },
+                          "location_precision": {
+                            "type": "string",
+                            "const": "whole_textline_not_exact_glyph"
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 32
+              },
+              "context_fragments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "block_id",
+                    "text_version",
+                    "start",
+                    "end",
+                    "exact_quote",
+                    "occurrence",
+                    "physical_page",
+                    "bbox",
+                    "location_precision"
+                  ],
+                  "properties": {
+                    "block_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "text_version": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "start": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "end": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "exact_quote": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "occurrence": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "physical_page": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "bbox": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      },
+                      "minItems": 4,
+                      "maxItems": 4
+                    },
+                    "location_precision": {
+                      "type": "string",
+                      "const": "whole_textline_not_exact_glyph"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "selected_cell_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "uniqueItems": true
+              },
               "relationship_status": {
                 "type": "string",
                 "const": "explicit_reference_value_relationship_unverified"
@@ -1287,7 +1591,8 @@
             "enum": [
               "approved",
               "development_only",
-              "unavailable"
+              "unavailable",
+              "operator_configured"
             ]
           }
         },
@@ -1724,7 +2029,8 @@
           "enum": [
             "approved",
             "development_only",
-            "unavailable"
+            "unavailable",
+            "operator_configured"
           ]
         },
         "development_catalog_used": {
@@ -1860,6 +2166,18 @@
         "primary_assessment_policy_version": {
           "type": "string",
           "const": "model-primary-assessment-1"
+        },
+        "source_glyph_policy_version": {
+          "type": "string",
+          "const": "agent-assesses-parsed-glyphs-1"
+        },
+        "input_organization_version": {
+          "type": "string",
+          "const": "source-content-units-2"
+        },
+        "table_support_policy_version": {
+          "type": "string",
+          "const": "paragraph-linked-table-support-2"
         }
       },
       "additionalProperties": false

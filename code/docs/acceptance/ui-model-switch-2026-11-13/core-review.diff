@@ -1,0 +1,413 @@
+--- before/code/apps/server/src/app.ts
++++ after/code/apps/server/src/app.ts
+@@ -26,6 +26,7 @@
+     : ({ status: 'ok', service: 't1-workbench', runtime_mode: 'legacy_fixture', backend_pi_sdk: '1.4.0', fixture_only: true, extraction_available: false }));
+   app.get('/api/catalog', async () => catalog);
+   app.get('/api/workbench/capabilities', async () => workflow?.capabilities() ?? WORKBENCH_CAPABILITIES);
++  app.get('/api/workbench/models', async () => workflow?.models() ?? { provider: '', default_profile_id: null, profiles: [] });
+   app.get('/api/workbench/papers', async () => ({ papers: await (workflow ?? sources).papers() }));
+   app.get('/api/workbench/runs', async () => workflow ? { runs: await workflow.runs() } : ({ runs: store.db.prepare('SELECT id FROM runs ORDER BY rowid DESC LIMIT 100').all().map(row => {
+     const value = store.snapshot(row.id as string);
+@@ -41,6 +42,7 @@
+     app.addHook('onReady', () => workflow.initialize());
+     app.addContentTypeParser('application/pdf', { parseAs: 'buffer', bodyLimit: MAX_PDF_BYTES }, (_request, body, done) => done(null, body));
+     app.get('/api/workbench/catalog', async () => workflow.scopeCatalog());
++    app.post('/api/workbench/models', async request => workflow.addModel(request.body));
+     const decoded = (value: string | string[] | undefined) => { if (typeof value !== 'string') return undefined; try { return decodeURIComponent(value); } catch { throw new ContractError('invalid_upload_header'); } };
+     const requestId = (value: string | string[] | undefined) => { if (value === undefined) return undefined;
+       if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{8,120}$/u.test(value)) throw new ContractError('invalid_submission_request_id'); return value; };
+@@ -52,9 +54,9 @@
+       if (!Buffer.isBuffer(request.body)) throw new ContractError('application_pdf_required'); return workflow.restorePdf(request.params.paperId, request.body);
+     });
+     app.delete<{ Params: { paperId: string } }>('/api/workbench/papers/:paperId', async request => workflow.deletePaper(request.params.paperId));
+-    app.post<{ Params: { paperId: string }; Body: { scope: Scope; submission?: WorkbenchSubmission } }>('/api/workbench/papers/:paperId/runs', async (request, reply) => {
+-      if (!request.body || typeof request.body !== 'object' || Array.isArray(request.body) || Object.keys(request.body).some(k => k !== 'scope' && k !== 'submission')) throw new ContractError('immutable_server_run_configuration');
+-      return reply.code(202).send(await workflow.start(request.params.paperId, request.body.scope, requestId(request.headers['x-t1-request-id']), request.body.submission));
++    app.post<{ Params: { paperId: string }; Body: { scope: Scope; submission?: WorkbenchSubmission; model_profile_id?: string } }>('/api/workbench/papers/:paperId/runs', async (request, reply) => {
++      if (!request.body || typeof request.body !== 'object' || Array.isArray(request.body) || Object.keys(request.body).some(k => !['scope', 'submission', 'model_profile_id'].includes(k))) throw new ContractError('immutable_server_run_configuration');
++      return reply.code(202).send(await workflow.start(request.params.paperId, request.body.scope, requestId(request.headers['x-t1-request-id']), request.body.submission, request.body.model_profile_id));
+     });
+     app.get<{ Params: { runId: string } }>('/api/workbench/runs/:runId', async request => workflow.runDetail(request.params.runId));
+     app.get<{ Params: { runId: string; assetId: string } }>('/api/workbench/runs/:runId/figures/:assetId', async (request, reply) =>
+--- before/code/apps/server/src/workbench-models.ts
++++ after/code/apps/server/src/workbench-models.ts
+@@ -0,0 +1,52 @@
++import { createHash } from 'node:crypto';
++import { ContractError } from '@t1/contracts';
++import type { ExtractionStore } from '@t1/agent';
++import type { WorkbenchModelProfile, WorkbenchModelProfileInput } from '../../../packages/contracts/src/workbench.js';
++
++export function modelProfile(provider: string, input: WorkbenchModelProfileInput, source: WorkbenchModelProfile['configuration_source']): WorkbenchModelProfile {
++  const fields = { provider, model_id: input.model_id, api: input.api, reasoning_effort: input.reasoning_effort,
++    context_window: input.context_window, max_output_tokens: input.max_output_tokens };
++  // The original server configuration has a separate identity: a manually added
++  // entry with the same model name must never inherit its approved exact aliases.
++  const profile_id = 'model-' + createHash('sha256').update(JSON.stringify({ ...fields, configuration_source: source })).digest('hex').slice(0, 32);
++  return { profile_id, ...fields, configuration_source: source };
++}
++
++/** Profiles are append-only. A new configuration never rewrites an admitted run. */
++export class WorkbenchModelsStore {
++  constructor(private readonly store: ExtractionStore, readonly initial: WorkbenchModelProfile) {
++    store.db.exec('CREATE TABLE IF NOT EXISTS workbench_model_profiles(id TEXT PRIMARY KEY,payload_json TEXT NOT NULL)');
++    this.save(initial);
++  }
++  private save(profile: WorkbenchModelProfile) {
++    this.store.db.prepare('INSERT OR IGNORE INTO workbench_model_profiles VALUES(?,?)').run(profile.profile_id, JSON.stringify(profile));
++    return this.get(profile.profile_id);
++  }
++  list() {
++    const profiles = this.store.db.prepare('SELECT payload_json FROM workbench_model_profiles ORDER BY rowid').all()
++      .map(row => JSON.parse(row.payload_json as string) as WorkbenchModelProfile).filter(profile => profile.provider === this.initial.provider);
++    return { provider: this.initial.provider, default_profile_id: this.initial.profile_id, profiles };
++  }
++  get(id: string) {
++    if (typeof id !== 'string' || !/^model-[a-f0-9]{32}$/u.test(id)) throw new ContractError('invalid_model_profile_id');
++    const row = this.store.db.prepare('SELECT payload_json FROM workbench_model_profiles WHERE id=?').get(id);
++    if (!row) throw new ContractError('model_profile_not_found');
++    const profile = JSON.parse(row.payload_json as string) as WorkbenchModelProfile;
++    if (profile.provider !== this.initial.provider) throw new ContractError('model_profile_not_found');
++    return structuredClone(profile);
++  }
++  add(value: unknown) {
++    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new ContractError('invalid_model_profile');
++    const input = value as Record<string, unknown>, keys = ['model_id', 'api', 'reasoning_effort', 'context_window', 'max_output_tokens'];
++    if (Object.keys(input).length !== keys.length || Object.keys(input).some(key => !keys.includes(key)) ||
++      typeof input.model_id !== 'string' || input.model_id.length > 160 || !/^[a-zA-Z0-9_./:@+-]+$/u.test(input.model_id) ||
++      !['openai-responses', 'openai-completions'].includes(input.api as string) || !['medium', 'none'].includes(input.reasoning_effort as string) ||
++      !Number.isSafeInteger(input.context_window) || (input.context_window as number) < 4096 || (input.context_window as number) > 2_000_000 ||
++      !Number.isSafeInteger(input.max_output_tokens) || (input.max_output_tokens as number) < 256 || (input.max_output_tokens as number) > 8192 ||
++      (input.max_output_tokens as number) >= (input.context_window as number)) throw new ContractError('invalid_model_profile');
++    const profile = modelProfile(this.initial.provider, input as unknown as WorkbenchModelProfileInput, 'user'), profiles = this.list().profiles;
++    if (profiles.some(existing => existing.profile_id === profile.profile_id)) return this.get(profile.profile_id);
++    if (profiles.length >= 100) throw new ContractError('model_profile_limit');
++    return this.save(profile);
++  }
++}
+--- before/code/apps/server/src/workflow.ts
++++ after/code/apps/server/src/workflow.ts
+@@ -12,9 +12,10 @@
+   type ExtractionDocument, type StoredEvidenceVersion } from '@t1/agent';
+ import type { WorkbenchCapabilities, WorkbenchEvent, WorkbenchExportKind, WorkbenchLabels, WorkbenchOutput, WorkbenchPaper,
+   WorkbenchPaperDetail, WorkbenchRecord, WorkbenchRevisionInput, WorkbenchReviewInput, WorkbenchRun, WorkbenchSourceUnit, WorkbenchFigureCheckInput,
+-  WorkbenchRetention, WorkbenchRetentionInput, WorkbenchSubmission } from '../../../packages/contracts/src/workbench.js';
++  WorkbenchRetention, WorkbenchRetentionInput, WorkbenchSubmission, WorkbenchModelProfile } from '../../../packages/contracts/src/workbench.js';
+ import { WorkbenchSources, type Artifact } from './workbench.js';
+ import { readingPassages } from './reading-passages.js';
++import { WorkbenchModelsStore } from './workbench-models.js';
+ 
+ const CODE = fileURLToPath(new URL('../../../', import.meta.url));
+ export const MAX_PDF_BYTES = 50 * 1024 * 1024;
+@@ -39,16 +40,18 @@
+   note: string; latest_source?: SourceSnapshot }
+ interface RunRow { id: string; paper_id: string; created_at: string; origin: WorkbenchOutput['origin']; controlled: boolean;
+   source?: SourceSnapshot; coverage?: unknown; error?: string; directory: string; strategy?: string; summary?: string;
+-  execution_started_at?: string; queue_wait_ms?: number; runtime_deadline?: string; finished_at?: string; submission?: WorkbenchSubmission }
++  execution_started_at?: string; queue_wait_ms?: number; runtime_deadline?: string; finished_at?: string; submission?: WorkbenchSubmission; model_profile?: WorkbenchModelProfile }
+ interface Annotation { labels: WorkbenchLabels; deleted: boolean; reviewer: string; reason: string }
+ export interface WorkflowExecution {
+   input: RunInput; document: ExtractionDocument; evidence_catalog?: EvidenceCatalog; catalog?: FigureAssetCatalog; directory: string;
+   signal: AbortSignal; store: ExtractionStore; metadata: EvidenceValidationContext['metadata']; execution_started_at?: string;
++  model_profile?: WorkbenchModelProfile;
+ }
+ export interface WorkflowRunner {
+   /** Test dependency injection is server-owned. The HTTP client cannot select a runner or endpoint. */
+   controlled: boolean; provider: string; model_id: string;
+   public_runtime?: import('../../../packages/contracts/src/workbench.js').WorkbenchModelRuntime;
++  default_model_profile?: WorkbenchModelProfile;
+   available?(): boolean;
+   /** Optional host admission hook, before parsing and outside any SQLite write transaction. */
+   prepare?(input: RunInput, directory: string): void | Promise<void>;
+@@ -82,6 +85,7 @@
+   private readonly sourceUnitCache = new Map<string, WorkbenchSourceUnit[]>();
+   private readonly outputCache = new Map<string, { key: string; value: WorkbenchOutput }>();
+   private readonly requests = new Map<string, { hash: string; promise: Promise<unknown> }>();
++  private readonly modelProfiles?: WorkbenchModelsStore;
+   constructor(readonly store: ExtractionStore, readonly options: WorkflowOptions = {}) {
+     this.codeRoot = resolve(options.codeRoot ?? CODE); this.directory = resolve(this.codeRoot, options.directory ?? 'runtime-data/workbench');
+     if (relative(this.codeRoot, this.directory).startsWith('..') || this.directory === this.codeRoot) throw new ContractError('workflow_directory_outside_code');
+@@ -98,6 +102,7 @@
+     // as the paper/run. Keys survive deletions and never restart an old run.
+     store.db.exec(`CREATE TABLE IF NOT EXISTS workbench_requests(operation TEXT NOT NULL,request_id TEXT NOT NULL,payload_sha256 TEXT NOT NULL,result_id TEXT NOT NULL,
+       PRIMARY KEY(operation,request_id))`);
++    if (options.runner?.default_model_profile) this.modelProfiles = new WorkbenchModelsStore(store, options.runner.default_model_profile);
+   }
+   async initialize() { return this.initialized ??= this.initializeOnce(); }
+   private async initializeOnce() {
+@@ -142,11 +147,16 @@
+     const runtime = this.options.runner?.controlled ? undefined : this.options.runner?.public_runtime;
+     return { schema_version: 't1-workbench-capabilities-1', read_only: false, paper_upload: true,
+       extraction_start: Boolean(this.options.runner && (this.options.runner.available?.() ?? true)), persisted_review: true, approved_export: true, persisted_retention: true, retained_export: true,
+-      backend_pi_sdk: '1.4.0', controlled_fixture: this.options.runner?.controlled ?? false, max_concurrent_runs: this.maxConcurrentRuns,
++      backend_pi_sdk: '1.4.0', controlled_fixture: this.options.runner?.controlled ?? false, max_concurrent_runs: this.maxConcurrentRuns, model_selection: Boolean(this.modelProfiles),
+       max_pdf_bytes: MAX_PDF_BYTES, ...(runtime ? { model_runtime: { provider: runtime.provider, model_id: runtime.model_id,
+         reasoning_effort: runtime.reasoning_effort, limits: { requests: runtime.limits.requests, input_tokens: runtime.limits.input_tokens,
+           output_tokens: runtime.limits.output_tokens, execution_seconds: Math.min(runtime.limits.execution_seconds, (this.options.runTimeoutMs ?? 1800_000) / 1000) } } } : {}),
+       ...(!this.options.runner ? { extraction_unavailable_reason: 'server_model_not_enabled' } : {}) };
++  }
++  models() { return this.modelProfiles?.list() ?? { provider: '', default_profile_id: null, profiles: [] }; }
++  addModel(value: unknown) {
++    if (!this.modelProfiles) throw new ContractError('model_selection_unavailable');
++    const profile = this.modelProfiles.add(value); return { profile, ...this.modelProfiles.list() };
+   }
+   scopeCatalog() { return { ...this.catalog, default_scope: { ...defaultScope(this.catalog.catalog_version), matching_policy_version: 'exact-explicit-synonyms-1' },
+     restricted_available: this.catalog.status === 'approved' && !this.catalog.fixture,
+@@ -166,9 +176,9 @@
+     language: row.language, pages: row.pages, note: row.note, output_ids: this.store.db.prepare('SELECT id FROM workbench_runs WHERE paper_id=? ORDER BY rowid DESC').all(row.id).map(r => r.id as string) }; }
+   async papers() { await this.initialize(); return this.store.db.prepare('SELECT payload_json FROM workbench_papers ORDER BY rowid DESC').all().map(r => this.summary(JSON.parse(r.payload_json as string))); }
+   async runs(filterId?: string): Promise<WorkbenchRun[]> { await this.initialize();
+-    return this.store.db.prepare(`SELECT w.id,w.paper_id,s.state,s.input_json,json_extract(w.payload_json,'$.origin','$.created_at','$.controlled','$.error','$.execution_started_at','$.queue_wait_ms','$.runtime_deadline','$.finished_at','$.submission') info
++    return this.store.db.prepare(`SELECT w.id,w.paper_id,s.state,s.input_json,json_extract(w.payload_json,'$.origin','$.created_at','$.controlled','$.error','$.execution_started_at','$.queue_wait_ms','$.runtime_deadline','$.finished_at','$.submission','$.model_profile') info
+       FROM workbench_runs w JOIN s4_runs s ON w.id=s.id ${filterId ? 'WHERE w.id=?' : ''} ORDER BY w.rowid DESC`).all(...(filterId ? [filterId] : [])).map(row => {
+-      const [origin, created_at, controlled, error, execution_started_at, queue_wait_ms, runtime_deadline, finished_at, submission] = JSON.parse(row.info as string), input = JSON.parse(row.input_json as string) as RunInput;
++      const [origin, created_at, controlled, error, execution_started_at, queue_wait_ms, runtime_deadline, finished_at, submission, model_profile] = JSON.parse(row.info as string), input = JSON.parse(row.input_json as string) as RunInput;
+       const count = this.store.db.prepare(`SELECT COUNT(*) n FROM s4_versions v JOIN
+         (SELECT record_id,MAX(version) version FROM s4_versions WHERE run_id=? AND COALESCE(json_extract(envelope_json,'$.status'),'active')<>'proposed' GROUP BY record_id) current
+         ON v.record_id=current.record_id AND v.version=current.version
+@@ -176,7 +186,8 @@
+         WHERE v.run_id=? AND COALESCE(json_extract(a.payload_json,'$.deleted'),0)<>1`).get(row.id as string, row.id as string)!;
+       const ready = Boolean(finished_at) || !this.active.has(row.id as string), rawState = row.state as string;
+       return { run_id: row.id as string, document_id: row.paper_id as string, state: ['completed', 'partial'].includes(rawState) && !ready ? 'reconciling' : rawState, fixture: Boolean(controlled), candidate_count: Number(count.n),
+-        scope: input.scope, origin, created_at, result_ready: terminals.has(rawState) && ready, ...(submission ? { submission } : {}), ...(finished_at ? { finished_at } : {}), ...(error ? { error } : {}), ...(execution_started_at ? { execution_started_at, queue_wait_ms, runtime_deadline } : {}) };
++        scope: input.scope, origin, created_at, provider: input.runtime_profile.provider, model_id: input.runtime_profile.model_id,
++        ...(model_profile ? { model_profile } : {}), result_ready: terminals.has(rawState) && ready, ...(submission ? { submission } : {}), ...(finished_at ? { finished_at } : {}), ...(error ? { error } : {}), ...(execution_started_at ? { execution_started_at, queue_wait_ms, runtime_deadline } : {}) };
+     });
+   }
+   private async readPinned(artifact: Artifact) {
+@@ -384,13 +395,14 @@
+       record_approval_added: false, run_detail: await this.runDetail(id) };
+   }
+   events(id: string, after = 0): WorkbenchEvent[] { this.run(id); return (this.store.events(id) as WorkbenchEvent[]).filter(e => e.seq > after); }
+-  async start(id: string, scope: Scope, requestId?: string, metadata?: WorkbenchSubmission) {
++  async start(id: string, scope: Scope, requestId?: string, metadata?: WorkbenchSubmission, modelProfileId?: string) {
+     const submission = submissionMetadata(metadata);
++    if (modelProfileId !== undefined && (typeof modelProfileId !== 'string' || !/^model-[a-f0-9]{32}$/u.test(modelProfileId))) throw new ContractError('invalid_model_profile_id');
+     await this.initialize();
+     // Replaying a committed request is read-only even after the server restarts,
+     // an allowance closes, or a catalogue changes. The original scope is immutable.
+     // Keep the exact legacy payload when metadata is absent so old keys still replay after an upgrade.
+-    return this.submission('start', requestId, { paper_id: id, scope, ...(submission ? { submission } : {}) }, async runId => ({ run: (await this.runs(runId))[0]! }), async remember => {
++    return this.submission('start', requestId, { paper_id: id, scope, ...(submission ? { submission } : {}), ...(modelProfileId !== undefined ? { model_profile_id: modelProfileId } : {}) }, async runId => ({ run: (await this.runs(runId))[0]! }), async remember => {
+     if (this.shuttingDown) throw new ContractError('server_shutting_down');
+     const admittedAt = now();
+     assertSchema(ScopeSchema, scope);
+@@ -399,12 +411,14 @@
+     const paper = this.paper(id); await this.requireSource(paper, paper.latest_source);
+     const runner = this.options.runner; if (!runner) throw new ContractError('server_model_not_enabled');
+     if (runner.available?.() === false) throw new ContractError('run_start_allowance_closed');
++    if (modelProfileId && !this.modelProfiles) throw new ContractError('model_selection_unavailable');
++    const model = this.modelProfiles?.get(modelProfileId ?? this.modelProfiles.initial.profile_id);
+     const runId = 'run-' + randomUUID(), directory = resolve(this.directory, 'runs', runId);
+     await mkdir(directory, { recursive: true, mode: 0o700 });
+     const input: RunInput = { schema_version: '1', run_id: runId, document_id: id, file_sha256: paper.pdf.sha256, fixture: false, scope: structuredClone(scope),
+-      rule_version: 'visual-statements-2', runtime_profile: { provider: runner.provider, model_id: runner.model_id, endpoint: '', pi_version: '1.4.0', version: 's5-workbench-1' } };
++      rule_version: 'visual-statements-2', runtime_profile: { provider: model?.provider ?? runner.provider, model_id: model?.model_id ?? runner.model_id, endpoint: '', pi_version: '1.4.0', version: 's5-workbench-1' } };
+     await runner.prepare?.(input, directory);
+-    const row: RunRow = { id: runId, paper_id: id, created_at: admittedAt, origin: runner.controlled ? 'controlled_fixture' : 'workbench_run', controlled: runner.controlled, directory, strategy: 'B0', ...(submission ? { submission } : {}) };
++    const row: RunRow = { id: runId, paper_id: id, created_at: admittedAt, origin: runner.controlled ? 'controlled_fixture' : 'workbench_run', controlled: runner.controlled, directory, strategy: 'B0', ...(submission ? { submission } : {}), ...(model ? { model_profile: structuredClone(model) } : {}) };
+     this.store.atomic(() => { this.store.create(input, { fixed_method: 'B0', controlled_fixture: runner.controlled }); this.saveRun(row); remember(runId); });
+     const controller = new AbortController();
+     const promise = this.schedule(runId, controller, () => this.execute(row, input, controller));
+@@ -465,7 +479,7 @@
+       const metadata: EvidenceValidationContext['metadata'] = { task_id: row.id, article_family_id: paper.id, created_at: row.created_at,
+         source_version: { file_sha256: paper.pdf.sha256, source_kind: paper.uploaded ? 'user_uploaded_pdf' : 'retained_public_pdf', version: paper.pdf.sha256, obtained_at: row.created_at },
+         bibliographic_identity: { title: paper.title, authors: [], venue: null, year: null, doi: null, pmid: null, identity_status: 'user_title_unverified' }, document_access: 'full_text' };
+-      const result = await this.options.runner!.execute({ input, document, evidence_catalog: structuredClone(this.catalog), catalog: source.catalog, directory: row.directory, signal, store: this.store, metadata, execution_started_at: row.execution_started_at });
++      const result = await this.options.runner!.execute({ input, document, evidence_catalog: structuredClone(this.catalog), catalog: source.catalog, directory: row.directory, signal, store: this.store, metadata, execution_started_at: row.execution_started_at, ...(row.model_profile ? { model_profile: structuredClone(row.model_profile) } : {}) });
+       this.saveRun({ ...this.run(row.id), coverage: result.coverage, summary: result.summary });
+       if (!terminals.has(this.store.snapshot(row.id).state)) throw new ContractError('runner_finished_without_terminal_state');
+     } catch (error) {
+--- before/code/apps/server/src/workflow-runner.ts
++++ after/code/apps/server/src/workflow-runner.ts
+@@ -1,11 +1,11 @@
+ import { resolve } from 'node:path';
+ import { ContractError } from '@t1/contracts';
+-import { ExtractionBudget, S4_LIMITS, loadModelConfig, runExtractionDocument, type ModelConfig } from '@t1/agent';
++import { ExtractionBudget, S4_LIMITS, loadModelConfig, runExtractionDocument, ModelConfig, type ExtractionModelProfile } from '@t1/agent';
+ import { unavailableMedicalCatalog, type WorkflowRunner, type WorkflowExecution } from './workflow.js';
+ import { workbenchModelPolicy } from './model-policy.js';
++import { modelProfile } from './workbench-models.js';
+ 
+-export async function executeWorkbenchExtraction(context: WorkflowExecution, config: ModelConfig, budget: ExtractionBudget, documentTimeoutMs = 1800_000, stopOnBatchFailure = false) {
+-  const { profile } = workbenchModelPolicy(config);
++export async function executeWorkbenchExtraction(context: WorkflowExecution, config: ModelConfig, budget: ExtractionBudget, documentTimeoutMs = 1800_000, stopOnBatchFailure = false, profile = workbenchModelPolicy(config).profile) {
+   const result = await runExtractionDocument({ input: context.input, document: context.document, catalog: context.evidence_catalog ?? unavailableMedicalCatalog,
+     metadata: context.metadata, profile, config, budget, store: context.store, directory: context.directory,
+     strategy: 'baseline', sourceSelectionCondition: 'B0', signal: context.signal, figureCatalog: context.catalog,
+@@ -18,6 +18,8 @@
+ export function configuredWorkflowRunner(environment = process.env): WorkflowRunner | undefined {
+   if (environment.T1_WORKBENCH_MODEL_ENABLED !== 'true') return undefined;
+   const config = loadModelConfig('.env', environment), { responseModelAliasPolicy, profile } = workbenchModelPolicy(config);
++  const initial = modelProfile(config.provider, { model_id: config.modelId, api: profile.api, reasoning_effort: profile.reasoning_effort,
++    context_window: profile.context_window, max_output_tokens: profile.max_output_tokens }, 'server');
+   const integer = (key: string, fallback: number, maximum: number) => {
+     const n = Number(environment[key] ?? fallback);
+     if (!Number.isSafeInteger(n) || n < 1 || n > maximum) throw new ContractError('invalid_workbench_server_limit'); return n;
+@@ -25,15 +27,23 @@
+   const limits = { ...S4_LIMITS, requests: integer('T1_WORKBENCH_MAX_REQUESTS', 80, S4_LIMITS.requests),
+     input_tokens: integer('T1_WORKBENCH_MAX_INPUT_TOKENS', 2_000_000, S4_LIMITS.input_tokens),
+     output_tokens: integer('T1_WORKBENCH_MAX_OUTPUT_TOKENS', 120_000, S4_LIMITS.output_tokens), seconds: 1800, document_seconds: 1800, batch_responses: 16 };
+-  return { controlled: false, provider: config.provider, model_id: config.modelId,
++  return { controlled: false, provider: config.provider, model_id: config.modelId, default_model_profile: initial,
+     public_runtime: { provider: config.provider, model_id: config.modelId, reasoning_effort: profile.reasoning_effort,
+       limits: { requests: limits.requests, input_tokens: limits.input_tokens, output_tokens: limits.output_tokens, execution_seconds: limits.seconds } },
+     execute: async context => {
++    const selected = context.model_profile ?? initial;
++    if (selected.provider !== config.provider || context.input.runtime_profile.provider !== selected.provider || context.input.runtime_profile.model_id !== selected.model_id ||
++      modelProfile(selected.provider, selected, selected.configuration_source).profile_id !== selected.profile_id) throw new ContractError('run_model_profile_mismatch');
++    const original = selected.profile_id === initial.profile_id && selected.configuration_source === 'server';
++    const selectedConfig = new ModelConfig(config.provider, config.baseUrl, selected.model_id, config.apiKey());
++    const selectedProfile: ExtractionModelProfile = original ? profile : { model_id: selected.model_id, api: selected.api,
++      reasoning_effort: selected.reasoning_effort, context_window: selected.context_window, max_output_tokens: selected.max_output_tokens,
++      profile_version: selected.profile_id, model_capacity_source: 'user_configured_local_limits_not_verified_supplier_capacity' };
+     const budget = new ExtractionBudget(resolve(context.directory, 'request-ledger.json'), config.baseUrl, Date.now, {
+-      limits, responseModelAliasPolicy, authorization: { id: 'workbench-server-limits-1', source: 'server_workbench_configuration', recorded_at: new Date().toISOString() } });
++      limits, ...(original ? { responseModelAliasPolicy } : {}), authorization: { id: 'workbench-server-limits-1', source: 'server_workbench_configuration', recorded_at: new Date().toISOString() } });
+     // Queue waiting is separate; parsing already used part of the 30 min execution slot.
+     budget.ledger.experiment_started_at = context.execution_started_at ?? context.metadata.created_at; budget.persist(); budget.check();
+     const remaining = Math.max(1, Math.floor((limits.seconds - budget.totals().elapsed_seconds) * 1000));
+-    return executeWorkbenchExtraction(context, config, budget, remaining);
++    return executeWorkbenchExtraction(context, selectedConfig, budget, remaining, false, selectedProfile);
+   } };
+ }
+--- before/code/packages/contracts/src/workbench.ts
++++ after/code/packages/contracts/src/workbench.ts
+@@ -61,6 +61,19 @@
+   execution_started_at?: string; queue_wait_ms?: number; runtime_deadline?: string;
+   result_ready?: boolean; finished_at?: string;
+   submission?: WorkbenchSubmission;
++  provider?: string; model_id?: string;
++  model_profile?: WorkbenchModelProfile;
++}
++/** Server-owned immutable configuration. No credentials, endpoints or per-run budgets. */
++export interface WorkbenchModelProfile {
++  profile_id: string; provider: string; model_id: string;
++  api: 'openai-responses' | 'openai-completions'; reasoning_effort: 'medium' | 'none';
++  context_window: number; max_output_tokens: number;
++  configuration_source: 'server' | 'user';
++}
++export type WorkbenchModelProfileInput = Pick<WorkbenchModelProfile, 'model_id' | 'api' | 'reasoning_effort' | 'context_window' | 'max_output_tokens'>;
++export interface WorkbenchModels {
++  provider: string; default_profile_id: string | null; profiles: WorkbenchModelProfile[];
+ }
+ export interface WorkbenchCapabilities {
+   schema_version: 't1-workbench-capabilities-1'; read_only: boolean; paper_upload: boolean;
+@@ -69,6 +82,7 @@
+   backend_pi_sdk: '1.4.0';
+   max_concurrent_runs?: number;
+   model_runtime?: WorkbenchModelRuntime;
++  model_selection?: boolean;
+   extraction_unavailable_reason?: string; controlled_fixture?: boolean; max_pdf_bytes?: number;
+ }
+ export interface WorkbenchModelRuntime {
+--- before/code/packages/agent/src/extraction-pi.ts
++++ after/code/packages/agent/src/extraction-pi.ts
+@@ -16,7 +16,8 @@
+ import { PRIMARY_ASSESSMENT_RULE } from './primary-evidence-assessment.js';
+ 
+ export interface ExtractionModelProfile { model_id: string; api: 'openai-responses' | 'openai-completions';
+-  reasoning_effort: 'medium'; context_window: number; max_output_tokens: number; profile_version: string; }
++  reasoning_effort: 'medium' | 'none'; context_window: number; max_output_tokens: number; profile_version: string;
++  model_capacity_source?: 'user_configured_local_limits_not_verified_supplier_capacity'; }
+ export const developmentProfile = (modelId: string, api: ExtractionModelProfile['api'] = 'openai-responses'): ExtractionModelProfile => ({
+   model_id: modelId, api, reasoning_effort: 'medium', context_window: 1_050_000, max_output_tokens: 8192,
+   profile_version: 's4-development-medium-official-context-3' });
+@@ -64,19 +65,20 @@
+     allowModelNetwork: false, refreshOnCreate: false });
+   runtime.registerProvider(config.provider, { baseUrl: config.baseUrl, api: profile.api, authHeader: true,
+     models: [{ id: profile.model_id, name: profile.model_id + ' (S4 development comparison)', api: profile.api,
+-      reasoning: true, input: ['text'], contextWindow: profile.context_window, maxTokens: profile.max_output_tokens,
++      reasoning: profile.reasoning_effort !== 'none', input: ['text'], contextWindow: profile.context_window, maxTokens: profile.max_output_tokens,
+       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+       compat: profile.api === 'openai-completions' ? { supportsStore: false, supportsDeveloperRole: false,
+-        supportsUsageInStreaming: true, supportsReasoningEffort: true } : {} }] });
++        supportsUsageInStreaming: true, supportsReasoningEffort: profile.reasoning_effort !== 'none' } : {} }] });
+   const apiKey = config.apiKey();
+   await runtime.setRuntimeApiKey(config.provider, apiKey);
+   const model = runtime.getModel(config.provider, profile.model_id); if (!model) throw new ContractError('model_not_registered');
+   const result = await createAgentSession({ cwd: modelContextDirectory, agentDir, settingsManager: settings, resourceLoader: loader,
+-    modelRuntime: runtime, model, thinkingLevel: profile.reasoning_effort, tools: definitions.map(d => d.name),
++    modelRuntime: runtime, model, thinkingLevel: profile.reasoning_effort === 'none' ? 'off' : profile.reasoning_effort, tools: definitions.map(d => d.name),
+     customTools: definitions, sessionManager: SessionManager.inMemory(modelContextDirectory) });
++  const contextLimit = Math.min(128000, profile.context_window - profile.max_output_tokens);
+   const audit = { pi_version: '1.4.0', model_id: profile.model_id, api: profile.api, reasoning_effort: profile.reasoning_effort,
+-    model_context_window_metadata: profile.context_window, model_capacity_source: 'official_OpenAI_model_specification_not_supplier_stress_test',
+-    application_context_estimate_limit: 128000, configured_max_output_tokens: profile.max_output_tokens,
++    model_context_window_metadata: profile.context_window, model_capacity_source: profile.model_capacity_source ?? 'official_OpenAI_model_specification_not_supplier_stress_test',
++    application_context_estimate_limit: contextLimit, configured_max_output_tokens: profile.max_output_tokens,
+     active_tools: result.session.getActiveToolNames().sort(), context_file_count: loader.getAgentsFiles().agentsFiles.length,
+     skill_count: loader.getSkills().skills.length, extension_count: result.extensionsResult.extensions.length,
+     prompt_count: loader.getPrompts().prompts.length, theme_count: loader.getThemes().themes.length,
+@@ -92,7 +94,7 @@
+   const originalStream = result.session.agent.streamFunction.bind(result.session.agent);
+   result.session.agent.streamFunction = (m, context, options) => {
+     const estimate = estimateContextTokens(context).tokens;
+-    if (estimate > 128000) { policyFailureCode = 'application_context_estimate_limit'; throw new ContractError(policyFailureCode); }
++    if (estimate > contextLimit) { policyFailureCode = 'application_context_estimate_limit'; throw new ContractError(policyFailureCode); }
+     return retryUnansweredHighLoadResponse(() => originalStream(m, context, { ...options,
+     maxTokens: profile.max_output_tokens, maxRetries: 0, timeoutMs: 120000, transport: 'sse', cacheRetention: 'none',
+     fetch: budget.guardedFetch(profile.model_id, purpose, attempt, entries, maxResponses, profile.max_output_tokens, requestTimeoutMs,
+@@ -116,6 +118,11 @@
+       const response = e.response as { model?: unknown; id?: unknown } | undefined;
+       if (entries.length && typeof response?.id === 'string' && /^[a-zA-Z0-9_./:@+-]{1,160}$/.test(response.id)) entries.at(-1)!.provider_response_id = response.id;
+       if (entry && response) budget.observeResponseModel(entry, response.model, counterEvent.type ?? 'unknown_event_type');
++      if (entry && profile.api === 'openai-completions') {
++        const chunk = data as { model?: unknown; object?: string; id?: unknown };
++        budget.observeResponseModel(entry, chunk.model, chunk.object ?? 'chat.completion.chunk', 'provider_stream_event.chat_completion.model');
++        if (typeof chunk.id === 'string' && /^[a-zA-Z0-9_./:@+-]{1,160}$/.test(chunk.id)) entry.provider_response_id = chunk.id;
++      }
+       if (Date.now() - lastTelemetryPersist >= 1000) { lastTelemetryPersist = Date.now(); budget.persist(); }
+     } }), {
+       signal: options?.signal,
+--- before/code/packages/agent/src/extraction-budget.ts
++++ after/code/packages/agent/src/extraction-budget.ts
+@@ -45,7 +45,7 @@
+ }
+ export type ResponseModelIdentityStatus = 'unknown' | 'matched' | 'confirmed_alias' | 'mismatch';
+ export interface ResponseModelObservation {
+-  source: 'provider_stream_event.response.model'; event_type: string; observed_at: string;
++  source: 'provider_stream_event.response.model' | 'provider_stream_event.chat_completion.model'; event_type: string; observed_at: string;
+   expected_model: string; actual_model?: string; status: ResponseModelIdentityStatus;
+   alias_policy_id?: string; alias_confirmation_source?: string;
+ }
+@@ -160,11 +160,11 @@
+     this.ledger.requests.push(entry); this.persist(); return entry;
+   }
+   /** Compare literal provider event metadata; this neither authenticates model weights nor stores the HTTP body. */
+-  observeResponseModel(entry: RequestAccounting, actualModel: unknown, eventType: string) {
++  observeResponseModel(entry: RequestAccounting, actualModel: unknown, eventType: string, source: ResponseModelObservation['source'] = 'provider_stream_event.response.model') {
+     const status: ResponseModelIdentityStatus = typeof actualModel !== 'string' ? 'unknown' :
+       actualModel === entry.model_id ? 'matched' : this.responseModelAliasPolicy?.exact_pairs.some(pair =>
+         pair.requested_model === entry.model_id && pair.response_model === actualModel) ? 'confirmed_alias' : 'mismatch';
+-    const observation: ResponseModelObservation = { source: 'provider_stream_event.response.model', event_type: eventType,
++    const observation: ResponseModelObservation = { source, event_type: eventType,
+       observed_at: new Date(this.now()).toISOString(), expected_model: entry.model_id, status,
+       ...(typeof actualModel === 'string' ? { actual_model: actualModel } : {}),
+       ...(status === 'confirmed_alias' ? { alias_policy_id: this.responseModelAliasPolicy!.policy_id,
+@@ -213,6 +213,7 @@
+       if (typeof requestedOutput === 'number') entry.requested_max_output_tokens = requestedOutput;
+       const reasoning = body.reasoning as { effort?: unknown } | undefined;
+       if (typeof reasoning?.effort === 'string' && ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'].includes(reasoning.effort)) entry.requested_reasoning_effort = reasoning.effort;
++      if (typeof body.reasoning_effort === 'string') entry.requested_reasoning_effort = body.reasoning_effort;
+       if (contextMetadata) Object.assign(entry, contextMetadata);
+       const globalRemaining = Math.max(1, (this.wallClockSeconds - this.totals().elapsed_seconds) * 1000);
+       const effectiveTimeout = Math.min(requestTimeoutMs, globalRemaining);
+--- before/code/apps/pi-web/t1/gateway-policy.ts
++++ after/code/apps/pi-web/t1/gateway-policy.ts
+@@ -1,6 +1,6 @@
+ /** Pure path allowlist, shared by the mandatory entry guard and T1-only gateway. */
+ const id = "[A-Za-z0-9_:.,-]{1,200}";
+-const pathPattern = new RegExp(`^/api/t1/(?:workbench/(?:capabilities|catalog|papers|runs|papers/${id}(?:/pdf|/figures/${id}|/runs)?|runs/${id}(?:/events|/cancel|/figures/${id}(?:/verify)?|/records(?:/${id}(?:/review|/retention)?)?|/exports/(?:candidate_jsonl|candidate_csv|approved_jsonl|approved_csv|candidate_package|approved_package|retained_jsonl|retained_csv|retained_package))?)|runs/${id}(?:/records|/events)?)$`);
++const pathPattern = new RegExp(`^/api/t1/(?:workbench/(?:capabilities|catalog|models|papers|runs|papers/${id}(?:/pdf|/figures/${id}|/runs)?|runs/${id}(?:/events|/cancel|/figures/${id}(?:/verify)?|/records(?:/${id}(?:/review|/retention)?)?|/exports/(?:candidate_jsonl|candidate_csv|approved_jsonl|approved_csv|candidate_package|approved_package|retained_jsonl|retained_csv|retained_package))?)|runs/${id}(?:/records|/events)?)$`);
+ // encodeURIComponent encodes only these two characters from our allowed ID alphabet.
+ // Decode neither slashes, dots, percent signs nor fixed route names; remaining '%' fails the allowlist.
+ const normalizeIdEncoding = (path: string) => path.replace(/%3a/gi, ":").replace(/%2c/gi, ",");
+@@ -15,7 +15,7 @@
+   if (method === "GET" || method === "HEAD") return !/\/(?:cancel|review|verify|retention)$/.test(path);
+   if (method === "PUT") return new RegExp(`^/api/t1/workbench/papers/${id}/pdf$`).test(path);
+   if (method === "DELETE" && new RegExp(`^/api/t1/workbench/papers/${id}$`).test(path)) return true;
+-  if (method === "POST") return new RegExp(`^/api/t1/workbench/(?:papers(?:/${id}/runs)?|runs/${id}/(?:cancel|figures/${id}/verify|records(?:/${id}/(?:review|retention))?))$`).test(path);
++  if (method === "POST") return new RegExp(`^/api/t1/workbench/(?:models|papers(?:/${id}/runs)?|runs/${id}/(?:cancel|figures/${id}/verify|records(?:/${id}/(?:review|retention))?))$`).test(path);
+   return (method === "PATCH" || method === "DELETE") && new RegExp(`^/api/t1/workbench/runs/${id}/records/${id}$`).test(path);
+ }
+ export function t1BackendPath(parts: string[]): string | null {

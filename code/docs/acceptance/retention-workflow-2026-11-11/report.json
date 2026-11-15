@@ -1,0 +1,155 @@
+{
+  "schema_version": "t1-retention-workflow-acceptance-1",
+  "updated_at": "2026-11-11T16:03:35.063872+00:00",
+  "status": "completed",
+  "objective": "连续原文阅读、默认保留/排除筛选及直接导出未排除内容，上线普通30141",
+  "export_policy": {
+    "selected": "direct_export_all_current_unexcluded_records",
+    "user_confirmation": "直接导出所有未排除的内容（推荐）",
+    "earlier_implementation_default_is_superseded_by_explicit_answer": true,
+    "whole_paper_confirmation_required": false,
+    "retention_is_medical_approval": false
+  },
+  "implementation": {
+    "changes": "implementation-changes.json",
+    "task_baseline_patch": "implementation-changes.patch",
+    "changed_core_files": 27,
+    "new_retention_table": "workbench_retentions",
+    "original_13_tables_migration": "No row migration; default and legacy choices derived on read",
+    "legacy_approvals_preserved": true,
+    "raw_fragments_and_fingerprints_changed_by_retention": false,
+    "paragraph_metadata_is_workbench_only": true,
+    "retained_exports": [
+      "retained_jsonl",
+      "retained_csv",
+      "retained_package"
+    ],
+    "source_glyph_PDF_IR_and_figure_guards_preserved": true,
+    "patch_reverse_check": "passed: git apply --check --reverse (no mutation)",
+    "patch_sha256": "95fc1606f7d485bfd3d2a975480b44666feb06e097214f31cba87c3d7377013d"
+  },
+  "validation": {
+    "core_tests": {
+      "passed": 10,
+      "log": "core-tests.log"
+    },
+    "guard_tests": {
+      "passed": 2,
+      "log": "guard-tests.log"
+    },
+    "existing_regressions": {
+      "passed": 28,
+      "log": "regression-tests.log",
+      "workflow_report": "legacy-workflow-report.json"
+    },
+    "typecheck": {
+      "status": "passed",
+      "log": "typecheck.log"
+    },
+    "independent_build": {
+      "status": "passed",
+      "dist": "apps/pi-web/build/retention-final-next-20261111",
+      "BUILD_ID": "70rlFysXNabL_xnVlhbNI",
+      "log": "build.log"
+    },
+    "isolated_browser": {
+      "status": "passed",
+      "passed": 6,
+      "report": "browser/report.json",
+      "representative_screenshots": [
+        "01-continuous-reading-light.png",
+        "02-excluded-restore.png",
+        "03-continuous-reading-dark.png",
+        "05-mobile-light.png",
+        "06-original-page-anchor.png"
+      ],
+      "DB": "runtime-data/retention-browser-20261111/t1.sqlite",
+      "model_runner": false,
+      "ordinary_data_mutations": 0,
+      "SSE_note": "Finite mocked SSE keepalive; persisted SSE replay is covered by the separate workflow regression",
+      "DB_cleaned_after_verification": true
+    },
+    "reading": "reading-passages-report.json",
+    "frozen_source_artifacts_verified": 37,
+    "legacy_script_entry_guards": {
+      "status": "passed",
+      "offline_checks": 2,
+      "log": "legacy-script-guards.log",
+      "syntax_checks": [
+        "t1-workflow.mjs",
+        "results-presentation.mjs"
+      ],
+      "full_old_UI_tests_rerun": false
+    }
+  },
+  "failures_preserved": {
+    "core_fixture": "core-tests-attempt-1.log: tar directory-root parsing; corrected test helper",
+    "browser_fixture": [
+      "browser-attempt-1.log: async content-type header forwarding",
+      "browser-attempt-2.log: assertion read count before snapshot refresh",
+      "browser-attempt-3-startup.log: isolated backend readiness race"
+    ],
+    "product_errors_reproduced": false,
+    "ordinary_readonly_fixture": "ordinary-readonly-browser-attempt-1.log: localStorage seed ran in opaque document; guarded origin/try fixed. No product error."
+  },
+  "formal_reviews": {
+    "this_task_used": 2,
+    "limit": 3,
+    "previous_task_closed": 3,
+    "round_1": "继续；源连续依据、独立保留/并发/旧拒绝、导出源字形图守卫",
+    "round_2": "继续。风险：1未知连续关系须分隔；2保留≠医学批准；3切换后核对原库与凭证。",
+    "additional_reviews_used_for_test_fixture_errors": 0
+  },
+  "deployment": {
+    "status": "passed",
+    "ordinary_frontend": "http://127.0.0.1:30141/",
+    "ordinary_backend": "http://127.0.0.1:3210",
+    "old_docker_image_updated": false,
+    "planned_receipt": "ordinary-runtime.json",
+    "rollback": "Previous UI dist and before SQLite backup retained until final integrity verification",
+    "receipt": "ordinary-runtime.json",
+    "ordinary_readonly_browser": "ordinary-readonly-browser.json",
+    "ordinary_readonly_checks_passed": 3,
+    "original_13_tables_and_private_public_env_unchanged": true,
+    "new_table_rows": 0,
+    "active_tasks": 0,
+    "only_host_stack_updated": true
+  },
+  "boundaries": {
+    "new_paid_model_calls": 0,
+    "real_Start_clicked": false,
+    "medical_quality_approved": false,
+    "complete_S2_S6_S7_gates_passed": false,
+    "previous_provider_recovery_live_verified": false,
+    "original_hard_hyphens_and_repeated_words_preserved": true,
+    "unknown_source_continuity_stays_separate": true,
+    "retained_package_contains_full_legacy_DeliveryReview_history": false,
+    "retained_package_human_confirmation": null
+  },
+  "no_commit_or_push": true,
+  "cleanup": {
+    "baseline_source_snapshots": "removed after task-specific patch/hash/reverse-check verification",
+    "temporary_preview_and_isolated_backend": "stopped exact owned PIDs",
+    "temporary_isolated_DB": "removed after evidence retained",
+    "intermediate_UI_build": "removed; final and old rollback UI retained",
+    "representative_screenshots_retained": 5,
+    "ordinary_before_SQLite_backup_retained": true,
+    "continuity_note": {
+      "completed": true,
+      "removed_owned_files": [
+        "execution.json",
+        "legacy-script-baseline.json"
+      ],
+      "permanent_agent_rules_unchanged": true
+    }
+  },
+  "compatibility": {
+    "old_candidate_and_approved_HTTP_API": "retained for genuine historical callers; not the daily UI",
+    "old_approval_UI_scripts": [
+      "e2e/t1-workflow.mjs",
+      "e2e/results-presentation.mjs"
+    ],
+    "old_scripts_on_new_UI": "fail-fast on persisted_retention before browser launch/evidence or business writes; new retention scripts are named in the error",
+    "old_frozen_reports_rewritten": false
+  }
+}

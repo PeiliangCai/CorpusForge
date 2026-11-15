@@ -1,0 +1,86 @@
+{
+  "at": "2026-11-11T16:21:26.927493+00:00",
+  "source_sha256": {
+    "apps/pi-web/t1/T1Workbench.tsx": "fff8506f6a71696bd2c06562aee0eb53556ce2535596f1610fc25079d9860b7f",
+    "apps/pi-web/t1/RecordRetention.tsx": "be33962d1c953d6fbbb6b9130c8b786eb3bee716b6871740603c873b303302ae",
+    "apps/pi-web/t1/EvidenceSource.tsx": "48d8858a0906aad7594855566323191adf4b06a8f137223c54ab80a05d442f6e",
+    "apps/pi-web/t1/ResultIndex.tsx": "6c7472a5b7ef52d3e59aadf0b31b015fce368f1d2debe3fea5d7fcf6fae47d16",
+    "apps/pi-web/t1/SameSourceMembers.tsx": "b9fa3114bf9ed398f3587d4d811f5e95c9c8ea36c53eaddc092f33b3a587e484",
+    "apps/pi-web/t1/messages.mjs": "7ee6e6b354e841ea3005909914fd5d3615e0645f38f8167f15515dcb5833686b",
+    "apps/pi-web/t1/workbench.css": "f40029f957728270747b3b57adbbae2b8bd8fb5efaa120321fa28338812eb656",
+    "apps/pi-web/e2e/retention-workflow.mjs": "7984b2ee5abc6816900ef77a3e9b9f1aceb096005e6c109a68384d4a35ade16a",
+    "apps/pi-web/e2e/retention-readonly.mjs": "5089479f112cd900bece05ce15d323f997e03dac8ca2e233ff9f6f4135bca350"
+  },
+  "ordinary_database": "code/runtime-data/t1.sqlite",
+  "ordinary_tables": {
+    "events": {
+      "rows": 5,
+      "logical_sha256": "0cce36023a57a5d15170afecc3948a61f8f6e060ca0370d92295d93c088976a4"
+    },
+    "records": {
+      "rows": 1,
+      "logical_sha256": "f76d61870bf7a125fce7418afc751fa4603d923dc1cffe6305dd35b5d5e6e89a"
+    },
+    "runs": {
+      "rows": 1,
+      "logical_sha256": "d9b9fdf5eff6120aae042947b77a3f01d4df2c4111cf9090b344a6631a18bbc4"
+    },
+    "s4_batches": {
+      "rows": 5,
+      "logical_sha256": "366e375ebb6ee0c55a9b03b065933be9d27014e26cb597752904714ad4001dd8"
+    },
+    "s4_events": {
+      "rows": 67,
+      "logical_sha256": "4b941cfee62301a4ea60ed5fcf258b51ce07cb2697037f295fc53364fb77ef11"
+    },
+    "s4_runs": {
+      "rows": 9,
+      "logical_sha256": "fdff5bf01c4d611899b46ac0ae0301f5484d07dfe9743f7e92823aa80d528ecf"
+    },
+    "s4_versions": {
+      "rows": 262,
+      "logical_sha256": "cb1df409a6d115e139ca34608344af7179e47fe3e29729e0cdf793cc0724cb6b"
+    },
+    "workbench_annotations": {
+      "rows": 0,
+      "logical_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_deleted_sources": {
+      "rows": 0,
+      "logical_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_exports": {
+      "rows": 3,
+      "logical_sha256": "ba7eb6d2da6133f520abbd7e8101fe19f133f64743abb9fbe873d49ead338a69"
+    },
+    "workbench_papers": {
+      "rows": 6,
+      "logical_sha256": "dab83f9a279b579c48976f5c789b5ce291ff8bc9596238f594e08169d9a4c7d5"
+    },
+    "workbench_retentions": {
+      "rows": 0,
+      "logical_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_reviews": {
+      "rows": 0,
+      "logical_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_runs": {
+      "rows": 9,
+      "logical_sha256": "92b22fcf2482104319dd823a549fd19af532ad2240b46db34787b57162902428"
+    }
+  },
+  "private_env": {
+    "sha256": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da"
+  },
+  "public_config": {
+    "sha256": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea"
+  },
+  "services": {
+    "frontend": 68500,
+    "backend": 68475
+  },
+  "formal_reviews_this_task": 1,
+  "paid_model_calls": 0,
+  "ordinary_write_requests": 0
+}

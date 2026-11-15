@@ -1,0 +1,35 @@
+{
+  "schema_version": "t1-source-atomic-registration-1",
+  "source_id": "IN07",
+  "registered_at": "2026-11-11T10:09:04.091Z",
+  "paper": {
+    "source_id": "IN07",
+    "article_family_id": "doi:10.7759/cureus.94044",
+    "doi": "10.7759/cureus.94044",
+    "title": "Synchronous Pulmonary Adenocarcinoma and Carcinoid Tumor Diagnosed via a Single-Session Robotic Bronchoscopy: A Case Report",
+    "source_url": "https://assets.cureus.com/uploads/case_report/pdf/414941/20251106-71775-xadaoe.pdf",
+    "registered_at": "2026-11-11T10:09:04.091Z",
+    "file": {
+      "path": "evaluation/corpus/independent-sealed/IN07.pdf",
+      "sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+      "bytes": 1547592
+    },
+    "identity_review": {
+      "status": "confirmed",
+      "actor": "Source identity executor metadata audit plus GPT-6.1-Sol atomic registration; officialPDF title/DOI/date/license4pages only, no clinical approval",
+      "checked_at": "2026-11-11T10:09:04.091Z"
+    },
+    "state": "sealed",
+    "seal": {
+      "actor": "Source identity executor metadata audit plus GPT-6.1-Sol atomic registration; officialPDF title/DOI/date/license4pages only, no clinical approval",
+      "sealed_at": "2026-11-11T10:09:04.091Z",
+      "identity_sha256": "a9edabaa7f328bc08b65d95af6718f853575662ca3fa47b02d264d650446a7f9"
+    },
+    "exposures": []
+  },
+  "identity_seal_only_no_model_exposure": true,
+  "preexisting_same_byte_canonical_PDF_preserved": true,
+  "model_calls": 0,
+  "old_registry_sha256": "ffd1dff88a3cb2ec742abb2339559bf99268461c91b9f9688123c9fc0da95be3",
+  "new_registry_sha256": "193493f5d5d24e973d614e46ac35fcd6148055fc28255c85be1f705acafe5b7b"
+}

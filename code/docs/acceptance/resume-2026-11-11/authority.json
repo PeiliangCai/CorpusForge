@@ -1,0 +1,46 @@
+{
+  "schema_version": "t1-user-trial-authority-1",
+  "observed_at_utc": "2026-11-11T09:07:54.824285+00:00",
+  "observed_timestamp_not_original_user_click": true,
+  "user_quote": "应该也是部署标识，不管这个了，继续测试吧。",
+  "interpretation": "User accepts the specific returned deployment label for this one exposed-IN04 trial; not supplier confirmation or verification of weights.",
+  "authorized_runs": 1,
+  "authorized_sources": [
+    "IN04"
+  ],
+  "scope": "S7_single_container_deployment_reverification",
+  "model": {
+    "provider": "agicto",
+    "endpoint": "https://api.agicto.cn/v1",
+    "model_id": "gpt-6-luna",
+    "reasoning_effort": "medium",
+    "api": "openai-responses"
+  },
+  "limits": {
+    "requests": 24,
+    "input_tokens": 600000,
+    "output_tokens": 32000,
+    "seconds": 900
+  },
+  "all_physical_retries_included": true,
+  "no_whole_run_retry": true,
+  "ordinary_model_enabled": false,
+  "business_approval_added": false,
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3,
+  "previous_81_requests_and_all_allowances_closed": true,
+  "current_execution_state": "authorized_not_started_pending_internal_source_freeze_and_preflight",
+  "new_exact_pair": {
+    "requested_model": "gpt-6-luna",
+    "response_model": "data-zone-standard-gpt-6-luna"
+  },
+  "supplier_confirmed": false,
+  "weight_identity_verified": false,
+  "unknown_labels_still_stop": true,
+  "latest_autonomous_delegation": {
+    "user_quote": "接下来3小时你自行执行即可，我到时候直接看最终效果。",
+    "observed_start_utc": "2026-11-11T09:15:01Z",
+    "deadline_utc": "2026-11-11T12:15:01Z",
+    "scope": "Engineering/UI decisions delegated; this record still authorizes only the separately bounded one IN04 trial above. Older closed allowances do not revive; further paid scope requires main-session bounded decision within window."
+  }
+}

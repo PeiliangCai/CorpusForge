@@ -18,7 +18,7 @@ function changesIdentity(value: unknown): boolean {
   return !!value && typeof value === 'object' && Object.entries(value).some(([key, item]) => identityKeys.has(key) || changesIdentity(item));
 }
 /** Retain exact safe selector arrays, never arbitrary source text, SDK errors, credentials or a wire body. */
-export function toolArgumentDiagnostic(value: unknown): { argument_sha256: string; argument_characters: number; property_names: string[]; selectors: Record<string, unknown> } {
+export function toolArgumentDiagnostic(value: unknown): { argument_sha256: string; argument_characters: number; property_names: string[]; array_lengths: Record<string, number>; selectors: Record<string, unknown> } {
   const raw = JSON.stringify(value) ?? 'null', p = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
   const selectors = Object.fromEntries(Object.entries(p).flatMap(([key, item]) => {
     if ((key === 'line_indices' || key.endsWith('_line_indices')) && Array.isArray(item)) return [[key, item.filter(v => Number.isSafeInteger(v))]];
@@ -29,12 +29,23 @@ export function toolArgumentDiagnostic(value: unknown): { argument_sha256: strin
     return [];
   }));
   return { argument_sha256: digest(raw), argument_characters: raw.length,
-    property_names: Object.keys(p).map(k => /^[a-z_]{0,64}$/.test(k) ? k : '[unrecognized_property]'), selectors };
+    property_names: Object.keys(p).map(k => /^[a-z_]{0,64}$/.test(k) ? k : '[unrecognized_property]'),
+    array_lengths: Object.fromEntries(['records', 'updates', 'reviews', 'links', 'line_indices', 'block_ids'].flatMap(key => Array.isArray(p[key]) ? [[key, (p[key] as unknown[]).length]] : [])), selectors };
 }
 export function classifyToolError(text: string): string {
   return fatal.find(code => text.includes(code)) ?? correctable.find(code => text.includes(code)) ??
     (/Validation failed for tool|Invalid arguments for tool|invalid tool arguments/i.test(text) ? 'schema_validation_failed' :
       'sdk_tool_argument_validation_failed_or_unclassified_tool_error');
+}
+/** Bounded shape evidence only; paper text and argument values are never copied into the diagnostic. */
+export function toolArrayLimitDiagnostic(parameters: unknown, args: unknown): Array<{ path: string; actual_items: number; max_items?: number; min_items?: number }> {
+  const schema = parameters as { properties?: Record<string, { maxItems?: number; minItems?: number }> } | undefined;
+  const p = args && typeof args === 'object' && !Array.isArray(args) ? args as Record<string, unknown> : {};
+  return Object.entries(schema?.properties ?? {}).flatMap<{ path: string; actual_items: number; max_items?: number; min_items?: number }>(([path, limits]) => {
+    const value = p[path]; if (!Array.isArray(value)) return [];
+    return typeof limits.maxItems === 'number' && value.length > limits.maxItems ? [{ path, actual_items: value.length, max_items: limits.maxItems }] :
+      typeof limits.minItems === 'number' && value.length < limits.minItems ? [{ path, actual_items: value.length, min_items: limits.minItems }] : [];
+  });
 }
 
 /** A correction is another ordinary metered response in this session, never a hidden retry or parameter rewrite. */
@@ -57,9 +68,11 @@ export class BoundedToolRecovery {
     const calls = turn.message.content.filter(block => block.type === 'toolCall');
     const samples = failed.map(r => {
       const call = calls.find(c => c.id === r.toolCallId);
+      const definition = this.agent.state.tools.find(tool => tool.name === r.toolName);
       const errorText = JSON.stringify(r.content);
       return { tool: registered(r.toolName) ? r.toolName : 'unregistered', call_id: r.toolCallId,
         error_code: classifyToolError(errorText), error_response_sha256: digest(errorText),
+        schema_array_violations: toolArrayLimitDiagnostic(definition?.parameters, call?.arguments),
         ...toolArgumentDiagnostic(call?.arguments), changes_identity: changesIdentity(call?.arguments) };
     });
     const signatures = samples.map(s => `${s.tool}:${s.error_code}:${s.argument_sha256}`);
@@ -76,9 +89,11 @@ export class BoundedToolRecovery {
     this.corrections++; signatures.forEach(signature => this.corrected.add(signature));
     this.agent.steer({ role: 'user', timestamp: Date.now(), content:
       `Host protocol diagnostic: ${samples.map(s => s.error_code).join(', ')}. The invalid call was rejected. ` +
+      samples.flatMap(s => s.schema_array_violations).map(v => `The ${v.path} array contains ${v.actual_items} items; ${v.max_items !== undefined ? `the maximum is ${v.max_items}` : `the minimum is ${v.min_items}`}. `).join('') +
       'Correct only your tool arguments within this same immutable task and source binding, using the registered schema and IDs actually returned by tools. ' +
       'Do not guess, pad or normalize an opaque ID. Choose exactly one source selector and at most one context selector. ' +
       'For a batch read use {} or line_indices; a summary read requires exactly one nonempty line_indices or block_ids array. ' +
+      'Each candidate submission accepts at most THREE records or updates; split additional entries across calls without rewriting their source content. ' +
       (samples.some(s => s.error_code === 'summary_raw_name_requires_literal_source') ?
         'The raw feature name must occur exactly in the supplied original evidence, including printed line breaks, or be null. Do not normalize or rewrite the original quotation. ' : '') +
       (samples.some(s => s.error_code === 'summary_target_feature_requires_explicit_choice') ?

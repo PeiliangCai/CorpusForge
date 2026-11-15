@@ -1,0 +1,70 @@
+{
+  "schema_version": "t1-round2-IN06-preflight-1",
+  "checked_at_utc": "2026-11-11T10:37:18.438365+00:00",
+  "status": "ready_zero_allowance_pending_root_exact_plan_dispatch",
+  "plan_sha256": "4d3a774bacdc0c9542956b25207798205d76d310f443b907109a780feea2e007",
+  "image_id": "sha256:bc08b00b2dd818e8fd2c0fca68912bf828f78eb43be0be63ccb516769a437b68",
+  "exact_host_and_image_runtime_pins_checked": 122,
+  "all_image_source_pins_checked_by_image_owner": 1172,
+  "final_UI_artifact_files_checked": 161,
+  "final_UI_BUILD_ID": "9WeI9zkvHd20Y0lBTDX5C",
+  "zero_API_controlled_full_UI_workflow": {
+    "passed": true,
+    "report": "code/docs/acceptance/resume-2026-11-11/final-ui-controlled-smoke/execution-report.json",
+    "real_browser_upload_start_original_record_and_three_exports": true
+  },
+  "source_preflight": {
+    "source_id": "IN06",
+    "already_exposed_parser_regression": true,
+    "raw_blocks": 262,
+    "model_authorized_blocks": 223,
+    "bibliography_excluded_blocks": 39,
+    "glyph_quarantine": 0,
+    "caption_lines": [
+      4,
+      4,
+      4
+    ],
+    "partial_native_author_mapping_units": 1,
+    "bitmap_text_unverified_pages": 5
+  },
+  "ordinary_policy_no_trial_override": true,
+  "tests": {
+    "Figure_regressions": 17,
+    "ordinary_policy_SDK_and_metadata": 23,
+    "bibliography_source_scope": 26,
+    "historical_template_transition": 7,
+    "TS_CPU_Figure_contract": 1,
+    "backend_typecheck": "passed",
+    "git_diff_check": "passed"
+  },
+  "ordinary_services": {
+    "frontend_30141_HTTP": 200,
+    "backend_3210_HTTP": 200,
+    "model_enabled": false,
+    "controlled_fixture": false,
+    "active_tasks": 0,
+    "production_table_count": 13,
+    "all13_table_rows_unchanged": true,
+    "private_env_bytes_unchanged": true
+  },
+  "old_s7_containers_running": 0,
+  "model_calls_by_this_preflight": 0,
+  "current_effective_API_allowance": 0,
+  "limits": {
+    "requests": 24,
+    "input_tokens": 600000,
+    "output_tokens": 32000,
+    "seconds": 900
+  },
+  "launcher": "bash scripts/with-node.sh node --import tsx deploy/run-real-verification.mjs",
+  "local_preflight_corrections": [
+    "Initial strip-only invocation rejected existing TS parameter properties before Docker/provider; installed tsx loader passed without source changes.",
+    "Baseline table snapshot uses ordered row arrays; initial dict serialization differed, array serialization confirms13/13 exact equality."
+  ],
+  "complete_independent_S6_pass_claimed": false,
+  "medical_quality_approved": false,
+  "business_approvals_added": 0,
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3
+}

@@ -161,6 +161,70 @@
           "evidence": "docs/acceptance/finalization-2026-11-09/s6/post-holdout-raw-name-repair/report.json#sha256=d68d3bb449de527992f3314120e2062667e7fa02dc25a9dd0b1463d90a686986"
         }
       ]
+    },
+    {
+      "source_id": "IN06",
+      "article_family_id": "doi:10.7759/cureus.63045",
+      "doi": "10.7759/cureus.63045",
+      "title": "Pulmonary Sarcomatoid Carcinoma: What Makes This Rare Lung Cancer So Challenging?",
+      "source_url": "https://assets.cureus.com/uploads/case_report/pdf/262878/20240724-411166-xxq9jt.pdf",
+      "registered_at": "2026-11-11T09:34:37.964Z",
+      "file": {
+        "path": "evaluation/corpus/independent-sealed/IN06.pdf",
+        "sha256": "1784b4b7ab855b3d0dbe6797b2cf7d340ac90b750844c4d8a7df79aeb802a4c1",
+        "bytes": 2160324
+      },
+      "identity_review": {
+        "status": "confirmed",
+        "actor": "GPT-6.1-Sol max identity check plus root actual5page read; DOI/title/date/license/SHA verified, not medical approval",
+        "checked_at": "2026-11-11T09:48:29.005Z"
+      },
+      "state": "exposed",
+      "seal": {
+        "actor": "GPT-6.1-Sol max identity check plus root actual5page read; DOI/title/date/license/SHA verified, not medical approval",
+        "sealed_at": "2026-11-11T09:48:29.005Z",
+        "identity_sha256": "9c068fbf8aef2baa5aa40dddbbd5e1ba10ba4f0a5a09459f55355f1bf48c5c17"
+      },
+      "exposures": [
+        {
+          "purpose": "regression",
+          "actor": "Root delegated generic caption/bibliography source-quality repair; extraction model unseen; full pipeline independence forfeited",
+          "recorded_at": "2026-11-11T09:48:29.254Z",
+          "evidence": "docs/acceptance/resume-2026-11-11/in06/baseline/freeze.json"
+        }
+      ]
+    },
+    {
+      "source_id": "IN07",
+      "article_family_id": "doi:10.7759/cureus.94044",
+      "doi": "10.7759/cureus.94044",
+      "title": "Synchronous Pulmonary Adenocarcinoma and Carcinoid Tumor Diagnosed via a Single-Session Robotic Bronchoscopy: A Case Report",
+      "source_url": "https://assets.cureus.com/uploads/case_report/pdf/414941/20251106-71775-xadaoe.pdf",
+      "registered_at": "2026-11-11T10:09:04.091Z",
+      "file": {
+        "path": "evaluation/corpus/independent-sealed/IN07.pdf",
+        "sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+        "bytes": 1547592
+      },
+      "identity_review": {
+        "status": "confirmed",
+        "actor": "Source identity executor metadata audit plus GPT-6.1-Sol atomic registration; officialPDF title/DOI/date/license4pages only, no clinical approval",
+        "checked_at": "2026-11-11T10:09:04.091Z"
+      },
+      "state": "exposed",
+      "seal": {
+        "actor": "Source identity executor metadata audit plus GPT-6.1-Sol atomic registration; officialPDF title/DOI/date/license4pages only, no clinical approval",
+        "sealed_at": "2026-11-11T10:09:04.091Z",
+        "identity_sha256": "a9edabaa7f328bc08b65d95af6718f853575662ca3fa47b02d264d650446a7f9"
+      },
+      "exposures": [
+        {
+          "purpose": "regression",
+          "actor": "Main-session observed independent first parser check failed; bounded generic multi-paragraph caption repair; extraction model unseen",
+          "recorded_at": "2026-11-11T10:19:03.878Z",
+          "evidence": "docs/acceptance/resume-2026-11-11/in07/baseline/freeze.json"
+        }
+      ]
     }
   ]
 }

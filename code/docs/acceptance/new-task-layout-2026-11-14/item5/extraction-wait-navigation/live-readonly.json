@@ -1,0 +1,71 @@
+{
+  "status": "passed",
+  "BUILD_ID": "ROz92W9UBZF3KuLyh7zeJ",
+  "checks": [
+    "same_validated_BUILD_HEAD_and_backend_health",
+    "real_partial_run_preserves_20_records_and_proven_final_input_quota_reason_without_phantom_activity",
+    "real_desktop_mobile_stopped_reason_sidebar_heading_and_fixed_rail_navigation_no_top_toggle",
+    "GET_HEAD_only_runs_papers_models_unchanged"
+  ],
+  "errors": [],
+  "blocked": [],
+  "paid_calls": 0,
+  "production_business_writes": 0,
+  "exports_requested": 0,
+  "api_sha256_before": {
+    "runs": "eb9b08fd9f5c0ec3c02951a274c1f3cea1b9ed81dc46507ac5fbafd9fa58ce7c",
+    "papers": "93660ea2285f1e11a632101933036fd153271cbfeb82224c82507e2c44600838",
+    "models": "b0637c06e0eccda39b558dc0a13bd4084af97267e732f35a66cf5a06965b959c"
+  },
+  "observed_run": {
+    "id": "run-7ed6db92-ee82-4c17-852c-3d123f67b9d6",
+    "state": "partial",
+    "candidate_count": 20,
+    "progress": {
+      "schema_version": "t1-workbench-progress-1",
+      "stage": "partial",
+      "updated_at": "2026-11-15T11:22:31.129Z",
+      "stage_started_at": "2026-11-15T11:22:26.558Z",
+      "elapsed_ms": 1171483,
+      "execution_elapsed_ms": 1171456,
+      "queue_wait_ms": 27,
+      "completed": 304,
+      "unit": "content_units",
+      "total": 547,
+      "unit_counts": {
+        "source_fragment": 94,
+        "text_item": 3,
+        "heading": 49,
+        "list_item": 3,
+        "paragraph": 394,
+        "caption": 4
+      },
+      "completed_unit_counts": {
+        "source_fragment": 66,
+        "text_item": 0,
+        "heading": 45,
+        "list_item": 0,
+        "paragraph": 190,
+        "caption": 3
+      },
+      "completed_batches": 19,
+      "total_batches": 24,
+      "failed_batches": 2,
+      "termination_reason": "experiment_input_token_limit",
+      "candidate_records": 20,
+      "source_gap_blocks": 0,
+      "summary_completed": false,
+      "telemetry": "events"
+    }
+  },
+  "api_sha256_after": {
+    "runs": "eb9b08fd9f5c0ec3c02951a274c1f3cea1b9ed81dc46507ac5fbafd9fa58ce7c",
+    "papers": "93660ea2285f1e11a632101933036fd153271cbfeb82224c82507e2c44600838",
+    "models": "b0637c06e0eccda39b558dc0a13bd4084af97267e732f35a66cf5a06965b959c"
+  },
+  "concurrent_user_change_observed": false,
+  "run_count": 1,
+  "paper_count": 10,
+  "new_real_model_runs": 0,
+  "completed_at_utc": "2026-11-15T11:43:16.891Z"
+}

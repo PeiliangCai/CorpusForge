@@ -1,5 +1,6 @@
 import type { DocumentIR, LocatedEvidenceFragment } from '@t1/contracts';
 import { isTableSourceSpan, checkedTableCaptionContains, checkedTableFootnoteContains, checkedSourceGrid } from './document-structure-context.js';
+import { agentAssessesSourceGlyphs } from './source-glyph-policy.js';
 
 type Document = Exclude<DocumentIR, { schema_version: '1' }>;
 export function sourceGlyphCheckStatus(document: Document): 'engineering_fixture' | 'checked_with_gaps' | 'checked_no_detected_gaps' | 'legacy_not_checked' {
@@ -137,7 +138,7 @@ function splitRun(document: Document, segments: LocatedEvidenceFragment[], sourc
 }
 
 /** Browser-safe, deterministic, lossless source units. Geometry alone never joins different native units. */
-export function buildSourceEvidenceUnits(document: Document): SourceEvidenceUnit[] {
+export function buildSourceEvidenceUnits(document: Document, sourceGlyphPolicyVersion?: string): SourceEvidenceUnit[] {
   const byId = new Map(document.blocks.map(b => [b.block_id, b]));
   const supersededTableCells = new Set(document.schema_version === '3' ? document.structure.tables.filter(t => checkedSourceGrid(document, t)).flatMap(t => t.cells.map(c => c.unit_id)) : []);
   const incomingContinuation = new Set(document.schema_version === '3' ?
@@ -198,7 +199,8 @@ export function buildSourceEvidenceUnits(document: Document): SourceEvidenceUnit
   return raw.map((u, i) => {
     const unsafe = u.segments.some(s => byId.get(s.block_id)?.source_glyph_issues?.some(g => g.start < s.end && s.start < g.end));
     return { unit_id: 'su-' + String(i + 1).padStart(6, '0'), ...u,
-      ...(unsafe ? { completeness: 'unverified' as const, boundary_reasons: unique([...u.boundary_reasons, 'source_glyph_fidelity_unverified']) } : {}) };
+      ...(unsafe ? { ...(!agentAssessesSourceGlyphs(sourceGlyphPolicyVersion) ? { completeness: 'unverified' as const } : {}),
+        boundary_reasons: unique([...u.boundary_reasons, 'source_glyph_fidelity_unverified']) } : {}) };
   });
 }
 

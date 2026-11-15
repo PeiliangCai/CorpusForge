@@ -1,0 +1,58 @@
+{
+  "checked_at": "2026-11-15T06:49:04.593Z",
+  "policy": "agent-assesses-parsed-glyphs-1",
+  "observations": [
+    {
+      "run_id": "run-6827ca4c-5368-4aee-aec8-988f0508b9dd",
+      "source_ir_path": "runtime-data/workbench/runs/run-6827ca4c-5368-4aee-aec8-988f0508b9dd/document-ir.json",
+      "source_ir_sha256": "93c244e60a7a6dceb28b85bd6aa773f443a121b71e1989b5fb17b0c9ebd1bc36",
+      "original_lines": 2970,
+      "authorized_lines": 2970,
+      "excluded_lines": 0,
+      "glyph_issue_lines": 33,
+      "glyph_lines_authorized": 33,
+      "parent_content_units": 558,
+      "parent_kind_counts": {
+        "source_fragment": 116,
+        "paragraph": 389,
+        "heading": 49,
+        "caption": 4
+      },
+      "sentence_processing_units": 558,
+      "batches": 24,
+      "max_batch_raw_lines": 128,
+      "max_batch_source_codepoints": 8011,
+      "planning_ms": 533.506068,
+      "source_unchanged": true,
+      "real_model_calls": 0,
+      "not_completed_run_replay": true
+    },
+    {
+      "run_id": "run-9b272402-f873-44e8-adeb-442da132410f",
+      "source_ir_path": "runtime-data/workbench/runs/run-9b272402-f873-44e8-adeb-442da132410f/document-ir.json",
+      "source_ir_sha256": "a7e3cec9823b24255441f37fc0ab89930c702edc1b68152b3cc0e7cce8a1d72d",
+      "original_lines": 1687,
+      "authorized_lines": 1687,
+      "excluded_lines": 0,
+      "glyph_issue_lines": 1,
+      "glyph_lines_authorized": 1,
+      "parent_content_units": 907,
+      "parent_kind_counts": {
+        "source_fragment": 215,
+        "heading": 17,
+        "paragraph": 576,
+        "caption": 6,
+        "table_row": 93
+      },
+      "sentence_processing_units": 907,
+      "batches": 15,
+      "max_batch_raw_lines": 128,
+      "max_batch_source_codepoints": 8152,
+      "planning_ms": 243.08412299999998,
+      "source_unchanged": true,
+      "real_model_calls": 0,
+      "not_completed_run_replay": true
+    }
+  ],
+  "medical_effect_tested": false
+}

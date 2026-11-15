@@ -1,0 +1,9 @@
+{
+  "status": "not_executed",
+  "attempted_commands": [
+    "npm run check:catalog-material",
+    "npx tsc --noEmit"
+  ],
+  "error": "FileNotFoundError: npm / npx not in inherited shell PATH",
+  "resolution": "Use existing pinned code/.tools/node/bin on subprocess PATH; no installation or permission change."
+}

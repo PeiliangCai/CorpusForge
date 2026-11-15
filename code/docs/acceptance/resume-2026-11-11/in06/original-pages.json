@@ -1,0 +1,48 @@
+{
+  "schema_version": "t1-source-original-pages-1",
+  "source_id": "IN06",
+  "rendered_at": "2026-11-11T09:35:52.066662+00:00",
+  "PDF_path": "code/evaluation/corpus/independent-sealed/IN06.pdf",
+  "PDF_sha256": "1784b4b7ab855b3d0dbe6797b2cf7d340ac90b750844c4d8a7df79aeb802a4c1",
+  "renderer": "pypdfium2 local raw PDF page rendering",
+  "scale": 1.8,
+  "pages": [
+    {
+      "physical_page": 1,
+      "path": "code/docs/acceptance/resume-2026-11-11/in06/review-pages/page-1.png",
+      "sha256": "5480a725ed128be7b80cf8ecb01275e8462516905d78e8b03afc31dcd58e3c12",
+      "width": 1071,
+      "height": 1516
+    },
+    {
+      "physical_page": 2,
+      "path": "code/docs/acceptance/resume-2026-11-11/in06/review-pages/page-2.png",
+      "sha256": "dd85d8d0eb437d2144dfe3966edf39de5ee31396cf1892d36386eb9129a472b5",
+      "width": 1071,
+      "height": 1516
+    },
+    {
+      "physical_page": 3,
+      "path": "code/docs/acceptance/resume-2026-11-11/in06/review-pages/page-3.png",
+      "sha256": "248531af8bbff28b0ff496e4aa150748a6023a3bfc07ce49e229671d22957e6a",
+      "width": 1071,
+      "height": 1516
+    },
+    {
+      "physical_page": 4,
+      "path": "code/docs/acceptance/resume-2026-11-11/in06/review-pages/page-4.png",
+      "sha256": "a65a9c24b05acc8463bf0a9c9806edc10164eda06c005972b805fc7bf186acaa",
+      "width": 1071,
+      "height": 1516
+    },
+    {
+      "physical_page": 5,
+      "path": "code/docs/acceptance/resume-2026-11-11/in06/review-pages/page-5.png",
+      "sha256": "22cd0b02aa3e8e2295a7a12a5554d530970c926494a805350c7483a395e9ed20",
+      "width": 1071,
+      "height": 1516
+    }
+  ],
+  "medical_or_parser_fidelity_approval": false,
+  "model_calls": 0
+}

@@ -1,0 +1,33 @@
+{
+  "status": "completed_own_temporaries_only",
+  "completed_at_utc": "2026-11-15T11:46:39.177697+00:00",
+  "removed_baseline": "runtime-data/agent-notes/item5-extraction-wait-baseline",
+  "baseline_manifest_sha256": "714fb53427c42a3e1e340338b036ed29f447d208c951cc21f18e55338e0a68d1",
+  "baseline_original_files": 9,
+  "all_originals_preserved_in_formal_rollback": true,
+  "removed_helpers": [
+    {
+      "path": "runtime-data/agent-notes/item5-extraction-wait-deploy.py",
+      "sha256": "52984c11cd97803db2661579af1685daeb1056f9f54ab599dd30129616c8ae04"
+    },
+    {
+      "path": "runtime-data/agent-notes/item5-extraction-wait-readonly.mjs",
+      "sha256": "f7fcccbfdb53ee92e045837c9c0b85fab6086d17f29e0ef2be2702f3ef1b98f4"
+    }
+  ],
+  "production_data_or_other_owner_files_removed": false,
+  "retained": [
+    "consistent SQLite backup",
+    "formal prechange source rollback",
+    "current ROz and previous 3vSt validated frontend builds",
+    "all permanent original note/report and historical acceptance evidence",
+    "necessary current logs/screenshots/exact diff"
+  ],
+  "old_processes_exited": {
+    "134658": true,
+    "134701": true,
+    "134693": true
+  },
+  "test_temporaries": "new SDK/API tests removed own directories and fixture databases in finally; no diagnostic SQLite clone was made",
+  "frontend_owner_cleanup": "reported completed; own30158 instance/baseline and generated files restored"
+}

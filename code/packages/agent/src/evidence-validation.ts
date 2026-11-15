@@ -10,6 +10,8 @@ import { VISUAL_STATEMENT_POLICY_VERSION, visualStatementIssues } from './visual
 import { SOURCE_EVIDENCE_UNIT_VERSION } from './source-evidence-units.js';
 import { FEATURE_NAME_RAW_CONTRACT_VERSION } from './extraction-protocol.js';
 import { internalStructureReferencesOnly } from './strict-source-groups.js';
+import { agentAssessesSourceGlyphs } from './source-glyph-policy.js';
+import { tableDescriptionSpans, tableValueContexts, fragmentsForSourceSpans, TABLE_SUPPORT_POLICY_VERSION } from './table-support.js';
 
 const initialScope = (): ScopeMatch => ({ status: 'blocked', matched_binding_id: null, feature_match: 'none',
   development_catalog_used: false, basis: [], issues: [] });
@@ -82,7 +84,7 @@ export function validateEvidenceSubmission(value: unknown, context: EvidenceVali
     if (!provided.has(fragment.block_id)) { add('source_block_not_provided', 'reject', fieldPath); return []; }
     if (!read.has(fragment.block_id)) { add('source_block_not_read', 'reject', fieldPath); return []; }
     try {
-      const located = locateEvidenceFragment(document, fragment);
+      const located = locateEvidenceFragment(document, fragment, agentAssessesSourceGlyphs(context.sourceGlyphPolicyVersion));
       if (quarantined.has(fragment.block_id)) {
         uncertainArticleScope = true;
         add('article_scope_uncertain', 'requires_review', fieldPath, 'This region is quarantined; article membership is not approved.');
@@ -112,7 +114,9 @@ export function validateEvidenceSubmission(value: unknown, context: EvidenceVali
   const suppliedContext = locate(submission.context_fragments, 'context_fragments');
   const supportingTables = (submission.supporting_table_evidence ?? []).map((support, index) => ({ table_id: support.table_id,
     reference_evidence: locate(support.reference_fragments, `supporting_table_evidence[${index}].reference_fragments`),
-    fragments: locate(support.value_fragments, `supporting_table_evidence[${index}].value_fragments`) }));
+    fragments: locate(support.value_fragments, `supporting_table_evidence[${index}].value_fragments`),
+    ...(support.context_fragments ? { context_fragments: locate(support.context_fragments, `supporting_table_evidence[${index}].context_fragments`) } : {}),
+    ...(support.selected_cell_ids ? { selected_cell_ids: support.selected_cell_ids } : {}) }));
   const observation = (field: 'disease_or_lesion' | 'modality' | 'sequence_or_phase') => {
     const inputObservation = submission[field];
     if (inputObservation === null) return null;
@@ -162,16 +166,16 @@ export function validateEvidenceSubmission(value: unknown, context: EvidenceVali
   });
   const fieldEvidence = [...disease.evidence, ...modality.evidence, ...(sequence?.evidence ?? []), ...assertionEvidence,
     ...applicabilityEvidence, ...provenanceEvidence, ...numbers.flatMap(n => n.evidence)];
-  const supportingFragments = supportingTables.flatMap(t => [...t.reference_evidence, ...t.fragments]);
+  const supportingFragments = supportingTables.flatMap(t => [...t.reference_evidence, ...t.fragments, ...(t.context_fragments ?? [])]);
   const allSourceLines = [...new Set(source.map(f => f.block_id))].map(blockId => document.blocks.find(b => b.block_id === blockId)!).filter(Boolean);
   // Validate the exact context that will be persisted, including field evidence.
   // A whole-line field citation can otherwise introduce half of another known
   // statement after the supplied-context check has already passed.
   const automaticContext = (statementPolicy ? [] : allSourceLines).filter(b => !source.some(s => s.block_id === b.block_id && s.start === 0 && s.end === Array.from(b.text).length))
-    .map(b => locateEvidenceFragment(document, { block_id: b.block_id, exact_quote: b.text }));
+    .map(b => locateEvidenceFragment(document, { block_id: b.block_id, exact_quote: b.text }, agentAssessesSourceGlyphs(context.sourceGlyphPolicyVersion)));
   const contextFragments = uniqueFragments([...suppliedContext, ...fieldEvidence, ...supportingFragments, ...automaticContext])
     .filter(f => !source.some(s => fragmentKey(s) === fragmentKey(f)));
-  if (statementPolicy && source.length) for (const issue of visualStatementIssues(document, submission, source, contextFragments, fieldEvidence, supportingTables)) {
+  if (statementPolicy && source.length) for (const issue of visualStatementIssues(document, submission, source, contextFragments, fieldEvidence, supportingTables, context.sourceGlyphPolicyVersion, context.tableSupportPolicyVersion, context.inputOrganizationVersion)) {
     add(issue.code, issue.severity, issue.path, issue.detail);
   }
   const suppliedText = [...source, ...suppliedContext, ...fieldEvidence, ...supportingFragments].map(f => f.exact_quote).join('\n');
@@ -257,6 +261,11 @@ export function validateEvidenceSubmission(value: unknown, context: EvidenceVali
       source_attribution: { origin: submission.provenance.origin, cited_references: clone(submission.provenance.cited_references), evidence: provenanceEvidence },
       structure_references: clone(submission.structure_references ?? []), article_scope_status: uncertainArticleScope ? 'uncertain' : 'within_provided_scope',
       ...(supportingTables.length ? { supporting_table_evidence: supportingTables.map(t => ({ ...clone(t),
+        ...(context.tableSupportPolicyVersion === TABLE_SUPPORT_POLICY_VERSION ? {
+          description_evidence: fragmentsForSourceSpans(document, tableDescriptionSpans(document, source, t.reference_evidence, context.inputOrganizationVersion)).map(f => locateEvidenceFragment(document, f, agentAssessesSourceGlyphs(context.sourceGlyphPolicyVersion))),
+          value_contexts: tableValueContexts(document, t.table_id, t.selected_cell_ids ?? []).map(({ value_spans, context_spans, ...identity }) => ({ ...identity,
+          fragments: fragmentsForSourceSpans(document, value_spans).map(f => locateEvidenceFragment(document, f, agentAssessesSourceGlyphs(context.sourceGlyphPolicyVersion))),
+          context_fragments: fragmentsForSourceSpans(document, context_spans).map(f => locateEvidenceFragment(document, f, agentAssessesSourceGlyphs(context.sourceGlyphPolicyVersion))) })) } : {}),
         relationship_status: 'explicit_reference_value_relationship_unverified' as const })) } : {}) },
     disease_or_lesion: disease, modality, sequence_or_phase: sequence,
     feature_name_raw: submission.feature_name_raw, feature_category: submission.feature_category, evidence_type: submission.evidence_type,
@@ -280,7 +289,10 @@ export function validateEvidenceSubmission(value: unknown, context: EvidenceVali
       read_block_ids: [...read], provided_block_ids: [...provided], tool_call_ids: [context.toolCallId], source_binding: clone(binding),
       updates_record_id: submission.updates_record_id ?? null,
       ...(statementPolicy ? { evidence_policy_version: VISUAL_STATEMENT_POLICY_VERSION, source_evidence_unit_version: SOURCE_EVIDENCE_UNIT_VERSION } : {}),
-      ...(context.primaryAssessmentPolicyVersion ? { primary_assessment_policy_version: context.primaryAssessmentPolicyVersion } : {}) },
+      ...(context.primaryAssessmentPolicyVersion ? { primary_assessment_policy_version: context.primaryAssessmentPolicyVersion } : {}),
+      ...(context.sourceGlyphPolicyVersion ? { source_glyph_policy_version: context.sourceGlyphPolicyVersion } : {}),
+      ...(context.inputOrganizationVersion ? { input_organization_version: context.inputOrganizationVersion } : {}),
+      ...(context.tableSupportPolicyVersion ? { table_support_policy_version: context.tableSupportPolicyVersion } : {}) },
     review_status: needsContext ? 'needs_context' : 'pending', review_events: [], handoff_status: 'candidate_only',
   };
   if (!Value.Check(EvidenceRecordSchema, record)) { add('validated_record_schema_invalid', 'reject', ''); return rejected(); }

@@ -1,0 +1,52 @@
+--- a/apps/server/src/storage-management.ts
++++ b/apps/server/src/storage-management.ts
+@@ -60,6 +60,10 @@
+    * An unreadable/unknown JSON value fails the entire eligibility decision closed. */
+   private references(): References {
+     const { db } = this.host.store, rows: unknown[] = [], papers: Paper[] = [];
++    const managedRoots = this.roots();
++    // Every path inside these five fixed roots necessarily contains one of
++    // these complete components. Avoid normalizing every large prose string.
++    const managedComponent = /(?:^|\/)(?:pdf|runs|figure-reviews|exports|s3-native-artifacts)(?:\/|$)/u;
+     const strong = new Set<string>(), all = new Set<string>(), hashes = new Set<string>(), allHashes = new Set<string>(), strings = new Set<string>();
+     const immutable = new Set<string>(), knownRuns = new Set<string>();
+     const collect = (value: unknown, paths: Set<string>, identityHashes: Set<string>, identities?: Set<string>) => {
+@@ -70,8 +74,14 @@
+         if (typeof item === 'string') {
+           identities?.add(item);
+           if (/^[a-f0-9]{64}$/u.test(item)) identityHashes.add(item);
+-          if (item && !item.includes('\0') && (['path', 'file_reference', 'directory'].includes(key) || key.endsWith('_path') || isAbsolute(item) || item.startsWith('runtime-data/')))
+-            paths.add(resolve(this.host.codeRoot, item));
++          if (item && !item.includes('\0')) {
++            const explicit = ['path', 'file_reference', 'directory'].includes(key) || key.endsWith('_path');
++            if (!explicit && !managedComponent.test(item)) continue;
++            const path = resolve(this.host.codeRoot, item);
++            // Native source text can literally be '/'. Only explicit reference
++            // fields may protect an ancestor outside the five managed roots.
++            if (explicit || managedRoots.some(root => inside(root, path))) paths.add(path);
++          }
+         } else if (item && typeof item === 'object') for (const [key, value] of Object.entries(item)) stack.push({ key, value });
+       }
+     };
+--- a/apps/server/test/storage-management.test.ts
++++ b/apps/server/test/storage-management.test.ts
+@@ -338,3 +338,19 @@
+   } finally { interceptor?.mock.restore(); syncBuiltinESMExports(); await f.close(); }
+ });
+ 
++test('literal slash source text is not a root reference; unknown managed paths and explicit parent references stay protected', async () => {
++  const f = await fixture();
++  try {
++    const first = 'run-' + randomUUID(), second = 'run-' + randomUUID(), third = 'run-' + randomUUID();
++    const parent = resolve(f.workflow.directory, 'runs', first);
++    const byParent = await f.file(relative(f.root, resolve(parent, 'document-ir.json')), 'parent-protected');
++    const byUnknownKey = await f.file(relative(f.root, resolve(f.workflow.directory, 'runs', second, 'document-ir.json')), 'unknown-key-protected');
++    const orphan = await f.file(relative(f.root, resolve(f.workflow.directory, 'runs', third, 'document-ir.json')), 'genuine-orphan');
++    f.savePaper({ id: 'historical-source', title: 'Retained source', uploaded: false, pdf: { path: 'historical/retained.pdf', sha256: 'e'.repeat(64) },
++      latest_source: { document: { structure: { units: [{ native_text: '/' }, { native_text: '/ ordinary source text' }] } },
++        unknown_reference_key: relative(f.root, byUnknownKey), retained_context: { directory: parent } } } as { id: string });
++    const preview = await f.workflow.storagePreview({}); assert.equal(preview.candidates.length, 1); assert.equal(preview.candidates[0]!.bytes, 'genuine-orphan'.length);
++    assert.equal(preview.summary.protected_bytes, 'parent-protected'.length + 'unknown-key-protected'.length);
++    const result = await f.cleanup(preview); assert.equal(result.removed_files, 1); await assert.rejects(access(orphan), /ENOENT/); await access(byParent); await access(byUnknownKey);
++  } finally { await f.close(); }
++});

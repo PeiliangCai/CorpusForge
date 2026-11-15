@@ -1,4 +1,5 @@
 import type { DocumentIR, StructureUnit, StructuredDocumentIR } from '@t1/contracts';
+import { agentAssessesSourceGlyphs } from './source-glyph-policy.js';
 
 type Document = Exclude<DocumentIR, { schema_version: '1' }>;
 type Table = StructuredDocumentIR['structure']['tables'][number];
@@ -77,7 +78,7 @@ export function checkedTableSourceContains(document: Document, table: Table, sou
  * reread references; it never grants access or marks a referenced line read.
  */
 export function buildDocumentStructureContext(document: Document, windowIds: readonly string[],
-  lineIndexIds: readonly string[] = document.blocks.map(b => b.block_id), authorizedIds: readonly string[] = lineIndexIds) {
+  lineIndexIds: readonly string[] = document.blocks.map(b => b.block_id), authorizedIds: readonly string[] = lineIndexIds, sourceGlyphPolicyVersion?: string) {
   const visible = new Set(windowIds), authorized = new Set(authorizedIds);
   const index = new Map(lineIndexIds.map((id, i) => [id, i]));
   const spans = (values: readonly Span[]) => values.filter(s => visible.has(s.block_id)).map(s => [index.get(s.block_id)!, s.start, s.end]);
@@ -90,7 +91,7 @@ export function buildDocumentStructureContext(document: Document, windowIds: rea
   };
   if (document.schema_version !== '3') return { ...empty, available: false as const, reason: 'source_has_no_native_structure' };
   const units = new Map(document.structure.units.map(u => [u.unit_id, u]));
-  const glyphUnsafe = (u?: StructureUnit) => u?.source_segments.some(s => document.blocks.find(b => b.block_id === s.block_id)?.source_glyph_issues?.length);
+  const glyphUnsafe = (u?: StructureUnit) => !agentAssessesSourceGlyphs(sourceGlyphPolicyVersion) && u?.source_segments.some(s => document.blocks.find(b => b.block_id === s.block_id)?.source_glyph_issues?.length);
   const readingIndex = new Map(document.structure.reading_order.map((id, i) => [id, i]));
   const touched = document.structure.units.filter(u => u.source_segments.some(s => visible.has(s.block_id)));
   const paragraphs = touched.filter(u => ['text', 'list_item', 'caption', 'footnote', 'section_header', 'other'].includes(u.kind));

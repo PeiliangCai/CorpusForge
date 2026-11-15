@@ -1,0 +1,11 @@
+{
+  "schema_version": "t1-post-run-integrity-1",
+  "observed_at": "2026-11-11T09:26:19.693290+00:00",
+  "production_table_count": 13,
+  "all_13_tables_rows_unchanged": true,
+  "private_env_bytes_unchanged": true,
+  "old_frozen_four_reports_unchanged": true,
+  "new_model_requests_for_collection": 0,
+  "private_key_copy_absent": true,
+  "production_business_approval_added": false
+}

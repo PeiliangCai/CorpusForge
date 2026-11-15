@@ -1,0 +1,19 @@
+{
+  "schema_version": "t1-fixed-regression-sampling-protocol-1",
+  "source_id": "IN06",
+  "frozen_at_utc": "2026-11-11T10:30:00.562364+00:00",
+  "source_role": "Already-exposed parser regression; no complete pipeline independent acceptance claim. Extraction model unseen before this trial.",
+  "seed": "t1-s6-20261109-v1",
+  "sample": "SHA256(seed plus current record identity/version/delivery fingerprint) order, min(10,N) all roles; all if N<10",
+  "primary_background_reported_separately": true,
+  "risk_directed_maximum": 5,
+  "risk_directed_denominator_separate": true,
+  "original_pages": "code/docs/acceptance/resume-2026-11-11/in06/original-pages.json",
+  "root_source_structure_precheck": "Full original pages2/3 and3complete4/4/4 literal Figure captions read by delegated AI; not a medical or business approval.",
+  "zero_N_is_not_recall_evidence": true,
+  "new_independent_sample_count": 0,
+  "actual_human_reviewed_count": 0,
+  "medical_quality_approved": false,
+  "business_approval_added": false,
+  "current_effective_API_allowance": 0
+}

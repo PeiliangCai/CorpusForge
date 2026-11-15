@@ -1,0 +1,390 @@
+{
+  "schema_version": "t1-workbench-experience-ui-1",
+  "status": "passed",
+  "origin": "http://127.0.0.1:30156",
+  "isolated_backend": "http://127.0.0.1:3215",
+  "dist": "apps/pi-web/build/workbench-experience-validated-20261114",
+  "BUILD_ID": "AvEqqRvnH42IteI6npju-",
+  "checks": [
+    "new_task_has_one_upload_flow_two_scope_layers_and_no_preselected_reuse",
+    "identical_pdf_choices_are_grouped_without_merging_same_title_different_bytes",
+    "single_upload_and_clear_selection_keep_paper_and_tasks_without_creating_a_run",
+    "folder_pdfs_share_existing_batch_admission_and_lost_response_retry_keeps_scope_and_request_identity",
+    "catalog_save_refresh_repairs_new_draft_and_preserves_admitted_scope_catalog_snapshots",
+    "task_menu_repeat_selects_exact_pdf_while_blank_new_task_resets_reuse_only",
+    "explicit_reuse_creates_single_task_and_last_task_delete_returns_to_empty_reuse",
+    "queued_and_pdf_figure_discovery_show_indeterminate_stages",
+    "known_source_work_shows_exact_fraction_and_clock_never_increments_percentage",
+    "summary_remains_indeterminate_after_2929_dispatched_blocks_and_41_source_gaps_are_visible",
+    "partial_failed_cancelled_interrupted_do_not_show_success_or_100_percent",
+    "legacy_terminal_missing_times_is_unrecorded_and_only_confirmed_complete_can_fill_success",
+    "current_old_backend_events_derive_real_counts_without_new_contract_or_summary_reread_credit",
+    "explicit_pair_is_visible_with_full_source_figure_original_caption_and_unchanged_text",
+    "unconfirmed_associations_do_not_pair_independent_images_and_missing_figures_link_to_pdf",
+    "asset_load_failure_is_explicit_and_mobile_new_task_stays_within_viewport"
+  ],
+  "errors": [],
+  "blocked": [],
+  "mutations": [
+    {
+      "method": "POST",
+      "path": "/api/t1/workbench/papers"
+    },
+    {
+      "method": "POST",
+      "path": "/api/t1/workbench/papers"
+    },
+    {
+      "method": "POST",
+      "path": "/api/t1/workbench/papers"
+    },
+    {
+      "method": "POST",
+      "path": "/api/t1/workbench/papers/paper-b4de89ff-1c87-41db-a256-c57934b4ab67/runs"
+    },
+    {
+      "method": "POST",
+      "path": "/api/t1/workbench/papers/paper-ad94d789-c1f9-403f-a2cb-921d34763f14/runs"
+    },
+    {
+      "method": "POST",
+      "path": "/api/t1/workbench/papers/paper-b4de89ff-1c87-41db-a256-c57934b4ab67/runs"
+    },
+    {
+      "method": "POST",
+      "path": "/api/t1/workbench/papers"
+    },
+    {
+      "method": "POST",
+      "path": "/api/t1/workbench/papers/paper-4f490a53-60f6-462b-a43d-2974b4bc5f38/runs"
+    },
+    {
+      "method": "POST",
+      "path": "/api/t1/workbench/papers/paper-4f490a53-60f6-462b-a43d-2974b4bc5f38/runs"
+    },
+    {
+      "method": "POST",
+      "path": "/api/t1/workbench/papers"
+    },
+    {
+      "method": "POST",
+      "path": "/api/t1/workbench/papers/paper-5411ae8f-2bdb-461c-8dfd-5334ce5634b8/runs"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/t1/workbench/runs/run-e6253257-4e1c-4f1e-979a-6151b218ec5e"
+    }
+  ],
+  "submissions": [
+    {
+      "paper_id": "paper-b4de89ff-1c87-41db-a256-c57934b4ab67",
+      "request_id": "0809b89e-d287-4c47-a614-10249c4b6c45",
+      "scope": {
+        "scope_version": "1",
+        "cancers": {
+          "mode": "all",
+          "ids": []
+        },
+        "image_types": {
+          "mode": "all",
+          "ids": []
+        },
+        "features": {
+          "mode": "all",
+          "binding_ids": []
+        },
+        "catalog_version": "scope-cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+        "matching_policy_version": "exact-explicit-synonyms-1"
+      },
+      "submission": {
+        "kind": "batch",
+        "batch_id": "028b4713-5aa0-4c50-8e19-d2b1746f3e6f"
+      },
+      "response_status": 202,
+      "run_id": "run-8ebb4e86-78f0-4b7f-ad51-1b5ee9fc77ef"
+    },
+    {
+      "paper_id": "paper-ad94d789-c1f9-403f-a2cb-921d34763f14",
+      "request_id": "36ad95b3-f418-4307-99f8-dea90c8315b2",
+      "scope": {
+        "scope_version": "1",
+        "cancers": {
+          "mode": "all",
+          "ids": []
+        },
+        "image_types": {
+          "mode": "all",
+          "ids": []
+        },
+        "features": {
+          "mode": "all",
+          "binding_ids": []
+        },
+        "catalog_version": "scope-cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+        "matching_policy_version": "exact-explicit-synonyms-1"
+      },
+      "submission": {
+        "kind": "batch",
+        "batch_id": "028b4713-5aa0-4c50-8e19-d2b1746f3e6f"
+      },
+      "response_status": 202,
+      "run_id": "run-3b9865ec-8fe6-43a7-84a6-0bd0903870b1"
+    },
+    {
+      "paper_id": "paper-b4de89ff-1c87-41db-a256-c57934b4ab67",
+      "request_id": "0809b89e-d287-4c47-a614-10249c4b6c45",
+      "scope": {
+        "scope_version": "1",
+        "cancers": {
+          "mode": "all",
+          "ids": []
+        },
+        "image_types": {
+          "mode": "all",
+          "ids": []
+        },
+        "features": {
+          "mode": "all",
+          "binding_ids": []
+        },
+        "catalog_version": "scope-cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+        "matching_policy_version": "exact-explicit-synonyms-1"
+      },
+      "submission": {
+        "kind": "batch",
+        "batch_id": "028b4713-5aa0-4c50-8e19-d2b1746f3e6f"
+      },
+      "response_status": 202,
+      "run_id": "run-8ebb4e86-78f0-4b7f-ad51-1b5ee9fc77ef"
+    },
+    {
+      "paper_id": "paper-4f490a53-60f6-462b-a43d-2974b4bc5f38",
+      "request_id": "55c444c8-2f09-439d-aba7-6ab8b837248a",
+      "scope": {
+        "scope_version": "1",
+        "cancers": {
+          "mode": "selected",
+          "ids": [
+            "CANCER-LUNG"
+          ]
+        },
+        "image_types": {
+          "mode": "all",
+          "ids": []
+        },
+        "features": {
+          "mode": "all",
+          "binding_ids": []
+        },
+        "catalog_version": "scope-cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+        "matching_policy_version": "exact-explicit-synonyms-1"
+      },
+      "submission": {
+        "kind": "single"
+      },
+      "response_status": 409
+    },
+    {
+      "paper_id": "paper-4f490a53-60f6-462b-a43d-2974b4bc5f38",
+      "request_id": "55c444c8-2f09-439d-aba7-6ab8b837248a",
+      "scope": {
+        "scope_version": "1",
+        "cancers": {
+          "mode": "selected",
+          "ids": [
+            "CANCER-LUNG"
+          ]
+        },
+        "image_types": {
+          "mode": "all",
+          "ids": []
+        },
+        "features": {
+          "mode": "all",
+          "binding_ids": []
+        },
+        "catalog_version": "scope-96e8497cf57d63a767a9f3422bf521caf87e6ca665d0315bff171621a8e9d5c8",
+        "matching_policy_version": "exact-explicit-synonyms-1"
+      },
+      "submission": {
+        "kind": "single"
+      },
+      "response_status": 202,
+      "run_id": "run-bd890bc0-562f-4547-bd68-c2c0818e683c"
+    },
+    {
+      "paper_id": "paper-5411ae8f-2bdb-461c-8dfd-5334ce5634b8",
+      "request_id": "0ae379c4-f2e2-4c71-9a39-33aadda903ea",
+      "scope": {
+        "scope_version": "1",
+        "cancers": {
+          "mode": "all",
+          "ids": []
+        },
+        "image_types": {
+          "mode": "all",
+          "ids": []
+        },
+        "features": {
+          "mode": "all",
+          "binding_ids": []
+        },
+        "catalog_version": "scope-cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+        "matching_policy_version": "exact-explicit-synonyms-1"
+      },
+      "submission": {
+        "kind": "single"
+      },
+      "response_status": 202,
+      "run_id": "run-e6253257-4e1c-4f1e-979a-6151b218ec5e"
+    }
+  ],
+  "screenshots": [
+    "new-task-desktop.png",
+    "progress-known-desktop.png",
+    "progress-summary-desktop.png",
+    "progress-partial-desktop.png",
+    "linked-figure-desktop.png",
+    "linked-figure-mobile.png",
+    "new-task-mobile.png"
+  ],
+  "engineering_ui_state_projection": true,
+  "paid_model_calls": 0,
+  "production_business_writes": 0,
+  "exports_requested": 0,
+  "independent_IN_materials_opened": 0,
+  "frozen_batch": {
+    "first_request": "0809b89e-d287-4c47-a614-10249c4b6c45",
+    "batch_id": "028b4713-5aa0-4c50-8e19-d2b1746f3e6f",
+    "tasks": 2,
+    "scope_frozen": true
+  },
+  "checks_count": 16,
+  "verification": {
+    "frontend_unit": {
+      "status": "passed",
+      "tests": 14,
+      "command": "bash scripts/with-node.sh node_modules/.bin/tsx --tsconfig apps/pi-web/tsconfig.json --test apps/pi-web/t1/*.test.ts",
+      "log": "ui-unit-final.log"
+    },
+    "typecheck": {
+      "status": "passed",
+      "log": "ui-typecheck-final.log"
+    },
+    "lint": {
+      "status": "passed",
+      "errors": 0,
+      "warnings": 0,
+      "log": "ui-lint-final.log"
+    },
+    "production_build": {
+      "status": "passed",
+      "log": "ui-build-final.log",
+      "source_manifest": "ui-build-source.json"
+    },
+    "isolated_browser": {
+      "status": "passed",
+      "checks": 16,
+      "log": "ui-browser-final.log",
+      "backend_source_reloaded_after_finalization": true
+    },
+    "live_readonly": {
+      "status": "passed",
+      "checks": 5,
+      "log": "ui-live-readonly.log"
+    }
+  },
+  "formal_review": {
+    "used": 3,
+    "limit": 3,
+    "shared_with_backend": true,
+    "final_review_pending": false,
+    "conclusion": "继续；3/3统一验收通过，已上线且真实只读5/5通过"
+  },
+  "source_build_match": true,
+  "change_files": [
+    "code/apps/pi-web/t1/T1Workbench.tsx",
+    "code/apps/pi-web/t1/BatchSubmission.tsx",
+    "code/apps/pi-web/t1/RunTaskMenu.tsx",
+    "code/apps/pi-web/t1/EvidenceSource.tsx",
+    "code/apps/pi-web/t1/RunProgress.tsx",
+    "code/apps/pi-web/t1/run-progress.ts",
+    "code/apps/pi-web/t1/run-progress.test.ts",
+    "code/apps/pi-web/t1/paper-choices.ts",
+    "code/apps/pi-web/t1/paper-choices.test.ts",
+    "code/apps/pi-web/t1/useRunEvents.ts",
+    "code/apps/pi-web/t1/messages.mjs",
+    "code/apps/pi-web/t1/workbench.css",
+    "code/apps/pi-web/e2e/workbench-experience.mjs",
+    "code/apps/pi-web/e2e/workbench-experience-readonly.mjs",
+    "code/apps/pi-web/e2e/task-records.mjs",
+    "code/apps/pi-web/e2e/ui-model-switch.mjs",
+    "code/apps/pi-web/e2e/two-layer-catalog.mjs",
+    "code/apps/pi-web/e2e/batch-submission.mjs",
+    "code/apps/pi-web/e2e/folder-task-types.mjs"
+  ],
+  "known_limits": [
+    "Isolated progress/association cases are clearly identified engineering projections; they do not validate new medical/model extraction quality.",
+    "No new paid model run was launched; live UI checks validated saved evidence and control visibility only."
+  ],
+  "live_readonly": {
+    "status": "passed",
+    "origin": "http://127.0.0.1:30141",
+    "expected_BUILD_ID": "AvEqqRvnH42IteI6npju-",
+    "checks": [
+      "production_serves_the_reviewed_build_and_real_saved_run",
+      "real_task_progress_matches_saved_partial_source_counts_and_elapsed_time",
+      "real_explicit_figure_link_shows_original_full_figure_and_caption_without_approval",
+      "real_new_task_has_empty_reuse_two_scope_layers_and_existing_model_controls",
+      "production_source_text_and_figure_links_remain_unchanged_after_readonly_inspection"
+    ],
+    "errors": [],
+    "blocked": [],
+    "screenshots": [
+      "live-progress-desktop.png",
+      "live-linked-figure-desktop.png",
+      "live-linked-figure-mobile.png",
+      "live-new-task-desktop.png",
+      "live-new-task-mobile.png"
+    ],
+    "production_business_writes": 0,
+    "exports_requested": 0,
+    "paid_model_calls": 0,
+    "run": {
+      "id": "run-f5dc6144-9308-4875-ac96-269a645b10ca",
+      "state": "partial",
+      "records": 13,
+      "paired_records": 1,
+      "progress": {
+        "schema_version": "t1-workbench-progress-1",
+        "stage": "partial",
+        "updated_at": "2026-11-14T08:33:46.128Z",
+        "stage_started_at": "2026-11-14T08:33:43.429Z",
+        "elapsed_ms": 1007881,
+        "execution_elapsed_ms": 1007874,
+        "queue_wait_ms": 7,
+        "completed": 2929,
+        "unit": "source_blocks",
+        "total": 2929,
+        "completed_batches": 23,
+        "candidate_records": 13,
+        "source_gap_blocks": 41,
+        "summary_completed": false,
+        "telemetry": "events"
+      },
+      "source_text_sha256": "8031e2e15ca89739e107315a68afbd04fae9c71c12527c438b1dcf36b6e5e89d",
+      "elapsed_display": "16:47"
+    },
+    "checks_count": 5,
+    "log": "ui-live-readonly.log",
+    "screenshots_visually_inspected": true
+  },
+  "cleanup": {
+    "isolated_frontend_30156": "stopped",
+    "isolated_fixture_3215": "stopped",
+    "task_owned_fixture_data": "removed",
+    "task_owned_folder_selection_data": "removed",
+    "current_and_rollback_builds": "preserved",
+    "scripts_and_required_evidence": "preserved"
+  }
+}

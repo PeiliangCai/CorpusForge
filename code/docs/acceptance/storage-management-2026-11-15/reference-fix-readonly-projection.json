@@ -1,0 +1,70 @@
+{
+  "method": "New collector summary against hard read-only real SQLite connection; constructor CREATE is intercepted, no preview/cleanup method invoked.",
+  "elapsed_ms": 1990.6266810000002,
+  "summary": {
+    "schema_version": "t1-storage-summary-1",
+    "observed_at": "2026-11-15T13:21:25.716Z",
+    "scope": "managed_workbench_files",
+    "total_bytes": 148414676,
+    "protected_bytes": 113519598,
+    "reclaimable_bytes": 23260942,
+    "unknown_bytes": 11634136,
+    "file_count": 187,
+    "categories": [
+      {
+        "kind": "pdf",
+        "bytes": 44815688,
+        "files": 3
+      },
+      {
+        "kind": "parse",
+        "bytes": 86065192,
+        "files": 131
+      },
+      {
+        "kind": "figures",
+        "bytes": 17533796,
+        "files": 53
+      },
+      {
+        "kind": "exports",
+        "bytes": 0,
+        "files": 0
+      },
+      {
+        "kind": "other",
+        "bytes": 0,
+        "files": 0
+      }
+    ],
+    "protected_reasons": [
+      {
+        "code": "referenced",
+        "bytes": 50977722,
+        "files": 89
+      },
+      {
+        "code": "recent_upload",
+        "bytes": 59683162,
+        "files": 19
+      },
+      {
+        "code": "immutable_source",
+        "bytes": 2858714,
+        "files": 6
+      }
+    ],
+    "disk": {
+      "total_bytes": 105286258688,
+      "available_bytes": 40599793664
+    },
+    "cleanup_available": true,
+    "policy": {
+      "automatic_cleanup": false,
+      "recent_upload_protection_hours": 24
+    }
+  },
+  "production_business_writes": 0,
+  "production_storage_POSTs": 0,
+  "paid_calls": 0
+}

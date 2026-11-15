@@ -1,0 +1,17 @@
+{
+  "code/apps/pi-web/t1/T1Workbench.tsx": "d80e02bdb51538167568486224cd82ccb8c8e7bde494be30f2b37bd64bb436cc",
+  "code/apps/pi-web/t1/PaperTaskMenu.tsx": "fa8b517b4cc66f8395041b3ee743097480c88e306b78bc7a7f56fd9595c00214",
+  "code/apps/pi-web/t1/task-actions.ts": "1e44152ab3066c8ec0d45fc40b0bb6401e179436d78a9175def08e206b581fc3",
+  "code/apps/pi-web/t1/task-actions.test.ts": "c7aece6f8a82b9b5d9b3c9fb0b68c74582debb3cc2aab94989cc7717e1c8005b",
+  "code/apps/pi-web/t1/messages.mjs": "949ef1bdd20dee740f6846d764fbb64df01d22c6b17d1a9ec45e6afac90e11fb",
+  "code/apps/pi-web/t1/workbench.css": "10d62ab50bc3af79b9d2ad0a15f4806cc28edaa0e7e88ccab270cfaa71fc7f4d",
+  "code/apps/pi-web/tsconfig.json": "bc8c9eb951562b35c078fb4c76c55cd2a8d0f46ad8bea005e5d4f8332f01cb1a",
+  "code/apps/pi-web/next-env.d.ts": "372b8026eab1e234ec13bc3241568584bf9b22110c5946dbb78c83b8ea38cda9",
+  "code/apps/server/src/workflow.ts": "b01cb84ba758b20d00151f5f4b345dc21cf67b39862cd2cd26d56cec24897270",
+  "code/apps/server/src/app.ts": "396289a4d4e3bb22f7dace15ee64904135991ae64d86eee8fa261b6126482f91",
+  "code/apps/server/test/workflow.test.ts": "e93525340c23a635598c54483c828ee202a849ba13f2f5c7fd9f3a3cd14a703c",
+  "code/README.md": "b08463f5a5be237d1fe763fffb11572d04a6403f2b75115a141a83a8f91712e3",
+  "code/deploy/README.md": "82dfd5e95dd4055190ce0b4d42d5372a3db61f2c6ad2c94dbd6ef4c416faee39",
+  "方案/子任务T1/当前版本.json": "d0975dba8dc397fa1ebe3c0fd73e59706d319731fd3a320c5271c3e632ecf18f",
+  "方案/当前版本.json": "bdcc8d9787654b16797ffb19bc205f81c3e3c5ff12d4e44b6eb1dd84aa9c0779"
+}

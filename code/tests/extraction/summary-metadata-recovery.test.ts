@@ -14,6 +14,10 @@ import { VISUAL_STATEMENT_POLICY_VERSION } from '../../packages/agent/src/visual
 import { createRuntimeResponsesFixture, type ResponsesStep } from './fixtures/runtime-responses.js';
 import { createExtractionSession, developmentProfile, promptExtractionSession } from '../../packages/agent/src/extraction-pi.js';
 import { ExtractionBudget, S4_LIMITS } from '../../packages/agent/src/extraction-budget.js';
+import { ModelConfig } from '../../packages/agent/src/config.js';
+import { runExtractionDocument } from '../../packages/agent/src/extraction-run.js';
+import { readFile } from 'node:fs/promises';
+import { workbenchModelPolicy } from '../../apps/server/src/model-policy.js';
 
 function fixture() {
   const f = makeEvidenceFixture(['We observed high tissue con', 'trast on CT.', 'CT showed an irregular margin.']);
@@ -189,4 +193,70 @@ test('a real identity/source/version fatal marker wins even if a safe metadata c
   for (const safe of ['summary_raw_name_requires_literal_source', 'summary_target_feature_requires_explicit_choice'])
     for (const code of ['source_binding_mismatch', 'source_block_not_read', 'evidence_version_conflict'])
       assert.equal(classifyToolError(JSON.stringify({ error: safe, cause: code })), code);
+});
+
+test('accepted exact names carry both bounded metadata corrections through complete B0 summary and persisted delivery; unknown names still stop', async () => {
+  for (const kind of ['accepted-trial', 'unknown-trial', 'ordinary-unchanged'] as const) {
+    const c = fixture(), directory = await mkdtemp(join(tmpdir(), 'metadata-full-b0-'));
+    c.f.document.pages[0]!.bitmap_count = 1; c.f.document.pages[0]!.ocr_requirement = 'possible_image_text_unverified';
+    c.f.document.coverage.image_text_unverified_pages = [1]; c.f.document.parser.status = 'partial';
+    c.store.close(); const store = new ExtractionStore(':memory:');
+    const ordinary = workbenchModelPolicy(new ModelConfig('agicto', 'https://api.agicto.cn/v1', 'gpt-6-luna', 'offline')).responseModelAliasPolicy!;
+    const evidence = JSON.parse(await readFile('docs/acceptance/s4/selection-optimization/continuation-2026-11-03/supplier-alias-confirmation.json', 'utf8'));
+    const old = { policy_id: evidence.confirmation_id, source: 'historical-confirmation-fixture', recorded_at: evidence.recorded_at, exact_pairs: evidence.exact_pairs };
+    const policy = kind === 'ordinary-unchanged' ? old : { ...old, policy_id: 'synthetic-user-trial-only',
+      source: ordinary.source, exact_pairs: ordinary.exact_pairs };
+    const common = { source_unit_ids: ['su-000001'], feature_category: 'contrast', evidence_type: 'imaging_observation',
+      assertion: 'affirmed', origin: 'study_authors', modality: { value: 'CT', line_indices: [1] } };
+    const params = { summary: 'Synthetic complete B0 metadata transport; no medical approval.', reviews: [], links: [], updates: [], summary_complete: false };
+    const server = await createRuntimeResponsesFixture(request => {
+      const target = store.current(c.f.input.run_id)[0]?.record.record_id;
+      const update = { ...common, updates_record_id: target, feature_name_raw: request.index === 3 ? 'contrast' : 'con\ntrast' };
+      const separate = { ...common, source_unit_ids: ['su-000002'], feature_name_raw: 'irregular margin', feature_category: 'margin', modality: { value: 'CT', line_indices: [2] } };
+      const steps: ResponsesStep[] = [
+        { calls: [{ name: 'read_document_blocks', arguments: {} }] },
+        { calls: [{ name: 'submit_candidate_records', arguments: { records: [{ ...common, feature_name_raw: null }], batch_complete: true } }] },
+        { calls: [{ name: 'get_document_context', arguments: {} }, { name: 'read_document_blocks', arguments: { line_indices: [0, 1, 2] } }] },
+        { calls: [{ name: 'submit_candidate_records', arguments: { ...params, updates: [update] } }] },
+        { calls: [{ name: 'submit_candidate_records', arguments: { ...params, updates: [update] } }] },
+        { calls: [{ name: 'submit_candidate_records', arguments: { ...params, updates: [{ ...separate, updates_record_id: target }] } }] },
+        { calls: [{ name: 'submit_candidate_records', arguments: { ...params, updates: [separate] } }] },
+        { calls: [{ name: 'get_document_context', arguments: {} }] },
+        { calls: [{ name: 'submit_candidate_records', arguments: { ...params, summary_complete: true } }] },
+      ];
+      return { ...steps[request.index]!, response_model: request.index < 2 ? 'igpt-6-luna' :
+        kind === 'unknown-trial' ? 'data-zone-standard-gpt-6-luna-v2' : 'data-zone-standard-gpt-6-luna' };
+    }, { summaryAssessments: () => store.current(c.f.input.run_id).map(v => ({ record_id: v.record.record_id,
+      expected_version: v.version, issue_codes: [], primary_assessment: 'uncertain' })) });
+    try {
+      const budget = new ExtractionBudget(join(directory, 'ledger.json'), server.endpoint, Date.now, { responseModelAliasPolicy: policy });
+      const config = new ModelConfig('synthetic-loopback', server.endpoint, 'gpt-6-luna', 'offline-placeholder');
+      const result = await runExtractionDocument({ input: c.f.input, document: c.f.document, metadata: c.context.metadata, catalog: c.f.catalog,
+        config, profile: developmentProfile('gpt-6-luna'), budget, store, directory: join(directory, 'run'), strategy: 'baseline', stopOnBatchFailure: true });
+      assert.ok(server.requests.every(request => request.body.model === 'gpt-6-luna'));
+      if (kind !== 'accepted-trial') {
+        assert.equal(result.error?.code, 'whole_document_summary_incomplete'); assert.equal(server.requests.length, 3);
+        const summary = JSON.parse(await readFile(join(directory, 'run/whole-document-summary.json'), 'utf8'));
+        assert.equal(summary.result.error.code, 'response_model_identity_mismatch');
+        assert.equal(budget.ledger.halted, 'response_model_identity_mismatch'); assert.equal(result.coverage.whole_document_summary_complete, false);
+        assert.equal(result.task_processing_complete, false); assert.equal(store.current(c.f.input.run_id).length, 1);
+        assert.throws(() => budget.begin('gpt-6-luna', 'forbidden-resume', 0, '{}', 100), /identity_mismatch/);
+        continue;
+      }
+      assert.equal(result.error, undefined); assert.equal(server.requests.length, 9); assert.equal(result.task_processing_complete, true);
+      assert.equal(result.coverage.whole_document_summary_complete, true); assert.equal(result.coverage.selected_source_block_processing_complete, true);
+      assert.equal(result.coverage.full_document_extraction_completed, false); assert.equal(result.coverage.source_fidelity_human_verified, false);
+      assert.equal(store.current(c.f.input.run_id).length, 2);
+      const corrections = store.events(c.f.input.run_id).filter(event => event.type === 'protocol_correction');
+      assert.deepEqual(corrections.map(event => event.detail.error_code), ['summary_raw_name_requires_literal_source', 'summary_target_feature_requires_explicit_choice']);
+      assert.ok(store.versions(c.f.input.run_id).some(v => v.record.feature_name_raw === 'con\ntrast'));
+      assert.equal(store.current(c.f.input.run_id)[0]!.record.original_quote, c.record.original_quote);
+      const saved = JSON.parse(await readFile(join(directory, 'run/result.json'), 'utf8'));
+      assert.deepEqual(saved.coverage, result.coverage); assert.equal(saved.task_processing_complete, true);
+      const delivered = JSON.parse(await readFile(join(directory, 'run/delivery.json'), 'utf8'));
+      assert.equal(delivered.records.length + (delivered.background_records?.length ?? 0), 2);
+      assert.equal(store.current(c.f.input.run_id).some(v => v.actor === 'human' || v.record.review_status === 'approved'), false);
+      assert.ok(budget.ledger.requests.every(entry => ['matched', 'confirmed_alias'].includes(entry.response_model_identity_status!)));
+    } finally { store.close(); await server.close(); await rm(directory, { recursive: true, force: true }); }
+  }
 });

@@ -1,0 +1,79 @@
+{
+  "origin": "http://127.0.0.1:30141",
+  "BUILD_ID": "P9BrVIAb0Rx5_DxE67B0f",
+  "checks": [
+    "one_workspace_centered_arrow_with_PDF_and_sidebar_shown_or_hidden",
+    "failure_and_toast_retry_preserve_geometry_without_inline_error",
+    "reader_and_list_scroll_stay_put_with_visible_centered_spinner",
+    "scrolled_new_task_keeps_file_title_and_scope_during_refresh",
+    "mobile_reduced_motion_static_icon_and_floating_toast_leave_retention_actions_clear",
+    "success_dismisses_and_background_polling_does_not_show_overlay_or_toast"
+  ],
+  "errors": [],
+  "blocked": [],
+  "max_layout_delta_px": 0,
+  "max_center_delta_px": 0,
+  "paid_model_calls": 0,
+  "write_requests": 0,
+  "status": "passed",
+  "runtime": {
+    "at": "2026-11-13T03:09:30.893227+00:00",
+    "frontend": "http://127.0.0.1:30141/",
+    "UI_dist": "apps/pi-web/build/refresh-center-20261113",
+    "BUILD_ID": "P9BrVIAb0Rx5_DxE67B0f",
+    "frontend_launcher_pid": 32439,
+    "backend_pid_unchanged": 20779,
+    "backend_restarted": false,
+    "all_15_tables_unchanged": true,
+    "env_bytes_unchanged": true,
+    "integrity": "ok",
+    "paid_model_calls": 0,
+    "production_test_mutations": 0,
+    "rollback_dist": "apps/pi-web/build/refresh-overlay-20261113",
+    "formal_reviews_used": 3,
+    "browser": "passed",
+    "browser_checks": 6,
+    "max_layout_delta_px": 0,
+    "max_center_delta_px": 0,
+    "all_15_tables_unchanged_after_browser": true,
+    "env_bytes_unchanged_after_browser": true,
+    "frontend_pid": 32446
+  },
+  "preview": {
+    "status": "passed",
+    "BUILD_ID": "P9BrVIAb0Rx5_DxE67B0f",
+    "checks": 6,
+    "max_layout_delta_px": 0,
+    "max_center_delta_px": 0
+  },
+  "formal_review": {
+    "used": 3,
+    "limit": 3,
+    "additional_review": false,
+    "last_review_record": "code/docs/acceptance/batch-submission-2026-11-13/refresh-overlay.json#/formal_review",
+    "execution": "User feedback authorized direct implementation/validation/deployment within the same task; count not reset."
+  },
+  "typecheck": "passed",
+  "production_build": "passed",
+  "scope": "Only one centered refresh indicator and related mobile containing-block fix; no backend/API/model changes or expanded validation claims. Historical batch/overlay reports unchanged.",
+  "documentation_sync": {
+    "changed_files": [
+      "code/README.md",
+      "code/deploy/README.md",
+      "方案/子任务T1/当前版本.json"
+    ],
+    "file_sha256": {
+      "code/README.md": "e6161304264d647077b9a4f3593e13380251e3041aa7451b9bc2ae89689ade33",
+      "code/deploy/README.md": "f3d6da04c10e5c5983f9027e1e209105db989651cc8532d95255dbe8855e1eb6",
+      "方案/子任务T1/当前版本.json": "6e110b3812cb3853983a59875b98d6b099e249bc190c5114d2ccf508b25a7b34"
+    }
+  },
+  "cleanup": {
+    "preview_30152": "stopped",
+    "temporary_baseline_and_logs": "removed; concise checks log retained",
+    "generated_tsconfig_change": "reverted",
+    "live_build": "build/refresh-center-20261113",
+    "rollback_build": "build/refresh-overlay-20261113",
+    "old_reports_and_other_materials": "preserved"
+  }
+}

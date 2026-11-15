@@ -34,7 +34,8 @@
     "s4:contracts": "tsx scripts/export-s4-contracts.ts",
     "s4:compare": "tsx scripts/compare-extraction-methods.ts",
     "eval:prepare-sample": "tsx scripts/prepare-output-sample.ts",
-    "eval:independent-corpus": "tsx scripts/independent-corpus.ts"
+    "eval:independent-corpus": "tsx scripts/independent-corpus.ts",
+    "check:scope-catalog": "tsx scripts/check-scope-catalog.ts"
   },
   "devDependencies": {
     "typescript": "7.0.2",

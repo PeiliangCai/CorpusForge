@@ -1,6 +1,6 @@
 {
   "version": "0.4",
-  "status": "T1_authorized_comparison_running_other_workflows_planned",
+  "status": "T1_two_layer_and_S2_preparation_engineering_accepted_S6_S7_incomplete_other_workflows_planned",
   "selected_agent_base": "earendil-works/pi",
   "modules": [
     {
@@ -21,7 +21,7 @@
     {
       "module": "T1论文处理",
       "implementation": "唯一Next/pi-web＋受限Pi1.4/Fastify，正式Docling CPU和SQLite/SSE",
-      "responsibility": "按范围提供原文与明确整图证据；PDF质量先行，后续只比较B0/F并按权威子计划选优，逐篇真实人工审核导出；完整S5未接通。"
+      "responsibility": "在所选癌种/图像模态内采用B0正式主方案开放抽取原文与明确整图证据；F仅实验/历史。S5逐篇任务、默认保留/排除、修订及导出既有工程接受保留；本轮入口、真实进度、图片展示和host预载按独立主report验收，不升级医学/S6/S7。"
     },
     {
       "module": "T2建模",
@@ -40,12 +40,12 @@
     }
   ],
   "t1_nodes": [
-    "上传PDF并检查来源",
-    "癌种/图像类型/特征不限或限制多选，保存范围",
-    "按实验选优流程选择独立原文并自动核验，明确整幅Figure＋原图注才配图",
-    "渐进展示与真实覆盖/待核状态",
-    "逐条人工审核当前文字或图文",
-    "逐篇候选或已审核导出；未核与部分状态保留"
+    "通过统一入口选择单篇、多篇或本地文件夹PDF；按需明确复用已上传PDF",
+    "选择癌种/图像模态两层范围并冻结本次范围、目录、submission及模型配置快照",
+    "按真实状态排队→PDF解析→B0原文抽取→全文汇总核验；已知分母计数，缺口另列",
+    "渐进展示原文与来源；仅明确关联时展示整幅Figure及原图注，缺图/无引用说明并可开原PDF",
+    "结果默认保留，用户按需排除、恢复或修订；开发抽样与医学核验分列",
+    "逐篇导出保留结果；部分、取消、失败和汇总未完成不标成功"
   ],
   "t2_to_t4_nodes": [
     "T1已审核证据或医生口述，加用户任务与数据要求",
@@ -83,9 +83,9 @@
     "pi_durable_required": false,
     "must_keep_for_delivery": [
       "T2生成需求参数与确认版本",
-      "T1已审核证据及来源/审核版本",
+      "T1原文/明确整图证据及来源/记录版本、独立保留状态与旧真实审核历史",
       "运行记录与交付成果的必要关联",
-      "T1本次抽取范围及所用特征集合版本"
+      "T1本次癌种/模态范围、目录版本及冻结快照；旧run原scope/特征记录保留"
     ],
     "conditional": [
       {
@@ -144,29 +144,40 @@
       "文件可读取且属于约定支持范围",
       "工具权限允许",
       "结果绑定论文及实际处理版本",
-      "癌种、图像类型和特征的不限/限制状态与所选项一致，限制模式不得静默放宽。",
-      "范围快照和特征集合版本绑定本次运行；用户后续改选不静默改变已运行输入。",
+      "癌种、图像模态的不限/限制状态与所选项一致，限制模式不得静默放宽；新任务不受预设特征词表限制，显式旧特征限制请求拒绝。",
+      "两层范围/目录快照绑定本次运行；用户改选或手工更新配置不改变已准入、排队、运行、批量重试及历史/修订输入。",
       "输出与范围匹配须有原文和上下文依据，必要的范围外上下文不作为独立特征记录。"
     ],
-    "confirmation_semantics": "T1允许用户选择癌种、图像类型及特征范围后开始提取；这是抽取范围选择。数据集生成需求的默认参数逐项告知与确认仍属于T2至T3的前置流程，T1不照搬该确认机制。",
+    "confirmation_semantics": "T1允许用户选择癌种、图像模态两层范围后开始开放特征提取；这是抽取范围选择。数据集生成需求的默认参数逐项告知与确认仍属于T2至T3的前置流程，T1不照搬该确认机制。",
     "scope_selection": {
       "order": [
         "cancer",
-        "image_type",
-        "applicable_feature_collection",
-        "feature_selection_or_unrestricted"
+        "image_type"
       ],
-      "relationship": "dependent_filters_with_explicit_applicability_not_strict_tree",
+      "relationship": "operator_configured_cancer_to_image_type_mapping",
       "each_level_allows": [
         "unrestricted",
         "multiple_selected_values"
       ],
-      "restricted_feature_behavior": "selected_features_and_corresponding_synonyms_only",
-      "unrestricted_feature_behavior": "open_extraction_within_selected_cancer_and_image_type_new_terms_pending_review",
-      "out_of_scope_behavior": "exclude_as_standalone_feature_preserve_only_necessary_context",
-      "scope_evidence": "癌种、模态和特征匹配依赖原文及必要上下文；不得把用户选择直接写成论文事实。",
-      "missing_catalog_behavior": "不限模式可继续；限制模式提示无可用项，不静默放宽。"
-    }
+      "feature_extraction": "open_within_selected_cancer_and_image_type_without_feature_vocabulary",
+      "scope_evidence": "癌种和模态匹配依赖论文原文及必要上下文；用户选择与运营映射不能写成论文事实。结果中的特征描述、分类、原文及出处继续保留。",
+      "initial_modes": {
+        "cancers": "all",
+        "image_types": "all"
+      },
+      "restricted_empty_behavior": "空选或失效项阻止开始，保留提示；用户补选、移除或主动改为不限，系统不自行放宽。",
+      "upstream_change_behavior": "按当前运营映射检查下游，保留仍有效项，失效项保留并提示用户处理。",
+      "refresh_behavior": "手工修改code/config/scope-catalog.json并保存后，刷新工作台即更新前后端选项及联动；有效选择自动保留并接纳新版本，失效项保留提示，处理前不能开始。无需改代码、重启或网页编辑器。",
+      "submit_behavior": "展示本次两层范围，点击开始即提交，不增加逐项默认参数弹窗。",
+      "snapshot_policy": "新任务准入冻结本次范围及目录快照；排队、运行、历史显示和后续修订均使用该快照。批量首次开始冻结整批，其余成员和失败重试沿用旧快照，新批才读取新配置；旧run及证据导出保留原scope/特征记录。",
+      "explicit_legacy_feature_limit_request": "reject_for_new_runs",
+      "legacy_runs_and_exports": "retain_original_scope_feature_records_and_evidence",
+      "taxonomy_policy": "保留CANCER-LUNG肺癌、CANCER-BOWEL肠癌、CANCER-COLON结肠癌、CANCER-RECTUM直肠癌及MODALITY-CT/MODALITY-MRI；每癌种显式列出CT/MRI运营可选映射，不宣称医学诊断适用性，不纳入肺结节癌种、不推断癌种包含或同义。",
+      "default_item_confirmation_popups": false,
+      "benchmark_scope_as_initial_default": false
+    },
+    "scope_catalog": "子任务T1/开发计划.json#/scope/scope_catalog",
+    "current_scope_rule": "癌种→图像模态两层联动，初始均不限、各层可限制多选；空选或失效项阻止开始，保留仍有效项并提示用户处理，不静默放宽。新任务在所选癌种/模态内开放抽取视觉特征，不受预设特征词表限制；显式旧特征限制请求明确拒绝。"
   },
   "t1_authoritative_review_document": "子任务T1/T1智能体开发计划.docx",
   "t1_current_plan": {
@@ -268,5 +279,105 @@
   },
   "historical_records": {
     "comparison_results_record_before_current_recheck": "方案/子任务T1/当前版本.json#/current_comparison_results"
+  },
+  "historical_before_two_layer_scope_2026_11_14": {
+    "T1_scope_selection": {
+      "order": [
+        "cancer",
+        "image_type",
+        "applicable_feature_collection",
+        "feature_selection_or_unrestricted"
+      ],
+      "relationship": "dependent_filters_with_explicit_applicability_not_strict_tree",
+      "each_level_allows": [
+        "unrestricted",
+        "multiple_selected_values"
+      ],
+      "restricted_feature_behavior": "selected_features_and_corresponding_synonyms_only",
+      "unrestricted_feature_behavior": "open_extraction_within_selected_cancer_and_image_type_new_terms_pending_review",
+      "out_of_scope_behavior": "exclude_as_standalone_feature_preserve_only_necessary_context",
+      "scope_evidence": "癌种、模态和特征匹配依赖原文及必要上下文；不得把用户选择直接写成论文事实。",
+      "missing_catalog_behavior": "不限模式可继续；限制模式提示无可用项，不静默放宽。"
+    },
+    "status": "T1_authorized_comparison_running_other_workflows_planned"
+  },
+  "last_status_update_Asia_Shanghai": "2026-11-14",
+  "current_workbench_experience": {
+    "date": "2026-11-14",
+    "status": "scoped_engineering_verified_and_deployed",
+    "contract": "方案/子任务T1/开发计划.json#/current_workbench_experience",
+    "engineering_report": "code/docs/acceptance/workbench-experience-2026-11-14/report.json",
+    "documentation_sync": "code/docs/acceptance/workbench-experience-2026-11-14/documentation-sync.json",
+    "scope": [
+      "统一新任务与PDF显式复用入口",
+      "仅原文阶段已知分母进度与真实终态",
+      "明确关联原整图/原图注展示及无关联/缺图说明",
+      "同投影host预载与按事件游标增量读取进度"
+    ],
+    "acceptance_boundary": "S2按两层准备/运营配置工程已通过；医学能力/术语医学批准、S6独立质量与性能及S7完整真实链路仍未验证，本轮工程不自动升级。",
+    "extra_paid_experiments_authorized": 0,
+    "ordinary_user_run": "用户原手动任务自然partial，80/80请求触顶；2929派发块全部处理完，但41字形缺口与全文汇总未完成。代理额外付费试验0，与原任务已有80次付费请求分列。",
+    "formal_review_record": "code/docs/acceptance/workbench-experience-2026-11-14/report.json#/formal_reviews",
+    "verification": "限定工程、同源构建隔离浏览器16场景及真实30141只读5组通过；不新增真实付费试验，不认证医学或完整S6/S7。",
+    "ordinary_user_run_result": {
+      "record": "code/docs/acceptance/workbench-experience-2026-11-14/live-final-diagnostics.json",
+      "run_id": "run-f5dc6144-9308-4875-ac96-269a645b10ca",
+      "created_at_utc": "2026-11-14T08:16:58.203Z",
+      "ended_at_utc": "2026-11-14T08:33:46.084Z",
+      "status": "partial",
+      "wall_elapsed_ms": 1007881,
+      "execution_elapsed_ms": 1007874,
+      "ui_elapsed_display": "16:47",
+      "ui_time_semantics": "界面按实际运行计时向下取整；总壁钟与运行计时相差7ms排队，不把约16分48秒写成精确16:48。",
+      "existing_user_run_model_requests": 80,
+      "original_model_request_limit": 80,
+      "dispatched_blocks": 2929,
+      "processed_dispatched_blocks": 2929,
+      "batches": 23,
+      "isolated_glyph_gap_blocks": 41,
+      "whole_document_summary_complete": false,
+      "full_document_extraction_completed": false,
+      "attribution": "用户原手动运行自然触达原80请求限额；代理未取消、调额、改模型或重放。"
+    },
+    "engineering_validation": {
+      "backend_typecheck": "passed",
+      "extraction_tests": 346,
+      "server_tests": 71,
+      "frontend_unit_tests": 14,
+      "frontend_typecheck": "passed",
+      "frontend_lint": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "production_build": "passed",
+      "same_build_isolated_browser_cases": 16,
+      "live_readonly_browser_cases": 5,
+      "frontend_record": "code/docs/acceptance/workbench-experience-2026-11-14/ui.json",
+      "main_record": "code/docs/acceptance/workbench-experience-2026-11-14/report.json",
+      "test_counts": "各套件/定向检查按主报告独立列出，不相加成新的总样本或医学验收。"
+    },
+    "runtime": {
+      "status": "deployed_and_readonly_verified",
+      "frontend_origin": "http://127.0.0.1:30141",
+      "backend_origin": "http://127.0.0.1:3210",
+      "BUILD_ID": "AvEqqRvnH42IteI6npju-",
+      "dist": "apps/pi-web/build/workbench-experience-validated-20261114",
+      "source_build_match": true,
+      "activation": "用户原运行自然结束后，fresh0active再切换；中断用户任务0。",
+      "controlled_cutover": {
+        "table_count": 17,
+        "runs": 8,
+        "papers": 8,
+        "database_logical_tables_unchanged": true,
+        "two_environment_files_sha256_unchanged": true,
+        "scope_catalog_sha256_unchanged": true,
+        "integrity": "ok",
+        "foreign_key_errors": 0,
+        "active_runs": 0
+      },
+      "preservation_scope": "上述数据/配置保持只指受控切换前后，不宣称整会话数据库从未随用户操作或原运行自然改变。",
+      "production_test_mutations": 0,
+      "engineering_extra_paid_model_calls": 0
+    }
   }
 }

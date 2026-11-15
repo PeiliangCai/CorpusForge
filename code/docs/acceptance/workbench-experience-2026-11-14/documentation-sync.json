@@ -1,0 +1,328 @@
+{
+  "schema_version": "workbench-experience-documentation-sync-1",
+  "status": "final_documentation_verified",
+  "updated_at_utc": "2026-11-14T09:10:29.863786+00:00",
+  "main_report": "code/docs/acceptance/workbench-experience-2026-11-14/report.json",
+  "formal_reviews": {
+    "record": "code/docs/acceptance/workbench-experience-2026-11-14/report.json#/formal_reviews",
+    "local_counter": false
+  },
+  "scope": {
+    "contract": "方案/子任务T1/开发计划.json#/current_workbench_experience",
+    "files": [
+      "方案/当前版本.json",
+      "方案/实施计划.json",
+      "方案/任务分解.json",
+      "方案/工作流与模块职责.json",
+      "方案/子任务T1/当前版本.json",
+      "方案/子任务T1/开发计划.json",
+      "方案/子任务T1/质量与性能验收契约.json",
+      "方案/子任务T1/开发任务清单.csv",
+      "方案/子任务T1/开发阶段与验收.csv",
+      "方案/子任务T1/验收清单.csv",
+      "方案/子任务T1/T1智能体开发计划.docx",
+      "方案/子任务T1/T1开发执行说明.docx"
+    ],
+    "new_acceptance_ids": [
+      "F15",
+      "F16",
+      "F17",
+      "F18"
+    ],
+    "new_task_id": "T1-R28"
+  },
+  "preservation": {
+    "policy": "JSON历史/预算/审查子树保留；CSV旧行除S5当前增量不改；DOCX对应正文仅精确替换已被本轮取代的短语并追加状态证据段，保留其余原文及其它ZIP部件字节。",
+    "baseline_sha256": {
+      "方案/当前版本.json": "3c1cacd90cf96272b2561e8826b4cc4da23abaee3696a41aa227901421b63031",
+      "方案/实施计划.json": "06633e2811c3da142471fd0320d5d953416671a028863af7130fe30f40b5bd16",
+      "方案/任务分解.json": "2a2fa23bc7fa7db30dbe07e38a4e958d3ea08270b656e7e6981eb3f776bdc16f",
+      "方案/工作流与模块职责.json": "9a0fe055d64737643046ab85b041e5de9d33febf7c5e37b5fbaacb7f551d95e7",
+      "方案/子任务T1/当前版本.json": "87318bea1b78804d734e6303039a21606bc904877884722293dbae4e99febb0e",
+      "方案/子任务T1/开发计划.json": "d869606fe91707b0b1b704b1b21ab5f9b6166e0a7f900edd8213cb333fabb1b8",
+      "方案/子任务T1/质量与性能验收契约.json": "08334dc1d193ca6b988e55346193756a5fa62650fcecab37e7a1906990861d43",
+      "方案/子任务T1/开发任务清单.csv": "a5c8e191d4509a7cb141b17660804b49e00ae08c2d2dd04c3e900f3255574f4b",
+      "方案/子任务T1/开发阶段与验收.csv": "86d77511d9ee8086b06913c219436ebb14799c87524e75b43b545605ec6ae572",
+      "方案/子任务T1/验收清单.csv": "20c2ea2ec4d92ad928622c3ad25eea463764a38e287d2dbace942b6c001729a8",
+      "方案/子任务T1/T1智能体开发计划.docx": "c6803c0d51bc597ce7a009a90d62172d2f970f50ebcaea5b99725a79bc2ddecd",
+      "方案/子任务T1/T1开发执行说明.docx": "ba75a351d520e6a3fa709355126aff34f789af2d288d163bc27f517791423078"
+    },
+    "verification": "passed",
+    "user_changes_saved": "passed: exact inverse checks preserve all untouched DOCX original XML,14 other ZIP parts per file, old CSV rows except current S5 increment, and original JSON history/budget/review objects; old current fingerprints/review references archived intact."
+  },
+  "acceptance_boundary": {
+    "S2": "already_passed_current_preparation_and_two_layer_operator_configuration_engineering",
+    "medical_quality_approved": false,
+    "complete_S6_independent_validation_promoted": false,
+    "complete_S7_real_chain_promoted": false
+  },
+  "paid_call_boundary": {
+    "engineering_extra_paid_experiments": 0,
+    "existing_user_initiated_run_model_requests": 80,
+    "actual_currency_cost": "unknown_gateway_billing"
+  },
+  "implementation_results": {
+    "record": "code/docs/acceptance/workbench-experience-2026-11-14/report.json",
+    "engineering_validation": {
+      "backend_typecheck": "passed",
+      "extraction_tests": 346,
+      "server_tests": 71,
+      "frontend_unit_tests": 14,
+      "frontend_typecheck": "passed",
+      "frontend_lint": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "production_build": "passed",
+      "same_build_isolated_browser_cases": 16,
+      "live_readonly_browser_cases": 5,
+      "frontend_record": "code/docs/acceptance/workbench-experience-2026-11-14/ui.json",
+      "main_record": "code/docs/acceptance/workbench-experience-2026-11-14/report.json",
+      "test_counts": "各套件/定向检查按主报告独立列出，不相加成新的总样本或医学验收。"
+    },
+    "runtime": {
+      "status": "deployed_and_readonly_verified",
+      "frontend_origin": "http://127.0.0.1:30141",
+      "backend_origin": "http://127.0.0.1:3210",
+      "BUILD_ID": "AvEqqRvnH42IteI6npju-",
+      "dist": "apps/pi-web/build/workbench-experience-validated-20261114",
+      "source_build_match": true,
+      "activation": "用户原运行自然结束后，fresh0active再切换；中断用户任务0。",
+      "controlled_cutover": {
+        "table_count": 17,
+        "runs": 8,
+        "papers": 8,
+        "database_logical_tables_unchanged": true,
+        "two_environment_files_sha256_unchanged": true,
+        "scope_catalog_sha256_unchanged": true,
+        "integrity": "ok",
+        "foreign_key_errors": 0,
+        "active_runs": 0
+      },
+      "preservation_scope": "上述数据/配置保持只指受控切换前后，不宣称整会话数据库从未随用户操作或原运行自然改变。",
+      "production_test_mutations": 0,
+      "engineering_extra_paid_model_calls": 0
+    },
+    "ordinary_user_run_result": {
+      "record": "code/docs/acceptance/workbench-experience-2026-11-14/live-final-diagnostics.json",
+      "run_id": "run-f5dc6144-9308-4875-ac96-269a645b10ca",
+      "created_at_utc": "2026-11-14T08:16:58.203Z",
+      "ended_at_utc": "2026-11-14T08:33:46.084Z",
+      "status": "partial",
+      "wall_elapsed_ms": 1007881,
+      "execution_elapsed_ms": 1007874,
+      "ui_elapsed_display": "16:47",
+      "ui_time_semantics": "界面按实际运行计时向下取整；总壁钟与运行计时相差7ms排队，不把约16分48秒写成精确16:48。",
+      "existing_user_run_model_requests": 80,
+      "original_model_request_limit": 80,
+      "dispatched_blocks": 2929,
+      "processed_dispatched_blocks": 2929,
+      "batches": 23,
+      "isolated_glyph_gap_blocks": 41,
+      "whole_document_summary_complete": false,
+      "full_document_extraction_completed": false,
+      "attribution": "用户原手动运行自然触达原80请求限额；代理未取消、调额、改模型或重放。"
+    },
+    "figure_delivery": {
+      "record": "code/docs/acceptance/workbench-experience-2026-11-14/live-final-diagnostics.json",
+      "live_readonly_record": "code/docs/acceptance/workbench-experience-2026-11-14/ui.json#/live_readonly",
+      "saved_candidates": 13,
+      "paired_candidates": 1,
+      "no_explicit_reference_candidates": 12,
+      "mechanically_checked_whole_figures_with_readable_assets": 3,
+      "displayed_Figure5": "当前背景证据中的原Figure5/原图注链路只读正常；Figure5是论文示意图，本轮不宣称医学影像图型或语义配对正确性验收。",
+      "medical_quality_approved": false
+    },
+    "new_real_run_speedup_tested": false
+  },
+  "ordinary_user_run_result": {
+    "run_id": "run-f5dc6144-9308-4875-ac96-269a645b10ca",
+    "ended_at_utc": "2026-11-14T08:33:46Z",
+    "status": "partial",
+    "model_requests": 80,
+    "model_request_limit": 80,
+    "dispatched_blocks": 2929,
+    "processed_dispatched_blocks": 2929,
+    "batches": 23,
+    "isolated_glyph_gap_blocks": 41,
+    "whole_document_summary_complete": false,
+    "attribution": "用户原手动运行自然触达原80请求限额；代理未取消、调额或重放。",
+    "evidence": "诊断owner最终分阶段与事件证据待主report补齐；不宣称全文成功。"
+  },
+  "validation": {
+    "status": "passed",
+    "checks": [
+      {
+        "file": "方案/当前版本.json",
+        "parse": "passed",
+        "unchanged_original_top_level_fields": 31,
+        "allowed_current_fields_changed": [
+          "current_requirement_formal_reviews"
+        ],
+        "original_historical_budget_review_values": "preserved; prior current metadata archived unchanged",
+        "sha256": "260b85c6fb147ec4b4634ac559c6d299c9496acdb9e565509fa2ab877c821c70"
+      },
+      {
+        "file": "方案/实施计划.json",
+        "parse": "passed",
+        "unchanged_original_top_level_fields": 34,
+        "allowed_current_fields_changed": [],
+        "original_historical_budget_review_values": "preserved; prior current metadata archived unchanged",
+        "sha256": "96dd8d0e44571452237011098f6deb69e6fd2ba9accffa26d8a24b599aeed2df"
+      },
+      {
+        "file": "方案/任务分解.json",
+        "parse": "passed",
+        "unchanged_original_top_level_fields": 17,
+        "allowed_current_fields_changed": [],
+        "original_historical_budget_review_values": "preserved; prior current metadata archived unchanged",
+        "sha256": "f51fe9a158ccd16d2764738cefeafdd151e953a141fe5004ff3d978c0d7f264b"
+      },
+      {
+        "file": "方案/工作流与模块职责.json",
+        "parse": "passed",
+        "unchanged_original_top_level_fields": 13,
+        "allowed_current_fields_changed": [
+          "modules",
+          "t1_nodes",
+          "persistence",
+          "t1_input_contract"
+        ],
+        "original_historical_budget_review_values": "preserved; prior current metadata archived unchanged",
+        "sha256": "04ad494081fb083395d3f4159211f55d924e1d10a2cf8108792e1f9cb54a7a0b"
+      },
+      {
+        "file": "方案/子任务T1/当前版本.json",
+        "parse": "passed",
+        "unchanged_original_top_level_fields": 87,
+        "allowed_current_fields_changed": [
+          "current_document_fingerprints",
+          "current_requirement_formal_reviews"
+        ],
+        "original_historical_budget_review_values": "preserved; prior current metadata archived unchanged",
+        "sha256": "aade788474462ceb3710ff6e2cf148ab0d20cda80afa2d6228320dee60feb0ce"
+      },
+      {
+        "file": "方案/子任务T1/开发计划.json",
+        "parse": "passed",
+        "unchanged_original_top_level_fields": 71,
+        "allowed_current_fields_changed": [
+          "current_document_fingerprints",
+          "current_requirement_formal_reviews"
+        ],
+        "original_historical_budget_review_values": "preserved; prior current metadata archived unchanged",
+        "sha256": "0593626c857fb46e31df975a32b8b4d35c7134fe1dc3c16a0d98122e38fc1a44"
+      },
+      {
+        "file": "方案/子任务T1/质量与性能验收契约.json",
+        "parse": "passed",
+        "unchanged_original_top_level_fields": 62,
+        "allowed_current_fields_changed": [
+          "functional_invariants",
+          "current_document_fingerprints",
+          "current_requirement_formal_reviews"
+        ],
+        "original_historical_budget_review_values": "preserved; prior current metadata archived unchanged",
+        "sha256": "2d167efe03458bf016fbaa7745186ff1cbf9552ad5a475bfb266c93e661266ec"
+      },
+      {
+        "file": "方案/子任务T1/开发任务清单.csv",
+        "parse_shape_and_unique_ids": "passed",
+        "original_rows": 27,
+        "allowed_original_rows_changed": [],
+        "new_rows": [
+          "T1-R28"
+        ],
+        "sha256": "6c9bb8f40ae1f154368b2bd0b72e5e3339fc53605a05bc9f074b711d9118309b"
+      },
+      {
+        "file": "方案/子任务T1/开发阶段与验收.csv",
+        "parse_shape_and_unique_ids": "passed",
+        "original_rows": 8,
+        "allowed_original_rows_changed": [
+          "S5"
+        ],
+        "new_rows": [],
+        "sha256": "e4da5bef94326954d660dd61ca7969f0d3261f7dbf518bb733eae9c7804fb9a3"
+      },
+      {
+        "file": "方案/子任务T1/验收清单.csv",
+        "parse_shape_and_unique_ids": "passed",
+        "original_rows": 27,
+        "allowed_original_rows_changed": [],
+        "new_rows": [
+          "F15",
+          "F16",
+          "F17",
+          "F18"
+        ],
+        "sha256": "93344a7adaee39d27b34b198c45390ac3ded83779b2db68d405176f3b8351bcb"
+      },
+      {
+        "file": "方案/子任务T1/T1智能体开发计划.docx",
+        "zip_and_xml": "passed",
+        "other_zip_members_preserved_exactly": 14,
+        "original_document_xml_reconstructable_exactly": true,
+        "precise_body_phrase_updates": 10,
+        "appended_final_paragraphs": 6,
+        "original_document_xml_sha256": "091cc01c35642d808a643864eb4cac18040b21f6a96701435c32d9d79c9a4c3b",
+        "final_document_xml_sha256": "5ecff350d27c6cf7a5fff8192feef75be7dc45abe87e3f878be9d0c12e8f71a6",
+        "sha256": "6c5c53ddf86ef4a9eeaa737f563698400745fda4b087cbab4bdd339cdbdb4ef9"
+      },
+      {
+        "file": "方案/子任务T1/T1开发执行说明.docx",
+        "zip_and_xml": "passed",
+        "other_zip_members_preserved_exactly": 14,
+        "original_document_xml_reconstructable_exactly": true,
+        "precise_body_phrase_updates": 7,
+        "appended_final_paragraphs": 6,
+        "original_document_xml_sha256": "a2d1c83ea476ece9cf873c389b4543607c6f98de91855722adebf74d33f533a4",
+        "final_document_xml_sha256": "358d5453c054b145ee68528c24c49aa801b06ccb5cde4062921bd7199ff60e1f",
+        "sha256": "af4b24729571e57ea8c17ff1ead14439fac6df7899b63b3e347c6bb50604a762"
+      },
+      {
+        "scope": "workflow_current_T1_only",
+        "exact_inverse_to_original_hashes": "passed",
+        "T2_to_T5_and_other_entries": "unchanged"
+      }
+    ],
+    "errors": [],
+    "source_evidence": {
+      "main_report_status_at_check": "completed",
+      "formal_review_source": "report.json#/formal_reviews",
+      "S2_stage_passed": true,
+      "S2_engineering_complete": true,
+      "S2_medical_quality_approved": false,
+      "frontend_BUILD_ID": "AvEqqRvnH42IteI6npju-",
+      "isolated_browser_cases": 16,
+      "live_readonly_browser_cases": 5
+    },
+    "limits": [
+      "Document checks establish structure, fingerprints, source alignment and preservation; they do not grant medical/semantic acceptance.",
+      "Local3→1 request and SQL improvements do not prove new real-task total-time speedup.",
+      "Old user task remains partial with80 requests,41 glyph gaps and incomplete summary; engineering extra paid experiments0."
+    ]
+  },
+  "user_content_preservation": "原JSON历史/预算/审查子树及旧当前指纹/审查引用对象保留；DOCX对应正文仅精确替换本轮取代短语，其余原文和14个其它ZIP部件保留；CSV原行除S5当前增量外不改。",
+  "cleanup": {
+    "own_continuity_log": "code/runtime-data/agent-notes/workbench-experience-docs-2026-11-14.json",
+    "own_continuity_log_removed": true,
+    "permanent_rules_or_other_task_material_removed": false,
+    "removed_after_handoff": true,
+    "completed_at_utc": "2026-11-14T09:11:09.278177+00:00"
+  },
+  "final_file_sha256": {
+    "方案/当前版本.json": "260b85c6fb147ec4b4634ac559c6d299c9496acdb9e565509fa2ab877c821c70",
+    "方案/实施计划.json": "96dd8d0e44571452237011098f6deb69e6fd2ba9accffa26d8a24b599aeed2df",
+    "方案/任务分解.json": "f51fe9a158ccd16d2764738cefeafdd151e953a141fe5004ff3d978c0d7f264b",
+    "方案/工作流与模块职责.json": "04ad494081fb083395d3f4159211f55d924e1d10a2cf8108792e1f9cb54a7a0b",
+    "方案/子任务T1/当前版本.json": "aade788474462ceb3710ff6e2cf148ab0d20cda80afa2d6228320dee60feb0ce",
+    "方案/子任务T1/开发计划.json": "0593626c857fb46e31df975a32b8b4d35c7134fe1dc3c16a0d98122e38fc1a44",
+    "方案/子任务T1/质量与性能验收契约.json": "2d167efe03458bf016fbaa7745186ff1cbf9552ad5a475bfb266c93e661266ec",
+    "方案/子任务T1/开发任务清单.csv": "6c9bb8f40ae1f154368b2bd0b72e5e3339fc53605a05bc9f074b711d9118309b",
+    "方案/子任务T1/开发阶段与验收.csv": "e4da5bef94326954d660dd61ca7969f0d3261f7dbf518bb733eae9c7804fb9a3",
+    "方案/子任务T1/验收清单.csv": "93344a7adaee39d27b34b198c45390ac3ded83779b2db68d405176f3b8351bcb",
+    "方案/子任务T1/T1智能体开发计划.docx": "6c5c53ddf86ef4a9eeaa737f563698400745fda4b087cbab4bdd339cdbdb4ef9",
+    "方案/子任务T1/T1开发执行说明.docx": "af4b24729571e57ea8c17ff1ead14439fac6df7899b63b3e347c6bb50604a762"
+  }
+}

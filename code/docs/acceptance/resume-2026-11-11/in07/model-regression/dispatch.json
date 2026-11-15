@@ -1,0 +1,19 @@
+{
+  "schema_version": "t1-main-session-round-dispatch-1",
+  "observed_at_utc": "2026-11-11T10:57:26.727586+00:00",
+  "decision_owner": "Main session GPT-6-Astra max under user3h autonomy",
+  "decision_quote": "明确派发第三轮也是本窗口最后一轮：IN07 model-regression/plan.json SHAeac9419c38a4c9e0ce2c026d827cad34ab10a0cf44f4da72e772fc5d0e5dc3e1，image32a0e53a…，PDF4f6a305f…，Luna medium、all/all/all、ordinary精确policy；仅1次24请求/600000input/32000output/900s，所有物理重试计入，绝对12:10:01Z前结束，首个无法恢复错误即停、不整轮重跑。累计上限72/1800000/96000，已有22/accounted316103/18362、缺usage1，不清零、不重开任何旧额度。以单独dispatch记录绑定冻结SHA直接执行；新错误读取有界脱敏信息，若仍失败保留实际失败，后续收尾不再增加付费实验。",
+  "plan_sha256": "eac9419c38a4c9e0ce2c026d827cad34ab10a0cf44f4da72e772fc5d0e5dc3e1",
+  "authorized_round": "repaired-in07-20261111",
+  "authorized_runs": 1,
+  "limits": {
+    "requests": 24,
+    "input_tokens": 600000,
+    "output_tokens": 32000,
+    "seconds": 900
+  },
+  "no_more_paid_experiments_this_window": true,
+  "old_allowances_closed_and_not_revived": true,
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3
+}

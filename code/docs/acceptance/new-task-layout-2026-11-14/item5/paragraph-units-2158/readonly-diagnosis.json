@@ -1,0 +1,595 @@
+{
+  "observed_at_utc": "2026-11-15T08:15:14.731429+00:00",
+  "source_run": "run-18bcf139-49ed-45c8-8d71-a0bf0249f09c",
+  "source_ir_sha256": "b50f6b3b288739094d94a4a39eaf6c3091f374b0f405de8646e66aaf22d11228",
+  "source_plan_sha256": "15a307b43a2474eb889829a49907d66979b6fffecb6c528954b0b3cb2f7ba419",
+  "user_cancelled_before_agent_investigation": true,
+  "pages": 45,
+  "raw_lines": 4484,
+  "parent_units": 2158,
+  "kind_counts": {
+    "source_fragment": 313,
+    "heading": 78,
+    "paragraph": 1757,
+    "caption": 10
+  },
+  "basis_counts": {
+    "source_line_fallback": 249,
+    "native_paragraph": 1844,
+    "native_boundary_fragment": 64,
+    "checked_continuation": 1
+  },
+  "single_line_units": 1914,
+  "single_lines_in_native_picture_regions": 1365,
+  "single_lines_outside_picture_regions": 549,
+  "by_page": {
+    "1": {
+      "source_fragment": 2,
+      "single_line": 10,
+      "heading": 2,
+      "paragraph": 11
+    },
+    "2": {
+      "source_fragment": 2,
+      "single_line": 4,
+      "heading": 3,
+      "paragraph": 10
+    },
+    "3": {
+      "source_fragment": 4,
+      "single_line": 226,
+      "paragraph": 226,
+      "caption": 1
+    },
+    "4": {
+      "source_fragment": 3,
+      "single_line": 277,
+      "heading": 1,
+      "paragraph": 275,
+      "caption": 1
+    },
+    "5": {
+      "source_fragment": 5,
+      "single_line": 3,
+      "paragraph": 5,
+      "heading": 2
+    },
+    "6": {
+      "source_fragment": 9,
+      "single_line": 285,
+      "heading": 1,
+      "paragraph": 276,
+      "caption": 1
+    },
+    "7": {
+      "source_fragment": 3,
+      "single_line": 414,
+      "paragraph": 411,
+      "caption": 1
+    },
+    "8": {
+      "source_fragment": 5,
+      "single_line": 3,
+      "heading": 2,
+      "paragraph": 7
+    },
+    "9": {
+      "source_fragment": 1,
+      "single_line": 175,
+      "paragraph": 173,
+      "caption": 1
+    },
+    "10": {
+      "source_fragment": 5,
+      "single_line": 3,
+      "heading": 2,
+      "paragraph": 5
+    },
+    "11": {
+      "source_fragment": 56,
+      "single_line": 56,
+      "heading": 2,
+      "paragraph": 6
+    },
+    "12": {
+      "source_fragment": 77,
+      "single_line": 81,
+      "heading": 2,
+      "paragraph": 6
+    },
+    "13": {
+      "heading": 3,
+      "single_line": 3,
+      "paragraph": 11
+    },
+    "14": {
+      "heading": 1,
+      "single_line": 1,
+      "paragraph": 12,
+      "source_fragment": 3
+    },
+    "15": {
+      "source_fragment": 1,
+      "single_line": 1,
+      "paragraph": 9,
+      "heading": 1
+    },
+    "16": {
+      "heading": 1,
+      "single_line": 1,
+      "paragraph": 10,
+      "source_fragment": 2
+    },
+    "17": {
+      "heading": 1,
+      "single_line": 1,
+      "paragraph": 8,
+      "source_fragment": 2
+    },
+    "18": {
+      "heading": 1,
+      "single_line": 1,
+      "paragraph": 7,
+      "source_fragment": 3
+    },
+    "19": {
+      "source_fragment": 1,
+      "single_line": 4,
+      "paragraph": 12,
+      "heading": 4
+    },
+    "20": {
+      "heading": 2,
+      "single_line": 54,
+      "paragraph": 5,
+      "source_fragment": 52
+    },
+    "21": {
+      "paragraph": 5,
+      "single_line": 1
+    },
+    "22": {
+      "heading": 1,
+      "single_line": 2,
+      "caption": 1
+    },
+    "23": {
+      "source_fragment": 2,
+      "single_line": 0
+    },
+    "24": {
+      "heading": 1,
+      "single_line": 2,
+      "caption": 1
+    },
+    "25": {
+      "paragraph": 2,
+      "single_line": 0
+    },
+    "26": {
+      "heading": 1,
+      "single_line": 2,
+      "paragraph": 1
+    },
+    "27": {
+      "heading": 1,
+      "single_line": 0,
+      "source_fragment": 2
+    },
+    "28": {
+      "heading": 1,
+      "single_line": 1,
+      "paragraph": 2
+    },
+    "29": {
+      "paragraph": 1,
+      "single_line": 1
+    },
+    "30": {
+      "heading": 1,
+      "single_line": 1,
+      "paragraph": 2
+    },
+    "31": {
+      "heading": 1,
+      "single_line": 0,
+      "source_fragment": 2
+    },
+    "32": {
+      "source_fragment": 1,
+      "single_line": 1,
+      "caption": 1,
+      "paragraph": 1
+    },
+    "33": {
+      "caption": 1,
+      "single_line": 1
+    },
+    "34": {
+      "heading": 1,
+      "single_line": 1,
+      "source_fragment": 2
+    },
+    "35": {
+      "source_fragment": 2,
+      "single_line": 0
+    },
+    "36": {
+      "heading": 1,
+      "single_line": 2,
+      "caption": 1
+    },
+    "37": {
+      "heading": 1,
+      "single_line": 0,
+      "source_fragment": 2
+    },
+    "38": {
+      "heading": 6,
+      "single_line": 49,
+      "paragraph": 38,
+      "source_fragment": 14
+    },
+    "39": {
+      "source_fragment": 5,
+      "single_line": 14,
+      "paragraph": 20,
+      "heading": 4
+    },
+    "40": {
+      "heading": 8,
+      "single_line": 54,
+      "paragraph": 43,
+      "source_fragment": 9
+    },
+    "41": {
+      "source_fragment": 3,
+      "single_line": 3,
+      "paragraph": 5
+    },
+    "42": {
+      "paragraph": 77,
+      "single_line": 81,
+      "heading": 3,
+      "source_fragment": 7
+    },
+    "43": {
+      "source_fragment": 16,
+      "single_line": 49,
+      "heading": 8,
+      "paragraph": 33
+    },
+    "44": {
+      "source_fragment": 10,
+      "single_line": 45,
+      "heading": 8,
+      "paragraph": 38
+    },
+    "45": {
+      "paragraph": 4,
+      "single_line": 1
+    }
+  },
+  "boundary_cut_counts": {
+    "same_native_unit_column_no_overlap": 26,
+    "physical_page": 4,
+    "raw_reading_order_gap": 3
+  },
+  "candidate_skips": {
+    "partial_raw_line_coverage": 79
+  },
+  "samples": {
+    "body": [
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 2,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0002-l000002",
+          "882d035bd2a7a042ad9a-p0002-l000003",
+          "882d035bd2a7a042ad9a-p0002-l000004",
+          "882d035bd2a7a042ad9a-p0002-l000005",
+          "882d035bd2a7a042ad9a-p0002-l000006",
+          "882d035bd2a7a042ad9a-p0002-l000007",
+          "882d035bd2a7a042ad9a-p0002-l000008",
+          "882d035bd2a7a042ad9a-p0002-l000009",
+          "882d035bd2a7a042ad9a-p0002-l000010",
+          "882d035bd2a7a042ad9a-p0002-l000011"
+        ],
+        "original_text": "Growing evidence suggests that immune dysregulation precedes\nNSCLC invasion. Mouse models of lung adenocarcinoma (LUAD) devel-\nopment feature protumorigenic macrophage niches 10 , priming defects\nand CD8 + T cell dysfunction during early tumorigenesis 11,12 . Notably,\npreinvasive progression of human airway carcinoma in situ (CIS) lesions\nto lung squamous carcinoma (LUSC) is associated with impaired CD8 +\nT cell infiltration 3 , skewed CD4 + T cell differentiation and gene expres-\nsion profiles emblematic of conventional T cell (Tconv cell) and/or Treg\ncell activation (for example, TNFRSF9 (encoding 4-1BB), ICOS, CTLA4,\nTNFRSF18 (encoding GITR), TGFB1 and IL10) 13 ."
+      }
+    ],
+    "figure_labels": [
+      {
+        "kind": "source_fragment",
+        "basis": "source_line_fallback",
+        "physical_page": 3,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0003-l000000"
+        ],
+        "original_text": "Nature | www.nature.com | 3"
+      },
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 3,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0003-l000017"
+        ],
+        "original_text": "log 2 [FC]"
+      },
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 3,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0003-l000018"
+        ],
+        "original_text": "-6 0"
+      },
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 3,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0003-l000019"
+        ],
+        "original_text": "6"
+      },
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 3,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0003-l000020"
+        ],
+        "original_text": "Neighbourhood size"
+      },
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 3,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0003-l000021"
+        ],
+        "original_text": "50 100 150 200 250"
+      }
+    ],
+    "form": [
+      {
+        "kind": "heading",
+        "basis": "native_paragraph",
+        "physical_page": 40,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0040-l000000"
+        ],
+        "original_text": "Animal studies"
+      },
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 40,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0040-l000001"
+        ],
+        "original_text": "For mouse flow cytometry experimental samples were excluded for analysis based on the following criteria: less than 50 cells in the parent population."
+      },
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 40,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0040-l000002"
+        ],
+        "original_text": "Replication"
+      },
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 40,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0040-l000003"
+        ],
+        "original_text": "Human"
+      },
+      {
+        "kind": "heading",
+        "basis": "native_paragraph",
+        "physical_page": 40,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0040-l000006"
+        ],
+        "original_text": "Animal studies"
+      },
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 40,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0040-l000013"
+        ],
+        "original_text": "Randomization"
+      }
+    ],
+    "reagent_list": [
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 42,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0042-l000000"
+        ],
+        "original_text": "CD1d-PBS57 tetramer, clone n/a, PE (NIH, n/a)"
+      },
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 42,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0042-l000001"
+        ],
+        "original_text": "Foxp3, clone 3G3, PE-CF594 (BD, 567456)"
+      },
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 42,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0042-l000002"
+        ],
+        "original_text": "CD39, clone Duha59, PE-Fire 640 (BioLegend, 567456)"
+      },
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 42,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0042-l000003"
+        ],
+        "original_text": "ICOS, clone 15F9, PE-Fire 700 (BioLegend, 107716)"
+      },
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 42,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0042-l000004"
+        ],
+        "original_text": "4-1BB, clone REA936, PE-Vio770 (Miltenyi Biotec, 130-115-457)"
+      },
+      {
+        "kind": "paragraph",
+        "basis": "native_paragraph",
+        "physical_page": 42,
+        "block_ids": [
+          "882d035bd2a7a042ad9a-p0042-l000005"
+        ],
+        "original_text": "CTLA-4, clone UC10-4B9, PE-Fire 810 (BioLegend, 106335)"
+      }
+    ]
+  },
+  "batches": {
+    "total": 39,
+    "max_raw_lines": 128,
+    "max_source_codepoints": 8489,
+    "first": {
+      "assigned_raw_lines": 119,
+      "context_raw_lines": 6,
+      "source_codepoints": 8020,
+      "physical_pages": [
+        1,
+        2
+      ]
+    },
+    "model_first_batch_read_blocks": 125,
+    "existing_user_request_ledger_entries": 13,
+    "requests_are_not_batches": true,
+    "limits": {
+      "requests": 80,
+      "input_tokens": 2000000,
+      "output_tokens": 120000,
+      "seconds": 1800,
+      "request_seconds": 120,
+      "document_seconds": 1800,
+      "transient_retries": 2,
+      "response_output_tokens": 8192,
+      "batch_responses": 16
+    }
+  },
+  "host_prefill_receipts": [
+    {
+      "run_id": "run-18bcf139-49ed-45c8-8d71-a0bf0249f09c",
+      "seq": 11,
+      "type": "host_source_prefill",
+      "timestamp": "2026-11-15T07:58:21.044Z",
+      "detail": {
+        "actor": "host",
+        "batch_id": "batch-0001",
+        "source_blocks": 125,
+        "assigned_source_blocks": 119,
+        "payload_sha256": "7f5f4bacb4205a3f92cc2cae87123d70285b9f1b2615c6857dc83cab982a8a82",
+        "projection": "same_get_document_context_and_read_document_blocks",
+        "exposure_receipt": "first_provider_stream_event",
+        "model_explicit_completion_required": true,
+        "source_read_is_not_completed": true,
+        "medical_approval": false
+      }
+    },
+    {
+      "run_id": "run-18bcf139-49ed-45c8-8d71-a0bf0249f09c",
+      "seq": 19,
+      "type": "host_source_prefill",
+      "timestamp": "2026-11-15T07:58:53.005Z",
+      "detail": {
+        "actor": "host",
+        "batch_id": "batch-0002",
+        "source_blocks": 143,
+        "assigned_source_blocks": 128,
+        "payload_sha256": "9ef00cea6901e33a87c509488b741bc6cf8330eecfa2f08626a4ddfd10c5fa72",
+        "projection": "same_get_document_context_and_read_document_blocks",
+        "exposure_receipt": "first_provider_stream_event",
+        "model_explicit_completion_required": true,
+        "source_read_is_not_completed": true,
+        "medical_approval": false
+      }
+    },
+    {
+      "run_id": "run-18bcf139-49ed-45c8-8d71-a0bf0249f09c",
+      "seq": 25,
+      "type": "host_source_prefill",
+      "timestamp": "2026-11-15T07:59:14.751Z",
+      "detail": {
+        "actor": "host",
+        "batch_id": "batch-0003",
+        "source_blocks": 140,
+        "assigned_source_blocks": 128,
+        "payload_sha256": "d91cfb6e2db9f6f2ea42df85bd07c50951398f67f80aad7049c7f8baea0e0be2",
+        "projection": "same_get_document_context_and_read_document_blocks",
+        "exposure_receipt": "first_provider_stream_event",
+        "model_explicit_completion_required": true,
+        "source_read_is_not_completed": true,
+        "medical_approval": false
+      }
+    },
+    {
+      "run_id": "run-18bcf139-49ed-45c8-8d71-a0bf0249f09c",
+      "seq": 33,
+      "type": "host_source_prefill",
+      "timestamp": "2026-11-15T07:59:42.224Z",
+      "detail": {
+        "actor": "host",
+        "batch_id": "batch-0004",
+        "source_blocks": 140,
+        "assigned_source_blocks": 128,
+        "payload_sha256": "b52120dac568021893701846e95e929583e3d442e6878a1b0cf897cb38f8893a",
+        "projection": "same_get_document_context_and_read_document_blocks",
+        "exposure_receipt": "first_provider_stream_event",
+        "model_explicit_completion_required": true,
+        "source_read_is_not_completed": true,
+        "medical_approval": false
+      }
+    },
+    {
+      "run_id": "run-18bcf139-49ed-45c8-8d71-a0bf0249f09c",
+      "seq": 41,
+      "type": "host_source_prefill",
+      "timestamp": "2026-11-15T08:00:11.247Z",
+      "detail": {
+        "actor": "host",
+        "batch_id": "batch-0005",
+        "source_blocks": 143,
+        "assigned_source_blocks": 128,
+        "payload_sha256": "a81fb4ac5959a1717b600c78764fc47fbc2fbfe62a13fb55abf1d288b900f51a",
+        "projection": "same_get_document_context_and_read_document_blocks",
+        "exposure_receipt": "first_provider_stream_event",
+        "model_explicit_completion_required": true,
+        "source_read_is_not_completed": true,
+        "medical_approval": false
+      }
+    }
+  ],
+  "source_files_and_plan_unchanged": true,
+  "agent_new_model_calls": 0,
+  "agent_production_business_writes": 0,
+  "medical_effect_evaluated": false
+}

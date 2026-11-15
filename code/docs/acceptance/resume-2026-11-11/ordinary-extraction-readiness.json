@@ -1,0 +1,67 @@
+{
+  "schema_version": "t1-ordinary-extraction-enablement-readiness-1",
+  "observed_at": "2026-11-11T11:22:26.988740+00:00",
+  "action_performed": "Root-delegated public enable and backend restart completed; GET-only verified, no Start/model call.",
+  "current_public_configuration": {
+    "T1_MODEL_PROVIDER": "agicto",
+    "T1_MODEL_BASE_URL": "https://api.agicto.cn/v1",
+    "T1_MODEL_ID": "gpt-6-luna",
+    "T1_WORKBENCH_MODEL_ENABLED": "true",
+    "T1_WORKBENCH_MAX_REQUESTS": "80",
+    "T1_WORKBENCH_MAX_INPUT_TOKENS": "2000000",
+    "T1_WORKBENCH_MAX_OUTPUT_TOKENS": "120000",
+    "T1_IMPORT_RETAINED": "false"
+  },
+  "current_ordinary_enabled": true,
+  "provider_and_protocol": {
+    "provider": "agicto",
+    "endpoint": "https://api.agicto.cn/v1",
+    "model_id": "gpt-6-luna",
+    "reasoning_effort": "medium",
+    "api": "openai-responses"
+  },
+  "current_per_user_started_task_limits": {
+    "physical_requests": 80,
+    "input_tokens": 2000000,
+    "output_tokens": 120000,
+    "execution_seconds": 1800,
+    "time_anchor": "Execution slot acquired, including PDF parsing/Figure discovery/model/summary; queue wait separately recorded",
+    "single_physical_request_seconds": 120,
+    "bounded_transient_retries": 2,
+    "all_retries_counted": true,
+    "maximum_responses_per_batch_or_summary": 16,
+    "token_semantics": "Local serialized-payload/context/output reservations plus supplier usage, with conservative missing usage; no guaranteed absolute provider billing cap"
+  },
+  "scheduling_and_cancellation": {
+    "concurrency": 2,
+    "queue": "Persisted FIFO; third and later explicit user tasks wait for a free slot",
+    "queued_cancel": "Removes queue task before model work; no model request to cancel a queued task",
+    "active_cancel": "Aborts transport/work; already saved candidate versions remain",
+    "refresh_or_close_tab": "Does not trigger or restart a new task",
+    "server_restart": "Active task becomes interrupted; no automatic model resume; a later explicit new task starts fresh",
+    "whole_task_retry": "No background full-run retry or task loop"
+  },
+  "conditions_for_main_session_operator_decision": {
+    "engineering_evidence": "Use actual unified final UI + repaired parser real deployment round results, including honest source and model failures; first IN04 source-limited round is already evidenced",
+    "server_only_change": "Explicitly enable T1_WORKBENCH_MODEL_ENABLED and restart the one existing backend; preserve private .env key bytes and ordinary data, retain runtime limits",
+    "credentials": "Existing key loaded privately by start-host.sh env-file, no key output; no provider/model request made while enabling or checking.",
+    "user_trigger": "Only explicit user Start/API new-run admission triggers that run. No auto model calls on page open/upload/preview; no scheduled background paid task",
+    "ordinary_business_flow": "The normal user does not need an experimental plan/signoff file",
+    "S2_medical_catalog": "Unverified catalog does not block all/all/all engineering extraction. Selected restricted vocabulary still requires an actually approved configured catalog and valid IDs",
+    "S6_statistics": "Incomplete independent population/clinical validation remains disclosed; it is not an extra block on all/all/all engineering use",
+    "record_approval": "Candidates and model assessments remain pending; approved text/Figure export still requires actual per-record current-version human checks",
+    "identity_policy": "Enabled ordinary backend has loaded exact priorgpt↔igpt confirmation plus user/delegated gpt-6-luna→data-zone-standard-gpt-6-luna deployment choice; unknown names still stop, new pair has no supplier/weights confirmation."
+  },
+  "normal_service_alias_policy_changed": true,
+  "ordinary_paid_requests_started": 0,
+  "normal_flag_or_environment_file_modified": true,
+  "model_or_medical_quality_approved_by_this_record": false,
+  "current_window_trial_budget": "All3experimental rounds closed at24physical calls;0remaining experimental allowance. Normal future user-click tasks use unchanged per-click80/2m/120k/1800s plus2slots. No normal Start performed by this task.",
+  "exact_policy_record": "code/config/workbench-response-model-policy.json",
+  "latest_runtime_state": "enabled_by_root_delegated_decision",
+  "current_runtime_report": "ordinary-enabled-runtime.json",
+  "ordinary_model_enabled": true,
+  "actual_enabled_by_final_source": true,
+  "actual_AGICTO_recovery_after_last_patch_live_verified": false,
+  "modified_configuration_scope": "Only public deploy/local/workbench.env enabled model and retained_import=false; private.env bytes unchanged."
+}

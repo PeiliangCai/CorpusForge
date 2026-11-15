@@ -1,0 +1,40 @@
+{
+  "schema_version": "t1-new-PDF-identity-1",
+  "checked_at": "2026-11-11T09:34:37.374478+00:00",
+  "source_id": "IN06",
+  "PDF_sha256": "1784b4b7ab855b3d0dbe6797b2cf7d340ac90b750844c4d8a7df79aeb802a4c1",
+  "bytes": 2160324,
+  "physical_pages": 5,
+  "text_codepoints_per_page": [
+    5086,
+    2673,
+    3747,
+    5177,
+    5023
+  ],
+  "pdf_metadata": {
+    "/Title": "",
+    "/Creator": "wkhtmltopdf 0.12.4",
+    "/Producer": "Qt 4.8.7",
+    "/CreationDate": "D:20240724160216Z"
+  },
+  "DOI_present": true,
+  "title_words_present": true,
+  "author_Kharouaa_present": true,
+  "publication_date_expected_by_root": "2024-06-24",
+  "date_evidence_lines": [
+    " 05/31/2024 ",
+    " 06/20/2024 ",
+    "Published",
+    " 06/24/2024",
+    "2024",
+    "Kharouaa B, Hayoune A, Gartini S, et al. (June 24, 2024) Pulmonary Sarcomatoid Carcinoma: What Makes This Rare Lung Cancer So"
+  ],
+  "license_evidence_lines": [
+    "© Copyright ",
+    "Creative Commons Attribution License CC-",
+    "BY 4.0., which permits unrestricted use,"
+  ],
+  "identity_only_not_medical_approval": true,
+  "model_calls": 0
+}

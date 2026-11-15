@@ -1,0 +1,26 @@
+/** Isolated two-layer browser fixture. No credentials, parser process or paid provider. */
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { ExtractionStore, RunStore } from '@t1/agent';
+import { WorkbenchWorkflow } from '../src/workflow.js';
+import { buildApp } from '../src/app.js';
+import { readScopeCatalog } from '../src/catalog-config.js';
+import { controlledFixture } from './controlled-fixture.js';
+const directory = resolve('runtime-data/two-layer-catalog-fixture-20261114');
+await mkdir(resolve(directory, 'config'), { recursive: true, mode: 0o700 });
+await writeFile(resolve(directory, 'config/scope-catalog.json'), await readFile('config/scope-catalog.json'));
+const store = new ExtractionStore(resolve(directory, 'fixture.sqlite')), legacy = new RunStore(':memory:');
+const fixture = await controlledFixture({ delayMs: 1 });
+const workflow = new WorkbenchWorkflow(store, { ...fixture, sources: false, directory: resolve(directory, 'workbench'), catalogProvider: () => readScopeCatalog(directory).catalog });
+await workflow.initialize();
+const bytes = await readFile('evaluation/corpus/development-candidates/L01.pdf');
+const paper = (await workflow.upload(bytes, 'saved-fixture.pdf', '已有任务 · 隔离目录验证')).paper;
+const scope = workflow.scopeCatalog().default_scope;
+scope.cancers = { mode: 'selected', ids: ['CANCER-LUNG'] }; scope.image_types = { mode: 'selected', ids: ['MODALITY-CT'] };
+const run = (await workflow.start(paper.id, scope, 'scope-browser-seed', { kind: 'single' })).run; await workflow.waitForIdle();
+const app = buildApp(legacy, undefined, workflow);
+await app.listen({ host: '127.0.0.1', port: 3215 });
+await writeFile(resolve(directory, 'runtime.json'), JSON.stringify({ pid: process.pid, directory, port: 3215, paper: paper.id, run: run.run_id, paid_model_calls: 0 }, null, 2) + '\n');
+console.log('Isolated two-layer catalog fixture ready on 3215');
+const shutdown = async () => { await app.close(); legacy.close(); store.close(); };
+process.once('SIGTERM', () => void shutdown()); process.once('SIGINT', () => void shutdown());

@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "BUILD_ID": "3vStVJbusRhBDfrFvff4U",
+  "checks": [
+    "same_validated_BUILD_HEAD_and_backend_health",
+    "fresh_and_stale_paper_global_URLs_clear_context_desktop_mobile",
+    "real_legacy_2158_39_keeps_cancelled_original_unit_honest_notes_and_exact_task_navigation",
+    "GET_HEAD_only_task_paper_model_lists_unchanged"
+  ],
+  "errors": [],
+  "blocked": [],
+  "paid_calls": 0,
+  "production_business_writes": 0,
+  "exports_requested": 0,
+  "api_sha256_before": {
+    "runs": "1e74fe0a0adc8fc46d61bdeec42a352fe1c367de4f54feebe5501f07f2fa4f89",
+    "papers": "af3b22960d406a74ad6704f5edf287eeda8b6b01c74fd78de75fefaf7778371f",
+    "models": "b0637c06e0eccda39b558dc0a13bd4084af97267e732f35a66cf5a06965b959c"
+  },
+  "legacy_notes": "说明\n系统提醒\n\n保留结果用于整理原文，不表示已经过医学核验。\n\n这篇论文仍有部分段落结构或图中文字未核对，可对照原页查看。\n\n任务已停止；已保存候选与审核仍保留。可创建新运行从头抽取。\n\n完成情况\n\n汇总核验、完成检查和结果保存均由系统自动执行；保留或排除记录不控制任务完成。\n\n已取消\n\n自动汇总核验尚未成功完成。\n\n内容单元可包含正文句段、标题、图注、图内文字、表格行及回退片段，总数不等于正文自然段数；长内容组的全部分片完成后才计入。\n\n此任务未记录内容组成，不能从总内容数推算正文段落数。\n\n处理批次按输入长度组织多段内容，长段可拆分；一批可包含多轮模型交互，批次数不等于模型请求次数。\n\n部分已派发原文尚未处理完成。\n自动汇总核验未完成全部必要检查。\n本次运行已取消，已保存结果仍保留。\n这次抽取的事件\n出处详情\n\n抽取模型: gpt-6-luna · openai-responses · medium\n\n连续原文已合并显示，不连续处保持分段；原文字词保留。\n\n已保存范围\n更多操作\n从原文补录候选\n来源位置与版本",
+  "api_sha256_after": {
+    "runs": "1e74fe0a0adc8fc46d61bdeec42a352fe1c367de4f54feebe5501f07f2fa4f89",
+    "papers": "af3b22960d406a74ad6704f5edf287eeda8b6b01c74fd78de75fefaf7778371f",
+    "models": "b0637c06e0eccda39b558dc0a13bd4084af97267e732f35a66cf5a06965b959c"
+  },
+  "concurrent_user_change_observed": false,
+  "run_count": 1,
+  "paper_count": 10,
+  "new_real_v2_tasks_created": 0,
+  "completed_at_utc": "2026-11-15T08:49:04.889Z"
+}

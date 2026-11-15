@@ -1,0 +1,296 @@
+{
+  "status": "passed",
+  "method": "Actual production Next page and static resources; every business API is fulfilled by Playwright. No requests reach the live business service.",
+  "origin": "http://127.0.0.1:30157",
+  "BUILD_ID": "mYxCBdDdcBK7amEeDhlnC",
+  "checks": [
+    {
+      "name": "desktop_selection_confirmation_bounds_focus_and_success",
+      "status": "passed"
+    },
+    {
+      "name": "mobile_bounded_scroll_confirmation_and_partial_counts",
+      "status": "passed"
+    },
+    {
+      "name": "stale_expired_busy_clear_selection_keep_upload_and_do_not_auto_retry",
+      "status": "passed"
+    },
+    {
+      "name": "empty_and_unavailable_preview_are_idle_and_read_failure_recovers",
+      "status": "passed"
+    },
+    {
+      "name": "cleaned_draft_keeps_file_title_scope_and_requires_explicit_reupload_with_new_key",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "next_static_resources": [
+    {
+      "name": "desktop_selection_confirmation_bounds_focus_and_success",
+      "path": "/_next/static/css/1346b4a27726c65b.css",
+      "status": 200
+    },
+    {
+      "name": "desktop_selection_confirmation_bounds_focus_and_success",
+      "path": "/_next/static/css/78dff03f8f1686de.css",
+      "status": 200
+    },
+    {
+      "name": "desktop_selection_confirmation_bounds_focus_and_success",
+      "path": "/_next/static/css/282d9f1fbd4a8104.css",
+      "status": 200
+    },
+    {
+      "name": "desktop_selection_confirmation_bounds_focus_and_success",
+      "path": "/_next/static/css/3d6afb470864f0ce.css",
+      "status": 200
+    },
+    {
+      "name": "desktop_selection_confirmation_bounds_focus_and_success",
+      "path": "/_next/static/chunks/webpack-c9282aef853bbdd6.js",
+      "status": 200
+    },
+    {
+      "name": "desktop_selection_confirmation_bounds_focus_and_success",
+      "path": "/_next/static/chunks/main-app-901aa796812d0838.js",
+      "status": 200
+    },
+    {
+      "name": "desktop_selection_confirmation_bounds_focus_and_success",
+      "path": "/_next/static/chunks/794-b3cac4ade93feb62.js",
+      "status": 200
+    },
+    {
+      "name": "desktop_selection_confirmation_bounds_focus_and_success",
+      "path": "/_next/static/chunks/4bd1b696-c7408084347438ae.js",
+      "status": 200
+    },
+    {
+      "name": "desktop_selection_confirmation_bounds_focus_and_success",
+      "path": "/_next/static/chunks/app/page-c869f7387127687a.js",
+      "status": 200
+    },
+    {
+      "name": "desktop_selection_confirmation_bounds_focus_and_success",
+      "path": "/_next/static/chunks/404-9f4950f5ab30adee.js",
+      "status": 200
+    },
+    {
+      "name": "mobile_bounded_scroll_confirmation_and_partial_counts",
+      "path": "/_next/static/css/1346b4a27726c65b.css",
+      "status": 200
+    },
+    {
+      "name": "mobile_bounded_scroll_confirmation_and_partial_counts",
+      "path": "/_next/static/css/78dff03f8f1686de.css",
+      "status": 200
+    },
+    {
+      "name": "mobile_bounded_scroll_confirmation_and_partial_counts",
+      "path": "/_next/static/css/282d9f1fbd4a8104.css",
+      "status": 200
+    },
+    {
+      "name": "mobile_bounded_scroll_confirmation_and_partial_counts",
+      "path": "/_next/static/css/3d6afb470864f0ce.css",
+      "status": 200
+    },
+    {
+      "name": "mobile_bounded_scroll_confirmation_and_partial_counts",
+      "path": "/_next/static/chunks/main-app-901aa796812d0838.js",
+      "status": 200
+    },
+    {
+      "name": "mobile_bounded_scroll_confirmation_and_partial_counts",
+      "path": "/_next/static/chunks/webpack-c9282aef853bbdd6.js",
+      "status": 200
+    },
+    {
+      "name": "mobile_bounded_scroll_confirmation_and_partial_counts",
+      "path": "/_next/static/chunks/794-b3cac4ade93feb62.js",
+      "status": 200
+    },
+    {
+      "name": "mobile_bounded_scroll_confirmation_and_partial_counts",
+      "path": "/_next/static/chunks/4bd1b696-c7408084347438ae.js",
+      "status": 200
+    },
+    {
+      "name": "mobile_bounded_scroll_confirmation_and_partial_counts",
+      "path": "/_next/static/chunks/app/page-c869f7387127687a.js",
+      "status": 200
+    },
+    {
+      "name": "mobile_bounded_scroll_confirmation_and_partial_counts",
+      "path": "/_next/static/chunks/404-9f4950f5ab30adee.js",
+      "status": 200
+    },
+    {
+      "name": "stale_expired_busy_clear_selection_keep_upload_and_do_not_auto_retry",
+      "path": "/_next/static/css/1346b4a27726c65b.css",
+      "status": 200
+    },
+    {
+      "name": "stale_expired_busy_clear_selection_keep_upload_and_do_not_auto_retry",
+      "path": "/_next/static/css/78dff03f8f1686de.css",
+      "status": 200
+    },
+    {
+      "name": "stale_expired_busy_clear_selection_keep_upload_and_do_not_auto_retry",
+      "path": "/_next/static/css/282d9f1fbd4a8104.css",
+      "status": 200
+    },
+    {
+      "name": "stale_expired_busy_clear_selection_keep_upload_and_do_not_auto_retry",
+      "path": "/_next/static/chunks/webpack-c9282aef853bbdd6.js",
+      "status": 200
+    },
+    {
+      "name": "stale_expired_busy_clear_selection_keep_upload_and_do_not_auto_retry",
+      "path": "/_next/static/css/3d6afb470864f0ce.css",
+      "status": 200
+    },
+    {
+      "name": "stale_expired_busy_clear_selection_keep_upload_and_do_not_auto_retry",
+      "path": "/_next/static/chunks/main-app-901aa796812d0838.js",
+      "status": 200
+    },
+    {
+      "name": "stale_expired_busy_clear_selection_keep_upload_and_do_not_auto_retry",
+      "path": "/_next/static/chunks/794-b3cac4ade93feb62.js",
+      "status": 200
+    },
+    {
+      "name": "stale_expired_busy_clear_selection_keep_upload_and_do_not_auto_retry",
+      "path": "/_next/static/chunks/app/page-c869f7387127687a.js",
+      "status": 200
+    },
+    {
+      "name": "stale_expired_busy_clear_selection_keep_upload_and_do_not_auto_retry",
+      "path": "/_next/static/chunks/4bd1b696-c7408084347438ae.js",
+      "status": 200
+    },
+    {
+      "name": "stale_expired_busy_clear_selection_keep_upload_and_do_not_auto_retry",
+      "path": "/_next/static/chunks/404-9f4950f5ab30adee.js",
+      "status": 200
+    },
+    {
+      "name": "empty_and_unavailable_preview_are_idle_and_read_failure_recovers",
+      "path": "/_next/static/css/1346b4a27726c65b.css",
+      "status": 200
+    },
+    {
+      "name": "empty_and_unavailable_preview_are_idle_and_read_failure_recovers",
+      "path": "/_next/static/css/78dff03f8f1686de.css",
+      "status": 200
+    },
+    {
+      "name": "empty_and_unavailable_preview_are_idle_and_read_failure_recovers",
+      "path": "/_next/static/css/282d9f1fbd4a8104.css",
+      "status": 200
+    },
+    {
+      "name": "empty_and_unavailable_preview_are_idle_and_read_failure_recovers",
+      "path": "/_next/static/css/3d6afb470864f0ce.css",
+      "status": 200
+    },
+    {
+      "name": "empty_and_unavailable_preview_are_idle_and_read_failure_recovers",
+      "path": "/_next/static/chunks/webpack-c9282aef853bbdd6.js",
+      "status": 200
+    },
+    {
+      "name": "empty_and_unavailable_preview_are_idle_and_read_failure_recovers",
+      "path": "/_next/static/chunks/main-app-901aa796812d0838.js",
+      "status": 200
+    },
+    {
+      "name": "empty_and_unavailable_preview_are_idle_and_read_failure_recovers",
+      "path": "/_next/static/chunks/4bd1b696-c7408084347438ae.js",
+      "status": 200
+    },
+    {
+      "name": "empty_and_unavailable_preview_are_idle_and_read_failure_recovers",
+      "path": "/_next/static/chunks/794-b3cac4ade93feb62.js",
+      "status": 200
+    },
+    {
+      "name": "empty_and_unavailable_preview_are_idle_and_read_failure_recovers",
+      "path": "/_next/static/chunks/app/page-c869f7387127687a.js",
+      "status": 200
+    },
+    {
+      "name": "empty_and_unavailable_preview_are_idle_and_read_failure_recovers",
+      "path": "/_next/static/chunks/404-9f4950f5ab30adee.js",
+      "status": 200
+    },
+    {
+      "name": "cleaned_draft_keeps_file_title_scope_and_requires_explicit_reupload_with_new_key",
+      "path": "/_next/static/css/78dff03f8f1686de.css",
+      "status": 200
+    },
+    {
+      "name": "cleaned_draft_keeps_file_title_scope_and_requires_explicit_reupload_with_new_key",
+      "path": "/_next/static/css/1346b4a27726c65b.css",
+      "status": 200
+    },
+    {
+      "name": "cleaned_draft_keeps_file_title_scope_and_requires_explicit_reupload_with_new_key",
+      "path": "/_next/static/css/282d9f1fbd4a8104.css",
+      "status": 200
+    },
+    {
+      "name": "cleaned_draft_keeps_file_title_scope_and_requires_explicit_reupload_with_new_key",
+      "path": "/_next/static/css/3d6afb470864f0ce.css",
+      "status": 200
+    },
+    {
+      "name": "cleaned_draft_keeps_file_title_scope_and_requires_explicit_reupload_with_new_key",
+      "path": "/_next/static/chunks/webpack-c9282aef853bbdd6.js",
+      "status": 200
+    },
+    {
+      "name": "cleaned_draft_keeps_file_title_scope_and_requires_explicit_reupload_with_new_key",
+      "path": "/_next/static/chunks/main-app-901aa796812d0838.js",
+      "status": 200
+    },
+    {
+      "name": "cleaned_draft_keeps_file_title_scope_and_requires_explicit_reupload_with_new_key",
+      "path": "/_next/static/chunks/794-b3cac4ade93feb62.js",
+      "status": 200
+    },
+    {
+      "name": "cleaned_draft_keeps_file_title_scope_and_requires_explicit_reupload_with_new_key",
+      "path": "/_next/static/chunks/4bd1b696-c7408084347438ae.js",
+      "status": 200
+    },
+    {
+      "name": "cleaned_draft_keeps_file_title_scope_and_requires_explicit_reupload_with_new_key",
+      "path": "/_next/static/chunks/app/page-c869f7387127687a.js",
+      "status": 200
+    },
+    {
+      "name": "cleaned_draft_keeps_file_title_scope_and_requires_explicit_reupload_with_new_key",
+      "path": "/_next/static/chunks/404-9f4950f5ab30adee.js",
+      "status": 200
+    }
+  ],
+  "screenshots": [
+    "production-storage-desktop-preview.png",
+    "production-storage-desktop-confirm.png",
+    "production-storage-desktop-success.png",
+    "production-storage-mobile-confirm-scroll.png",
+    "production-storage-mobile-partial.png",
+    "production-storage-stale-preview.png",
+    "production-storage-busy.png",
+    "production-storage-empty-protected.png",
+    "production-storage-draft-needs-reupload.png"
+  ],
+  "paid_calls": 0,
+  "production_business_writes": 0,
+  "production_deletions": 0
+}

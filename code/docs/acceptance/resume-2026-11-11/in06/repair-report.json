@@ -1,0 +1,364 @@
+{
+  "schema_version": "t1-IN06-generic-source-repair-report-1",
+  "reported_at_utc": "2026-11-11T10:06:57.558339+00:00",
+  "status": "generic_caption_frame_and_complete_bibliography_format_repairs_frozen_targeted_regressions_passed",
+  "source_id": "IN06",
+  "source_role": "Parser regression after its observed original-version defects were used for repair; extraction model unseen and no complete pipeline independent success claim.",
+  "baseline": "baseline/freeze.json",
+  "source_repair_freeze": "code/docs/acceptance/resume-2026-11-11/source-repair-freeze.json",
+  "source_repair_frozen_at": "2026-11-11T10:04:16.379709+00:00",
+  "caption_repair": {
+    "original_issue": "Native layout classified numbered Figure1/2 titles as section_header and separated smaller grey-box description paragraphs; Figure3 description mapped only its first small-font line. Original raw text remained present.",
+    "generic_change": "Require one actual light-filled PDF rectangular path after its original object matrix/page transform, one explicit numbered Figure title and one adjacent image region; collect only consecutive literal same-frame lines within source order, column, style, paragraph and competing-label barriers.",
+    "publisher_DOI_or_medical_keyword_specific_rules": false,
+    "source_PDF_IR_blocks_coordinates_or_native_structure_rewritten": false,
+    "figures": [
+      {
+        "figure_number": "1",
+        "figure_id": "figure-3e7d783da5425c0c0e0f027c",
+        "before_source_lines": 1,
+        "after_source_lines": 4,
+        "after_original_segments": [
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000009",
+            "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+            "start": 0,
+            "end": 23,
+            "exact_quote": "FIGURE 1: CT brain scan",
+            "occurrence": 0,
+            "physical_page": 2,
+            "bbox": [
+              190.5452042775,
+              348.99082912266465,
+              303.8131516070586,
+              359.7188218036558
+            ],
+            "location_precision": "whole_textline_not_exact_glyph"
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000010",
+            "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+            "start": 0,
+            "end": 114,
+            "exact_quote": "A: cortico-subcortical hypodense area indicates perilesional edema with a mass effect on the ipsilateral ventricle",
+            "occurrence": 0,
+            "physical_page": 2,
+            "bbox": [
+              190.5452042775,
+              366.7115928340195,
+              516.6387466285248,
+              374.08708780220104
+            ],
+            "location_precision": "whole_textline_not_exact_glyph"
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000011",
+            "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+            "start": 0,
+            "end": 118,
+            "exact_quote": "and a 9-mm midline shift to the left (green arrow); B: intra-axial lesions in the supra- and subtentorial regions; the",
+            "occurrence": 0,
+            "physical_page": 2,
+            "bbox": [
+              190.5452042775,
+              375.11393675951945,
+              518.7674654578647,
+              382.489431727701
+            ],
+            "location_precision": "whole_textline_not_exact_glyph"
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000012",
+            "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+            "start": 0,
+            "end": 97,
+            "exact_quote": "largest lesion is located in the right parietal region, suggesting secondary lesions (red arrow).",
+            "occurrence": 0,
+            "physical_page": 2,
+            "bbox": [
+              190.5452042775,
+              383.5162806850194,
+              461.30796150240496,
+              390.89177565320097
+            ],
+            "location_precision": "whole_textline_not_exact_glyph"
+          }
+        ],
+        "Figure_ID_and_image_bytes_unchanged": true,
+        "verification_status": "needs_review",
+        "human_approved": false
+      },
+      {
+        "figure_number": "2",
+        "figure_id": "figure-9955a8b764e9d23102f63c60",
+        "before_source_lines": 1,
+        "after_source_lines": 4,
+        "after_original_segments": [
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000018",
+            "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+            "start": 0,
+            "end": 29,
+            "exact_quote": "FIGURE 2: Axial chest CT scan",
+            "occurrence": 0,
+            "physical_page": 2,
+            "bbox": [
+              190.5452042775,
+              599.2606446179147,
+              330.4174481658125,
+              609.9886372989058
+            ],
+            "location_precision": "whole_textline_not_exact_glyph"
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000019",
+            "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+            "start": 0,
+            "end": 106,
+            "exact_quote": "A: lung window; B: mediastinal window demonstrating spiculated parenchymal lung nodules in the left apical",
+            "occurrence": 0,
+            "physical_page": 2,
+            "bbox": [
+              190.5452042775,
+              616.9814083292697,
+              505.2943819942533,
+              624.3569032974508
+            ],
+            "location_precision": "whole_textline_not_exact_glyph"
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000020",
+            "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+            "start": 0,
+            "end": 106,
+            "exact_quote": "region (green arrow), with bilateral pulmonary parenchymal nodules and micronodules (red arrows), with the",
+            "occurrence": 0,
+            "physical_page": 2,
+            "bbox": [
+              190.5452042775,
+              625.3837522547697,
+              505.2543208187514,
+              632.7592472229508
+            ],
+            "location_precision": "whole_textline_not_exact_glyph"
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000021",
+            "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+            "start": 0,
+            "end": 108,
+            "exact_quote": "largest measuring 9 mm in the sub-pleural middle lobar fissure and 8 mm in the sub-pleural right lower lobe.",
+            "occurrence": 0,
+            "physical_page": 2,
+            "bbox": [
+              190.5452042775,
+              633.7860961802696,
+              504.520015976405,
+              641.1615911484507
+            ],
+            "location_precision": "whole_textline_not_exact_glyph"
+          }
+        ],
+        "Figure_ID_and_image_bytes_unchanged": true,
+        "verification_status": "needs_review",
+        "human_approved": false
+      },
+      {
+        "figure_number": "3",
+        "figure_id": "figure-e36bbdf655d987d3e73315ff",
+        "before_source_lines": 2,
+        "after_source_lines": 4,
+        "after_original_segments": [
+          {
+            "block_id": "25c82e492c8344a71988-p0003-l000000",
+            "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+            "start": 0,
+            "end": 55,
+            "exact_quote": "FIGURE 3: Histological examination of the bronchobiopsy",
+            "occurrence": 0,
+            "physical_page": 3,
+            "bbox": [
+              190.5452042775,
+              249.9632088771648,
+              454.1335601248745,
+              260.6912015581561
+            ],
+            "location_precision": "whole_textline_not_exact_glyph"
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0003-l000001",
+            "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+            "start": 0,
+            "end": 106,
+            "exact_quote": "A: tumor proliferation arranged in diffuse sheets (hematoxylin and eosin (H&E), 100X); (B): cells that are",
+            "occurrence": 0,
+            "physical_page": 3,
+            "bbox": [
+              190.5452042775,
+              267.68397258851996,
+              493.504167985435,
+              275.05946755670107
+            ],
+            "location_precision": "whole_textline_not_exact_glyph"
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0003-l000002",
+            "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+            "start": 0,
+            "end": 106,
+            "exact_quote": "sometimes cohesive, sometimes spindle-shaped, atypical, hyperchromatic, anisokaryosis, and focally mitotic",
+            "occurrence": 0,
+            "physical_page": 3,
+            "bbox": [
+              190.5452042775,
+              276.0863165140199,
+              506.76951849967395,
+              283.461811482201
+            ],
+            "location_precision": "whole_textline_not_exact_glyph"
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0003-l000003",
+            "text_version": "s3v3-63b0998e06003e52b56e0c3f278c46f0",
+            "start": 0,
+            "end": 12,
+            "exact_quote": "(H&E, 400X).",
+            "occurrence": 0,
+            "physical_page": 3,
+            "bbox": [
+              190.5452042775,
+              284.4886604395199,
+              229.37138526424482,
+              291.864155407701
+            ],
+            "location_precision": "whole_textline_not_exact_glyph"
+          }
+        ],
+        "Figure_ID_and_image_bytes_unchanged": true,
+        "verification_status": "needs_review",
+        "human_approved": false
+      }
+    ],
+    "mechanical_or_human_pairing_approval_added": false,
+    "negative_body_boundaries": [
+      "p2 A thoraco-abdomino-pelvic…",
+      "p2 Additionally,…",
+      "p3 Following a multidisciplinary…"
+    ],
+    "whole_figures_still_need_review": true,
+    "development_diagnostics": [
+      "The first synthetic fixture passed before actual PDF object-local path matrices were applied; fixed generically and added an affine-transform fixture.",
+      "Actual title-as-section_header classification needed a literal numbered-title-only exception; other section headings remain barriers."
+    ]
+  },
+  "bibliography_repair": {
+    "original_rule": "explicit-bibliography-task-scope-1",
+    "new_rule": "explicit-bibliography-task-scope-2",
+    "source_selection_rule_version": "s4-explainable-source-selection-4",
+    "original_issue": "Bare complete DOI endings and single-person author colon unsupported despite an explicit References heading and complete native same-page list mappings.",
+    "generic_change": "Allow only those additional forms inside existing exact/normalized native list-item, explicit References, four-digit publication-year/volume and whole-original-block coverage guards. Raw/unmapped fallback unchanged.",
+    "before_counts": {
+      "kept": 258,
+      "deferred": 0,
+      "excluded": 4
+    },
+    "after_counts": {
+      "kept": 223,
+      "deferred": 0,
+      "excluded": 39
+    },
+    "before_complete_entries_excluded": 2,
+    "after_complete_entries_excluded": 19,
+    "all_explicit_list_items": 22,
+    "conservatively_retained_entries": [
+      {
+        "reference_number": 1,
+        "reason": "Compound surname Dela Cruz is outside the existing single-surname author-start guard; retained instead of expanding this repair scope.",
+        "raw_source": "1. Dela Cruz CS, Tanoue LT, Matthay RA: Lung cancer: epidemiology, etiology, and prevention . Clin Chest\nMed. 2011, 32:605-44. 10.1016/j.ccm.2011.09.001"
+      },
+      {
+        "reference_number": 17,
+        "reason": "Source prints five-digit year19911; no inferred correction to a four-digit publication year.",
+        "raw_source": "17. Matsui K, Kitagawa M: Spindle cell carcinoma of the lung. A clinicopathologic study of three cases . Cancer.\n19911, 67:2361-7."
+      },
+      {
+        "reference_number": 19,
+        "reason": "WHO institutional author is outside the person-name guard; retained.",
+        "raw_source": "19. The World Health Organization histological typing of lung tumours. Second edition . Am J Clin Pathol. 1982,\n77:123-36. 10.1093/ajcp/77.2.123"
+      }
+    ],
+    "whole_page_exclusion_added": false,
+    "raw_PDF_or_IR_modified": false,
+    "historical_masks_and_paid_results_modified": false
+  },
+  "root_delegated_original_page_readback": {
+    "performed_by": "Main session GPT-6-Astra max",
+    "basis": "Actual original IN06 pages2/3 and new catalog source segments; all5 original pages were previously viewed in this same task.",
+    "three_figures_source_line_counts": [
+      4,
+      4,
+      4
+    ],
+    "full_source_wording_sequence_and_numbers_visible_match": true,
+    "Figure3_H_E_100X_and_400X_visible_match": true,
+    "negative_following_body_paragraphs_not_in_caption": true,
+    "meaning": "Current parser source/structure readback only; no medical correctness, Figure relationship or record business approval."
+  },
+  "validation": {
+    "figure_python_tests": {
+      "passed": 15,
+      "failed": 0,
+      "log": "figure-unit-tests.log",
+      "includes": [
+        "actual IN06 complete captions and 3 body negative boundaries",
+        "actual IN04 full captions/whole image SHA unchanged",
+        "representative L01/L05/L07 historical full captions",
+        "affine source rectangle + native title-as-header",
+        "no/ambiguous frame, multiple image, column, same-band, competing Figure/Table, style, source order, paragraph and section boundaries"
+      ]
+    },
+    "bibliography_typescript_tests": {
+      "passed": 26,
+      "failed": 0,
+      "log": "bibliography-tests.log",
+      "includes": [
+        "positive bare DOI/single-person colon",
+        "no References, raw-only, partial mapping/block, cross page, mixed prose, wrong year, institutional author, incomplete DOI and new section negatives",
+        "old frozen masks unchanged and no bibliography reentry through installed SDK"
+      ]
+    },
+    "TS_actual_CPU_Figure_contract": {
+      "passed": 1,
+      "log": "figure-contract-tests.log"
+    },
+    "inactive_historical_template_and_version_guards": {
+      "passed": 7,
+      "log": "current-template-check.log"
+    },
+    "backend_typecheck": "passed",
+    "patch_whitespace_check": "passed"
+  },
+  "current_historical_research_template": "two-method-comparison.json is inactive research metadata; B0/default model already selected; no current comparison approval item or execution grant.",
+  "new_model_calls": 0,
+  "current_effective_API_allowance": 0,
+  "formal_reviews": {
+    "used": 3,
+    "maximum": 3,
+    "new": 0
+  },
+  "medical_quality_approved": false,
+  "actual_human_reviewed_count": 0,
+  "production_record_approvals": 0,
+  "next_action": "Prepare exactly one final-image bounded repaired-IN06 deployment/model regression; root exact-plan dispatch required, no allowance opened by this preparation.",
+  "final_regression_code_freeze": "code/docs/acceptance/resume-2026-11-11/final-code-policy-freeze.json",
+  "final_figure_regression": {
+    "passed": 17,
+    "log": "code/docs/acceptance/resume-2026-11-11/in07/figure-repair-tests.log",
+    "IN06_caption_counts_unchanged": [
+      4,
+      4,
+      4
+    ],
+    "IN04_and_L01_L05_L07_unchanged": true
+  }
+}

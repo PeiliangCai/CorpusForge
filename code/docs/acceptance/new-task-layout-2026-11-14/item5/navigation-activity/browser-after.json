@@ -1,0 +1,45 @@
+{
+  "status": "failed",
+  "phase": "after",
+  "origin": "http://127.0.0.1:30158",
+  "BUILD_ID": "ROz92W9UBZF3KuLyh7zeJ",
+  "dist": "apps/pi-web/build/navigation-activity-delivery-validated-20261115",
+  "checks": [
+    {
+      "name": "desktop_sidebar_and_fixed_rail_keyboard_focus_resize",
+      "status": "passed"
+    },
+    {
+      "name": "mobile_drawer_keeps_main_geometry_and_edge_focus",
+      "status": "passed"
+    },
+    {
+      "name": "live_request_tool_retry_and_actual_batch_numbers",
+      "status": "failed",
+      "error": "AssertionError [ERR_ASSERTION]: Expected \"actual\" to be strictly unequal to:\n\n'等待模型响应 · 已用时 0:05'"
+    },
+    {
+      "name": "stopped_states_outrank_leftover_operations_and_finalization",
+      "status": "passed"
+    },
+    {
+      "name": "connection_loss_and_stale_reads_freeze_only_recorded_wait",
+      "status": "passed"
+    },
+    {
+      "name": "legacy_unknown_activity_and_global_context_remain_honest",
+      "status": "passed"
+    },
+    {
+      "name": "verified_quota_stop_is_visible_and_unknown_partial_is_not_guessed",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "mock_mutations": [],
+  "production_business_writes": 0,
+  "paid_calls": 0,
+  "production_exports": 0,
+  "completed_at_utc": "2026-11-15T11:34:14.107Z"
+}

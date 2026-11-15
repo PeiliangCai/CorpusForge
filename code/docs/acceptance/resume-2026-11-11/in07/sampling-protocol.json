@@ -1,0 +1,74 @@
+{
+  "schema_version": "t1-one-source-independent-sampling-protocol-1",
+  "source_id": "IN07",
+  "frozen_at_utc": "2026-11-11T10:09:04.117Z",
+  "source_identity": {
+    "doi": "10.7759/cureus.94044",
+    "file_sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+    "physical_pages": 4,
+    "article_family_id": "doi:10.7759/cureus.94044",
+    "identity_seal_sha256": "a9edabaa7f328bc08b65d95af6718f853575662ca3fa47b02d264d650446a7f9"
+  },
+  "fixed_source_repair_freeze": {
+    "path": "code/docs/acceptance/resume-2026-11-11/source-repair-freeze.json",
+    "sha256": "288fa4fd3df0fe43f92f00a4c0a9a0f8fe0bf9762c6dc8430f6222d5ad002133"
+  },
+  "source_role": "Preselected new paper family after generic source-repair freeze; no extraction-model output or parser-based tuning on this paper has occurred. Source preflight records any first-current-parser defects without replacement.",
+  "output_sample": {
+    "seed": "t1-s6-20261109-v1",
+    "method": "Fixed SHA256 ordering of every current primary and background record version and delivery fingerprint",
+    "count": "min(10,N); all current records if N<10",
+    "zero_output": "No denominator; not proof of no eligible evidence or recall",
+    "directed_risks": {
+      "maximum": 5,
+      "denominator": "separate, with overlap explicitly marked"
+    },
+    "sampling_across_output_roles": true
+  },
+  "source_review": {
+    "reviewer_kind": "delegated_ai_operator",
+    "actual_human_reviewed_count": 0,
+    "medical_quality_approved": false,
+    "production_record_approvals": 0,
+    "checks": [
+      "literal original quote/context and visible PDF source at physical page",
+      "same immutable source/version/bbox",
+      "whole Figure/complete source caption and panel rendering as source structure only",
+      "context/duplicate/semantic risks disclosed; no invented clinical approval"
+    ]
+  },
+  "engineering_timing_thresholds": {
+    "HTTP_admission_seconds": 2,
+    "first_progress_seconds": 5,
+    "first_candidate_seconds_if_nonempty": 600,
+    "terminal_seconds_per_round": 900
+  },
+  "statistics": {
+    "independent_papers": 1,
+    "population_precision": null,
+    "population_recall": null,
+    "population_p95": null,
+    "complete_clinical_S6_acceptance_claimed": false
+  },
+  "model_scope": {
+    "method": "B0",
+    "model": "gpt-6-luna",
+    "reasoning_effort": "medium",
+    "api": "openai-responses",
+    "scope": "all/all/all with unavailable medical catalog; no invented approved vocabulary",
+    "only_frozen_current_code": true
+  },
+  "possible_round_ceiling_not_dispatched": {
+    "requests": 24,
+    "input_tokens": 600000,
+    "output_tokens": 32000,
+    "seconds": 900,
+    "all_physical_retries_included": true,
+    "hard_stop_after_first_unrecovered_failure": true,
+    "no_whole_run_retry_or_output_based_replacement": true
+  },
+  "current_effective_API_allowance": 0,
+  "model_execution_dispatched": false,
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3
+}

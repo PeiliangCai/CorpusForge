@@ -1,0 +1,51 @@
+{
+  "schema_version": "t1-delegated-window-round-authority-1",
+  "prepared_at_utc": "2026-11-11T10:30:00.562364+00:00",
+  "execution_state": "prepared_zero_allowance_pending_exact_root_dispatch",
+  "user_autonomous_quote": "接下来3小时你自行执行即可，我到时候直接看最终效果。",
+  "window_observed_start_utc": "2026-11-11T09:15:01Z",
+  "window_deadline_utc": "2026-11-11T12:15:01Z",
+  "all_model_work_hard_stop_utc": "2026-11-11T12:10:01Z",
+  "decision_owner": "Main session GPT-6-Astra max under user3h delegation",
+  "source_id": "IN06",
+  "source_role": "Already-exposed parser regression; no complete pipeline independent acceptance claim. Extraction model unseen before this trial.",
+  "purpose": "One real fresh-container final-UI plus repaired parser/bibliography/exact-policy B0 Responses full workflow regression. No new B0/F comparison.",
+  "proposed_single_round": {
+    "requests": 24,
+    "input_tokens": 600000,
+    "output_tokens": 32000,
+    "seconds": 900
+  },
+  "requests_already_used_in_window": 21,
+  "aggregate_ceiling_not_open_allowance": {
+    "requests": 72,
+    "input_tokens": 1800000,
+    "output_tokens": 96000,
+    "maximum_rounds": 3
+  },
+  "all_physical_retries_counted": true,
+  "no_whole_run_retry_or_auto_next_round": true,
+  "current_effective_API_allowance": 0,
+  "model": {
+    "provider": "agicto",
+    "endpoint": "https://api.agicto.cn/v1",
+    "model_id": "gpt-6-luna",
+    "reasoning_effort": "medium",
+    "api": "openai-responses"
+  },
+  "exact_returned_name_acceptance": {
+    "public_policy": "code/config/workbench-response-model-policy.json",
+    "user_quote": "应该也是部署标识，不管这个了，继续测试吧。",
+    "root_delegated_decision": "Accept gpt-6-luna → data-zone-standard-gpt-6-luna also in ordinary service as the precise deployment choice; retain prior exact igpt mapping and stop all other names.",
+    "basis": "user_and_delegated_deployment_choice",
+    "supplier_confirmed": false,
+    "weight_identity_verified": false,
+    "no_prefix_stripping_or_wildcards": true
+  },
+  "ordinary_model_enabled": false,
+  "business_approval_added": false,
+  "medical_quality_approved": false,
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3,
+  "previous_closed_allowances_revived": false
+}

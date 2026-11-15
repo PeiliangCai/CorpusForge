@@ -1,0 +1,66 @@
+--- before/apps/pi-web/t1/BatchSubmission.tsx
++++ after/apps/pi-web/t1/BatchSubmission.tsx
+@@ -16,11 +16,11 @@
+   modelProfile: WorkbenchModelProfile | null; modelRequired: boolean;
+   modelSelection?: ReactNode;
+   onScopeChange: (scope: Scope) => void;
+-  onUploaded: (paper: WorkbenchPaper) => void; onStarted: (run: WorkbenchRun) => void; onView: (run: WorkbenchRun) => void; errorText: (cause: unknown) => string };
++  onUploaded: (paper: WorkbenchPaper) => void; onStarted: (run: WorkbenchRun) => void; onSingleStarted: (run: WorkbenchRun) => void; onView: (run: WorkbenchRun) => void; errorText: (cause: unknown) => string };
+ 
+ /** One small in-memory selection. Uploads and admissions are sequential; the
+  * existing server queue owns execution. Committed members never re-enter either loop. */
+-export function BatchSubmission({ scope, catalog, onScopeChange, canUpload, canStart, runs, modelProfile, modelRequired, modelSelection, onUploaded, onStarted, onView, errorText }: Props) {
++export function BatchSubmission({ scope, catalog, onScopeChange, canUpload, canStart, runs, modelProfile, modelRequired, modelSelection, onUploaded, onStarted, onSingleStarted, onView, errorText }: Props) {
+   const { t } = useI18n();
+   const [members, setMembers] = useState<Member[]>([]), [phase, setPhase] = useState<"choose" | "upload" | "start" | null>(null), [notice, setNotice] = useState(""), [taskTitle, setTaskTitle] = useState("");
+   const busy = phase !== null;
+@@ -88,8 +88,10 @@
+         try {
+           const value = await api<{ run: WorkbenchRun }>(`workbench/papers/${encodeURIComponent(member.paper.id)}/runs`, {
+             ...jsonBody("POST", { scope: saved.scope, submission: saved.submission, ...(saved.model ? { model_profile_id: saved.model.profile_id } : {}), ...(saved.taskTitle ? { task_title: saved.taskTitle } : {}), original_filename: member.file.name }), headers: { "content-type": "application/json", "x-t1-request-id": member.startKey } });
++          if (typeof value.run?.run_id !== "string" || !value.run.run_id.trim() || value.run.document_id !== member.paper.id) throw new Error(t("t1.taskCreationUnconfirmed"));
+           if (value.run.scope_catalog) setAdmission(current => current ? { ...current, catalog: { ...current.catalog, catalog: value.run.scope_catalog! } } : current);
+           patch(member.id, { run: value.run, status: "submitted", error: undefined }); onStarted(value.run);
++          if (saved.submission.kind === "single") onSingleStarted(value.run);
+         } catch (cause) {
+           patch(member.id, { status: "startFailed", error: errorText(cause) });
+           // A definite version rejection admitted nothing. Let refresh repair the draft; an unknown/lost response keeps its identity.
+--- before/apps/pi-web/t1/T1Workbench.tsx
++++ after/apps/pi-web/t1/T1Workbench.tsx
+@@ -63,6 +63,7 @@
+   const [recordRole, setRecordRole] = useState("all"), [retentionView, setRetentionView] = useState("kept");
+   const [loading, setLoading] = useState(true), [error, setError] = useState(""), [detailError, setDetailError] = useState("");
+   const [activeTab, setActiveTab] = useState("newTask"), [tabIds, setTabIds] = useState(["newTask", "records", "figures", "tasks"]);
++  const [submissionRevision, setSubmissionRevision] = useState(0);
+   const [showSource, setShowSource] = useState(false), [showSidebar, setShowSidebar] = useState(true), [showNotes, setShowNotes] = useState(false);
+   const [menu, setMenu] = useState<SidebarMenuAnchor | null>(null), [toast, setToast] = useState<SidebarToastData | null>(null);
+   const [taskMenu, setTaskMenu] = useState<RunTaskMenuState | null>(null), [cancelling, setCancelling] = useState<ReadonlySet<string>>(new Set());
+@@ -435,14 +436,15 @@
+           {capabilities?.controlled_fixture && <p className="t1-fixture-banner">{t("t1.fixture")}</p>}
+           {!activeTab && <div className="t1-empty">{["newTask", "records", "figures", "tasks"].map(id => <button key={id} onClick={() => openTab(id)}>{t(`t1.${id}`)}</button>)}</div>}
+           <section className="t1-new-task-panel" hidden={activeTab !== "newTask"}><div className="t1-heading"><h1>{t("t1.newTask")}</h1><span className="t1-badge">B0</span></div>
+-            <BatchSubmission scope={scope} catalog={catalog} onScopeChange={setScope} canUpload={Boolean(capabilities?.paper_upload)} canStart={Boolean(capabilities?.extraction_start)} runs={runs} modelProfile={selectedModel} modelRequired={Boolean(capabilities?.model_selection)} errorText={errorText}
++            <BatchSubmission key={submissionRevision} scope={scope} catalog={catalog} onScopeChange={setScope} canUpload={Boolean(capabilities?.paper_upload)} canStart={Boolean(capabilities?.extraction_start)} runs={runs} modelProfile={selectedModel} modelRequired={Boolean(capabilities?.model_selection)} errorText={errorText}
+               modelSelection={(capabilities?.model_selection && models || modelRuntime) ? <section className="t1-task-card t1-model-configuration" aria-label={t("t1.modelConfiguration")}>
+                 <h2 className="t1-task-card-title">{t("t1.modelConfiguration")}</h2>
+                 {capabilities?.model_selection && models && <ModelSelection models={models} value={modelProfileId} onChange={chooseModel} onModelsChange={setModels} errorText={errorText} />}
+                 <ModelRuntimeNotice runtime={modelRuntime} maxConcurrent={capabilities?.max_concurrent_runs} showModel={!capabilities?.model_selection} />
+               </section> : undefined}
+               onUploaded={paper => { setPapers(current => [paper, ...current.filter(item => item.id !== paper.id)]); }}
+-              onStarted={run => setRuns(current => [run, ...current.filter(item => item.run_id !== run.run_id)])} onView={selectRun} />
++              onStarted={run => { ++runsReadVersion.current; setRuns(current => [run, ...current.filter(item => item.run_id !== run.run_id)]); }}
++              onSingleStarted={run => { setSubmissionRevision(value => value + 1); setTaskNotice({ id: run.run_id, busy: false, failed: false, text: t("t1.taskCreated") }); selectRun(run); }} onView={selectRun} />
+             {!capabilities?.extraction_start && <p className="t1-notice">{t("t1.extractionUnavailable")}{capabilities?.extraction_unavailable_reason && capabilities.extraction_unavailable_reason !== "server_model_not_enabled" && <small>{capabilities.extraction_unavailable_reason}</small>}</p>}
+           </section>
+           {activeTab === "records" && <>
+--- before/apps/pi-web/t1/messages.mjs
++++ after/apps/pi-web/t1/messages.mjs
+@@ -3,6 +3,8 @@
+ const rows = {
+   taskActions: ["Task actions", "任务操作", "任務操作"],
+   submittedTasks: ["Extraction tasks", "抽取任务", "擷取任務"],
++  taskCreated: ["Task created successfully", "任务创建成功", "任務建立成功"],
++  taskCreationUnconfirmed: ["Task creation was not confirmed. Please retry.", "任务创建尚未确认，请重试。", "任務建立尚未確認，請重試。"],
+   submittedTaskCount: ["{count} submitted", "已提交 {count} 个任务", "已提交 {count} 個任務"],
+   noSubmittedTasks: ["No extraction tasks yet. Select and upload a local PDF to start.", "尚无抽取任务，请选择并上传本地 PDF 后开始。", "尚無擷取任務，請選擇並上傳本機 PDF 後開始。"],
+   groupedTasksHelp: ["Tasks follow their original submissions. Expand a batch to open each extraction. Counts include submitted tasks only; older tasks without submission metadata remain separate.", "按实际提交组织任务，展开批量可查看每次抽取。数量仅计已提交任务；缺少提交信息的旧任务单独列出。", "依實際提交組織任務，展開批次可檢視每次擷取。數量僅計已提交任務；缺少提交資訊的舊任務分別列出。"],

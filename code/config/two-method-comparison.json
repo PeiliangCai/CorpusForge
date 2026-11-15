@@ -1,11 +1,13 @@
 {
   "schema_version": "two-method-comparison-config-1",
-  "bibliography_scope_rule_version": "explicit-bibliography-task-scope-1",
-  "source_selection_rule_version": "s4-explainable-source-selection-3",
+  "bibliography_scope_rule_version": "explicit-bibliography-task-scope-2",
+  "source_selection_rule_version": "s4-explainable-source-selection-4",
   "input_readiness_report": "docs/acceptance/s0-s4-recheck-2026-11-08/report.json",
-  "status": "prepared_pending_new_user_authorization",
+  "status": "historical_research_template_inactive",
+  "role": "Retained B0/F research configuration, not an active development comparison or pending model-selection decision. B0 and the AGICTO Luna medium Responses default are already selected; F remains historical research. Explicit future research preparation does not authorize execution or reuse any closed allowance.",
   "execute_model_calls": false,
   "formal_model_selected": false,
+  "formal_model_selected_time_scope": "Original comparison-template schema only; the current application default is selected and ordinary model execution remains disabled.",
   "papers": [
     {
       "source_id": "L01",

@@ -1,0 +1,51 @@
+{
+  "status": "passed",
+  "BUILD_ID": "E23zPq5epmvmz7hXKRFiM",
+  "dist": "apps/pi-web/build/summary-completion-delivery-validated-20261115",
+  "checks": [
+    {
+      "name": "healthy_flow",
+      "status": "passed"
+    },
+    {
+      "name": "persisted_source_gaps",
+      "status": "passed"
+    },
+    {
+      "name": "legacy_evidence_projection_source_gaps",
+      "status": "passed"
+    },
+    {
+      "name": "legacy_incomplete",
+      "status": "passed"
+    },
+    {
+      "name": "unknown_completion",
+      "status": "passed"
+    },
+    {
+      "name": "incomplete_summary_budget",
+      "status": "passed"
+    },
+    {
+      "name": "finalizing",
+      "status": "passed"
+    },
+    {
+      "name": "batch_false",
+      "status": "passed"
+    },
+    {
+      "name": "batch_true",
+      "status": "passed"
+    },
+    {
+      "name": "mobile_gap_overlay",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "production_business_writes": 0,
+  "paid_calls": 0
+}

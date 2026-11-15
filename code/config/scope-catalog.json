@@ -1,0 +1,13 @@
+{
+  "schema_version": "scope-catalog-1",
+  "cancers": [
+    { "id": "CANCER-LUNG", "name": "肺癌", "aliases": ["lung cancer"], "image_type_ids": ["MODALITY-CT", "MODALITY-MRI"] },
+    { "id": "CANCER-BOWEL", "name": "肠癌", "aliases": ["bowel cancer"], "image_type_ids": ["MODALITY-CT", "MODALITY-MRI"] },
+    { "id": "CANCER-COLON", "name": "结肠癌", "aliases": ["colon cancer"], "image_type_ids": ["MODALITY-CT", "MODALITY-MRI"] },
+    { "id": "CANCER-RECTUM", "name": "直肠癌", "aliases": ["rectal cancer"], "image_type_ids": ["MODALITY-CT", "MODALITY-MRI"] }
+  ],
+  "image_types": [
+    { "id": "MODALITY-CT", "name": "CT", "aliases": ["computed tomography", "计算机断层成像"] },
+    { "id": "MODALITY-MRI", "name": "MRI", "aliases": ["magnetic resonance imaging", "磁共振成像"] }
+  ]
+}

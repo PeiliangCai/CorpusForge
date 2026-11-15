@@ -1,0 +1,15 @@
+{
+  "schema_version": "t1-SDK-error-literal-hash-correlation-1",
+  "reported_at_utc": "2026-11-11T11:14:57.954732+00:00",
+  "source_round": "IN06",
+  "later_observed_round": "IN07",
+  "exact_message": "Service load is too high, please try again later",
+  "characters": 48,
+  "exact_message_sha256": "c1c604bb7e48326f82d2c9cc9e842fcbcd895ef6cbc2ea75f45d84f9b2b9ac6e",
+  "IN06_error_hash_equal": true,
+  "IN07_raw_error_hash_equals_unmodified_safe_message_hash": true,
+  "received_decoded_body_prefix_hash_equal": true,
+  "scope": "Exact SDK-error literal correlation; original whole HTTP body/stack were not captured and are not reconstructed. Supplier/gateway reports high service load; this is not independent proof of physical server load or model weights.",
+  "frozen_IN06_report_and_all_pinned_host_evidence_unchanged": true,
+  "new_real_API_requests_for_correlation": 0
+}

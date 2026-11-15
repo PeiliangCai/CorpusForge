@@ -16,7 +16,7 @@ export function SameSourceMembers({ index, record, records, onSelect }: { index?
     <div className="t1-member-list">{group.members.map((member, i) => {
       const current = records.find(item => item.id === member.record_id);
       return <div key={member.record_id} className={member.record_id === record.id ? "selected" : ""}>
-        <button aria-pressed={member.record_id === record.id} onClick={() => onSelect(member.record_id)}>{t("t1.member", { number: i + 1 })} · {t("t1.version", { version: member.record_version })} · {t(current?.text_approved ? "t1.approved" : "t1.pending")}</button>
+        <button aria-pressed={member.record_id === record.id} onClick={() => onSelect(member.record_id)}>{t("t1.member", { number: i + 1 })} · {t("t1.version", { version: member.record_version })} · {t(current?.retention?.status === "excluded" ? "t1.excluded" : "t1.kept")}</button>
         <details><summary>{t("t1.memberDifferences")}</summary>{!!group.evidence_field_differences.length && <dl>{group.evidence_field_differences.map(field => <div key={field}><dt>{t(`t1.field.${field}`)}</dt><dd>{summary(member.evidence_fields[field])}</dd></div>)}</dl>}<details><summary>{t("t1.sourceVersion")}</summary><pre>{JSON.stringify(member.evidence_fields, null, 2)}</pre></details></details>
       </div>;
     })}</div>

@@ -1,0 +1,18 @@
+{
+  "schema_version": "t1-independent-preselection-1",
+  "source_id": "IN07",
+  "frozen_at": "2026-11-11T09:45:15Z",
+  "selection_authority": "Parent task fixed this exact paper before any new post-IN06-fix model result; the executor must not substitute another paper based on download or extraction results.",
+  "expected_identity": {
+    "title": "Synchronous Pulmonary Adenocarcinoma and Carcinoid Tumor Diagnosed via a Single-Session Robotic Bronchoscopy: A Case Report",
+    "doi": "10.7759/cureus.94044",
+    "publication_date": "2025-10-07",
+    "authors_supplied_by_parent": ["Wortsman J", "Naqvi S M", "Tigrani D", "et al."],
+    "official_article": "https://www.cureus.com/articles/414941-synchronous-pulmonary-adenocarcinoma-and-carcinoid-tumor-diagnosed-via-a-single-session-robotic-bronchoscopy-a-case-report",
+    "official_pdf": "https://www.cureus.com/articles/414941-synchronous-pulmonary-adenocarcinoma-and-carcinoid-tumor-diagnosed-via-a-single-session-robotic-bronchoscopy-a-case-report.pdf"
+  },
+  "selection_basis_supplied_by_parent": "A different paper family and different tumor/lesion subjects; prospectively useful for testing two-lesion CT context and whole-Figure handling. This is a selection hypothesis, not an extraction result or medical-quality finding.",
+  "scope": "Normal public publisher page/PDF download and bibliographic/license/page-count/SHA/collision checks only.",
+  "excluded_actions": ["No model call or new API allowance", "No Docling or caption/figure diagnostics", "No parser/frontend/prompt/rule changes", "No registry registration or ordinary-service changes", "Do not send article content to the IN06 repair owner"],
+  "registration_owner": "Backend owner will register the verified material atomically and parse only after the generic repair."
+}

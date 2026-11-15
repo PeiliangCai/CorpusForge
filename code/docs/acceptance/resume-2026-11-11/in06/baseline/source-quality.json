@@ -1,0 +1,283 @@
+{
+  "schema_version": "t1-IN06-pre-model-source-quality-1",
+  "reported_at": "2026-11-11T09:38:35.182Z",
+  "source_id": "IN06",
+  "PDF_sha256": "1784b4b7ab855b3d0dbe6797b2cf7d340ac90b750844c4d8a7df79aeb802a4c1",
+  "physical_pages": 5,
+  "raw_blocks": 262,
+  "raw_codepoints": 21202,
+  "parser": {
+    "id": "docling-standard-cpu",
+    "version": "2.145.0",
+    "status": "partial",
+    "total_seconds": 16.57612071999938,
+    "CPU": true,
+    "model_calls": 0,
+    "document_result_cache_used": false
+  },
+  "text_layer": {
+    "enumeration_complete": true,
+    "decode_complete": true,
+    "failed_pages": [],
+    "glyph_issue_blocks": [],
+    "native_partial_units": [
+      "25a6d72764d18bfa-u-14dfdd4a1383b8db"
+    ],
+    "partial_unit_explanation": "Only the author/affiliation superscript native text mapping is partial; original raw text retained. Not global PDF fidelity certification."
+  },
+  "task_scope": {
+    "authorized_blocks": 258,
+    "shared_bibliography_excluded_blocks": 4,
+    "bibliography_excluded_ids": [
+      "25c82e492c8344a71988-p0005-l000037",
+      "25c82e492c8344a71988-p0005-l000038",
+      "25c82e492c8344a71988-p0005-l000045",
+      "25c82e492c8344a71988-p0005-l000046"
+    ],
+    "batch_count_with_same_deployment_limits": 3
+  },
+  "structure": {
+    "source_reading_order_status": "native_candidate_order_unverified",
+    "normalized_alignment_is_not_raw_rewrite": true,
+    "tables": 0,
+    "table_quality_claim": "No detected tables; no real-table acceptance sample in this paper.",
+    "figures": 3,
+    "whole_figure_assets": [
+      {
+        "path": "code/docs/acceptance/resume-2026-11-11/in06/parser/figure-assets/figure-3e7d783da5425c0c0e0f027c-p2-0.png",
+        "sha256": "fb43eff6771349beb5264698c792db25c2551da493ba022f5ffd90a8aa559fd5",
+        "physical_page": 2,
+        "source_pdf_sha256": "1784b4b7ab855b3d0dbe6797b2cf7d340ac90b750844c4d8a7df79aeb802a4c1"
+      },
+      {
+        "path": "code/docs/acceptance/resume-2026-11-11/in06/parser/figure-assets/figure-9955a8b764e9d23102f63c60-p2-0.png",
+        "sha256": "8bfe7c8b7e64fa4cf2107330bbbc8ea8701c34afbf35d26582e5684958650565",
+        "physical_page": 2,
+        "source_pdf_sha256": "1784b4b7ab855b3d0dbe6797b2cf7d340ac90b750844c4d8a7df79aeb802a4c1"
+      },
+      {
+        "path": "code/docs/acceptance/resume-2026-11-11/in06/parser/figure-assets/figure-e36bbdf655d987d3e73315ff-p3-0.png",
+        "sha256": "f6efc7c84d182b8babc5113e509189ac4ea7ae6d4f92f1b833a69220b99ba3ab",
+        "physical_page": 3,
+        "source_pdf_sha256": "1784b4b7ab855b3d0dbe6797b2cf7d340ac90b750844c4d8a7df79aeb802a4c1"
+      }
+    ],
+    "figure_asset_scope": "Three original PDF whole Figure regions (two panels each) rendered; medical type/relationship unapproved.",
+    "caption_gaps": [
+      {
+        "figure_id": "figure-3e7d783da5425c0c0e0f027c",
+        "figure_number": "1",
+        "catalog_caption_block_ids": [
+          "25c82e492c8344a71988-p0002-l000009"
+        ],
+        "catalog_caption_text": "FIGURE 1: CT brain scan",
+        "actual_source_neighborhood": [
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000009",
+            "text": "FIGURE 1: CT brain scan",
+            "bbox": [
+              190.5452042775,
+              348.99082912266465,
+              303.8131516070586,
+              359.7188218036558
+            ]
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000010",
+            "text": "A: cortico-subcortical hypodense area indicates perilesional edema with a mass effect on the ipsilateral ventricle",
+            "bbox": [
+              190.5452042775,
+              366.7115928340195,
+              516.6387466285248,
+              374.08708780220104
+            ]
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000011",
+            "text": "and a 9-mm midline shift to the left (green arrow); B: intra-axial lesions in the supra- and subtentorial regions; the",
+            "bbox": [
+              190.5452042775,
+              375.11393675951945,
+              518.7674654578647,
+              382.489431727701
+            ]
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000012",
+            "text": "largest lesion is located in the right parietal region, suggesting secondary lesions (red arrow).",
+            "bbox": [
+              190.5452042775,
+              383.5162806850194,
+              461.30796150240496,
+              390.89177565320097
+            ]
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000013",
+            "text": "A thoraco-abdomino-pelvic CT scan identified a spiculated parenchymal lung nodule in the left apical",
+            "bbox": [
+              183.3431951985,
+              423.5726595330782,
+              508.78270510003813,
+              432.892059281304
+            ]
+          }
+        ],
+        "status": "Catalog caption relation is incomplete relative to visible original grey caption. Raw IR text remains unchanged and complete in these source lines.",
+        "medical_or_pairing_approval": false
+      },
+      {
+        "figure_id": "figure-9955a8b764e9d23102f63c60",
+        "figure_number": "2",
+        "catalog_caption_block_ids": [
+          "25c82e492c8344a71988-p0002-l000018"
+        ],
+        "catalog_caption_text": "FIGURE 2: Axial chest CT scan",
+        "actual_source_neighborhood": [
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000018",
+            "text": "FIGURE 2: Axial chest CT scan",
+            "bbox": [
+              190.5452042775,
+              599.2606446179147,
+              330.4174481658125,
+              609.9886372989058
+            ]
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000019",
+            "text": "A: lung window; B: mediastinal window demonstrating spiculated parenchymal lung nodules in the left apical",
+            "bbox": [
+              190.5452042775,
+              616.9814083292697,
+              505.2943819942533,
+              624.3569032974508
+            ]
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000020",
+            "text": "region (green arrow), with bilateral pulmonary parenchymal nodules and micronodules (red arrows), with the",
+            "bbox": [
+              190.5452042775,
+              625.3837522547697,
+              505.2543208187514,
+              632.7592472229508
+            ]
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000021",
+            "text": "largest measuring 9 mm in the sub-pleural middle lobar fissure and 8 mm in the sub-pleural right lower lobe.",
+            "bbox": [
+              190.5452042775,
+              633.7860961802696,
+              504.520015976405,
+              641.1615911484507
+            ]
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0002-l000022",
+            "text": "Additionally, a rounded, hypodense lesion in the pancreatic body with heterogeneous enhancement post-",
+            "bbox": [
+              183.3431951985,
+              673.8424750283282,
+              520.5372091471731,
+              683.161874776554
+            ]
+          }
+        ],
+        "status": "Catalog caption relation is incomplete relative to visible original grey caption. Raw IR text remains unchanged and complete in these source lines.",
+        "medical_or_pairing_approval": false
+      },
+      {
+        "figure_id": "figure-e36bbdf655d987d3e73315ff",
+        "figure_number": "3",
+        "catalog_caption_block_ids": [
+          "25c82e492c8344a71988-p0003-l000000",
+          "25c82e492c8344a71988-p0003-l000001"
+        ],
+        "catalog_caption_text": "FIGURE 3: Histological examination of the bronchobiopsy\nA: tumor proliferation arranged in diffuse sheets (hematoxylin and eosin (H&E), 100X); (B): cells that are",
+        "actual_source_neighborhood": [
+          {
+            "block_id": "25c82e492c8344a71988-p0003-l000000",
+            "text": "FIGURE 3: Histological examination of the bronchobiopsy",
+            "bbox": [
+              190.5452042775,
+              249.9632088771648,
+              454.1335601248745,
+              260.6912015581561
+            ]
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0003-l000001",
+            "text": "A: tumor proliferation arranged in diffuse sheets (hematoxylin and eosin (H&E), 100X); (B): cells that are",
+            "bbox": [
+              190.5452042775,
+              267.68397258851996,
+              493.504167985435,
+              275.05946755670107
+            ]
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0003-l000002",
+            "text": "sometimes cohesive, sometimes spindle-shaped, atypical, hyperchromatic, anisokaryosis, and focally mitotic",
+            "bbox": [
+              190.5452042775,
+              276.0863165140199,
+              506.76951849967395,
+              283.461811482201
+            ]
+          },
+          {
+            "block_id": "25c82e492c8344a71988-p0003-l000003",
+            "text": "(H&E, 400X).",
+            "bbox": [
+              190.5452042775,
+              284.4886604395199,
+              229.37138526424482,
+              291.864155407701
+            ]
+          }
+        ],
+        "status": "Catalog caption relation is incomplete relative to visible original grey caption. Raw IR text remains unchanged and complete in these source lines.",
+        "medical_or_pairing_approval": false
+      }
+    ],
+    "image_text_unverified_pages": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "source_admission": {
+    "source_identity_and_no_prior_model_exposure_checks_passed": true,
+    "registry_state": "registered_not_sealed",
+    "model_execution_authorized": false,
+    "source_structure_gap_present": true,
+    "full_figure_caption_delivery_claim_blocked": true,
+    "clinical_medical_quality_approved": false,
+    "next_action": "Main session first reads original page2/page3 and decides bounded next run scope; no output-based source replacement or source-specific parser tuning."
+  },
+  "no_algorithm_or_prompt_changes_for_this_paper": true,
+  "unchanged_engine_parser_files_verified": 58,
+  "expected_next_budget_not_dispatch": {
+    "requests": 24,
+    "input_tokens": 600000,
+    "output_tokens": 32000,
+    "seconds": 900,
+    "basis": "Same bounded ceiling as newly successful IN04 trial (21/283335/10170 in361.799s), now3 planned text batches instead of4; no guarantee of completion or medical quality."
+  },
+  "evidence": {
+    "metadata": "metadata.json",
+    "preselection": "preselection.json",
+    "download": "download.json",
+    "identity": "PDF-identity.json",
+    "exposure_audit": "exposure-audit.json",
+    "raw_PDF_pages": "original-pages.json",
+    "parser_result": "parser-result.json",
+    "source_scope": "source-scope.json",
+    "figure_catalog": "figure-catalog.json"
+  },
+  "new_model_calls": 0
+}

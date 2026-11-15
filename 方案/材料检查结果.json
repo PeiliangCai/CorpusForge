@@ -1,6 +1,6 @@
 {
-  "status": "T1_engineering_delivery_S2_S6_S7_gates_incomplete_total_system_pending",
-  "date": "2026-11-05",
+  "status": "T1_two_layer_and_S2_preparation_engineering_accepted_S6_S7_incomplete_total_system_pending",
+  "date": "2026-11-14",
   "parent_version": "0.4",
   "child_version": "0.7",
   "checks": {
@@ -115,16 +115,16 @@
   },
   "current_T1_sync": {
     "document": "子任务T1/T1智能体开发计划.docx",
-    "version": "0.7",
+    "version": "0.8",
     "execution_guide": "子任务T1/T1开发执行说明.docx",
-    "execution_guide_version": "0.5",
+    "execution_guide_version": "0.6",
     "original_approved_plan_version": "0.6",
     "approval_scope": "Existing approved business scope retained; current engineering choices and delegated acceptance are recorded separately",
-    "status": "engineering_delivery_with_S2_medical_S6_independent_S7_real_gate_incomplete",
+    "status": "two_layer_scope_and_S2_preparation_engineering_accepted_S6_S7_pending",
     "current_data": "子任务T1/当前版本.json",
-    "current_plan_sha256": "7b3c2d15bfb84828ae023c5748a1cd1177b879e03ad9f366783c41e9fff0f45f",
-    "current_execution_guide_sha256": "511cfaa4154c3ddd6394a57c8efe8e3810f3ed66ef2527f289050b6579b22523",
-    "current_document_validation": "code/docs/acceptance/finalization-2026-11-09/stage-matrix.json",
+    "current_plan_sha256": "c6803c0d51bc597ce7a009a90d62172d2f970f50ebcaea5b99725a79bc2ddecd",
+    "current_execution_guide_sha256": "ba75a351d520e6a3fa709355126aff34f789af2d288d163bc27f517791423078",
+    "current_document_validation": "code/docs/acceptance/two-layer-catalog-2026-11-14/documentation-sync.json",
     "current_experiment_authorization": {
       "source_id": "IN04",
       "source_role": "Already exposed source; one final deployment regression, not independent holdout",
@@ -200,7 +200,7 @@
     "current_stage_summary": {
       "S0": "passed",
       "S1": "passed",
-      "S2": "engineering_complete_real_medical_catalog_unverified",
+      "S2": "passed_current_preparation_and_two_layer_configuration_engineering",
       "S3": "passed_scoped_engineering",
       "S4": "accepted_current_development_iteration",
       "S5": "accepted_delegated_functional_engineering_and_UI",
@@ -213,7 +213,10 @@
     "formal_model_selected": true,
     "formal_model": "AGICTO gpt-6-luna medium/openai-responses",
     "ordinary_model_enabled": false,
-    "historical_evidence_index": "code/docs/acceptance/finalization-2026-11-09/stage-matrix.json"
+    "historical_evidence_index": "code/docs/acceptance/finalization-2026-11-09/stage-matrix.json",
+    "revision": "two-layer-catalog-2026-11-14",
+    "scope_contract": "子任务T1/开发计划.json#/scope",
+    "current_scope_catalog": "子任务T1/当前版本.json#/current_scope_catalog"
   },
   "old_checks_scope": "原有日期的检查仅证明当时母方案材料；本次只同步T1局部引用，不重新验收T2—T5。",
   "current_stage_audit": {
@@ -306,7 +309,7 @@
     "ordinary_model_enabled": false,
     "current_scope": "S0/S1 accepted; S3 scoped engineering, S4 current development and S5 delegated functional/UI accepted. S2 real medical content, complete S6 independent validation and complete S7 real deployment gate remain unpassed. Model default selected but ordinary paid extraction disabled. All81 autonomous calls and unused allowances closed.",
     "current_next_steps": [
-      "真实医学目录条目/同义/分类和适用关系核验；工程配置能力不能代替真实医学内容批准。",
+      "核对当前癌种/模态名称及别名；运营映射不宣称医学适用性，实际抽取医学质量和独立性能验收继续分列。",
       "完整S6独立质量与性能验收未通过，保留原失败与未解决字形/OCR/版式/语境及图型边界。",
       "供应商新返回模型标识未获现行exact alias政策确认；需先确认返回名或获得固定返回通道，再在另有明确范围/预算下验证完整部署链。当前不放宽别名、不再模型请求、普通模型关闭。"
     ],
@@ -801,5 +804,119 @@
     "formal_model": "AGICTO gpt-6-luna medium/openai-responses",
     "original_B0_decision": "code/docs/acceptance/output-feedback-2026-11-08/feedback-report.json",
     "current_evidence": "code/docs/acceptance/finalization-2026-11-09/stage-matrix.json"
-  }
+  },
+  "historical_before_two_layer_scope_2026_11_14": {
+    "current_T1_sync": {
+      "document": "子任务T1/T1智能体开发计划.docx",
+      "version": "0.7",
+      "execution_guide": "子任务T1/T1开发执行说明.docx",
+      "execution_guide_version": "0.5",
+      "original_approved_plan_version": "0.6",
+      "approval_scope": "Existing approved business scope retained; current engineering choices and delegated acceptance are recorded separately",
+      "status": "engineering_delivery_with_S2_medical_S6_independent_S7_real_gate_incomplete",
+      "current_data": "子任务T1/当前版本.json",
+      "current_plan_sha256": "7b3c2d15bfb84828ae023c5748a1cd1177b879e03ad9f366783c41e9fff0f45f",
+      "current_execution_guide_sha256": "511cfaa4154c3ddd6394a57c8efe8e3810f3ed66ef2527f289050b6579b22523",
+      "current_document_validation": "code/docs/acceptance/finalization-2026-11-09/stage-matrix.json",
+      "current_experiment_authorization": {
+        "source_id": "IN04",
+        "source_role": "Already exposed source; one final deployment regression, not independent holdout",
+        "status": "all_autonomous_trials_closed_last_failed_identity_guard",
+        "plan": {
+          "path": "code/docs/acceptance/finalization-2026-11-09/s7/post-fix-IN04-regression/plan.json",
+          "sha256": "4857d7d9e880245ed892ee3bfb189232ac04663ee60bd7ba65d9bfe79058ea9d"
+        },
+        "authorization": {
+          "path": "code/docs/acceptance/finalization-2026-11-09/s7/post-fix-IN04-regression/authorization.json",
+          "sha256": "1cb4142e0c1e5bbb1cd24eceffa4a821dafc6c3fc162103378b170841192db91"
+        },
+        "execution_report": {
+          "path": "code/docs/acceptance/finalization-2026-11-09/s7/post-fix-IN04-regression/execution-report.json",
+          "sha256": "549fb9299a29779dd79bc7990c80e5222bf195700c7a8229a45f24257cb0e416"
+        },
+        "ledger_snapshot": {
+          "path": "code/docs/acceptance/finalization-2026-11-09/s7/post-fix-IN04-regression/allowance-ledger-and-state.json",
+          "sha256": "5bfa07e620aed9e9f5bde32afda3e6a54ba9c2570de1ebaf1e2935bf0ce9d0c5"
+        },
+        "actual_HTTP_start_utc": "2026-11-09T10:47:41.702Z",
+        "deadline_utc": "2026-11-09T11:02:41.702Z",
+        "actual_finished_utc": "2026-11-09T10:50:52.926Z",
+        "approved_limits": {
+          "requests": 24,
+          "input_tokens": 600000,
+          "output_tokens": 32000,
+          "seconds": 900,
+          "request_seconds": 120,
+          "document_seconds": 900,
+          "transient_retries": 2,
+          "response_output_tokens": 8192,
+          "batch_responses": 16
+        },
+        "requests": 5,
+        "provider_reported_input_tokens": 48625,
+        "provider_reported_output_tokens": 2647,
+        "budget_accounted_input_tokens": 48625,
+        "budget_accounted_output_tokens": 2647,
+        "missing_usage_requests": 0,
+        "actual_response_model_that_failed": "data-zone-standard-gpt-6-luna",
+        "existing_exact_alias_policy_accepts_this_model": false,
+        "halted": "response_model_identity_mismatch",
+        "saved_candidates": 5,
+        "summary_started": false,
+        "summary_complete": false,
+        "selected_scope_complete": false,
+        "primary_assessment": "not_performed",
+        "default_primary_candidate_not_final_role": true,
+        "UI_downloads_completed": 3,
+        "ordinary_model_enabled": false,
+        "ordinary_tables_unchanged_reported_by_executor": true,
+        "container_stopped": true,
+        "private_key_copy_removed": true,
+        "unused_requests_closed": 19,
+        "usage_final": true,
+        "budget_closed": true,
+        "new_paid_calls_authorized": false,
+        "new_paid_request_limit": 0,
+        "effective_new_request_allowance": 0,
+        "can_execute_now": false,
+        "current_paid_requests_running": false,
+        "current_run_running": false,
+        "no_alias_policy_relaxation_or_further_model_round": true,
+        "actual_human_reviewed": 0,
+        "production_record_approvals": 0,
+        "medical_quality_approved": false,
+        "window_total_requests": 81,
+        "current_final_stage_record": "code/docs/acceptance/finalization-2026-11-09/stage-matrix.json"
+      },
+      "new_paid_call_budget": 0,
+      "all_T1_stages_passed": false,
+      "current_stage_summary": {
+        "S0": "passed",
+        "S1": "passed",
+        "S2": "engineering_complete_real_medical_catalog_unverified",
+        "S3": "passed_scoped_engineering",
+        "S4": "accepted_current_development_iteration",
+        "S5": "accepted_delegated_functional_engineering_and_UI",
+        "S6": "not_passed_complete_independent_validation",
+        "S7": "not_passed_full_real_deployment_gate"
+      },
+      "S5_accepted": true,
+      "engineering_selected_method": "B0",
+      "empirical_quality_superiority_proven": false,
+      "formal_model_selected": true,
+      "formal_model": "AGICTO gpt-6-luna medium/openai-responses",
+      "ordinary_model_enabled": false,
+      "historical_evidence_index": "code/docs/acceptance/finalization-2026-11-09/stage-matrix.json"
+    },
+    "status": "T1_engineering_delivery_S2_S6_S7_gates_incomplete_total_system_pending",
+    "date": "2026-11-05"
+  },
+  "current_scope_override": {
+    "date": "2026-11-14",
+    "rule": "癌种→图像模态两层联动，初始均不限、各层可限制多选；空选或失效项阻止开始，保留仍有效项并提示用户处理，不静默放宽。新任务在所选癌种/模态内开放抽取视觉特征，不受预设特征词表限制；显式旧特征限制请求明确拒绝。",
+    "historical_scope": "latest_advisor_document_edit及原stage audit/付费实验仅保留原时点；当前范围以T1权威子计划为准。",
+    "documentation_validation": "code/docs/acceptance/two-layer-catalog-2026-11-14/documentation-sync.json",
+    "S2_preparation_acceptance": "code/docs/acceptance/two-layer-catalog-2026-11-14/report.json#/stage_decision/S2"
+  },
+  "last_status_update_Asia_Shanghai": "2026-11-14"
 }

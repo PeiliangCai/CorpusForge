@@ -7,7 +7,9 @@ import { ContractError, type EvidenceVersion, type FigureAssetCatalog } from '@t
 import { assertParsedDocument } from '../../../packages/agent/src/parser.js';
 import { allDeliveredRecords, assertFigureCatalog, buildEvidenceDelivery } from '../../../packages/agent/src/evidence-delivery.js';
 import type { ExtractionDocument } from '../../../packages/agent/src/article-scope.js';
+import { buildSourceEvidenceUnits } from '../../../packages/agent/src/source-evidence-units.js';
 import type { WorkbenchCapabilities, WorkbenchFigure, WorkbenchPaper, WorkbenchPaperDetail } from '../../../packages/contracts/src/workbench.js';
+import { readingPassages } from './reading-passages.js';
 
 export interface Artifact { path: string; sha256: string }
 export interface RegisteredPaper {
@@ -130,8 +132,9 @@ export class WorkbenchSources {
 
   async detail(id: string): Promise<WorkbenchPaperDetail> {
     const row = await this.registered(id), { document, catalog } = await this.source(row);
+    const units = buildSourceEvidenceUnits(document);
     const figures: WorkbenchFigure[] = catalog.figures.map(figure => ({ id: figure.figure_id, number: figure.figure_number,
-      verification: figure.verification.status, caption: figure.caption_segments, human_approved: false,
+      verification: figure.verification.status, caption: figure.caption_segments, caption_passages: readingPassages(document, figure.caption_segments, units), human_approved: false,
       assets: figure.verification.status === 'needs_review' ? [] : figure.regions.map(asset => ({ id: asset.asset_id,
         url: `/api/t1/workbench/papers/${id}/figures/${asset.asset_id}`, sha256: asset.sha256,
         page: asset.physical_page, width: asset.width_px, height: asset.height_px })) }));
@@ -146,6 +149,8 @@ export class WorkbenchSources {
         full_recall_claimed: false as const, medical_quality_approved: false as const,
         records: allDeliveredRecords(delivery).map(record => ({ id: record.record_id, version: record.record_version, run_id: record.run_id,
           fragments: record.original_fragments, context: record.context_fragments,
+          passages: readingPassages(document, record.original_fragments, units), context_passages: readingPassages(document, record.context_fragments, units),
+          retention: { status: record.review_status === 'rejected' ? 'excluded' as const : 'kept' as const, revision: 0, origin: 'default' as const, record_version: record.record_version },
           association: record.figure_association.status, figure_ids: record.figure_association.figure_ids,
           proposed_figure_ids: record.figure_association.proposed_figure_ids,
           reasons: record.figure_association.reasons, review_status: record.review_status,

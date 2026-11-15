@@ -1,0 +1,262 @@
+{
+  "schema_version": "t1-IN06-bibliography-format-regression-1",
+  "source_id": "IN06",
+  "before_rule": "explicit-bibliography-task-scope-1",
+  "after_rule": "explicit-bibliography-task-scope-2",
+  "before_counts": {
+    "kept": 258,
+    "deferred": 0,
+    "excluded": 4
+  },
+  "after_counts": {
+    "kept": 223,
+    "deferred": 0,
+    "excluded": 39
+  },
+  "explicit_references_list_items": 22,
+  "complete_entries_excluded_before": 2,
+  "complete_entries_excluded_after": 19,
+  "rows": [
+    {
+      "native_text_is_untrusted_display": "Dela Cruz CS, Tanoue LT, Matthay RA: Lung cancer: epidemiology, etiology, and prevention . Clin Chest Med. 2011, 32:605-44. 10.1016/j.ccm.2011.09.001",
+      "raw_source": "1. Dela Cruz CS, Tanoue LT, Matthay RA: Lung cancer: epidemiology, etiology, and prevention . Clin Chest\nMed. 2011, 32:605-44. 10.1016/j.ccm.2011.09.001",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000012",
+        "25c82e492c8344a71988-p0005-l000013"
+      ],
+      "before_excluded": false,
+      "after_excluded": false
+    },
+    {
+      "native_text_is_untrusted_display": "Karim NA, Schuster J, Eldessouki I, et al.: Pulmonary sarcomatoid carcinoma: University of Cincinnati experience. Oncotarget. 2018, 9:4102-8. 10.18632/oncotarget.23468",
+      "raw_source": "2. Karim NA, Schuster J, Eldessouki I, et al.: Pulmonary sarcomatoid carcinoma: University of Cincinnati\nexperience. Oncotarget. 2018, 9:4102-8. 10.18632/oncotarget.23468",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000014",
+        "25c82e492c8344a71988-p0005-l000015"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Li X, Wu D, Liu H, Chen J: Pulmonary sarcomatoid carcinoma: progress, treatment and expectations . Ther Adv Med Oncol. 2020, 12:1758835920950207. 10.1177/1758835920950207",
+      "raw_source": "3. Li X, Wu D, Liu H, Chen J: Pulmonary sarcomatoid carcinoma: progress, treatment and expectations . Ther\nAdv Med Oncol. 2020, 12:1758835920950207. 10.1177/1758835920950207",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000016",
+        "25c82e492c8344a71988-p0005-l000017"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Zanaj V, Vogli K: Pulmonary cancer. Interdisciplinary Journal of Research and Development. 2023, 10:96. 10.56345/ijrdv10n113",
+      "raw_source": "4. Zanaj V, Vogli K: Pulmonary cancer. Interdisciplinary Journal of Research and Development. 2023, 10:96.\n10.56345/ijrdv10n113",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000018",
+        "25c82e492c8344a71988-p0005-l000019"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Sharma M: Pulmonary sarcomatoid carcinoma. Int. J Med. Dent.. 2018, 7:1684-5.",
+      "raw_source": "5. Sharma M: Pulmonary sarcomatoid carcinoma. Int. J Med. Dent.. 2018, 7:1684-5.",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000020"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Huang SY, Shen SJ, Li XY: Pulmonary sarcomatoid carcinoma: a clinicopathologic study and prognostic analysis of 51 cases. World J Surg Oncol. 2013, 11:252. 10.1186/1477-7819-11-252",
+      "raw_source": "6. Huang SY, Shen SJ, Li XY: Pulmonary sarcomatoid carcinoma: a clinicopathologic study and prognostic\nanalysis of 51 cases. World J Surg Oncol. 2013, 11:252. 10.1186/1477-7819-11-252",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000021",
+        "25c82e492c8344a71988-p0005-l000022"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Lin Y, Yang H, Cai Q, et al.: Characteristics and prognostic analysis of 69 patients with pulmonary sarcomatoid carcinoma. Am J Clin Oncol. 2016, 39:215-22. 10.1097/COC.0000000000000101",
+      "raw_source": "7. Lin Y, Yang H, Cai Q, et al.: Characteristics and prognostic analysis of 69 patients with pulmonary\nsarcomatoid carcinoma. Am J Clin Oncol. 2016, 39:215-22. 10.1097/COC.0000000000000101",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000023",
+        "25c82e492c8344a71988-p0005-l000024"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Ouziane I, Boutayeb S, Mrabti H, Lalya I, Rimani M, Errihani H: Sarcomatoid carcinoma of the lung: a model of resistance of chemotherapy. N Am J Med Sci. 2014, 6:342-5. 10.4103/1947-2714.136920",
+      "raw_source": "8. Ouziane I, Boutayeb S, Mrabti H, Lalya I, Rimani M, Errihani H: Sarcomatoid carcinoma of the lung: a model\nof resistance of chemotherapy. N Am J Med Sci. 2014, 6:342-5. 10.4103/1947-2714.136920",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000025",
+        "25c82e492c8344a71988-p0005-l000026"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Sim JK, Chung SM, Choi JH, et al.: Clinical and molecular characteristics of pulmonary sarcomatoid carcinoma. Korean J Intern Med. 2018, 33:737-44. 10.3904/kjim.2017.245",
+      "raw_source": "9. Sim JK, Chung SM, Choi JH, et al.: Clinical and molecular characteristics of pulmonary sarcomatoid\ncarcinoma. Korean J Intern Med. 2018, 33:737-44. 10.3904/kjim.2017.245",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000027",
+        "25c82e492c8344a71988-p0005-l000028"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Vieira T, Girard N, Ung M, et al.: Efficacy of first-line chemotherapy in patients with advanced lung sarcomatoid carcinoma. J Thorac Oncol. 2013, 8:1574-7. 10.1097/01.JTO.0000437008.00554.90",
+      "raw_source": "10. Vieira T, Girard N, Ung M, et al.: Efficacy of first-line chemotherapy in patients with advanced lung\nsarcomatoid carcinoma. J Thorac Oncol. 2013, 8:1574-7. 10.1097/01.JTO.0000437008.00554.90",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000029",
+        "25c82e492c8344a71988-p0005-l000030"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Ung M, Rouquette I, Filleron T, et al.: Characteristics and clinical outcomes of sarcomatoid carcinoma of the lung. Clin Lung Cancer. 2016, 17:391-7. 10.1016/j.cllc.2016.03.001",
+      "raw_source": "11. Ung M, Rouquette I, Filleron T, et al.: Characteristics and clinical outcomes of sarcomatoid carcinoma of the\nlung. Clin Lung Cancer. 2016, 17:391-7. 10.1016/j.cllc.2016.03.001",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000031",
+        "25c82e492c8344a71988-p0005-l000032"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Qin Z, Huang B, Yu G, Zheng Y, Zhao K: Gingival metastasis of a mediastinal pulmonary sarcomatoid carcinoma: a case report. J Cardiothorac Surg. 2019, 14:161. 10.1186/s13019-019-0991-y",
+      "raw_source": "12. Qin Z, Huang B, Yu G, Zheng Y, Zhao K: Gingival metastasis of a mediastinal pulmonary sarcomatoid\ncarcinoma: a case report. J Cardiothorac Surg. 2019, 14:161. 10.1186/s13019-019-0991-y",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000033",
+        "25c82e492c8344a71988-p0005-l000034"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Mochizuki T, Ishii G, Nagai K, et al.: Pleomorphic carcinoma of the lung: clinicopathologic characteristics of 70 cases. Am J Surg Pathol. 2008, 32:1727-35. 10.1097/PAS.0b013e3181804302",
+      "raw_source": "13. Mochizuki T, Ishii G, Nagai K, et al.: Pleomorphic carcinoma of the lung: clinicopathologic characteristics of\n70 cases. Am J Surg Pathol. 2008, 32:1727-35. 10.1097/PAS.0b013e3181804302",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000035",
+        "25c82e492c8344a71988-p0005-l000036"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Pelosi G, Melotti F, Cavazza A, et al.: A modified vimentin histological score helps recognize pulmonary sarcomatoid carcinoma in small biopsy samples. Anticancer Res. 2012, 32:1463-73.",
+      "raw_source": "14. Pelosi G, Melotti F, Cavazza A, et al.: A modified vimentin histological score helps recognize pulmonary\nsarcomatoid carcinoma in small biopsy samples. Anticancer Res. 2012, 32:1463-73.",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000037",
+        "25c82e492c8344a71988-p0005-l000038"
+      ],
+      "before_excluded": true,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Arshi J, Sauer M, Yin F: Rapid sarcomatoid transformation of lung squamous cell carcinoma after neoadjuvant therapy: a case report. Anticancer Res. 2020, 40:1625-9. 10.21873/anticanres.14111",
+      "raw_source": "15. Arshi J, Sauer M, Yin F: Rapid sarcomatoid transformation of lung squamous cell carcinoma after\nneoadjuvant therapy: a case report. Anticancer Res. 2020, 40:1625-9. 10.21873/anticanres.14111",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000039",
+        "25c82e492c8344a71988-p0005-l000040"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Baldovini C, Rossi G, Ciarrocchi A: Approaches to tumor classification in pulmonary sarcomatoid carcinoma. Lung Cancer (Auckl). 2019, 10:131-49. 10.2147/LCTT.S186779",
+      "raw_source": "16. Baldovini C, Rossi G, Ciarrocchi A: Approaches to tumor classification in pulmonary sarcomatoid\ncarcinoma. Lung Cancer (Auckl). 2019, 10:131-49. 10.2147/LCTT.S186779",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000041",
+        "25c82e492c8344a71988-p0005-l000042"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Matsui K, Kitagawa M: Spindle cell carcinoma of the lung. A clinicopathologic study of three cases . Cancer. 19911, 67:2361-7.",
+      "raw_source": "17. Matsui K, Kitagawa M: Spindle cell carcinoma of the lung. A clinicopathologic study of three cases . Cancer.\n19911, 67:2361-7.",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000043",
+        "25c82e492c8344a71988-p0005-l000044"
+      ],
+      "before_excluded": false,
+      "after_excluded": false
+    },
+    {
+      "native_text_is_untrusted_display": "Lichtiger B, Mackay B, Tessmer CF: Spindle-cell variant of squamous carcinoma. A light and electron microscopic study of 13 cases. Cancer. 1970, 26:1311-20.",
+      "raw_source": "18. Lichtiger B, Mackay B, Tessmer CF: Spindle-cell variant of squamous carcinoma. A light and electron\nmicroscopic study of 13 cases. Cancer. 1970, 26:1311-20.",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000045",
+        "25c82e492c8344a71988-p0005-l000046"
+      ],
+      "before_excluded": true,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "The World Health Organization histological typing of lung tumours. Second edition . Am J Clin Pathol. 1982, 77:123-36. 10.1093/ajcp/77.2.123",
+      "raw_source": "19. The World Health Organization histological typing of lung tumours. Second edition . Am J Clin Pathol. 1982,\n77:123-36. 10.1093/ajcp/77.2.123",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000047",
+        "25c82e492c8344a71988-p0005-l000048"
+      ],
+      "before_excluded": false,
+      "after_excluded": false
+    },
+    {
+      "native_text_is_untrusted_display": "Borghaei H, Paz-Ares L, Horn L, et al.: Nivolumab versus docetaxel in advanced nonsquamous non-smallcell lung cancer. N Engl J Med. 2015, 22:1627-39. 10.1056/NEJMoa1507643",
+      "raw_source": "20. Borghaei H, Paz-Ares L, Horn L, et al.: Nivolumab versus docetaxel in advanced nonsquamous non-small-\ncell lung cancer. N Engl J Med. 2015, 22:1627-39. 10.1056/NEJMoa1507643",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000049",
+        "25c82e492c8344a71988-p0005-l000050"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Lococo F, Gandolfi G, Rossi G, et al.: Deep sequencing analysis reveals that KRAS mutation is a marker of poor prognosis in patients with pulmonary sarcomatoid carcinoma. J Thorac Oncol. 2016, 11:1282-92. 10.1016/j.jtho.2016.04.020",
+      "raw_source": "21. Lococo F, Gandolfi G, Rossi G, et al.: Deep sequencing analysis reveals that KRAS mutation is a marker of\npoor prognosis in patients with pulmonary sarcomatoid carcinoma. J Thorac Oncol. 2016, 11:1282-92.\n10.1016/j.jtho.2016.04.020",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000051",
+        "25c82e492c8344a71988-p0005-l000052",
+        "25c82e492c8344a71988-p0005-l000053"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    },
+    {
+      "native_text_is_untrusted_display": "Chen J, He Q, Liu J, et al.: CD8+ tumor-infiltrating lymphocytes as a novel prognostic biomarker in lung sarcomatoid carcinoma, a rare subtype of lung cancer. Cancer Manag Res. 2018, 13:3505-11. 10.2147/CMAR.S169074",
+      "raw_source": "22. Chen J, He Q, Liu J, et al.: CD8+ tumor-infiltrating lymphocytes as a novel prognostic biomarker in lung\nsarcomatoid carcinoma, a rare subtype of lung cancer. Cancer Manag Res. 2018, 13:3505-11.\n10.2147/CMAR.S169074",
+      "block_ids": [
+        "25c82e492c8344a71988-p0005-l000054",
+        "25c82e492c8344a71988-p0005-l000055",
+        "25c82e492c8344a71988-p0005-l000056"
+      ],
+      "before_excluded": false,
+      "after_excluded": true
+    }
+  ],
+  "no_PDF_or_IR_rewrite": true,
+  "no_whole_page_exclusion": true,
+  "new_model_calls": 0,
+  "conservatively_retained_entries": [
+    {
+      "reference_number": 1,
+      "reason": "Compound surname Dela Cruz is outside the existing single-surname author-start guard; retained instead of expanding this repair scope.",
+      "raw_source": "1. Dela Cruz CS, Tanoue LT, Matthay RA: Lung cancer: epidemiology, etiology, and prevention . Clin Chest\nMed. 2011, 32:605-44. 10.1016/j.ccm.2011.09.001"
+    },
+    {
+      "reference_number": 17,
+      "reason": "Source prints five-digit year19911; no inferred correction to a four-digit publication year.",
+      "raw_source": "17. Matsui K, Kitagawa M: Spindle cell carcinoma of the lung. A clinicopathologic study of three cases . Cancer.\n19911, 67:2361-7."
+    },
+    {
+      "reference_number": 19,
+      "reason": "WHO institutional author is outside the person-name guard; retained.",
+      "raw_source": "19. The World Health Organization histological typing of lung tumours. Second edition . Am J Clin Pathol. 1982,\n77:123-36. 10.1093/ajcp/77.2.123"
+    }
+  ]
+}

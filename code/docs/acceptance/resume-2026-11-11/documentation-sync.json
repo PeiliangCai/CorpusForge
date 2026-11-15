@@ -1,0 +1,469 @@
+{
+  "schema_version": "t1-current-documentation-sync-2026-11-11-1",
+  "recorded_at_utc": "2026-11-11T11:27:42.873133+00:00",
+  "passed": true,
+  "current_evidence": "code/docs/acceptance/resume-2026-11-11/report.json",
+  "validated_file_count": 16,
+  "changed_file_count": 15,
+  "files": [
+    {
+      "file": "方案/子任务T1/开发计划.json",
+      "before_sha256": "8533a1a0843fe5b66764df1c6117e541e57e8c43e7f5bfa94117bf15f20749cd",
+      "after_sha256": "4c5a8df901a5eaac90e756b79eb4ba5064887890f0c8c264ebc03c01c89e580c",
+      "changed": true
+    },
+    {
+      "file": "方案/子任务T1/当前版本.json",
+      "before_sha256": "ba412a8290d8b0e3a6bd3799ed1824508cb655b942f1781adf478c29d2bc9e51",
+      "after_sha256": "aec9ea74dc9a4e60a20b2fdedd913d08e09bfeded1d888cca0504d1e7e85ff1a",
+      "changed": true
+    },
+    {
+      "file": "方案/子任务T1/材料检查结果.json",
+      "before_sha256": "5f726b5606dd4fbbf7b22fda379be9eaf1d75f33cc21d7d5afd785c30b8a5ee2",
+      "after_sha256": "ec38889cc79a610b4fe8c2f90bb269470237a840df8574fe7ebafb3617a0ba4d",
+      "changed": true
+    },
+    {
+      "file": "方案/子任务T1/质量与性能验收契约.json",
+      "before_sha256": "7aeb46c98d2259988191f692a2cb61aa08187a2fb6e011f94a54d76ba900cd57",
+      "after_sha256": "f47c8c7b406353ca222e97ed2c1b476e1ab45ba3a806f59be735508210c869aa",
+      "changed": true
+    },
+    {
+      "file": "方案/子任务T1/资料来源.json",
+      "before_sha256": "637715cf1fda107b77cf4e6ee9c5989b85c5f990db44b30f80c51d13029a1d7b",
+      "after_sha256": "fdaa9893c301638d87f5fb763c9d599babf22f89c78a9b4797d3456a0acc1ef3",
+      "changed": true
+    },
+    {
+      "file": "方案/子任务T1/开发任务清单.csv",
+      "before_sha256": "66211d12e99f88ba1dfe2cbdd753a14a04fe774446047d95fda60e656dcfebeb",
+      "after_sha256": "57db4e78721a85e5b9e31b4ebf9f3f5172be150168ed82c930e7e052d34b111c",
+      "changed": true
+    },
+    {
+      "file": "方案/子任务T1/开发阶段与验收.csv",
+      "before_sha256": "f85b7399babe8ee5b130241c3ab54c1b178f86616279155ddb13dd42a3c9cdb8",
+      "after_sha256": "a6b747100363834c34f36b85256dd3105f748967581288084ad3a0952dde572c",
+      "changed": true
+    },
+    {
+      "file": "方案/子任务T1/开源项目调研.csv",
+      "before_sha256": "c6533263597d2ddab51d85f03d577a5de2fb05cf804f6f502c6fdaf00c44d277",
+      "after_sha256": "43f0d3b82f40ef7a0ff8b045f25fbde8ecf066a19c7fff5edad257c63175f0c4",
+      "changed": true
+    },
+    {
+      "file": "方案/子任务T1/待讨论实现决策.csv",
+      "before_sha256": "1261ef787761a24c897d595d8b761b0e2b2d388598fb8e279c4ab11cf7477fd4",
+      "after_sha256": "7615845d0a5d7a8079c3bcbb0b258f47041af809fd14add86c5d48d358087c8f",
+      "changed": true
+    },
+    {
+      "file": "方案/子任务T1/抽取结果字段规范.csv",
+      "before_sha256": "85412013238613030ace983f52a12ebad655ba6452154abfb443bcbfc61cc0c8",
+      "after_sha256": "85412013238613030ace983f52a12ebad655ba6452154abfb443bcbfc61cc0c8",
+      "changed": false
+    },
+    {
+      "file": "方案/子任务T1/验收清单.csv",
+      "before_sha256": "5ff8aa78e8296baef52bcaac9cc39e09d302b8cfb3cb986ea6909812fad67ae1",
+      "after_sha256": "869344874508c79c13ebba8128c25258ce183608d0d22adf0920cbf6c1a4f4ee",
+      "changed": true
+    },
+    {
+      "file": "方案/子任务T1/T1开发执行说明.docx",
+      "before_sha256": "511cfaa4154c3ddd6394a57c8efe8e3810f3ed66ef2527f289050b6579b22523",
+      "after_sha256": "18143a736b3117b8a91962950906665535e7c77be9b67db58f01e3597c1321fe",
+      "changed": true
+    },
+    {
+      "file": "方案/子任务T1/T1智能体开发计划.docx",
+      "before_sha256": "7b3c2d15bfb84828ae023c5748a1cd1177b879e03ad9f366783c41e9fff0f45f",
+      "after_sha256": "12c87a7cc98efa0a8b3221aa8046bfac981dc4df5871874f905517ddc25baadb",
+      "changed": true
+    },
+    {
+      "file": "方案/当前版本.json",
+      "before_sha256": "6d26dbbf6e291f5e908f0a7fac1134f96f7b8f377a5e235c97bbae3052d64d9c",
+      "after_sha256": "b2ad85906507d15bf19df931b53d4a1b812c18b1fb3ac6fdd55e806a35342e78",
+      "changed": true
+    },
+    {
+      "file": "code/README.md",
+      "before_sha256": "f63ca17646dfaf05ebfef8b182df9501f4cdd49d9fce6ac25ec94086ab1f8827",
+      "after_sha256": "93e1303be42ab9c8cb0fa3199d6d96a7f54fc4878b251fc6f7d1bd492ff54999",
+      "changed": true
+    },
+    {
+      "file": "code/deploy/README.md",
+      "before_sha256": "c7dabd28c9621aa71dbe6d177b6ca381629a79dab384697eb3aa911cf896a101",
+      "after_sha256": "b2691d0e9b59e982bce63a489bd87c8f0b4f1be5531c0b60ae161400e5440ef1",
+      "changed": true
+    }
+  ],
+  "current_JSON_parsed": 6,
+  "active_JSON_pointers_checked": 28,
+  "active_JSON_pointers_valid": true,
+  "repeated_current_checkpoint_fields_consolidated": {
+    "当前版本.json": [
+      "current_comparison_results",
+      "current_development_output_review",
+      "current_non_medical_screening_interface",
+      "current_user_feedback",
+      "current_live_feedback_revalidation",
+      "current_feedback_revalidation_results",
+      "current_revalidation_readonly_viewer",
+      "current_reliability_repair",
+      "current_reliability_revalidation",
+      "current_reliability_readonly_viewer",
+      "current_PDF_structure_review",
+      "current_runtime_comparison",
+      "current_production_parse",
+      "current_runtime_comparison_results",
+      "current_output_review",
+      "current_output_feedback",
+      "next_comparison_proposal",
+      "current_single_B0_revalidation_proposal",
+      "current_single_B0_code_evidence",
+      "current_single_B0_execution_state"
+    ],
+    "质量与性能验收契约.json": [
+      "current_output_feedback",
+      "next_comparison_proposal",
+      "current_runtime_comparison_results",
+      "current_output_review",
+      "current_single_B0_revalidation_proposal",
+      "current_single_B0_code_evidence",
+      "current_single_B0_execution_state"
+    ],
+    "材料检查结果.json": [
+      "current_offline_reports",
+      "current_output_feedback",
+      "next_comparison_proposal",
+      "current_runtime_comparison_results",
+      "current_output_review",
+      "current_single_B0_revalidation_proposal",
+      "current_single_B0_code_evidence",
+      "current_single_B0_execution_state"
+    ],
+    "开发计划.json": [
+      "current_output_feedback",
+      "next_comparison_proposal",
+      "current_runtime_comparison_results",
+      "current_output_review",
+      "current_single_B0_revalidation_proposal",
+      "current_single_B0_code_evidence",
+      "current_single_B0_execution_state"
+    ]
+  },
+  "identical_historical_objects_replaced_with_verified_single_source_references": [
+    {
+      "file": "方案/子任务T1/质量与性能验收契约.json",
+      "key": "historical_experiment_authorization_before_current_recheck",
+      "canonical_content_sha256": "a81f0d14db704d3ab8eff46beba2e954984efff3be29ae19418873c88c6ce6de"
+    },
+    {
+      "file": "方案/子任务T1/质量与性能验收契约.json",
+      "key": "historical_before_authorized_single_B0_execution",
+      "canonical_content_sha256": "3e4cb3b91298f14945148a8e43175fb68294b1ca8393cdb6cc953b55b210da06"
+    },
+    {
+      "file": "方案/子任务T1/质量与性能验收契约.json",
+      "key": "historical_143_review_before_new_single_B0_outputs",
+      "canonical_content_sha256": "c0587a84c94452dad56554853a715a77488315b7618e87c34854841f448e42b8"
+    },
+    {
+      "file": "方案/子任务T1/质量与性能验收契约.json",
+      "key": "historical_closed72_authorization_before_L05_trial",
+      "canonical_content_sha256": "8d54fb049254d1391370682ee887b8d3ac661e893cb8ebf82ff924c09894838d"
+    },
+    {
+      "file": "方案/子任务T1/材料检查结果.json",
+      "key": "historical_experiment_authorization_before_current_recheck",
+      "canonical_content_sha256": "a81f0d14db704d3ab8eff46beba2e954984efff3be29ae19418873c88c6ce6de"
+    },
+    {
+      "file": "方案/子任务T1/材料检查结果.json",
+      "key": "historical_before_authorized_single_B0_execution",
+      "canonical_content_sha256": "3e4cb3b91298f14945148a8e43175fb68294b1ca8393cdb6cc953b55b210da06"
+    },
+    {
+      "file": "方案/子任务T1/材料检查结果.json",
+      "key": "historical_143_review_before_new_single_B0_outputs",
+      "canonical_content_sha256": "c0587a84c94452dad56554853a715a77488315b7618e87c34854841f448e42b8"
+    },
+    {
+      "file": "方案/子任务T1/材料检查结果.json",
+      "key": "historical_closed72_authorization_before_L05_trial",
+      "canonical_content_sha256": "8d54fb049254d1391370682ee887b8d3ac661e893cb8ebf82ff924c09894838d"
+    },
+    {
+      "file": "方案/子任务T1/材料检查结果.json",
+      "key": "historical_final_formal_review_2026_11_05",
+      "canonical_content_sha256": "ee0cd85ca7f130899ab7630db98afd09d73b20de064f52bf2d755195912e29bd"
+    },
+    {
+      "file": "方案/子任务T1/开发计划.json",
+      "key": "historical_experiment_authorization_before_current_recheck",
+      "canonical_content_sha256": "a81f0d14db704d3ab8eff46beba2e954984efff3be29ae19418873c88c6ce6de"
+    },
+    {
+      "file": "方案/子任务T1/开发计划.json",
+      "key": "historical_before_authorized_single_B0_execution",
+      "canonical_content_sha256": "3e4cb3b91298f14945148a8e43175fb68294b1ca8393cdb6cc953b55b210da06"
+    },
+    {
+      "file": "方案/子任务T1/开发计划.json",
+      "key": "historical_143_review_before_new_single_B0_outputs",
+      "canonical_content_sha256": "c0587a84c94452dad56554853a715a77488315b7618e87c34854841f448e42b8"
+    },
+    {
+      "file": "方案/子任务T1/开发计划.json",
+      "key": "historical_closed72_authorization_before_L05_trial",
+      "canonical_content_sha256": "8d54fb049254d1391370682ee887b8d3ac661e893cb8ebf82ff924c09894838d"
+    },
+    {
+      "file": "方案/子任务T1/开发计划.json",
+      "key": "historical_final_formal_review_2026_11_05",
+      "canonical_content_sha256": "ee0cd85ca7f130899ab7630db98afd09d73b20de064f52bf2d755195912e29bd"
+    }
+  ],
+  "existing_D25_CSV_decision_reconciled_into_JSON_without_new_scope": true,
+  "CSV_JSON_consistency": [
+    {
+      "file": "开发任务清单.csv",
+      "rows": 27,
+      "mapped_fields_checked": 216,
+      "identities_and_order_preserved": true,
+      "JSON_CSV_values_match": true
+    },
+    {
+      "file": "待讨论实现决策.csv",
+      "rows": 25,
+      "mapped_fields_checked": 175,
+      "identities_and_order_preserved": true,
+      "JSON_CSV_values_match": true
+    },
+    {
+      "file": "开发阶段与验收.csv",
+      "rows": 8,
+      "mapped_fields_checked": 56,
+      "identities_and_order_preserved": true,
+      "JSON_CSV_values_match": true
+    },
+    {
+      "file": "验收清单.csv",
+      "rows": 27,
+      "mapped_fields_checked": 162,
+      "identities_and_order_preserved": true,
+      "JSON_CSV_values_match": true
+    },
+    {
+      "file": "开源项目调研.csv",
+      "rows": 12,
+      "mapped_fields_checked": 1,
+      "identities_and_order_preserved": true,
+      "dated_external_source_metadata_unchanged": true,
+      "existing_pi_web_engineering_status_updated_with_original_row_preserved": true
+    }
+  ],
+  "CSV_original_file_format": [
+    {
+      "file": "方案/子任务T1/开发任务清单.csv",
+      "original_newline": "LF",
+      "newline_preserved": true,
+      "UTF8_BOM_preserved": true
+    },
+    {
+      "file": "方案/子任务T1/开发阶段与验收.csv",
+      "original_newline": "LF",
+      "newline_preserved": true,
+      "UTF8_BOM_preserved": true
+    },
+    {
+      "file": "方案/子任务T1/开源项目调研.csv",
+      "original_newline": "LF",
+      "newline_preserved": true,
+      "UTF8_BOM_preserved": true
+    },
+    {
+      "file": "方案/子任务T1/待讨论实现决策.csv",
+      "original_newline": "LF",
+      "newline_preserved": true,
+      "UTF8_BOM_preserved": true
+    },
+    {
+      "file": "方案/子任务T1/抽取结果字段规范.csv",
+      "original_newline": "LF",
+      "newline_preserved": true,
+      "UTF8_BOM_preserved": true
+    },
+    {
+      "file": "方案/子任务T1/验收清单.csv",
+      "original_newline": "LF",
+      "newline_preserved": true,
+      "UTF8_BOM_preserved": true
+    }
+  ],
+  "documentation_git_diff_check_passed": true,
+  "DOCX_preservation": [
+    {
+      "file": "方案/子任务T1/T1智能体开发计划.docx",
+      "paragraphs": 65,
+      "explicitly_updated_status_paragraphs": [
+        {
+          "paragraph_index_including_tables": 1,
+          "before_text_sha256": "c3d9086d83ab4314fd38d203b6df26a089d326780b7d40883af63b7ecd8812b6",
+          "after_text_sha256": "4eda9f5f8486ba1a533ef3e51e7218c298489d18ac341eff3be6ef5560b58369",
+          "locator_zero_based": "body/p[1]"
+        },
+        {
+          "paragraph_index_including_tables": 31,
+          "before_text_sha256": "2bfaa4543ea5240e446697cc6302679944ef397d3801ab44bf2b1332d7b3ce34",
+          "after_text_sha256": "9749026e1ecc6da9365897c413ca83e31934959d7a100e743e8b4ff0329fcb29",
+          "locator_zero_based": "body/p[25]"
+        },
+        {
+          "paragraph_index_including_tables": 52,
+          "before_text_sha256": "c30185cc729100bcc2241ac8aed7716b938392d83438467db3a0636e317a7b9f",
+          "after_text_sha256": "9f858c1b0059d1231b67682e75c478301b949e503b43b16a78e423f0a8c690fa",
+          "locator_zero_based": "body/tbl[1]/tr[6]/tc[2]/p[0]"
+        },
+        {
+          "paragraph_index_including_tables": 55,
+          "before_text_sha256": "2b39b864cd0dad42d67d7dfb783a9cddbd3b2bdd4e2a535c9e0c386f63e94601",
+          "after_text_sha256": "c7683bba683d02082b185db6332c278c6d7d209ed62df39d29b4304654f0e033",
+          "locator_zero_based": "body/tbl[1]/tr[7]/tc[2]/p[0]"
+        },
+        {
+          "paragraph_index_including_tables": 57,
+          "before_text_sha256": "5c8fc21b125945902d408f4272a9ad321cf18f4072bd5f743763885afc31b5a6",
+          "after_text_sha256": "356fb4add9617c89f2307eeeb2330692c8a251c9d230a5835c36d01fd97ac5d2",
+          "locator_zero_based": "body/tbl[1]/tr[8]/tc[1]/p[0]"
+        },
+        {
+          "paragraph_index_including_tables": 63,
+          "before_text_sha256": "9ccaec174a06efc75799afa7b84ff8308f6df20b37993814cefdc8c933f7e051",
+          "after_text_sha256": "18086d96bb90361a9163109eb691380589e1f8276b9fc44cbb3f0f6d5c7ce1f5",
+          "locator_zero_based": "body/p[30]"
+        },
+        {
+          "paragraph_index_including_tables": 64,
+          "before_text_sha256": "12671d80ed2e311930eb7da590649059c785ce568e5f6cd99c8cd70092a3582f",
+          "after_text_sha256": "4a36919aaf88ee03477289d3973be4af238c1cad6e57f55650391823270b9e48",
+          "locator_zero_based": "body/p[31]"
+        }
+      ],
+      "all_other_paragraph_XML_unchanged": true,
+      "all_other_package_members_unchanged": true,
+      "document_parses": true,
+      "final_DOCX_sha256": "12c87a7cc98efa0a8b3221aa8046bfac981dc4df5871874f905517ddc25baadb"
+    },
+    {
+      "file": "方案/子任务T1/T1开发执行说明.docx",
+      "paragraphs": 84,
+      "explicitly_updated_status_paragraphs": [
+        {
+          "paragraph_index_including_tables": 3,
+          "before_text_sha256": "9afb6bff3b922967a8bf2c1fa0188fadc2c1964c110697dc7b7793adba64d36b",
+          "after_text_sha256": "c6333cff42d20f4502fad18f23e7db1c993376ac7b47831302e0100a597c0ab3",
+          "locator_zero_based": "body/p[3]"
+        },
+        {
+          "paragraph_index_including_tables": 25,
+          "before_text_sha256": "fb6578747fd4a55c87fcbe2ffc55e547c38ee05e67527d7d690313f4a08945ac",
+          "after_text_sha256": "83575d4967b944bb00e7150f96e180f3619f4accd730c97da5f7d3fe890e3229",
+          "locator_zero_based": "body/tbl[0]/tr[6]/tc[1]/p[0]"
+        },
+        {
+          "paragraph_index_including_tables": 31,
+          "before_text_sha256": "5c8fc21b125945902d408f4272a9ad321cf18f4072bd5f743763885afc31b5a6",
+          "after_text_sha256": "356fb4add9617c89f2307eeeb2330692c8a251c9d230a5835c36d01fd97ac5d2",
+          "locator_zero_based": "body/tbl[0]/tr[8]/tc[1]/p[0]"
+        },
+        {
+          "paragraph_index_including_tables": 37,
+          "before_text_sha256": "2bb21d647deeaa0a80e57858c7ae5f5c896c7901fbeb4a7e579867c0ada52018",
+          "after_text_sha256": "7c231e0ba2828c8b4e148a5d739bb266da89df940b2cf9fbef2e3cad2a60a9c7",
+          "locator_zero_based": "body/p[10]"
+        },
+        {
+          "paragraph_index_including_tables": 83,
+          "before_text_sha256": "1c4f76f62299da8714734510841301bcd3e12084f0853fee5cd3c740b2eef1d3",
+          "after_text_sha256": "602855bdaa56bb14d3c1d519e0d3b42220765e38c77837946c165bae21216da1",
+          "locator_zero_based": "body/p[41]"
+        }
+      ],
+      "all_other_paragraph_XML_unchanged": true,
+      "all_other_package_members_unchanged": true,
+      "document_parses": true,
+      "final_DOCX_sha256": "18143a736b3117b8a91962950906665535e7c77be9b67db58f01e3597c1321fe"
+    }
+  ],
+  "business_scope_original_text_whole_Figure_context_human_review_and_no_full_gold_rules_preserved": true,
+  "operational_scope_status_and_frozen_version_labels_updated_without_business_scope_change": true,
+  "protected_existing_JSON_artifacts": {
+    "count": 167,
+    "all_unchanged": true,
+    "manifest_before_sha256": "58ded4822597b9d211fc42554b1560047aa0b5a61b0baef19a5911af9013f85a",
+    "manifest_after_sha256": "58ded4822597b9d211fc42554b1560047aa0b5a61b0baef19a5911af9013f85a",
+    "scope": "Prior finalization JSON and this round frozen plans/authorities, source freezes and image construction records"
+  },
+  "formal_reviews": {
+    "used": 3,
+    "limit": 3,
+    "additional": 0
+  },
+  "ordinary_model_enabled": true,
+  "S6_complete_independent_passed": false,
+  "S7_complete_stage_passed": false,
+  "ordinary_response_model_pair_acceptance_basis": "user_delegated_deployment_choice_not_supplier_confirmation_or_weight_verification",
+  "post_test_documentation_vs_execution_image": {
+    "last_paid_image_tag": "t1-workbench:s7-final-sdk-diagnostic-20261111",
+    "last_paid_image_id": "sha256:32a0e53ab6be8bed82c579b8be589cbb25787f076d5133f74163999724d76977",
+    "paid_execution_source_pins": 1174,
+    "delivery_image_tag": "t1-workbench:delivery-20261111",
+    "delivery_image_id": "sha256:4d2a334b0bf50663503b33a6ddc7d9631bc9a05551a198c0053409ab3a2e9904",
+    "delivery_source_pins": 1176,
+    "post_live_runtime_patch_verified_offline_only": "code/docs/acceptance/resume-2026-11-11/delivery-source-freeze.json",
+    "provider_recovery_after_patch_live_verified": false,
+    "frozen_source_records_modified": false,
+    "known_pinned_document_updated_after_test": "code/deploy/README.md",
+    "runtime_or_UI_source_modified_by_documentation_owner": false,
+    "full_current_workspace_byte_identity_claimed": false,
+    "image_internal_documentation_scope": "construction_time_snapshot"
+  },
+  "post_enable_UI_readonly_validation": {
+    "record": "code/docs/acceptance/resume-2026-11-11/ui/delivery-readonly-report.json",
+    "checks_passed": 4,
+    "model_calls": 0,
+    "production_writes": 0,
+    "actual_exports": 0,
+    "Start_clicked": false
+  },
+  "documentation_maintenance_model_requests": 0,
+  "application_or_model_tests_run_by_documentation_owner": false,
+  "Word_pagination_visually_reviewed": false,
+  "medical_quality_approved": false,
+  "production_record_approvals_added": 0,
+  "temporary_documentation_working_files_cleanup": {
+    "path": "code/runtime-data/agent-notes/docs-sync-2026-11-11",
+    "scope": "Only this documentation owner temporary scripts/baseline/continuity notes",
+    "status": "completed_after_parent_review_and_handoff",
+    "permanent_rules_and_other_owner_files_preserved": true,
+    "temporary_directory_absent": true
+  },
+  "parent_requested_final_wording_corrections": {
+    "execution_guide_all_paragraph_indices_zero_based": [
+      37,
+      83
+    ],
+    "default_model_sentence_merged": true,
+    "regression_phrase": "同一来源的回归",
+    "current_fingerprints_rebound": true,
+    "application_tests_rerun": false
+  },
+  "final_original_pagination_or_style_changes_requested": false
+}

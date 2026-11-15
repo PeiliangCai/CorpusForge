@@ -1,0 +1,4441 @@
+{
+  "schema_version": "medical-catalog-material-1",
+  "material_version": "s2-material-2026-11-14-2",
+  "updated_at": "2026-11-14",
+  "title": "T1医学影像特征目录核验材料",
+  "status": "pending_medical_review",
+  "production_catalog_enabled": false,
+  "instructions": {
+    "purpose": "这是可维护的特征目录核验工作材料，供核验人员审阅并供后续网页只读显示。特征目录核验≠逐篇论文标准答案，不要求为每篇论文制作完整答案。",
+    "scope_boundary": "沿用肺癌/肠癌与CT/MRI起步；这是首批准备范围，不限制T1未来处理的全部癌种。不限模式仍按原文开放，不把本目录变成封闭白名单。",
+    "review_work": "核验人员主要判断名称/含义、真同义与上下位、适用癌种/研究对象、模态及必要条件是否正确，并填写review结论、修改建议及真实身份/日期；不确定保持待核。",
+    "preparation_responsibility": "来源查找、可访问链接、具体原文定位及缺失材料的补齐仍由工程资料准备方负责。专家无需承担从零搜文献或制作论文标准答案的任务；preparation_gaps逐项记录我方待办。",
+    "relation_semantics": "癌种→图像类型→特征保存为适用关联，不当成严格的树。真正上下位关系单列hierarchy_relations；词语对应单列lexical_relations，不把相关词、测量选项或缩写自动合并为同义。",
+    "unknown_applicability": "scope_status=unknown且范围数组为空，明确表示适用性未知/未核，不表示适用于所有。历史分类或论文主题不是癌种绑定证据。",
+    "original_text_boundary": "目录名称的规范化只为今后的分类/限制选择提供材料，不授权改写抽取的论文原文；原文、数值、否定及必要语境仍原样保存。",
+    "production_boundary": "本文档及其中confirmed只表示材料内相应条目取得记录中的人工结论，绝不自动批准或发布为正式抽取选项。现行EvidenceCatalog及T1_WORKBENCH_CATALOG_FILE严格守卫独立保留，本轮没有转换、路由、网页编辑/批准按钮或线上配置变更。",
+    "maintenance": [
+      "后续只人工维护code/config/medical-catalog-material.json；旧evaluation/catalog三草案保留为历史输入，不同步成另一套现行来源。",
+      "增改后递增material_version并更新updated_at；从code/运行bash scripts/with-node.sh npm run check:catalog-material，复用现有固定Node，默认PATH无npm时也可检查。",
+      "ID稳定且不可复用；有关联的项优先标lifecycle=retired，删除前同时处理全部引用，原始历史记录保留。",
+      "各关系、条件及其review独立维护；确认名称不会自动确认同义、分类或适用关系。",
+      "只有真实核验人员才能填写非pending人工结论；AI资料整理和网页关键词定位不填human reviewer。"
+    ],
+    "review_status_labels": {
+      "pending": "待核",
+      "confirmed": "已确认（仅限该项材料，不是正式抽取目录发布）",
+      "needs_changes": "需修改",
+      "rejected": "不采纳"
+    },
+    "field_guide": {
+      "sources": "来源身份、原文入口及工程核对记录；source_check不是医学人工review。",
+      "evidence": "可回看的原文位置；historical_lead只有旧来源线索，text_located仅表示工程助手找到相关文字。exact_quote只存少量核对短语，可为空，不伪造精确引文。",
+      "entities": "癌种/模态/研究对象的独立名称候选；名称或来源主题不自动建立适用关系。",
+      "features": "当前T1主显示提议；候选、需拆分、仅背景与排除均尚未医学批准。",
+      "lexical_relations": "词语对应单独审查；unclassified_correspondence不是已确认同义词，true_synonym必须有真实人工确认。",
+      "hierarchy_relations": "真正上下位关系的独立提议，不从适用关联或相似词推断。",
+      "applicability_relations": "特征与癌种/研究对象、模态的适用关联；空数组代表未知，条件引用conditions。",
+      "conditions": "序列/时相、测量参照或理解描述必需的条件提议，与名称独立核验。",
+      "review": "核验结论、修改建议及真实人工身份/日期；空值保持待核，工程校验不能鉴定人员资质。",
+      "historical_records": "原35项原样归档；其中T2生成能力、P0/P1/P2和planned_not_implemented均属旧记录，不是T1当前状态。",
+      "preparation_gaps": "由工程资料准备方继续补齐的具体缺口，不转嫁为专家搜集资料任务。"
+    },
+    "review_checklist": [
+      "名称是否表达论文中的视觉/位置描述；是否混入评分、风险、分期或工程指标？",
+      "词语是完全同义、翻译对应、缩写、相关词还是上下位；是否保留原定义及限定？",
+      "癌种与研究对象是否有直接依据，是否误把肺结节等来源主题当确诊癌种？",
+      "适用模态、序列/时相、初始或治疗后阶段、测量参照与不确定性是否完整？",
+      "综合结论/评分是否只作必要背景；需拆分的视觉成分是否有原文证据？"
+    ],
+    "cautions": [
+      "体积、直径及泛称大小不因相关而合并同义；原测量参照和单位独立保留。",
+      "肺结节来源不自动赋予肺癌绑定，也不自动建立上下位边。",
+      "MRF等结构缩写不能直接作为整项受累状态的同义词；评分词不能直接当外观描述。",
+      "来源身份核对、找到章节/关键词、医学核验和正式抽取目录批准是不同记录；本轮医学人工核验为0。"
+    ]
+  },
+  "starting_scope": {
+    "cancer_entity_ids": [
+      "CANCER-LUNG",
+      "CANCER-BOWEL"
+    ],
+    "modality_entity_ids": [
+      "MODALITY-CT",
+      "MODALITY-MRI"
+    ],
+    "note": "用户已确认的准备起点；不是T1全局白名单，不自动展开未核分类或适用项。"
+  },
+  "provenance": {
+    "preparation_method": "基于原35项与已曝光历史材料作工程整理；本次只定向访问已有MED01–05公开原文核对身份/位置，未新增语料、独立IN阅读、付费模型调用或人工医学批准。",
+    "historical_inputs": [
+      {
+        "id": "INPUT-ORIGINAL-FEATURES",
+        "path": "方案/首批医学影像特征清单.json",
+        "sha256": "3930b7ae0215ed4c738ff0b147562492a7bab43e8a95d64f55605efd1d25209f",
+        "role": "original_records",
+        "maintained_as_current_source": false,
+        "note": "原始35项线索；逐项原样保存在historical_records，旧T2实施状态只属于历史档案。"
+      },
+      {
+        "id": "INPUT-SCREENING-JSON",
+        "path": "code/evaluation/catalog/feature-screening-draft.json",
+        "sha256": "82ac7dc5b1bf00501f59ecc02ab45bc2235a99317082dd2f6edb38f1c56f91dc",
+        "role": "historical_draft",
+        "maintained_as_current_source": false,
+        "note": "历史初筛输入；保留原文件，不再作为并列的现行维护源。"
+      },
+      {
+        "id": "INPUT-SCREENING-CSV",
+        "path": "code/evaluation/catalog/feature-screening-draft.csv",
+        "sha256": "3442b5f84ccba8b00742f7f16444a69cfaabb1f267e5ef08569bbf16ff1ff6a6",
+        "role": "historical_draft",
+        "maintained_as_current_source": false,
+        "note": "历史初筛表；保留原文件及字节，不手工同步为当前材料。"
+      },
+      {
+        "id": "INPUT-EVALUATION-DRAFT",
+        "path": "code/evaluation/catalog/evaluation-feature-catalog-draft.json",
+        "sha256": "09402be89fbbdfc11e39b9fb6bbfb683b866e537b4107b6492bb5a7a4079a54c",
+        "role": "historical_draft",
+        "maintained_as_current_source": false,
+        "note": "历史关系/评价词汇线索；不代表已确认同义词或适用关系。"
+      },
+      {
+        "id": "INPUT-SOURCE-METADATA",
+        "path": "方案/资料与选型核验.json",
+        "sha256": "0d8ff8463f2eef859366e0cb42ee2ceed7f8326424dda43a2a96a8e42e1705c6",
+        "role": "source_metadata",
+        "maintained_as_current_source": false,
+        "note": "本次只摘取已曝光的MED01–05、ENG01和MOD01–02来源身份；不继承旧医学核验结论。"
+      },
+      {
+        "id": "INPUT-SOURCE-REGISTER",
+        "path": "code/evaluation/manifests/source-register.json",
+        "sha256": "5a150d94b4375b23353af700fa817f7a001b5b517f3260b89ab8190336a9323d",
+        "role": "source_metadata",
+        "maintained_as_current_source": false,
+        "note": "沿用已曝光来源ID及来源治理边界；本材料未消费独立IN验收资料。"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "id": "ENG01",
+      "kind": "engineering_design",
+      "title": "本方案提出的工程度量与数据契约",
+      "doi": null,
+      "urls": [],
+      "historical_input_id": "INPUT-SOURCE-METADATA",
+      "historical_pointer": "/sources/14",
+      "source_check": {
+        "status": "not_checked",
+        "checked_by": null,
+        "checked_at": null,
+        "checked_url": null,
+        "title_matches": null,
+        "doi_matches": null,
+        "notes": "本次不扩展核对T2工程/生成后端资料；这些来源不能单独支持医学视觉特征。",
+        "remaining_gaps": [
+          "尚未进行本次来源身份核对；作为历史工程线索保留。"
+        ]
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "历史来源身份与本次工程文献核对分列；review只记录后续真实人工结论。"
+    },
+    {
+      "id": "MED01",
+      "kind": "medical_reference",
+      "title": "The Lung Image Database Consortium (LIDC) and Image Database Resource Initiative (IDRI): A Completed Reference Database of Lung Nodules on CT Scans",
+      "doi": "10.1118/1.3528204",
+      "urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/"
+      ],
+      "historical_input_id": "INPUT-SOURCE-METADATA",
+      "historical_pointer": "/sources/0",
+      "source_check": {
+        "status": "identity_checked",
+        "checked_by": "engineering_assistant",
+        "checked_at": "2026-11-14",
+        "checked_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/",
+        "title_matches": true,
+        "doi_matches": true,
+        "notes": "本次由工程助手核对公开原文页面的题名及DOI，并定向查找下列原文位置；不表示译名、同义、适用性或医学判断已由真人核验。",
+        "remaining_gaps": [
+          "逐条中文名称/定义及关系仍待医学核验；网页文字定位不等于PDF逐字校验。"
+        ]
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "历史来源身份与本次工程文献核对分列；review只记录后续真实人工结论。"
+    },
+    {
+      "id": "MED02",
+      "kind": "medical_reference",
+      "title": "Fleischner Society: Glossary of Terms for Thoracic Imaging",
+      "doi": "10.1148/radiol.232558",
+      "urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC10902601/"
+      ],
+      "historical_input_id": "INPUT-SOURCE-METADATA",
+      "historical_pointer": "/sources/1",
+      "source_check": {
+        "status": "identity_checked",
+        "checked_by": "engineering_assistant",
+        "checked_at": "2026-11-14",
+        "checked_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10902601/",
+        "title_matches": true,
+        "doi_matches": true,
+        "notes": "本次由工程助手核对公开原文页面的题名及DOI，并定向查找下列原文位置；不表示译名、同义、适用性或医学判断已由真人核验。",
+        "remaining_gaps": [
+          "逐条中文名称/定义及关系仍待医学核验；网页文字定位不等于PDF逐字校验。"
+        ]
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "历史来源身份与本次工程文献核对分列；review只记录后续真实人工结论。"
+    },
+    {
+      "id": "MED03",
+      "kind": "medical_reference",
+      "title": "Structured reporting of computed tomography in the staging of colon cancer: a Delphi consensus proposal",
+      "doi": "10.1007/s11547-021-01418-9",
+      "urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC8795004/",
+        "https://link.springer.com/article/10.1007/s11547-021-01418-9",
+        "https://pubmed.ncbi.nlm.nih.gov/34741722/"
+      ],
+      "historical_input_id": "INPUT-SOURCE-METADATA",
+      "historical_pointer": "/sources/2",
+      "source_check": {
+        "status": "identity_checked",
+        "checked_by": "engineering_assistant",
+        "checked_at": "2026-11-14",
+        "checked_url": "https://link.springer.com/article/10.1007/s11547-021-01418-9",
+        "title_matches": true,
+        "doi_matches": true,
+        "notes": "本次由工程助手核对公开原文页面的题名及DOI，并定向查找下列原文位置；不表示译名、同义、适用性或医学判断已由真人核验。 原PMC链接返回浏览器验证页，本次改用同DOI的出版社原文页面。",
+        "remaining_gaps": [
+          "逐条中文名称/定义及关系仍待医学核验；网页文字定位不等于PDF逐字校验。",
+          "具体报告模板字段、枚举及适用条件尚未逐条核对附件Appendix 1。"
+        ]
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "历史来源身份与本次工程文献核对分列；review只记录后续真实人工结论。"
+    },
+    {
+      "id": "MED04",
+      "kind": "medical_reference",
+      "title": "Rectal cancer lexicon 2023 revised and updated consensus statement from the Society of Abdominal Radiology Colorectal and Anal Cancer Disease-Focused Panel",
+      "doi": "10.1007/s00261-023-03893-2",
+      "urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC10444656/"
+      ],
+      "historical_input_id": "INPUT-SOURCE-METADATA",
+      "historical_pointer": "/sources/3",
+      "source_check": {
+        "status": "identity_checked",
+        "checked_by": "engineering_assistant",
+        "checked_at": "2026-11-14",
+        "checked_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10444656/",
+        "title_matches": true,
+        "doi_matches": true,
+        "notes": "本次由工程助手核对公开原文页面的题名及DOI，并定向查找下列原文位置；不表示译名、同义、适用性或医学判断已由真人核验。",
+        "remaining_gaps": [
+          "逐条中文名称/定义及关系仍待医学核验；网页文字定位不等于PDF逐字校验。",
+          "RECT02肿瘤高度的具体测量起止点未在本次定向检索中定位，不能据此宣称原文不存在。"
+        ]
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "历史来源身份与本次工程文献核对分列；review只记录后续真实人工结论。"
+    },
+    {
+      "id": "MED05",
+      "kind": "medical_reference",
+      "title": "MRI to guide clinical management of rectal cancer: updated consensus recommendations from the European Society of Gastrointestinal and Abdominal Radiology (ESGAR)—PART I primary staging",
+      "doi": "10.1007/s00330-025-12274-w",
+      "urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC13212678/"
+      ],
+      "historical_input_id": "INPUT-SOURCE-METADATA",
+      "historical_pointer": "/sources/4",
+      "source_check": {
+        "status": "identity_checked",
+        "checked_by": "engineering_assistant",
+        "checked_at": "2026-11-14",
+        "checked_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13212678/",
+        "title_matches": true,
+        "doi_matches": true,
+        "notes": "本次由工程助手核对公开原文页面的题名及DOI，并定向查找下列原文位置；不表示译名、同义、适用性或医学判断已由真人核验。",
+        "remaining_gaps": [
+          "逐条中文名称/定义及关系仍待医学核验；网页文字定位不等于PDF逐字校验。"
+        ]
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "历史来源身份与本次工程文献核对分列；review只记录后续真实人工结论。"
+    },
+    {
+      "id": "MOD01",
+      "kind": "generation_backend_documentation",
+      "title": "NVIDIA NGC monai_maisi_ct_generative model description",
+      "doi": null,
+      "urls": [
+        "https://catalog.ngc.nvidia.com/orgs/nvidia/monaitoolkit/models/monai_maisi_ct_generative"
+      ],
+      "historical_input_id": "INPUT-SOURCE-METADATA",
+      "historical_pointer": "/sources/8",
+      "source_check": {
+        "status": "not_checked",
+        "checked_by": null,
+        "checked_at": null,
+        "checked_url": null,
+        "title_matches": null,
+        "doi_matches": null,
+        "notes": "本次不扩展核对T2工程/生成后端资料；这些来源不能单独支持医学视觉特征。",
+        "remaining_gaps": [
+          "尚未进行本次来源身份核对；作为历史工程线索保留。"
+        ]
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "历史来源身份与本次工程文献核对分列；review只记录后续真实人工结论。"
+    },
+    {
+      "id": "MOD02",
+      "kind": "generation_backend_documentation",
+      "title": "NVIDIA MAISI NIM 1.0.1 Model Details",
+      "doi": null,
+      "urls": [
+        "https://docs.nvidia.com/nim/medical/maisi/1.0.1/model-details"
+      ],
+      "historical_input_id": "INPUT-SOURCE-METADATA",
+      "historical_pointer": "/sources/9",
+      "source_check": {
+        "status": "not_checked",
+        "checked_by": null,
+        "checked_at": null,
+        "checked_url": null,
+        "title_matches": null,
+        "doi_matches": null,
+        "notes": "本次不扩展核对T2工程/生成后端资料；这些来源不能单独支持医学视觉特征。",
+        "remaining_gaps": [
+          "尚未进行本次来源身份核对；作为历史工程线索保留。"
+        ]
+      },
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "历史来源身份与本次工程文献核对分列；review只记录后续真实人工结论。"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "EVID-META01-ENG01",
+      "source_id": "ENG01",
+      "status": "historical_lead",
+      "url": null,
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-META01-MOD01",
+      "source_id": "MOD01",
+      "status": "historical_lead",
+      "url": "https://catalog.ngc.nvidia.com/orgs/nvidia/monaitoolkit/models/monai_maisi_ct_generative",
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-META01-MOD02",
+      "source_id": "MOD02",
+      "status": "historical_lead",
+      "url": "https://docs.nvidia.com/nim/medical/maisi/1.0.1/model-details",
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-META02-ENG01",
+      "source_id": "ENG01",
+      "status": "historical_lead",
+      "url": null,
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-META02-MOD01",
+      "source_id": "MOD01",
+      "status": "historical_lead",
+      "url": "https://catalog.ngc.nvidia.com/orgs/nvidia/monaitoolkit/models/monai_maisi_ct_generative",
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-META02-MOD02",
+      "source_id": "MOD02",
+      "status": "historical_lead",
+      "url": "https://docs.nvidia.com/nim/medical/maisi/1.0.1/model-details",
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-META03-ENG01",
+      "source_id": "ENG01",
+      "status": "historical_lead",
+      "url": null,
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-META03-MOD01",
+      "source_id": "MOD01",
+      "status": "historical_lead",
+      "url": "https://catalog.ngc.nvidia.com/orgs/nvidia/monaitoolkit/models/monai_maisi_ct_generative",
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-META03-MOD02",
+      "source_id": "MOD02",
+      "status": "historical_lead",
+      "url": "https://docs.nvidia.com/nim/medical/maisi/1.0.1/model-details",
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-GEO01-ENG01",
+      "source_id": "ENG01",
+      "status": "historical_lead",
+      "url": null,
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-GEO01-MOD01",
+      "source_id": "MOD01",
+      "status": "historical_lead",
+      "url": "https://catalog.ngc.nvidia.com/orgs/nvidia/monaitoolkit/models/monai_maisi_ct_generative",
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-GEO02-ENG01",
+      "source_id": "ENG01",
+      "status": "historical_lead",
+      "url": null,
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-GEO02-MED01",
+      "source_id": "MED01",
+      "status": "historical_lead",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/",
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-GEO03-ENG01",
+      "source_id": "ENG01",
+      "status": "historical_lead",
+      "url": null,
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-GEO03-MED01",
+      "source_id": "MED01",
+      "status": "historical_lead",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/",
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-GEO04-ENG01",
+      "source_id": "ENG01",
+      "status": "historical_lead",
+      "url": null,
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-GEO04-MED01",
+      "source_id": "MED01",
+      "status": "historical_lead",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/",
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-GEO05-ENG01",
+      "source_id": "ENG01",
+      "status": "historical_lead",
+      "url": null,
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-LUNG01-MED01",
+      "source_id": "MED01",
+      "status": "historical_lead",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/",
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-LUNG01-MED02",
+      "source_id": "MED02",
+      "status": "historical_lead",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10902601/",
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-LUNG02-MED01",
+      "source_id": "MED01",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/",
+      "locator": "Materials and methods > Image annotation process；无强制共识的阅片后主观特征列表",
+      "exact_quote": "solidity",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-LUNG02-MED02",
+      "source_id": "MED02",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10902601/",
+      "locator": "Nodule > Attenuation and structure；保留CT及结节语境，不认定solidity和texture同义",
+      "exact_quote": null,
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-LUNG03-MED01",
+      "source_id": "MED01",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/",
+      "locator": "Materials and methods > Image annotation process；无强制共识的阅片后主观特征列表",
+      "exact_quote": "margin",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-LUNG04-MED01",
+      "source_id": "MED01",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/",
+      "locator": "Materials and methods > Image annotation process；无强制共识的阅片后主观特征列表",
+      "exact_quote": "spiculation",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-LUNG05-MED01",
+      "source_id": "MED01",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/",
+      "locator": "Materials and methods > Image annotation process；无强制共识的阅片后主观特征列表",
+      "exact_quote": "lobulation",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-LUNG06-MED01",
+      "source_id": "MED01",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/",
+      "locator": "Materials and methods > Image annotation process；无强制共识的阅片后主观特征列表",
+      "exact_quote": "sphericity",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-LUNG07-MED01",
+      "source_id": "MED01",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/",
+      "locator": "Materials and methods > Image annotation process；无强制共识的阅片后主观特征列表",
+      "exact_quote": "internal structure",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-LUNG08-MED01",
+      "source_id": "MED01",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/",
+      "locator": "Materials and methods > Image annotation process；无强制共识的阅片后主观特征列表",
+      "exact_quote": "subtlety",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-LUNG09-MED01",
+      "source_id": "MED01",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3041807/",
+      "locator": "Materials and methods > Image annotation process；无强制共识的阅片后主观特征列表",
+      "exact_quote": "likelihood of malignancy",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-COLON01-MED03",
+      "source_id": "MED03",
+      "status": "text_located",
+      "url": "https://link.springer.com/article/10.1007/s11547-021-01418-9",
+      "locator": "Results > Structured report；Report字段概述段（具体模板位于Supplementary Information的Appendix 1）",
+      "exact_quote": "lesion site",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "已定位正文对报告字段的概述；不是中文字段精确定义，也未据此确认分期/评估字段属于独立视觉描述。附件中的枚举与条件仍由工程方补核。"
+    },
+    {
+      "id": "EVID-COLON02-MED03",
+      "source_id": "MED03",
+      "status": "text_located",
+      "url": "https://link.springer.com/article/10.1007/s11547-021-01418-9",
+      "locator": "Results > Structured report；Report字段概述段（具体模板位于Supplementary Information的Appendix 1）",
+      "exact_quote": "type",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "已定位正文对报告字段的概述；不是中文字段精确定义，也未据此确认分期/评估字段属于独立视觉描述。附件中的枚举与条件仍由工程方补核。"
+    },
+    {
+      "id": "EVID-COLON03-MED03",
+      "source_id": "MED03",
+      "status": "text_located",
+      "url": "https://link.springer.com/article/10.1007/s11547-021-01418-9",
+      "locator": "Results > Structured report；Report字段概述段（具体模板位于Supplementary Information的Appendix 1）",
+      "exact_quote": "size",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "已定位正文对报告字段的概述；不是中文字段精确定义，也未据此确认分期/评估字段属于独立视觉描述。附件中的枚举与条件仍由工程方补核。"
+    },
+    {
+      "id": "EVID-COLON03-ENG01",
+      "source_id": "ENG01",
+      "status": "historical_lead",
+      "url": null,
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-COLON04-MED03",
+      "source_id": "MED03",
+      "status": "text_located",
+      "url": "https://link.springer.com/article/10.1007/s11547-021-01418-9",
+      "locator": "Results > Structured report；Report字段概述段（具体模板位于Supplementary Information的Appendix 1）",
+      "exact_quote": "local invasion",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "已定位正文对报告字段的概述；不是中文字段精确定义，也未据此确认分期/评估字段属于独立视觉描述。附件中的枚举与条件仍由工程方补核。"
+    },
+    {
+      "id": "EVID-COLON05-MED03",
+      "source_id": "MED03",
+      "status": "text_located",
+      "url": "https://link.springer.com/article/10.1007/s11547-021-01418-9",
+      "locator": "Results > Structured report；Report字段概述段（具体模板位于Supplementary Information的Appendix 1）",
+      "exact_quote": "node stage",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "已定位正文对报告字段的概述；不是中文字段精确定义，也未据此确认分期/评估字段属于独立视觉描述。附件中的枚举与条件仍由工程方补核。"
+    },
+    {
+      "id": "EVID-COLON06-MED03",
+      "source_id": "MED03",
+      "status": "text_located",
+      "url": "https://link.springer.com/article/10.1007/s11547-021-01418-9",
+      "locator": "Results > Structured report；Report字段概述段（具体模板位于Supplementary Information的Appendix 1）",
+      "exact_quote": "metastases stage",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "已定位正文对报告字段的概述；不是中文字段精确定义，也未据此确认分期/评估字段属于独立视觉描述。附件中的枚举与条件仍由工程方补核。"
+    },
+    {
+      "id": "EVID-COLON07-MED03",
+      "source_id": "MED03",
+      "status": "text_located",
+      "url": "https://link.springer.com/article/10.1007/s11547-021-01418-9",
+      "locator": "Results > Structured report；Report字段概述段（具体模板位于Supplementary Information的Appendix 1）",
+      "exact_quote": "tumor stage",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "已定位正文对报告字段的概述；不是中文字段精确定义，也未据此确认分期/评估字段属于独立视觉描述。附件中的枚举与条件仍由工程方补核。"
+    },
+    {
+      "id": "EVID-COLON08-MED03",
+      "source_id": "MED03",
+      "status": "text_located",
+      "url": "https://link.springer.com/article/10.1007/s11547-021-01418-9",
+      "locator": "Results > Structured report；Report字段概述段（具体模板位于Supplementary Information的Appendix 1）",
+      "exact_quote": "node stage",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "已定位正文对报告字段的概述；不是中文字段精确定义，也未据此确认分期/评估字段属于独立视觉描述。附件中的枚举与条件仍由工程方补核。"
+    },
+    {
+      "id": "EVID-RECT01-MED04",
+      "source_id": "MED04",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10444656/",
+      "locator": "Anatomy > Rectosigmoid junction / Sigmoid take-off",
+      "exact_quote": "Sigmoid take-off",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-RECT01-MED05",
+      "source_id": "MED05",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13212678/",
+      "locator": "Table 2 > Tumour location；与STO关系",
+      "exact_quote": null,
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-RECT02-MED04",
+      "source_id": "MED04",
+      "status": "historical_lead",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10444656/",
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-RECT02-MED05",
+      "source_id": "MED05",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13212678/",
+      "locator": "Table 4 > Tumour localisation and height measurements；Areas lacking consensus及Discussion > Tumour localisation",
+      "exact_quote": null,
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-RECT03-MED04",
+      "source_id": "MED04",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10444656/",
+      "locator": "Primary tumor staging > T-Classification (For MRI)；壁外侵犯深度相关段",
+      "exact_quote": null,
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-RECT04-MED04",
+      "source_id": "MED04",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10444656/",
+      "locator": "Primary tumor staging > Summary of update 3 > MRF status；最短距离及对应对象",
+      "exact_quote": null,
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-RECT04-MED05",
+      "source_id": "MED05",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13212678/",
+      "locator": "Table 2；MRF受累相关条目；Discussion > Definitions for MRF involvement",
+      "exact_quote": null,
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-RECT05-MED05",
+      "source_id": "MED05",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13212678/",
+      "locator": "Table 2；MRF受累相关条目；Discussion > Definitions for MRF involvement",
+      "exact_quote": null,
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-RECT06-MED04",
+      "source_id": "MED04",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10444656/",
+      "locator": "Primary tumor staging > Summary of update 2；出现extramural vascular invasion/EMVI，未据此确认分级定义",
+      "exact_quote": null,
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-RECT06-MED05",
+      "source_id": "MED05",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13212678/",
+      "locator": "Table 2 > Extramural vascular invasion (EMVI)",
+      "exact_quote": null,
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-RECT07-MED04",
+      "source_id": "MED04",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10444656/",
+      "locator": "Nodal staging > Locoregional lymph nodes；初始分期和再分期分列",
+      "exact_quote": null,
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-RECT07-MED05",
+      "source_id": "MED05",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13212678/",
+      "locator": "Table 2 > Lymph nodes and tumour deposits (cN-category)；相关评估条件",
+      "exact_quote": null,
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-RECT08-MED04",
+      "source_id": "MED04",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10444656/",
+      "locator": "Primary tumor staging > T4a/peritoneal invasion及Fig. 2；Anatomy相关定位段",
+      "exact_quote": null,
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-RECT08-MED05",
+      "source_id": "MED05",
+      "status": "historical_lead",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13212678/",
+      "locator": null,
+      "exact_quote": null,
+      "checked_by": null,
+      "checked_at": null,
+      "preparation_notes": "仅继承旧记录的来源ID，尚无支持本项具体定义/关系的已定位原文；资料补齐由工程准备方负责。"
+    },
+    {
+      "id": "EVID-RECT09-MED04",
+      "source_id": "MED04",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10444656/",
+      "locator": "Primary tumor staging > anal sphincter involvement说明段",
+      "exact_quote": null,
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-RECT10-MED04",
+      "source_id": "MED04",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10444656/",
+      "locator": "Miscellaneous terms > DWI；须保留治疗阶段及相关序列语境",
+      "exact_quote": "DWI",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-RECT10-MED05",
+      "source_id": "MED05",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13212678/",
+      "locator": "Table 2 > Use of DWI；Discussion > Use of DWI and other functional and quantitative imaging methods",
+      "exact_quote": "Use of DWI",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    },
+    {
+      "id": "EVID-LUNG04-MED02",
+      "source_id": "MED02",
+      "status": "text_located",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10902601/",
+      "locator": "Spiculation (Pathology) [Descriptor]；定义段，区分描述术语与评分",
+      "exact_quote": "Spiculation",
+      "checked_by": "engineering_assistant",
+      "checked_at": "2026-11-14",
+      "preparation_notes": "工程助手已找到可回看的原文位置；这里只证明该处出现相关文字，中文对应、定义边界和适用关系仍待医学核验。"
+    }
+  ],
+  "entities": [
+    {
+      "id": "CANCER-LUNG",
+      "kind": "cancer",
+      "name": "肺癌",
+      "definition_proposal": null,
+      "lifecycle": "active",
+      "evidence_ids": [],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "用户已确认的起步范围名称；不能把肺结节研究主题直接绑定为肺癌。"
+    },
+    {
+      "id": "CANCER-BOWEL",
+      "kind": "cancer",
+      "name": "肠癌",
+      "definition_proposal": null,
+      "lifecycle": "active",
+      "evidence_ids": [],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "用户已确认的起步范围名称；与结肠癌/直肠癌的分类范围另核，不在这里自动展开。"
+    },
+    {
+      "id": "CANCER-COLON",
+      "kind": "cancer",
+      "name": "结肠癌",
+      "definition_proposal": null,
+      "lifecycle": "active",
+      "evidence_ids": [],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "历史来源主题标签；名称及上位分类待核，未作为已批准的癌种限制。"
+    },
+    {
+      "id": "CANCER-RECTUM",
+      "kind": "cancer",
+      "name": "直肠癌",
+      "definition_proposal": null,
+      "lifecycle": "active",
+      "evidence_ids": [],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "历史来源主题标签；名称及上位分类待核，未作为已批准的癌种限制。"
+    },
+    {
+      "id": "CONTEXT-LUNG-NODULE",
+      "kind": "context",
+      "name": "肺结节",
+      "definition_proposal": null,
+      "lifecycle": "active",
+      "evidence_ids": [],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "保留MED01的研究对象语境；不建立与肺癌的同义或上下位关系。"
+    },
+    {
+      "id": "MODALITY-CT",
+      "kind": "modality",
+      "name": "CT",
+      "definition_proposal": null,
+      "lifecycle": "active",
+      "evidence_ids": [],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "用户确认的起步模态名称；各特征的适用性须逐条核，不自动绑定全部癌种。"
+    },
+    {
+      "id": "MODALITY-MRI",
+      "kind": "modality",
+      "name": "MRI",
+      "definition_proposal": null,
+      "lifecycle": "active",
+      "evidence_ids": [],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "用户确认的起步模态名称；序列/时相条件另存并待核。"
+    }
+  ],
+  "features": [
+    {
+      "id": "META01",
+      "name_proposal": "影像模态",
+      "definition_proposal": null,
+      "proposed_t1_role": "excluded",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-META01",
+      "evidence_ids": [
+        "EVID-META01-ENG01",
+        "EVID-META01-MOD01",
+        "EVID-META01-MOD02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "排除为独立T1视觉特征：旧条目描述生成配置、掩膜、坐标或生成结果验证。保留原档案，不复制为当前实施状态。论文中明示的模态/空间参照可按必要背景保存，不能用该工程字段替代原文证据。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "META02",
+      "name_proposal": "体积尺寸",
+      "definition_proposal": null,
+      "proposed_t1_role": "excluded",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-META02",
+      "evidence_ids": [
+        "EVID-META02-ENG01",
+        "EVID-META02-MOD01",
+        "EVID-META02-MOD02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "排除为独立T1视觉特征：旧条目描述生成配置、掩膜、坐标或生成结果验证。保留原档案，不复制为当前实施状态。论文中明示的模态/空间参照可按必要背景保存，不能用该工程字段替代原文证据。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "META03",
+      "name_proposal": "体素间距与仿射",
+      "definition_proposal": null,
+      "proposed_t1_role": "excluded",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-META03",
+      "evidence_ids": [
+        "EVID-META03-ENG01",
+        "EVID-META03-MOD01",
+        "EVID-META03-MOD02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "排除为独立T1视觉特征：旧条目描述生成配置、掩膜、坐标或生成结果验证。保留原档案，不复制为当前实施状态。论文中明示的模态/空间参照可按必要背景保存，不能用该工程字段替代原文证据。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "GEO01",
+      "name_proposal": "病灶体积",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_measurement",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-GEO01",
+      "evidence_ids": [
+        "EVID-GEO01-ENG01",
+        "EVID-GEO01-MOD01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "测量候选：只保存论文直接报告且与目标影像表现有明确关系的原值、单位、对象和参照；不计算掩膜指标，不以旧工程操作定义替代医学测量定义。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "GEO02",
+      "name_proposal": "最大轴位长径",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_measurement",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-GEO02",
+      "evidence_ids": [
+        "EVID-GEO02-ENG01",
+        "EVID-GEO02-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "测量候选：只保存论文直接报告且与目标影像表现有明确关系的原值、单位、对象和参照；不计算掩膜指标，不以旧工程操作定义替代医学测量定义。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "GEO03",
+      "name_proposal": "病灶空间定位",
+      "definition_proposal": null,
+      "proposed_t1_role": "excluded",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-GEO03",
+      "evidence_ids": [
+        "EVID-GEO03-ENG01",
+        "EVID-GEO03-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "排除为独立T1视觉特征：旧条目描述生成配置、掩膜、坐标或生成结果验证。保留原档案，不复制为当前实施状态。论文中明示的模态/空间参照可按必要背景保存，不能用该工程字段替代原文证据。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "GEO04",
+      "name_proposal": "目标病灶可见性",
+      "definition_proposal": null,
+      "proposed_t1_role": "excluded",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-GEO04",
+      "evidence_ids": [
+        "EVID-GEO04-ENG01",
+        "EVID-GEO04-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "排除为独立T1视觉特征：旧条目描述生成配置、掩膜、坐标或生成结果验证。保留原档案，不复制为当前实施状态。论文中明示的模态/空间参照可按必要背景保存，不能用该工程字段替代原文证据。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "GEO05",
+      "name_proposal": "掩膜连通域数量",
+      "definition_proposal": null,
+      "proposed_t1_role": "excluded",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-GEO05",
+      "evidence_ids": [
+        "EVID-GEO05-ENG01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "排除为独立T1视觉特征：旧条目描述生成配置、掩膜、坐标或生成结果验证。保留原档案，不复制为当前实施状态。论文中明示的模态/空间参照可按必要背景保存，不能用该工程字段替代原文证据。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "LUNG01",
+      "name_proposal": "病灶解剖部位",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_visual_description",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-LUNG01",
+      "evidence_ids": [
+        "EVID-LUNG01-MED01",
+        "EVID-LUNG01-MED02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "视觉/位置描述候选：以论文直接表述为准，保留主体、否定、模态及必要上下文；名称提议与医学适用性尚未确认。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "LUNG02",
+      "name_proposal": "实性程度与密度类型",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_visual_description",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-LUNG02",
+      "evidence_ids": [
+        "EVID-LUNG02-MED01",
+        "EVID-LUNG02-MED02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "视觉/位置描述候选：以论文直接表述为准，保留主体、否定、模态及必要上下文；名称提议与医学适用性尚未确认。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。",
+        "实性程度、密度类型、solidity与texture是否应分开；不可仅因相关就合并同义。"
+      ]
+    },
+    {
+      "id": "LUNG03",
+      "name_proposal": "边缘清晰程度",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_visual_description",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-LUNG03",
+      "evidence_ids": [
+        "EVID-LUNG03-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "视觉/位置描述候选：以论文直接表述为准，保留主体、否定、模态及必要上下文；名称提议与医学适用性尚未确认。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "LUNG04",
+      "name_proposal": "毛刺程度",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_visual_description",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-LUNG04",
+      "evidence_ids": [
+        "EVID-LUNG04-MED01",
+        "EVID-LUNG04-MED02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "视觉/位置描述候选：以论文直接表述为准，保留主体、否定、模态及必要上下文；名称提议与医学适用性尚未确认。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "LUNG05",
+      "name_proposal": "分叶程度",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_visual_description",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-LUNG05",
+      "evidence_ids": [
+        "EVID-LUNG05-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "视觉/位置描述候选：以论文直接表述为准，保留主体、否定、模态及必要上下文；名称提议与医学适用性尚未确认。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "LUNG06",
+      "name_proposal": "球形程度评分",
+      "definition_proposal": null,
+      "proposed_t1_role": "needs_split",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-LUNG06",
+      "evidence_ids": [
+        "EVID-LUNG06-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "需拆分并核名：把原文明示的视觉/位置描述与评分、风险或综合判断分开；本轮不虚构细分术语，不把评分或临床结论直接变成独立视觉特征。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。",
+        "评分与形状描述如何区分；sphericity是否与当前中文评分字段完全对应？"
+      ]
+    },
+    {
+      "id": "LUNG07",
+      "name_proposal": "内部结构",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_visual_description",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-LUNG07",
+      "evidence_ids": [
+        "EVID-LUNG07-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "视觉/位置描述候选：以论文直接表述为准，保留主体、否定、模态及必要上下文；名称提议与医学适用性尚未确认。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "LUNG08",
+      "name_proposal": "显著性评分",
+      "definition_proposal": null,
+      "proposed_t1_role": "needs_split",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-LUNG08",
+      "evidence_ids": [
+        "EVID-LUNG08-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "需拆分并核名：把原文明示的视觉/位置描述与评分、风险或综合判断分开；本轮不虚构细分术语，不把评分或临床结论直接变成独立视觉特征。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。",
+        "subtlety描述的是可见性/显著性评分还是目标视觉内容，是否仅应作背景？"
+      ]
+    },
+    {
+      "id": "LUNG09",
+      "name_proposal": "影像学恶性可能性评分",
+      "definition_proposal": null,
+      "proposed_t1_role": "background_only",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-LUNG09",
+      "evidence_ids": [
+        "EVID-LUNG09-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "仅可能作为必要背景：诊断概率/分期/评分本身不作为独立视觉描述。仅在理解目标原文所必需时随对应表现保留，保留作者措辞与不确定性。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "COLON01",
+      "name_proposal": "原发病灶部位",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_visual_description",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-COLON01",
+      "evidence_ids": [
+        "EVID-COLON01-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "视觉/位置描述候选：以论文直接表述为准，保留主体、否定、模态及必要上下文；名称提议与医学适用性尚未确认。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "COLON02",
+      "name_proposal": "病灶形态类型",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_visual_description",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-COLON02",
+      "evidence_ids": [
+        "EVID-COLON02-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "视觉/位置描述候选：以论文直接表述为准，保留主体、否定、模态及必要上下文；名称提议与医学适用性尚未确认。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "COLON03",
+      "name_proposal": "病灶大小",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_measurement",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-COLON03",
+      "evidence_ids": [
+        "EVID-COLON03-MED03",
+        "EVID-COLON03-ENG01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "测量候选：只保存论文直接报告且与目标影像表现有明确关系的原值、单位、对象和参照；不计算掩膜指标，不以旧工程操作定义替代医学测量定义。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "COLON04",
+      "name_proposal": "局部侵犯表现",
+      "definition_proposal": null,
+      "proposed_t1_role": "needs_split",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-COLON04",
+      "evidence_ids": [
+        "EVID-COLON04-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "需拆分并核名：把原文明示的视觉/位置描述与评分、风险或综合判断分开；本轮不虚构细分术语，不把评分或临床结论直接变成独立视觉特征。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "COLON05",
+      "name_proposal": "区域淋巴结评估",
+      "definition_proposal": null,
+      "proposed_t1_role": "needs_split",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-COLON05",
+      "evidence_ids": [
+        "EVID-COLON05-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "需拆分并核名：把原文明示的视觉/位置描述与评分、风险或综合判断分开；本轮不虚构细分术语，不把评分或临床结论直接变成独立视觉特征。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "COLON06",
+      "name_proposal": "远处转移评估",
+      "definition_proposal": null,
+      "proposed_t1_role": "needs_split",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-COLON06",
+      "evidence_ids": [
+        "EVID-COLON06-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "需拆分并核名：把原文明示的视觉/位置描述与评分、风险或综合判断分开；本轮不虚构细分术语，不把评分或临床结论直接变成独立视觉特征。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "COLON07",
+      "name_proposal": "临床T分期字段",
+      "definition_proposal": null,
+      "proposed_t1_role": "background_only",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-COLON07",
+      "evidence_ids": [
+        "EVID-COLON07-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "仅可能作为必要背景：诊断概率/分期/评分本身不作为独立视觉描述。仅在理解目标原文所必需时随对应表现保留，保留作者措辞与不确定性。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "COLON08",
+      "name_proposal": "临床N分期字段",
+      "definition_proposal": null,
+      "proposed_t1_role": "background_only",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-COLON08",
+      "evidence_ids": [
+        "EVID-COLON08-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "仅可能作为必要背景：诊断概率/分期/评分本身不作为独立视觉描述。仅在理解目标原文所必需时随对应表现保留，保留作者措辞与不确定性。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "RECT01",
+      "name_proposal": "与乙状结肠起始部的关系",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_visual_description",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-RECT01",
+      "evidence_ids": [
+        "EVID-RECT01-MED04",
+        "EVID-RECT01-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "视觉/位置描述候选：以论文直接表述为准，保留主体、否定、模态及必要上下文；名称提议与医学适用性尚未确认。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "RECT02",
+      "name_proposal": "肿瘤高度",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_measurement",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-RECT02",
+      "evidence_ids": [
+        "EVID-RECT02-MED04",
+        "EVID-RECT02-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "测量候选：只保存论文直接报告且与目标影像表现有明确关系的原值、单位、对象和参照；不计算掩膜指标，不以旧工程操作定义替代医学测量定义。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。",
+        "不同测量起点/终点与方法是否必须分别保存；MED05相关项位于未达完整共识的讨论/表格，不可写成统一已确认规则。"
+      ]
+    },
+    {
+      "id": "RECT03",
+      "name_proposal": "壁外侵犯深度",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_measurement",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-RECT03",
+      "evidence_ids": [
+        "EVID-RECT03-MED04"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "测量候选：只保存论文直接报告且与目标影像表现有明确关系的原值、单位、对象和参照；不计算掩膜指标，不以旧工程操作定义替代医学测量定义。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "RECT04",
+      "name_proposal": "与直肠系膜筋膜的最短距离",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_measurement",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-RECT04",
+      "evidence_ids": [
+        "EVID-RECT04-MED04",
+        "EVID-RECT04-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "测量候选：只保存论文直接报告且与目标影像表现有明确关系的原值、单位、对象和参照；不计算掩膜指标，不以旧工程操作定义替代医学测量定义。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "RECT05",
+      "name_proposal": "MRF受累状态",
+      "definition_proposal": null,
+      "proposed_t1_role": "needs_split",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-RECT05",
+      "evidence_ids": [
+        "EVID-RECT05-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "需拆分并核名：把原文明示的视觉/位置描述与评分、风险或综合判断分开；本轮不虚构细分术语，不把评分或临床结论直接变成独立视觉特征。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。",
+        "MRF是结构名还是受累状态；不得将缩写直接作为整项状态字段同义词。"
+      ]
+    },
+    {
+      "id": "RECT06",
+      "name_proposal": "壁外血管侵犯",
+      "definition_proposal": null,
+      "proposed_t1_role": "needs_split",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-RECT06",
+      "evidence_ids": [
+        "EVID-RECT06-MED04",
+        "EVID-RECT06-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "需拆分并核名：把原文明示的视觉/位置描述与评分、风险或综合判断分开；本轮不虚构细分术语，不把评分或临床结论直接变成独立视觉特征。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "RECT07",
+      "name_proposal": "区域淋巴结风险评估",
+      "definition_proposal": null,
+      "proposed_t1_role": "needs_split",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-RECT07",
+      "evidence_ids": [
+        "EVID-RECT07-MED04",
+        "EVID-RECT07-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "需拆分并核名：把原文明示的视觉/位置描述与评分、风险或综合判断分开；本轮不虚构细分术语，不把评分或临床结论直接变成独立视觉特征。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "RECT08",
+      "name_proposal": "腹膜反折相关关系",
+      "definition_proposal": null,
+      "proposed_t1_role": "needs_split",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-RECT08",
+      "evidence_ids": [
+        "EVID-RECT08-MED04",
+        "EVID-RECT08-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "需拆分并核名：把原文明示的视觉/位置描述与评分、风险或综合判断分开；本轮不虚构细分术语，不把评分或临床结论直接变成独立视觉特征。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "RECT09",
+      "name_proposal": "括约肌及邻近结构关系",
+      "definition_proposal": null,
+      "proposed_t1_role": "needs_split",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-RECT09",
+      "evidence_ids": [
+        "EVID-RECT09-MED04"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "需拆分并核名：把原文明示的视觉/位置描述与评分、风险或综合判断分开；本轮不虚构细分术语，不把评分或临床结论直接变成独立视觉特征。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    },
+    {
+      "id": "RECT10",
+      "name_proposal": "DWI与ADC相关表现",
+      "definition_proposal": null,
+      "proposed_t1_role": "candidate_visual_description",
+      "lifecycle": "active",
+      "historical_record_id": "LEGACY-RECT10",
+      "evidence_ids": [
+        "EVID-RECT10-MED04",
+        "EVID-RECT10-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "视觉/位置描述候选：以论文直接表述为准，保留主体、否定、模态及必要上下文；名称提议与医学适用性尚未确认。",
+      "review_questions": [
+        "名称/含义是否准确，是否混入评分、工程计算或综合诊断？",
+        "应作为视觉/测量候选、需拆分、仅背景还是排除；如需修改请写具体建议。"
+      ]
+    }
+  ],
+  "lexical_relations": [
+    {
+      "id": "LEX-LUNG04-01",
+      "feature_id": "LUNG04",
+      "term": "spiculation",
+      "language": "en",
+      "relation_type": "unclassified_correspondence",
+      "evidence_ids": [
+        "EVID-LUNG04-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "旧稿中的翻译/对应线索，尚未认定为真正同义；应独立核对同义、缩写、相关词或上下位含义。不得自动用于匹配。"
+    },
+    {
+      "id": "LEX-LUNG05-01",
+      "feature_id": "LUNG05",
+      "term": "lobulation",
+      "language": "en",
+      "relation_type": "unclassified_correspondence",
+      "evidence_ids": [
+        "EVID-LUNG05-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "旧稿中的翻译/对应线索，尚未认定为真正同义；应独立核对同义、缩写、相关词或上下位含义。不得自动用于匹配。"
+    },
+    {
+      "id": "LEX-LUNG06-01",
+      "feature_id": "LUNG06",
+      "term": "sphericity",
+      "language": "en",
+      "relation_type": "unclassified_correspondence",
+      "evidence_ids": [
+        "EVID-LUNG06-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "旧稿中的翻译/对应线索，尚未认定为真正同义；应独立核对同义、缩写、相关词或上下位含义。不得自动用于匹配。"
+    },
+    {
+      "id": "LEX-LUNG08-01",
+      "feature_id": "LUNG08",
+      "term": "subtlety",
+      "language": "en",
+      "relation_type": "unclassified_correspondence",
+      "evidence_ids": [
+        "EVID-LUNG08-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "旧稿中的翻译/对应线索，尚未认定为真正同义；应独立核对同义、缩写、相关词或上下位含义。不得自动用于匹配。"
+    },
+    {
+      "id": "LEX-LUNG09-01",
+      "feature_id": "LUNG09",
+      "term": "likelihood of malignancy",
+      "language": "en",
+      "relation_type": "unclassified_correspondence",
+      "evidence_ids": [
+        "EVID-LUNG09-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "旧稿中的翻译/对应线索，尚未认定为真正同义；应独立核对同义、缩写、相关词或上下位含义。不得自动用于匹配。"
+    },
+    {
+      "id": "LEX-COLON01-01",
+      "feature_id": "COLON01",
+      "term": "lesion site",
+      "language": "en",
+      "relation_type": "unclassified_correspondence",
+      "evidence_ids": [
+        "EVID-COLON01-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "旧稿中的翻译/对应线索，尚未认定为真正同义；应独立核对同义、缩写、相关词或上下位含义。不得自动用于匹配。"
+    },
+    {
+      "id": "LEX-COLON02-01",
+      "feature_id": "COLON02",
+      "term": "lesion type",
+      "language": "en",
+      "relation_type": "unclassified_correspondence",
+      "evidence_ids": [
+        "EVID-COLON02-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "旧稿中的翻译/对应线索，尚未认定为真正同义；应独立核对同义、缩写、相关词或上下位含义。不得自动用于匹配。"
+    },
+    {
+      "id": "LEX-COLON03-01",
+      "feature_id": "COLON03",
+      "term": "size",
+      "language": "en",
+      "relation_type": "unclassified_correspondence",
+      "evidence_ids": [
+        "EVID-COLON03-MED03",
+        "EVID-COLON03-ENG01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "旧稿中的翻译/对应线索，尚未认定为真正同义；应独立核对同义、缩写、相关词或上下位含义。不得自动用于匹配。"
+    },
+    {
+      "id": "LEX-RECT01-01",
+      "feature_id": "RECT01",
+      "term": "sigmoid take-off (STO)",
+      "language": "en",
+      "relation_type": "unclassified_correspondence",
+      "evidence_ids": [
+        "EVID-RECT01-MED04",
+        "EVID-RECT01-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "旧稿中的翻译/对应线索，尚未认定为真正同义；应独立核对同义、缩写、相关词或上下位含义。不得自动用于匹配。"
+    },
+    {
+      "id": "LEX-RECT03-01",
+      "feature_id": "RECT03",
+      "term": "extramural invasion",
+      "language": "en",
+      "relation_type": "unclassified_correspondence",
+      "evidence_ids": [
+        "EVID-RECT03-MED04"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "旧稿中的翻译/对应线索，尚未认定为真正同义；应独立核对同义、缩写、相关词或上下位含义。不得自动用于匹配。"
+    },
+    {
+      "id": "LEX-RECT05-01",
+      "feature_id": "RECT05",
+      "term": "MRF",
+      "language": "en",
+      "relation_type": "unclassified_correspondence",
+      "evidence_ids": [
+        "EVID-RECT05-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "旧稿中的翻译/对应线索，尚未认定为真正同义；应独立核对同义、缩写、相关词或上下位含义。不得自动用于匹配。"
+    },
+    {
+      "id": "LEX-RECT06-01",
+      "feature_id": "RECT06",
+      "term": "EMVI",
+      "language": "en",
+      "relation_type": "unclassified_correspondence",
+      "evidence_ids": [
+        "EVID-RECT06-MED04",
+        "EVID-RECT06-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "旧稿中的翻译/对应线索，尚未认定为真正同义；应独立核对同义、缩写、相关词或上下位含义。不得自动用于匹配。"
+    },
+    {
+      "id": "LEX-LUNG02-01",
+      "feature_id": "LUNG02",
+      "term": "solidity",
+      "language": "en",
+      "relation_type": "unclassified_correspondence",
+      "evidence_ids": [
+        "EVID-LUNG02-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "沿用旧关系草案的相关词线索；即使出现在同一主题中也不据此认定两个词或当前中文名称同义。"
+    },
+    {
+      "id": "LEX-LUNG02-02",
+      "feature_id": "LUNG02",
+      "term": "texture",
+      "language": "en",
+      "relation_type": "unclassified_correspondence",
+      "evidence_ids": [
+        "EVID-LUNG02-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "沿用旧关系草案的相关词线索；即使出现在同一主题中也不据此认定两个词或当前中文名称同义。"
+    }
+  ],
+  "hierarchy_relations": [
+    {
+      "id": "HIER-BOWEL-COLON",
+      "parent": {
+        "kind": "entity",
+        "id": "CANCER-BOWEL"
+      },
+      "child": {
+        "kind": "entity",
+        "id": "CANCER-COLON"
+      },
+      "evidence_ids": [],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "仅迁入历史草案的上/下位提议；尚无核验后的分类来源及范围定义，不是已确认包含关系，不自动扩展限制选择。缺失来源由工程准备方补齐。"
+    },
+    {
+      "id": "HIER-BOWEL-RECTUM",
+      "parent": {
+        "kind": "entity",
+        "id": "CANCER-BOWEL"
+      },
+      "child": {
+        "kind": "entity",
+        "id": "CANCER-RECTUM"
+      },
+      "evidence_ids": [],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "仅迁入历史草案的上/下位提议；尚无核验后的分类来源及范围定义，不是已确认包含关系，不自动扩展限制选择。缺失来源由工程准备方补齐。"
+    }
+  ],
+  "applicability_relations": [
+    {
+      "id": "APPL-META01-UNRESOLVED",
+      "feature_id": "META01",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [],
+      "historical_scope_hint": "工程元数据",
+      "evidence_ids": [
+        "EVID-META01-ENG01",
+        "EVID-META01-MOD01",
+        "EVID-META01-MOD02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-META02-UNRESOLVED",
+      "feature_id": "META02",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [],
+      "historical_scope_hint": "工程元数据",
+      "evidence_ids": [
+        "EVID-META02-ENG01",
+        "EVID-META02-MOD01",
+        "EVID-META02-MOD02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-META03-UNRESOLVED",
+      "feature_id": "META03",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [],
+      "historical_scope_hint": "工程元数据",
+      "evidence_ids": [
+        "EVID-META03-ENG01",
+        "EVID-META03-MOD01",
+        "EVID-META03-MOD02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-GEO01-UNRESOLVED",
+      "feature_id": "GEO01",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-GEO01-CONTEXT"
+      ],
+      "historical_scope_hint": "工程几何",
+      "evidence_ids": [
+        "EVID-GEO01-ENG01",
+        "EVID-GEO01-MOD01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-GEO02-UNRESOLVED",
+      "feature_id": "GEO02",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-GEO02-CONTEXT"
+      ],
+      "historical_scope_hint": "工程几何",
+      "evidence_ids": [
+        "EVID-GEO02-ENG01",
+        "EVID-GEO02-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-GEO03-UNRESOLVED",
+      "feature_id": "GEO03",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [],
+      "historical_scope_hint": "工程几何",
+      "evidence_ids": [
+        "EVID-GEO03-ENG01",
+        "EVID-GEO03-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-GEO04-UNRESOLVED",
+      "feature_id": "GEO04",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [],
+      "historical_scope_hint": "工程几何",
+      "evidence_ids": [
+        "EVID-GEO04-ENG01",
+        "EVID-GEO04-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-GEO05-UNRESOLVED",
+      "feature_id": "GEO05",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [],
+      "historical_scope_hint": "工程几何",
+      "evidence_ids": [
+        "EVID-GEO05-ENG01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-LUNG01-UNRESOLVED",
+      "feature_id": "LUNG01",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-LUNG01-CONTEXT"
+      ],
+      "historical_scope_hint": "肺部CT",
+      "evidence_ids": [
+        "EVID-LUNG01-MED01",
+        "EVID-LUNG01-MED02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-LUNG02-UNRESOLVED",
+      "feature_id": "LUNG02",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-LUNG02-CONTEXT"
+      ],
+      "historical_scope_hint": "肺部CT",
+      "evidence_ids": [
+        "EVID-LUNG02-MED01",
+        "EVID-LUNG02-MED02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-LUNG03-UNRESOLVED",
+      "feature_id": "LUNG03",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-LUNG03-CONTEXT"
+      ],
+      "historical_scope_hint": "肺部CT",
+      "evidence_ids": [
+        "EVID-LUNG03-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-LUNG04-UNRESOLVED",
+      "feature_id": "LUNG04",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-LUNG04-CONTEXT"
+      ],
+      "historical_scope_hint": "肺部CT",
+      "evidence_ids": [
+        "EVID-LUNG04-MED01",
+        "EVID-LUNG04-MED02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-LUNG05-UNRESOLVED",
+      "feature_id": "LUNG05",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-LUNG05-CONTEXT"
+      ],
+      "historical_scope_hint": "肺部CT",
+      "evidence_ids": [
+        "EVID-LUNG05-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-LUNG06-UNRESOLVED",
+      "feature_id": "LUNG06",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-LUNG06-CONTEXT"
+      ],
+      "historical_scope_hint": "肺部CT",
+      "evidence_ids": [
+        "EVID-LUNG06-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-LUNG07-UNRESOLVED",
+      "feature_id": "LUNG07",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-LUNG07-CONTEXT"
+      ],
+      "historical_scope_hint": "肺部CT",
+      "evidence_ids": [
+        "EVID-LUNG07-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-LUNG08-UNRESOLVED",
+      "feature_id": "LUNG08",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-LUNG08-CONTEXT"
+      ],
+      "historical_scope_hint": "肺部CT",
+      "evidence_ids": [
+        "EVID-LUNG08-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-LUNG09-UNRESOLVED",
+      "feature_id": "LUNG09",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-LUNG09-CONTEXT"
+      ],
+      "historical_scope_hint": "肺部CT",
+      "evidence_ids": [
+        "EVID-LUNG09-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-COLON01-UNRESOLVED",
+      "feature_id": "COLON01",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-COLON01-CONTEXT"
+      ],
+      "historical_scope_hint": "结肠癌CT",
+      "evidence_ids": [
+        "EVID-COLON01-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-COLON02-UNRESOLVED",
+      "feature_id": "COLON02",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-COLON02-CONTEXT"
+      ],
+      "historical_scope_hint": "结肠癌CT",
+      "evidence_ids": [
+        "EVID-COLON02-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-COLON03-UNRESOLVED",
+      "feature_id": "COLON03",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-COLON03-CONTEXT"
+      ],
+      "historical_scope_hint": "结肠癌CT",
+      "evidence_ids": [
+        "EVID-COLON03-MED03",
+        "EVID-COLON03-ENG01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-COLON04-UNRESOLVED",
+      "feature_id": "COLON04",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-COLON04-CONTEXT"
+      ],
+      "historical_scope_hint": "结肠癌CT",
+      "evidence_ids": [
+        "EVID-COLON04-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-COLON05-UNRESOLVED",
+      "feature_id": "COLON05",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-COLON05-CONTEXT"
+      ],
+      "historical_scope_hint": "结肠癌CT",
+      "evidence_ids": [
+        "EVID-COLON05-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-COLON06-UNRESOLVED",
+      "feature_id": "COLON06",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-COLON06-CONTEXT"
+      ],
+      "historical_scope_hint": "结肠癌CT",
+      "evidence_ids": [
+        "EVID-COLON06-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-COLON07-UNRESOLVED",
+      "feature_id": "COLON07",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-COLON07-CONTEXT"
+      ],
+      "historical_scope_hint": "结肠癌CT",
+      "evidence_ids": [
+        "EVID-COLON07-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-COLON08-UNRESOLVED",
+      "feature_id": "COLON08",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-COLON08-CONTEXT"
+      ],
+      "historical_scope_hint": "结肠癌CT",
+      "evidence_ids": [
+        "EVID-COLON08-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-RECT01-UNRESOLVED",
+      "feature_id": "RECT01",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-RECT01-CONTEXT"
+      ],
+      "historical_scope_hint": "直肠癌MRI",
+      "evidence_ids": [
+        "EVID-RECT01-MED04",
+        "EVID-RECT01-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-RECT02-UNRESOLVED",
+      "feature_id": "RECT02",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-RECT02-CONTEXT"
+      ],
+      "historical_scope_hint": "直肠癌MRI",
+      "evidence_ids": [
+        "EVID-RECT02-MED04",
+        "EVID-RECT02-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-RECT03-UNRESOLVED",
+      "feature_id": "RECT03",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-RECT03-CONTEXT"
+      ],
+      "historical_scope_hint": "直肠癌MRI",
+      "evidence_ids": [
+        "EVID-RECT03-MED04"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-RECT04-UNRESOLVED",
+      "feature_id": "RECT04",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-RECT04-CONTEXT"
+      ],
+      "historical_scope_hint": "直肠癌MRI",
+      "evidence_ids": [
+        "EVID-RECT04-MED04",
+        "EVID-RECT04-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-RECT05-UNRESOLVED",
+      "feature_id": "RECT05",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-RECT05-CONTEXT"
+      ],
+      "historical_scope_hint": "直肠癌MRI",
+      "evidence_ids": [
+        "EVID-RECT05-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-RECT06-UNRESOLVED",
+      "feature_id": "RECT06",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-RECT06-CONTEXT"
+      ],
+      "historical_scope_hint": "直肠癌MRI",
+      "evidence_ids": [
+        "EVID-RECT06-MED04",
+        "EVID-RECT06-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-RECT07-UNRESOLVED",
+      "feature_id": "RECT07",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-RECT07-CONTEXT"
+      ],
+      "historical_scope_hint": "直肠癌MRI",
+      "evidence_ids": [
+        "EVID-RECT07-MED04",
+        "EVID-RECT07-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-RECT08-UNRESOLVED",
+      "feature_id": "RECT08",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-RECT08-CONTEXT"
+      ],
+      "historical_scope_hint": "直肠癌MRI",
+      "evidence_ids": [
+        "EVID-RECT08-MED04",
+        "EVID-RECT08-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-RECT09-UNRESOLVED",
+      "feature_id": "RECT09",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-RECT09-CONTEXT"
+      ],
+      "historical_scope_hint": "直肠癌MRI",
+      "evidence_ids": [
+        "EVID-RECT09-MED04"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    },
+    {
+      "id": "APPL-RECT10-UNRESOLVED",
+      "feature_id": "RECT10",
+      "scope_status": "unknown",
+      "cancer_entity_ids": [],
+      "context_entity_ids": [],
+      "modality_entity_ids": [],
+      "condition_ids": [
+        "COND-RECT10-CONTEXT"
+      ],
+      "historical_scope_hint": "直肠癌MRI",
+      "evidence_ids": [
+        "EVID-RECT10-MED04",
+        "EVID-RECT10-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "空数组明确表示尚未建立适用绑定，不表示适用于所有癌种/模态。历史分类及来源主题仅供找资料，不能据此推断癌种。癌种→图像类型→特征为适用关联，不构成严格分类树。"
+    }
+  ],
+  "conditions": [
+    {
+      "id": "COND-GEO01-CONTEXT",
+      "feature_id": "GEO01",
+      "kind": "measurement_reference",
+      "description_proposal": "仅按论文明确报告的测量、单位和参照保存；旧掩膜/算法操作定义不作为当前医学测量规则。",
+      "evidence_ids": [
+        "EVID-GEO01-ENG01",
+        "EVID-GEO01-MOD01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。 目前已有来源不足以确认该测量定义。"
+    },
+    {
+      "id": "COND-GEO02-CONTEXT",
+      "feature_id": "GEO02",
+      "kind": "measurement_reference",
+      "description_proposal": "仅按论文明确报告的测量、单位和参照保存；旧掩膜/算法操作定义不作为当前医学测量规则。",
+      "evidence_ids": [
+        "EVID-GEO02-ENG01",
+        "EVID-GEO02-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。 目前已有来源不足以确认该测量定义。"
+    },
+    {
+      "id": "COND-LUNG01-CONTEXT",
+      "feature_id": "LUNG01",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：按左右肺、肺叶或其他明确粒度记录位置，未知时保留未知。",
+      "evidence_ids": [
+        "EVID-LUNG01-MED01",
+        "EVID-LUNG01-MED02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-LUNG02-CONTEXT",
+      "feature_id": "LUNG02",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：保留来源体系中的 solidity/texture 定义；映射到实性、部分实性等类别需单独审定。",
+      "evidence_ids": [
+        "EVID-LUNG02-MED01",
+        "EVID-LUNG02-MED02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-LUNG03-CONTEXT",
+      "feature_id": "LUNG03",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：按原始标注或经审定定义记录边缘表现。",
+      "evidence_ids": [
+        "EVID-LUNG03-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-LUNG04-CONTEXT",
+      "feature_id": "LUNG04",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：记录 spiculation 的来源定义和原始评分。",
+      "evidence_ids": [
+        "EVID-LUNG04-MED01",
+        "EVID-LUNG04-MED02"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-LUNG05-CONTEXT",
+      "feature_id": "LUNG05",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：记录 lobulation 的来源定义和原始评分。",
+      "evidence_ids": [
+        "EVID-LUNG05-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-LUNG06-CONTEXT",
+      "feature_id": "LUNG06",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：保留来源中的主观 sphericity 评分，与数学球形度另设字段。",
+      "evidence_ids": [
+        "EVID-LUNG06-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-LUNG07-CONTEXT",
+      "feature_id": "LUNG07",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：按来源标注记录 internal structure；枚举值需随数据版本核对。",
+      "evidence_ids": [
+        "EVID-LUNG07-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-LUNG08-CONTEXT",
+      "feature_id": "LUNG08",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：记录医师对病灶显著性的主观评分。",
+      "evidence_ids": [
+        "EVID-LUNG08-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-LUNG09-CONTEXT",
+      "feature_id": "LUNG09",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：保留医师影像学怀疑程度及其来源，不作为病理确诊标签。",
+      "evidence_ids": [
+        "EVID-LUNG09-MED01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-COLON01-CONTEXT",
+      "feature_id": "COLON01",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：按结肠解剖分段描述，分类粒度由报告模板和用户共同明确。",
+      "evidence_ids": [
+        "EVID-COLON01-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-COLON02-CONTEXT",
+      "feature_id": "COLON02",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：按来源报告模板描述病灶类型，具体枚举待全文和医学审核。",
+      "evidence_ids": [
+        "EVID-COLON02-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-COLON03-CONTEXT",
+      "feature_id": "COLON03",
+      "kind": "measurement_reference",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：采用明确的测量定义；初版可选择 GEO01 或 GEO02，不能混用。",
+      "evidence_ids": [
+        "EVID-COLON03-MED03",
+        "EVID-COLON03-ENG01"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-COLON04-CONTEXT",
+      "feature_id": "COLON04",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：描述局部侵犯对象、影像证据和不确定性。",
+      "evidence_ids": [
+        "EVID-COLON04-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-COLON05-CONTEXT",
+      "feature_id": "COLON05",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：记录来源定义下的区域淋巴结表现及评估状态。",
+      "evidence_ids": [
+        "EVID-COLON05-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-COLON06-CONTEXT",
+      "feature_id": "COLON06",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：保留检查范围、可见证据和未评估状态。",
+      "evidence_ids": [
+        "EVID-COLON06-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-COLON07-CONTEXT",
+      "feature_id": "COLON07",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：作为复合报告字段，绑定规则版本与所需证据。",
+      "evidence_ids": [
+        "EVID-COLON07-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-COLON08-CONTEXT",
+      "feature_id": "COLON08",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：作为复合报告字段，绑定淋巴结评价证据与规则版本。",
+      "evidence_ids": [
+        "EVID-COLON08-MED03"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-RECT01-CONTEXT",
+      "feature_id": "RECT01",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：记录病灶与 sigmoid take-off（STO）的关系及定位依据。",
+      "evidence_ids": [
+        "EVID-RECT01-MED04",
+        "EVID-RECT01-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-RECT02-CONTEXT",
+      "feature_id": "RECT02",
+      "kind": "measurement_reference",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：说明测量起点、终点和所采用的解剖参照；不同参照不混用。",
+      "evidence_ids": [
+        "EVID-RECT02-MED04",
+        "EVID-RECT02-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。 已定位MED05 Table 4与相关讨论；其共识范围及不同参照不得省略。"
+    },
+    {
+      "id": "COND-RECT03-CONTEXT",
+      "feature_id": "RECT03",
+      "kind": "measurement_reference",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：在明确肠壁层次和测量规则下记录壁外侵犯程度。",
+      "evidence_ids": [
+        "EVID-RECT03-MED04"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-RECT04-CONTEXT",
+      "feature_id": "RECT04",
+      "kind": "measurement_reference",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：记录距离及其对应对象，区分原发灶、EMVI、结节等来源。",
+      "evidence_ids": [
+        "EVID-RECT04-MED04",
+        "EVID-RECT04-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-RECT05-CONTEXT",
+      "feature_id": "RECT05",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：依据明确版本的规则结合相关结构判读，保存不确定性。",
+      "evidence_ids": [
+        "EVID-RECT05-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-RECT06-CONTEXT",
+      "feature_id": "RECT06",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：记录 EMVI 的影像表现、等级或状态及其依据。",
+      "evidence_ids": [
+        "EVID-RECT06-MED04",
+        "EVID-RECT06-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-RECT07-CONTEXT",
+      "feature_id": "RECT07",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：按当前共识记录 cN 相关影像评估及可信程度。",
+      "evidence_ids": [
+        "EVID-RECT07-MED04",
+        "EVID-RECT07-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-RECT08-CONTEXT",
+      "feature_id": "RECT08",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：描述原发灶与腹膜反折及腹膜侵犯相关表现。",
+      "evidence_ids": [
+        "EVID-RECT08-MED04",
+        "EVID-RECT08-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-RECT09-CONTEXT",
+      "feature_id": "RECT09",
+      "kind": "description_context",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：区分相关肌层或邻近结构，按来源定义描述受累证据。",
+      "evidence_ids": [
+        "EVID-RECT09-MED04"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    },
+    {
+      "id": "COND-RECT10-CONTEXT",
+      "feature_id": "RECT10",
+      "kind": "sequence_or_phase",
+      "description_proposal": "历史提示（尚未确认，不作为执行规则）：在配准的序列及已知采集参数下描述信号表现和适用任务。",
+      "evidence_ids": [
+        "EVID-RECT10-MED04",
+        "EVID-RECT10-MED05"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer": null,
+        "reviewed_at": null,
+        "notes": "",
+        "suggested_changes": ""
+      },
+      "preparation_notes": "资料准备方继续核对与本条相关的原文定义、测量参照及序列/时相；核验人员主要给出正确性结论和修改建议。"
+    }
+  ],
+  "historical_records": [
+    {
+      "id": "LEGACY-META01",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/0",
+      "record": {
+        "feature_id": "META01",
+        "category": "工程元数据",
+        "name": "影像模态",
+        "operational_definition": "CT 或 MRI；优先读取可靠元数据，缺失时由用户确认。",
+        "value_type": "enum",
+        "unit": "",
+        "assessment_level": "体积",
+        "source_ids": "ENG01;MOD01;MOD02",
+        "evidence_locator": "输入配置与元数据",
+        "planned_stage": "P0",
+        "generation_support": "后端文档提供 CT；MRI 需其他后端",
+        "evaluation_plan": "元数据核对；PNG 缺失时不可仅凭外观确认为模态。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-META02",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/1",
+      "record": {
+        "feature_id": "META02",
+        "category": "工程元数据",
+        "name": "体积尺寸",
+        "operational_definition": "三个空间轴上的体素数；与空间视野共同解释。",
+        "value_type": "integer_vector",
+        "unit": "voxel",
+        "assessment_level": "体积",
+        "source_ids": "ENG01;MOD01;MOD02",
+        "evidence_locator": "output_size",
+        "planned_stage": "P0",
+        "generation_support": "后端文档提供配置，尚未试跑",
+        "evaluation_plan": "检查维度及后端支持范围；不能仅缩小体积而忽略解剖覆盖。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-META03",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/2",
+      "record": {
+        "feature_id": "META03",
+        "category": "工程元数据",
+        "name": "体素间距与仿射",
+        "operational_definition": "记录三维间距、方向、原点及单位；不把层厚直接当作层间距。",
+        "value_type": "geometry_metadata",
+        "unit": "mm",
+        "assessment_level": "体积",
+        "source_ids": "ENG01;MOD01;MOD02",
+        "evidence_locator": "spacing 与空间元数据",
+        "planned_stage": "P0",
+        "generation_support": "后端文档提供 spacing，尚未试跑",
+        "evaluation_plan": "核对 NIfTI 仿射与单位；DICOM 结合切片位置和方向计算。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-GEO01",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/3",
+      "record": {
+        "feature_id": "GEO01",
+        "category": "工程几何",
+        "name": "病灶体积",
+        "operational_definition": "在确认的病灶掩膜中，前景体素数乘仿射三维线性部分行列式的绝对值。",
+        "value_type": "number",
+        "unit": "mm3",
+        "assessment_level": "病灶",
+        "source_ids": "ENG01;MOD01",
+        "evidence_locator": "工程度量，非临床诊断规则",
+        "planned_stage": "P0",
+        "generation_support": "存在间接大小控制；实际体积需测量",
+        "evaluation_plan": "先验证掩膜、仿射和单位；数值不得写成已经测得。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-GEO02",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/4",
+      "record": {
+        "feature_id": "GEO02",
+        "category": "工程几何",
+        "name": "最大轴位长径",
+        "operational_definition": "按确认的轴位重建，在每个轴位轮廓上计算最长面内距离，取最大值。",
+        "value_type": "number",
+        "unit": "mm",
+        "assessment_level": "病灶",
+        "source_ids": "ENG01;MED01",
+        "evidence_locator": "工程操作定义；与 MED01 面内尺寸概念相关",
+        "planned_stage": "P0",
+        "generation_support": "存在间接大小控制；毫米范围需校准",
+        "evaluation_plan": "明确轴位、插值、边界算法和间距；该定义不自动等于 RECIST 或平均直径。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-GEO03",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/5",
+      "record": {
+        "feature_id": "GEO03",
+        "category": "工程几何",
+        "name": "病灶空间定位",
+        "operational_definition": "保存病灶掩膜、体素框和世界坐标框；裁剪或重采样后同步变换。",
+        "value_type": "geometry",
+        "unit": "voxel/mm",
+        "assessment_level": "病灶",
+        "source_ids": "ENG01;MED01",
+        "evidence_locator": "轮廓与空间定位；具体坐标契约由本方案制定",
+        "planned_stage": "P0",
+        "generation_support": "配套掩膜提供候选定位，需独立检查",
+        "evaluation_plan": "坐标必须声明轴序、原点、方向及闭区间或半开区间约定。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-GEO04",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/6",
+      "record": {
+        "feature_id": "GEO04",
+        "category": "工程几何",
+        "name": "目标病灶可见性",
+        "operational_definition": "记录目标病灶在最终图像中的可见、不可见或不确定状态。",
+        "value_type": "enum",
+        "unit": "",
+        "assessment_level": "病灶",
+        "source_ids": "ENG01;MED01",
+        "evidence_locator": "标注与图像一致性检查",
+        "planned_stage": "P0",
+        "generation_support": "候选病灶掩膜不能直接证明图像中病灶可见",
+        "evaluation_plan": "独立图像检查并人工复核首批样本；掩膜非空不直接判为阳性。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-GEO05",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/7",
+      "record": {
+        "feature_id": "GEO05",
+        "category": "工程几何",
+        "name": "掩膜连通域数量",
+        "operational_definition": "在指定连通性与最小体积规则下计算前景连通域个数。",
+        "value_type": "integer",
+        "unit": "个",
+        "assessment_level": "体积",
+        "source_ids": "ENG01",
+        "evidence_locator": "工程操作定义",
+        "planned_stage": "P0",
+        "generation_support": "掩膜产生后可计算；不承诺等于临床病灶数",
+        "evaluation_plan": "连通性、最小体积和粘连处理先确认；临床多灶性另行审核。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-LUNG01",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/8",
+      "record": {
+        "feature_id": "LUNG01",
+        "category": "肺部CT",
+        "name": "病灶解剖部位",
+        "operational_definition": "按左右肺、肺叶或其他明确粒度记录位置，未知时保留未知。",
+        "value_type": "enum",
+        "unit": "",
+        "assessment_level": "病灶",
+        "source_ids": "MED01;MED02",
+        "evidence_locator": "肺结节空间标注与胸部术语；细粒度词条待逐项核对",
+        "planned_stage": "P1",
+        "generation_support": "精确肺叶控制未证实",
+        "evaluation_plan": "需要可靠肺叶分割、空间方向和定位规则；世界坐标不直接等于肺叶。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-LUNG02",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/9",
+      "record": {
+        "feature_id": "LUNG02",
+        "category": "肺部CT",
+        "name": "实性程度与密度类型",
+        "operational_definition": "保留来源体系中的 solidity/texture 定义；映射到实性、部分实性等类别需单独审定。",
+        "value_type": "enum_or_ordinal",
+        "unit": "",
+        "assessment_level": "病灶",
+        "source_ids": "MED01;MED02",
+        "evidence_locator": "MED01 主观特征段；术语映射待核对",
+        "planned_stage": "P1",
+        "generation_support": "细粒度控制未证实",
+        "evaluation_plan": "保留原始医师评分及标注体系，不能未经验证将序数分直接变成临床类别。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-LUNG03",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/10",
+      "record": {
+        "feature_id": "LUNG03",
+        "category": "肺部CT",
+        "name": "边缘清晰程度",
+        "operational_definition": "按原始标注或经审定定义记录边缘表现。",
+        "value_type": "ordinal",
+        "unit": "",
+        "assessment_level": "病灶",
+        "source_ids": "MED01",
+        "evidence_locator": "原文 subjective characteristics 段",
+        "planned_stage": "P1",
+        "generation_support": "精确控制未证实",
+        "evaluation_plan": "拟用真实标注建立检查器；多医师分歧保留。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-LUNG04",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/11",
+      "record": {
+        "feature_id": "LUNG04",
+        "category": "肺部CT",
+        "name": "毛刺程度",
+        "operational_definition": "记录 spiculation 的来源定义和原始评分。",
+        "value_type": "ordinal",
+        "unit": "",
+        "assessment_level": "病灶",
+        "source_ids": "MED01",
+        "evidence_locator": "原文 subjective characteristics 段",
+        "planned_stage": "P1",
+        "generation_support": "精确控制未证实",
+        "evaluation_plan": "需要有标注的特征检查器及人工审核；尚不支持自动保证。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-LUNG05",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/12",
+      "record": {
+        "feature_id": "LUNG05",
+        "category": "肺部CT",
+        "name": "分叶程度",
+        "operational_definition": "记录 lobulation 的来源定义和原始评分。",
+        "value_type": "ordinal",
+        "unit": "",
+        "assessment_level": "病灶",
+        "source_ids": "MED01",
+        "evidence_locator": "原文 subjective characteristics 段",
+        "planned_stage": "P1",
+        "generation_support": "精确控制未证实",
+        "evaluation_plan": "需要特征检查器与人工审核；不能仅靠生成提示词认定满足。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-LUNG06",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/13",
+      "record": {
+        "feature_id": "LUNG06",
+        "category": "肺部CT",
+        "name": "球形程度评分",
+        "operational_definition": "保留来源中的主观 sphericity 评分，与数学球形度另设字段。",
+        "value_type": "ordinal",
+        "unit": "",
+        "assessment_level": "病灶",
+        "source_ids": "MED01",
+        "evidence_locator": "原文 shape/sphericity 主观评分",
+        "planned_stage": "P1",
+        "generation_support": "精确控制未证实",
+        "evaluation_plan": "主观评分不能直接用几何球形度替代。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-LUNG07",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/14",
+      "record": {
+        "feature_id": "LUNG07",
+        "category": "肺部CT",
+        "name": "内部结构",
+        "operational_definition": "按来源标注记录 internal structure；枚举值需随数据版本核对。",
+        "value_type": "enum",
+        "unit": "",
+        "assessment_level": "病灶",
+        "source_ids": "MED01",
+        "evidence_locator": "原文 subjective characteristics 段",
+        "planned_stage": "P1",
+        "generation_support": "精确控制未证实",
+        "evaluation_plan": "数据集标签核对后再建立识别与生成评估。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-LUNG08",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/15",
+      "record": {
+        "feature_id": "LUNG08",
+        "category": "肺部CT",
+        "name": "显著性评分",
+        "operational_definition": "记录医师对病灶显著性的主观评分。",
+        "value_type": "ordinal",
+        "unit": "",
+        "assessment_level": "病灶",
+        "source_ids": "MED01",
+        "evidence_locator": "原文 subtlety 主观评分",
+        "planned_stage": "P1",
+        "generation_support": "精确控制未证实",
+        "evaluation_plan": "不把显著性评分解释为一般图像质量评分。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-LUNG09",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/16",
+      "record": {
+        "feature_id": "LUNG09",
+        "category": "肺部CT",
+        "name": "影像学恶性可能性评分",
+        "operational_definition": "保留医师影像学怀疑程度及其来源，不作为病理确诊标签。",
+        "value_type": "ordinal",
+        "unit": "",
+        "assessment_level": "病灶",
+        "source_ids": "MED01",
+        "evidence_locator": "原文 likelihood of malignancy",
+        "planned_stage": "P2",
+        "generation_support": "不作首版诊断控制目标",
+        "evaluation_plan": "需要区分影像评分、临床诊断和病理证据；缺失证据不能补写。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-COLON01",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/17",
+      "record": {
+        "feature_id": "COLON01",
+        "category": "结肠癌CT",
+        "name": "原发病灶部位",
+        "operational_definition": "按结肠解剖分段描述，分类粒度由报告模板和用户共同明确。",
+        "value_type": "enum",
+        "unit": "",
+        "assessment_level": "病灶",
+        "source_ids": "MED03",
+        "evidence_locator": "Report 部分 lesion site",
+        "planned_stage": "P1",
+        "generation_support": "支持结肠原发癌类别；精确分段控制未证实",
+        "evaluation_plan": "MSD 肿瘤掩膜不自动提供可靠结肠分段，需要额外解剖标注。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-COLON02",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/18",
+      "record": {
+        "feature_id": "COLON02",
+        "category": "结肠癌CT",
+        "name": "病灶形态类型",
+        "operational_definition": "按来源报告模板描述病灶类型，具体枚举待全文和医学审核。",
+        "value_type": "enum",
+        "unit": "",
+        "assessment_level": "病灶",
+        "source_ids": "MED03",
+        "evidence_locator": "Report 部分 lesion type",
+        "planned_stage": "P2",
+        "generation_support": "精确形态控制未证实",
+        "evaluation_plan": "不从单一肿瘤掩膜推断全部影像形态。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-COLON03",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/19",
+      "record": {
+        "feature_id": "COLON03",
+        "category": "结肠癌CT",
+        "name": "病灶大小",
+        "operational_definition": "采用明确的测量定义；初版可选择 GEO01 或 GEO02，不能混用。",
+        "value_type": "number",
+        "unit": "mm/mm3",
+        "assessment_level": "病灶",
+        "source_ids": "MED03;ENG01",
+        "evidence_locator": "Report 部分 size；操作定义采用工程契约",
+        "planned_stage": "P0",
+        "generation_support": "存在间接大小控制；需测量与校准",
+        "evaluation_plan": "用户必须选择体积或具体直径定义；不同指标的单位分别保存。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-COLON04",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/20",
+      "record": {
+        "feature_id": "COLON04",
+        "category": "结肠癌CT",
+        "name": "局部侵犯表现",
+        "operational_definition": "描述局部侵犯对象、影像证据和不确定性。",
+        "value_type": "structured",
+        "unit": "",
+        "assessment_level": "病例",
+        "source_ids": "MED03",
+        "evidence_locator": "Report 部分 local invasion",
+        "planned_stage": "P2",
+        "generation_support": "特定侵犯关系控制未证实",
+        "evaluation_plan": "需邻近结构、完整视野及医学审核；不能从肿瘤体积直接推定。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-COLON05",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/21",
+      "record": {
+        "feature_id": "COLON05",
+        "category": "结肠癌CT",
+        "name": "区域淋巴结评估",
+        "operational_definition": "记录来源定义下的区域淋巴结表现及评估状态。",
+        "value_type": "structured",
+        "unit": "",
+        "assessment_level": "病例",
+        "source_ids": "MED03",
+        "evidence_locator": "Report 部分 node stage",
+        "planned_stage": "P2",
+        "generation_support": "精确控制未证实",
+        "evaluation_plan": "需要额外淋巴结标注和评价规则；未评估不能写为阴性。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-COLON06",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/22",
+      "record": {
+        "feature_id": "COLON06",
+        "category": "结肠癌CT",
+        "name": "远处转移评估",
+        "operational_definition": "保留检查范围、可见证据和未评估状态。",
+        "value_type": "structured",
+        "unit": "",
+        "assessment_level": "病例",
+        "source_ids": "MED03",
+        "evidence_locator": "Report 部分 metastases stage",
+        "planned_stage": "P2",
+        "generation_support": "全身或特定转移控制未证实",
+        "evaluation_plan": "局部裁剪不支持完整远处转移判断；不输出无依据的 M0。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-COLON07",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/23",
+      "record": {
+        "feature_id": "COLON07",
+        "category": "结肠癌CT",
+        "name": "临床T分期字段",
+        "operational_definition": "作为复合报告字段，绑定规则版本与所需证据。",
+        "value_type": "enum",
+        "unit": "",
+        "assessment_level": "病例",
+        "source_ids": "MED03",
+        "evidence_locator": "Report 部分 tumor stage",
+        "planned_stage": "P2",
+        "generation_support": "不作首版自动生成承诺",
+        "evaluation_plan": "大小不等于侵犯深度；无法满足证据要求时仅存未评估。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-COLON08",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/24",
+      "record": {
+        "feature_id": "COLON08",
+        "category": "结肠癌CT",
+        "name": "临床N分期字段",
+        "operational_definition": "作为复合报告字段，绑定淋巴结评价证据与规则版本。",
+        "value_type": "enum",
+        "unit": "",
+        "assessment_level": "病例",
+        "source_ids": "MED03",
+        "evidence_locator": "Report 部分 node stage",
+        "planned_stage": "P2",
+        "generation_support": "不作首版自动生成承诺",
+        "evaluation_plan": "不能把分割数据中的标签缺失当作 N0。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-RECT01",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/25",
+      "record": {
+        "feature_id": "RECT01",
+        "category": "直肠癌MRI",
+        "name": "与乙状结肠起始部的关系",
+        "operational_definition": "记录病灶与 sigmoid take-off（STO）的关系及定位依据。",
+        "value_type": "structured",
+        "unit": "",
+        "assessment_level": "病例",
+        "source_ids": "MED04;MED05",
+        "evidence_locator": "解剖定位与 STO 建议",
+        "planned_stage": "P2",
+        "generation_support": "MAISI CT 后端不提供 MRI 生成",
+        "evaluation_plan": "需要足够视野、解剖定位和可用 MRI 数据。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-RECT02",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/26",
+      "record": {
+        "feature_id": "RECT02",
+        "category": "直肠癌MRI",
+        "name": "肿瘤高度",
+        "operational_definition": "说明测量起点、终点和所采用的解剖参照；不同参照不混用。",
+        "value_type": "number",
+        "unit": "mm",
+        "assessment_level": "病灶",
+        "source_ids": "MED04;MED05",
+        "evidence_locator": "解剖术语与 tumour height 讨论",
+        "planned_stage": "P2",
+        "generation_support": "需要 MRI 后端",
+        "evaluation_plan": "肛缘和肛直肠交界等参照需显式区分并标注。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-RECT03",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/27",
+      "record": {
+        "feature_id": "RECT03",
+        "category": "直肠癌MRI",
+        "name": "壁外侵犯深度",
+        "operational_definition": "在明确肠壁层次和测量规则下记录壁外侵犯程度。",
+        "value_type": "number",
+        "unit": "mm",
+        "assessment_level": "病灶",
+        "source_ids": "MED04",
+        "evidence_locator": "T3 subclassification 与 extramural invasion",
+        "planned_stage": "P2",
+        "generation_support": "需要 MRI 后端和关系控制",
+        "evaluation_plan": "需要肠壁结构证据；不从包围框估算侵犯深度。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-RECT04",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/28",
+      "record": {
+        "feature_id": "RECT04",
+        "category": "直肠癌MRI",
+        "name": "与直肠系膜筋膜的最短距离",
+        "operational_definition": "记录距离及其对应对象，区分原发灶、EMVI、结节等来源。",
+        "value_type": "structured",
+        "unit": "mm",
+        "assessment_level": "病例",
+        "source_ids": "MED04;MED05",
+        "evidence_locator": "MRF 建议及更新",
+        "planned_stage": "P2",
+        "generation_support": "需要 MRI 后端和多结构控制",
+        "evaluation_plan": "距离、相关对象与规则版本共同保存；不使用一个距离字段替代全部判定。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-RECT05",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/29",
+      "record": {
+        "feature_id": "RECT05",
+        "category": "直肠癌MRI",
+        "name": "MRF受累状态",
+        "operational_definition": "依据明确版本的规则结合相关结构判读，保存不确定性。",
+        "value_type": "enum",
+        "unit": "",
+        "assessment_level": "病例",
+        "source_ids": "MED05",
+        "evidence_locator": "表 2 和表 3 MRF 规则",
+        "planned_stage": "P2",
+        "generation_support": "不作首版自动生成承诺",
+        "evaluation_plan": "当前仅列字段；规则细节需医学审核，不能单靠 DWI 判定。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-RECT06",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/30",
+      "record": {
+        "feature_id": "RECT06",
+        "category": "直肠癌MRI",
+        "name": "壁外血管侵犯",
+        "operational_definition": "记录 EMVI 的影像表现、等级或状态及其依据。",
+        "value_type": "structured",
+        "unit": "",
+        "assessment_level": "病例",
+        "source_ids": "MED04;MED05",
+        "evidence_locator": "EMVI 与序列适用性建议",
+        "planned_stage": "P2",
+        "generation_support": "精确控制未证实，需 MRI 后端",
+        "evaluation_plan": "保留所用规则；初始分期不能单靠 DWI 判定。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-RECT07",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/31",
+      "record": {
+        "feature_id": "RECT07",
+        "category": "直肠癌MRI",
+        "name": "区域淋巴结风险评估",
+        "operational_definition": "按当前共识记录 cN 相关影像评估及可信程度。",
+        "value_type": "structured",
+        "unit": "",
+        "assessment_level": "病例",
+        "source_ids": "MED04;MED05",
+        "evidence_locator": "淋巴结分期和不确定性",
+        "planned_stage": "P2",
+        "generation_support": "精确控制未证实，需 MRI 后端",
+        "evaluation_plan": "分区、形态和病例层面评估分开记录；不能只按尺寸自动确诊。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-RECT08",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/32",
+      "record": {
+        "feature_id": "RECT08",
+        "category": "直肠癌MRI",
+        "name": "腹膜反折相关关系",
+        "operational_definition": "描述原发灶与腹膜反折及腹膜侵犯相关表现。",
+        "value_type": "structured",
+        "unit": "",
+        "assessment_level": "病例",
+        "source_ids": "MED04;MED05",
+        "evidence_locator": "T4a 与 peritoneal reflection 说明",
+        "planned_stage": "P2",
+        "generation_support": "关系控制未证实，需 MRI 后端",
+        "evaluation_plan": "需要完整解剖视野和结构标注。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-RECT09",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/33",
+      "record": {
+        "feature_id": "RECT09",
+        "category": "直肠癌MRI",
+        "name": "括约肌及邻近结构关系",
+        "operational_definition": "区分相关肌层或邻近结构，按来源定义描述受累证据。",
+        "value_type": "structured",
+        "unit": "",
+        "assessment_level": "病例",
+        "source_ids": "MED04",
+        "evidence_locator": "external sphincter 与 T4b 相关说明",
+        "planned_stage": "P2",
+        "generation_support": "关系控制未证实，需 MRI 后端",
+        "evaluation_plan": "需医学审核和多结构标注；不由文字提示直接生成确诊标签。",
+        "implementation_status": "planned_not_implemented"
+      }
+    },
+    {
+      "id": "LEGACY-RECT10",
+      "input_id": "INPUT-ORIGINAL-FEATURES",
+      "json_pointer": "/features/34",
+      "record": {
+        "feature_id": "RECT10",
+        "category": "直肠癌MRI",
+        "name": "DWI与ADC相关表现",
+        "operational_definition": "在配准的序列及已知采集参数下描述信号表现和适用任务。",
+        "value_type": "structured",
+        "unit": "",
+        "assessment_level": "病例",
+        "source_ids": "MED04;MED05",
+        "evidence_locator": "MRI sequence utility 与 DWI 限制",
+        "planned_stage": "P2",
+        "generation_support": "多序列 MRI 后端待选",
+        "evaluation_plan": "不同序列需对应；该字段不能单独替代初始 cT、MRF 或 EMVI 判定。",
+        "implementation_status": "planned_not_implemented"
+      }
+    }
+  ],
+  "preparation_gaps": [
+    {
+      "id": "GAP-ENGINEERING-SOURCES",
+      "affected_ids": [
+        "ENG01",
+        "MOD01",
+        "MOD02"
+      ],
+      "owner": "engineering_preparation",
+      "action": "保留工程/生成后端线索；若要提出医学特征定义，另补医学原始/官方来源，不能用生成参数或掩膜公式替代。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-MEASUREMENT-DEFINITIONS",
+      "affected_ids": [
+        "GEO01",
+        "GEO02",
+        "COLON03"
+      ],
+      "owner": "engineering_preparation",
+      "action": "补齐原文测量对象、参照、单位及定义；目前GEO01/GEO02只有工程或间接概念线索，不能据旧定义批准医学测量。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-ENTITY-DEFINITIONS",
+      "affected_ids": [
+        "CANCER-LUNG",
+        "CANCER-BOWEL",
+        "CANCER-COLON",
+        "CANCER-RECTUM",
+        "CONTEXT-LUNG-NODULE",
+        "MODALITY-CT",
+        "MODALITY-MRI"
+      ],
+      "owner": "engineering_preparation",
+      "action": "准备癌种/研究对象/模态名称的可核对定义来源；已有起步范围标签不是医学术语批准。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-HIERARCHY-SOURCES",
+      "affected_ids": [
+        "HIER-BOWEL-COLON",
+        "HIER-BOWEL-RECTUM"
+      ],
+      "owner": "engineering_preparation",
+      "action": "补齐肠癌与结肠癌/直肠癌上/下位关系的明确分类来源和范围，不能把历史提议当来源。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-LUNG-LOCATION",
+      "affected_ids": [
+        "LUNG01"
+      ],
+      "owner": "engineering_preparation",
+      "action": "现有MED01给出空间标注线索，MED02给出位置术语线索；仍需定位支持当前左右肺/肺叶粒度的原文及具体术语。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-COLON-TEMPLATE",
+      "affected_ids": [
+        "MED03",
+        "COLON01",
+        "COLON02",
+        "COLON03",
+        "COLON04",
+        "COLON05",
+        "COLON06",
+        "COLON07",
+        "COLON08"
+      ],
+      "owner": "engineering_preparation",
+      "action": "已定位正文Report字段概述；继续核对同篇Appendix 1报告模板的具体字段、枚举与适用条件，本轮未把附件内容推定为已核。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-RECTAL-HEIGHT",
+      "affected_ids": [
+        "RECT02",
+        "MED04"
+      ],
+      "owner": "engineering_preparation",
+      "action": "本次未在MED04定向检索中找到对应高度测量定义，继续查原文/已有附件；MED05已定位Table 4与讨论，保留参照分歧和未达完整共识的范围。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-LEXICAL-CORRESPONDENCE",
+      "affected_ids": [
+        "LEX-LUNG04-01",
+        "LEX-LUNG05-01",
+        "LEX-LUNG06-01",
+        "LEX-LUNG08-01",
+        "LEX-LUNG09-01",
+        "LEX-COLON01-01",
+        "LEX-COLON02-01",
+        "LEX-COLON03-01",
+        "LEX-RECT01-01",
+        "LEX-RECT03-01",
+        "LEX-RECT05-01",
+        "LEX-RECT06-01",
+        "LEX-LUNG02-01",
+        "LEX-LUNG02-02"
+      ],
+      "owner": "engineering_preparation",
+      "action": "为每个对应词补足能支持精确含义的原文位置；已找到关键词不证明中文名称、程度评分、结构名或受累状态彼此等同。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-APPLICABILITY",
+      "affected_ids": [
+        "APPL-META01-UNRESOLVED",
+        "APPL-META02-UNRESOLVED",
+        "APPL-META03-UNRESOLVED",
+        "APPL-GEO01-UNRESOLVED",
+        "APPL-GEO02-UNRESOLVED",
+        "APPL-GEO03-UNRESOLVED",
+        "APPL-GEO04-UNRESOLVED",
+        "APPL-GEO05-UNRESOLVED",
+        "APPL-LUNG01-UNRESOLVED",
+        "APPL-LUNG02-UNRESOLVED",
+        "APPL-LUNG03-UNRESOLVED",
+        "APPL-LUNG04-UNRESOLVED",
+        "APPL-LUNG05-UNRESOLVED",
+        "APPL-LUNG06-UNRESOLVED",
+        "APPL-LUNG07-UNRESOLVED",
+        "APPL-LUNG08-UNRESOLVED",
+        "APPL-LUNG09-UNRESOLVED",
+        "APPL-COLON01-UNRESOLVED",
+        "APPL-COLON02-UNRESOLVED",
+        "APPL-COLON03-UNRESOLVED",
+        "APPL-COLON04-UNRESOLVED",
+        "APPL-COLON05-UNRESOLVED",
+        "APPL-COLON06-UNRESOLVED",
+        "APPL-COLON07-UNRESOLVED",
+        "APPL-COLON08-UNRESOLVED",
+        "APPL-RECT01-UNRESOLVED",
+        "APPL-RECT02-UNRESOLVED",
+        "APPL-RECT03-UNRESOLVED",
+        "APPL-RECT04-UNRESOLVED",
+        "APPL-RECT05-UNRESOLVED",
+        "APPL-RECT06-UNRESOLVED",
+        "APPL-RECT07-UNRESOLVED",
+        "APPL-RECT08-UNRESOLVED",
+        "APPL-RECT09-UNRESOLVED",
+        "APPL-RECT10-UNRESOLVED"
+      ],
+      "owner": "engineering_preparation",
+      "action": "逐条准备癌种/研究对象、模态及序列/时相/治疗阶段证据，随后送核验人员判断；当前全部unknown，不由来源主题自动填绑定。",
+      "status": "open",
+      "resolution": ""
+    },
+    {
+      "id": "GAP-SPLIT-DESCRIPTIONS",
+      "affected_ids": [
+        "LUNG06",
+        "LUNG08",
+        "COLON04",
+        "COLON05",
+        "COLON06",
+        "RECT05",
+        "RECT06",
+        "RECT07",
+        "RECT08",
+        "RECT09"
+      ],
+      "owner": "engineering_preparation",
+      "action": "从既有原文补齐能够独立显示的视觉描述及对应结论/评分边界，未取得证据前不臆造细分词条。",
+      "status": "open",
+      "resolution": ""
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "schema_version": "t1-resume-preflight-1",
+  "recorded_at": "2026-11-11T09:18:26.566048+00:00",
+  "status": "passed_dispatched_by_main_session",
+  "plan_sha256": "ad6375beabe1808370f9bb70aabbcc8612c03282f51192b143159427f877aa6b",
+  "model_provider_requests_started": 0,
+  "code_pins": {
+    "total": 119,
+    "host_snapshot_and_image_verified": true,
+    "runtime_changes_this_turn": [
+      "deploy/one-run-allowance.ts",
+      "deploy/run-real-verification.mjs"
+    ],
+    "preexisting_final_delivery_copy_change_since_old_failed_plan": "apps/pi-web/t1/messages.mjs; already in sealed base980140 and clean HEADd58aee7",
+    "all_119_pins_match_verified_image": true
+  },
+  "alias_authority_binding": {
+    "same_sha_in_plan_alias_authorization_and_host_evidence": true,
+    "actual_driver_rejects_missing_map_entry_different_declared_digest_changed_authority_bytes": true,
+    "ordinary_policy_unchanged": true,
+    "new_name_means_user_trial_acceptance_not_supplier_confirmation": true
+  },
+  "tests": [
+    {
+      "log": "offline-tests-initial.log",
+      "passed": 23,
+      "failed": 0
+    },
+    {
+      "log": "offline-final-focused.log",
+      "passed": 14,
+      "failed": 0
+    }
+  ],
+  "tests_are_overlapping_not_37_distinct": true,
+  "typechecks": {
+    "backend": "passed",
+    "deploy": "passed"
+  },
+  "parser_model_artifacts": {
+    "offline_check_passed": true,
+    "files": 10,
+    "bytes": 529895165,
+    "new_downloads": 0
+  },
+  "runtime_health_record": "runtime-health.json",
+  "fresh_volume_required": true,
+  "production_review_or_annotation_added": 0,
+  "full_pdf_medical_recall_claimed": false,
+  "stage_pass_claims": {
+    "S2": false,
+    "S6": false,
+    "S7": false
+  },
+  "historical_frozen_reports": {
+    "docs/acceptance/finalization-2026-11-09/stage-matrix.json": "7a995ff4c46ebac52c34f8c6b4be30e7034e6a8b333b51a77d38cd65b95992a7",
+    "docs/acceptance/finalization-2026-11-09/s6/report.json": "918e15fd4bd6ed7b4483842086d37fcd7c3455d97320da9f5d2c48bca7bf18f7",
+    "docs/acceptance/finalization-2026-11-09/s7/report.json": "6426127357497381e155699d41c451e7c8a57ef110ab4eebc4bce4a3bd0b6265",
+    "docs/acceptance/finalization-2026-11-09/s7/post-fix-IN04-regression/identity-failure.json": "4c7535b31787fb11c896d601c87f8d9b43bf51a92349a97a1eee3cbedf3af655"
+  },
+  "build_scope": {
+    "mode": "Derived from sealed local delivery image; no dependency install or fresh Next build",
+    "base_image_id": "sha256:980140eddaecee95c6ffb74443b5ee8194dca9705ca6e4124e6c15e65c3ac3bd",
+    "recipe": "runtime-data/s7-source-snapshot-20261111/Dockerfile.resume",
+    "recipe_sha256": "00258d7abc20322bbc9019646409b92e686edb0d61fda62853b27b16f7bf5f38",
+    "copied_files": [
+      "deploy/one-run-allowance.ts",
+      "deploy/run-real-verification.mjs"
+    ],
+    "cold_full_build_revalidated": false,
+    "initial_full_build_failure": "Docker Hub anonymous frontend token timeout; no provider request"
+  },
+  "external_model_or_provider_API_requests": 0
+}

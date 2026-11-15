@@ -1,0 +1,849 @@
+--- a/README.md
++++ b/README.md
+@@ -2,15 +2,17 @@
+ 
+ 从文本型PDF提取肿瘤影像外观原文，保留出处、必要语境、整幅Figure和原图注，供逐篇核对与导出。正式主流程为B0；F仅保留实验实现与历史对照。
+ 
+-当前普通工作台为 **http://127.0.0.1:30141/**，后端为 **http://127.0.0.1:3210**；当前构建为`apps/pi-web/build/paragraph-glyph-table-values-validated-20261115`，BUILD_ID `TTsFAMBKuqGe6oPPX7LuB`。创建任务按上传论文、抽取范围和模型分卡展示；选择文件或文件夹后自动串行上传，确认后点击开始才创建抽取。每次提交在侧栏与历史作为一个任务，批量显示“批量”并统一展示已提交成员结果；每条结果保留所属论文、原页、整图与子run来源。任务完成依据各自版本化流程记录或充分证据的只读旧任务投影，区分完成、未完成与待核；普通界面按真实流程显示完成状态，字形诊断后台保留，不作为人工逐条核验门槛。顶部悬浮提示带进出动画，成功4秒、错误6秒自动退场；处理中保持。
++当前普通工作台为 **http://127.0.0.1:30141/**，后端为 **http://127.0.0.1:3210**；当前构建为`apps/pi-web/build/navigation-content-delivery-final-validated-20261115`，BUILD_ID `3vStVJbusRhBDfrFvff4U`。创建任务按上传论文、抽取范围和模型分卡展示；选择文件或文件夹后自动串行上传，确认后点击开始才创建抽取。每次提交在侧栏与历史作为一个任务，批量显示“批量”并统一展示已提交成员结果；每条结果保留所属论文、原页、整图与子run来源。创建与任务历史页使用独立页面上下文，旧论文参数不会带出原件或预开结果标签；结果与原件始终归属有效任务。任务完成依据各自版本化流程记录或充分证据的只读旧任务投影，区分完成、未完成与待核；普通界面按真实流程显示完成状态，字形诊断后台保留，不作为人工逐条核验门槛。顶部悬浮提示带进出动画，成功4秒、错误6秒自动退场；处理中保持。
+ 
+ [本轮记录](docs/acceptance/new-task-layout-2026-11-14/report.json)中的原第1—4项及第4项新增反馈已获用户审核通过，原第5项追加反馈已完成限定工程验证并上线，待用户审核，正式审查仍共用3/3。规则`task-flow-completion-2`要求非空可用授权输入显式处理、自动汇总核验、交付校验与最终保存均完成；正常0候选可以完成，空或完全不可用输入、预算/抽取/汇总/交付/保存失败或取消均不升级。旧任务的原false、结果与统计单位不改，只在完整旧证据核验通过时只读派生流程状态，说明中保留原判定来源。
+ 
+-新任务以`source-paragraph-units-1`组织正文段落，标题、图注和表格分开，未知栏/页/段/病例边界保守回退为原文片段；可靠续段须有现存校验关系。超长段按完整句子拆成有父段的处理单元，全部片段显式完成后该内容块才计完成。进度显示“内容块”，旧任务按其原始“行”统计，不虚构历史段落。8500源字符、128派发原行、256工具窗口及原模型/预算保持。
++新任务以`source-content-units-2`组织原文内容：可靠正文优先按段落，明确同native段、同页且版面/标点等信号一致的续栏可衔接；明确图内标签按图区域独立分组，保留每个成员的原文与定位，不与正文、标题、图注或表格拼接。列表、脚注、单项文字与未知片段分别计类，未知跨页/字号/段落/病例边界保持保守。长正文按句界分片，长图内组按原成员边界分片，全部所属分片显式处理后才计父内容单元完成。进度为实际内容单元，说明集中列出九类组成；处理批次受输入长度限制，一批可多轮交互，不等于请求数。旧`source-paragraph-units-1`计划与计数不改，无已存分类时不能推算正文自然段；更早`source_blocks`仍按原文行。8500源字符、128派发原行、256工具窗口及原模型/预算保持。
++
++本次2158/39反馈见原报告`item5.followup_paragraph_units_2158_20261115`：20项限定后端检查（13组织/SDK、6进度、1隔离SQL/API）及另1项glyph单行表引用兼容确认、后端类型检查通过；前端唯一24项相关helper、最终同构建8组隔离浏览器及4组线上GET/HEAD通过。45页缓存IR内存对照由旧2158单元/39批变为807父单元/816分片/42批，4484原行与227669码点全部保留；这是结构观察，不是已运行新任务或提速/医学效果证明。安全空闲上线保全当时18表、10paper/1个已取消run、110个来源/产物文件及模型/配置，当前后端134658、前端134701/wrapper134693；一致备份与上一TTs已验构建保留。旧任务计划/原结果不改，未创建、重跑、删除、取消、保留或导出真实任务，新增付费0；待用户审核。
+ 
+ 按用户最新要求，`agent-assesses-parsed-glyphs-1`将疑似字形的解析原字符串连同上下文交给agent判断，不先隔离或跳过；后台保留诊断与定位，禁止猜字、修符号或据此宣称PDF保真，普通界面不突出缺口、不要求人工批准。正文或图注明确在同段引用表号时，`paragraph-linked-table-support-2`复用`supporting_table_evidence`附对应多组值，每个值由host保留其专属行列条件、单位与源位置，公共表名/脚注共享；补读受同run/同源授权与原工具限额约束，不能提前完成原派发单元。单独表格行列不作为主描述，机械关联不等于医学语义认证。补充值通过实际同段主描述片段绑定原记录，支持逐值展示与导出，旧数据缺逐值关系时不猜配；在受限高度预览/固定详情浮层阅读并可定位原页；JSONL、CSV及证据包保留从属关系与原串。完整证据与本轮检查见原报告`item5.followup_paragraph_glyph_tables_20261115`；未新增真实模型调用或医学效果复验。
+ 
+-本反馈先完成39项主检查（18新增源/段落/表格/SDK场景＋21相关回归），根节点日常核对发现逐值关联缺口后，仅重跑17项受影响表格/SDK/API检查（4新增＋13复验）；不把不同版本/复验相加成独立场景。最终同构建8组隔离浏览器、4组线上GET/HEAD通过。当前后端109795、前端109824/wrapper109816，安全空闲切换保全18表、9paper/6run、164产物及模型/配置，未创建、重跑、删除、取消、保留或导出真实任务，付费0。新规则尚未真实模型/医学效果复验。前轮`E23zPq5epmvmz7hXKRFiM`及本次一致备份/源码回退保留，旧证据留在原item5，不覆盖前次工程事实。
++此前TTs反馈先完成39项主检查（18新增源/段落/表格/SDK场景＋21相关回归），根节点日常核对发现逐值关联缺口后，仅重跑17项受影响表格/SDK/API检查（4新增＋13复验）；不把不同版本/复验相加成独立场景。当时同构建8组隔离浏览器、4组线上GET/HEAD通过，后端109795、前端109824/wrapper109816，空闲切换保全18表、9paper/6run、164产物及模型/配置，未创建、重跑、删除、取消、保留或导出真实任务，付费0。这些计数与PID仅对应前次交付时点；旧证据留在原item5，不覆盖前次工程事实。
+ 
+ [前轮工作台体验报告](docs/acceptance/workbench-experience-2026-11-14/report.json)记录正式审查3/3、71项后端与346项抽取回归、14项界面单测、16组同构建隔离浏览器与5组真实只读核验。新增任务用相同授权原文投影预载，免去重复索取输入的模型往返；SSE仅查询游标后的新事件。本地SDK与查询基准通过，尚未新增付费任务验证真实总耗时收益。原用户任务自然结束为partial，13条候选和唯一明确配对Figure5保留；上线核验时为17表、8run、8篇论文记录、1模型配置，逻辑数据、两份env与手工目录均保持。代理生产业务写入与额外付费模型调用均为0。
+ 
+@@ -44,7 +46,7 @@
+ 复用本次已验证构建并重启前端时，先确认原前端进程已停止，然后在`code/`运行（普通重新构建流程仍使用上方`build:web`）：
+ 
+ ```bash
+-T1_NEXT_DIST_DIR=build/paragraph-glyph-table-values-validated-20261115 bash scripts/with-node.sh npm run start:web
++T1_NEXT_DIST_DIR=build/navigation-content-delivery-final-validated-20261115 bash scripts/with-node.sh npm run start:web
+ ```
+ 
+ 开发时可用`bash scripts/with-node.sh npm run dev:web`替代生产前端，默认仍30141。`npm run dev:server`不自动载入工作台开关/限额；不要仅改`.env`就假定这些已生效。首次依赖/CPU模型准备及Docker启动按[部署说明](deploy/README.md)执行，不运行上游通用pi-web入口或另建前端。
+--- a/apps/server/src/workbench-progress.ts
++++ b/apps/server/src/workbench-progress.ts
+@@ -7,14 +7,18 @@
+ const ids = (value: unknown): string[] => Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
+ export interface ProgressCoverage {
+   completed?: number; total?: number; summary_completed?: boolean; source_gap_blocks?: number;
+-  unit?: 'source_blocks' | 'paragraphs';
++  unit?: 'source_blocks' | 'paragraphs' | 'content_units';
++  unit_counts?: Record<string, number>; completed_unit_counts?: Record<string, number>;
+ }
++const counts = (value: unknown): Record<string, number> | undefined => value && typeof value === 'object' && !Array.isArray(value) &&
++  Object.entries(value).every(([key, n]) => key.length > 0 && count(n) !== undefined) ? value as Record<string, number> : undefined;
+ 
+ /** Pure projection of persisted receipts. A read, retry or summary reread never completes source blocks. */
+ export function workbenchRunProgress(run: WorkbenchRun, events: readonly WorkbenchEvent[], coverage: ProgressCoverage = {}, clock = Date.now()): WorkbenchRunProgress | undefined {
+   if (!stages.has(run.state as WorkbenchRunProgress['stage'])) return undefined;
+   let total = coverage.total, totalBatches: number | undefined, gap = coverage.source_gap_blocks, unit = coverage.unit ?? 'source_blocks';
+   const completedParagraphs = new Set<string>();
++  const completedContent = new Set<string>(); let unitCounts = coverage.unit_counts, completedCounts = coverage.completed_unit_counts;
+   let summaryComplete = coverage.summary_completed, inventory = false, activity: WorkbenchRunProgress['activity'];
+   let stageStarted: string | undefined, updated: string | undefined, terminalAt: string | undefined;
+   const batches = new Map<string, { complete: boolean; ids: string[] }>();
+@@ -25,19 +29,21 @@
+       if (d.state === run.state) stageStarted = event.timestamp;
+       if (terminal.has(String(d.state))) terminalAt = event.timestamp;
+     } else if (event.type === 'coverage_inventory') {
+-      inventory = true; unit = d.progress_unit === 'paragraphs' ? 'paragraphs' : unit;
+-      total = count(unit === 'paragraphs' ? d.total_paragraphs : d.dispatched_blocks) ?? total; totalBatches = count(d.total_batches);
++      inventory = true; unit = d.progress_unit === 'content_units' ? 'content_units' : d.progress_unit === 'paragraphs' ? 'paragraphs' : unit;
++      total = count(unit === 'content_units' ? d.total_content_units : unit === 'paragraphs' ? d.total_paragraphs : d.dispatched_blocks) ?? total; totalBatches = count(d.total_batches);
++      if (unit === 'content_units') unitCounts = counts(d.input_unit_counts) ?? unitCounts;
+       gap = count(d.source_gap_blocks) ?? (Array.isArray(d.source_glyph_quarantined_block_ids) ? new Set(ids(d.source_glyph_quarantined_block_ids)).size : gap);
+     } else if (event.type === 'batch' && typeof d.batch_id === 'string') {
+       batches.set(d.batch_id, { complete: d.status === 'completed' && d.explicit_completion_received !== false, ids: ids(d.assigned_block_ids) });
+       if (d.status === 'completed' && d.explicit_completion_received === true) ids(d.completed_paragraph_ids).forEach(id => completedParagraphs.add(id));
++      if (d.status === 'completed' && d.explicit_completion_received === true) { ids(d.completed_content_unit_ids).forEach(id => completedContent.add(id)); completedCounts = counts(d.explicitly_completed_input_unit_counts) ?? completedCounts; }
+     } else if (event.type === 'document_summary' && typeof d.complete === 'boolean') summaryComplete = d.complete;
+     else if (event.type === 'source_parse_started') activity = 'pdf_parse';
+     else if (event.type === 'figure_discovery_started') activity = 'figure_discovery';
+   }
+   const done = new Set<string>(); let completedBatches = 0;
+   for (const batch of batches.values()) if (batch.complete) { completedBatches++; batch.ids.forEach(id => done.add(id)); }
+-  const completed = batches.size ? unit === 'paragraphs' ? completedParagraphs.size : done.size : coverage.completed ?? (inventory ? 0 : undefined);
++  const completed = batches.size ? unit === 'content_units' ? completedContent.size : unit === 'paragraphs' ? completedParagraphs.size : done.size : coverage.completed ?? (inventory ? 0 : undefined);
+   // Inconsistent legacy counters do not justify a fabricated percentage.
+   if (total !== undefined && completed !== undefined && completed > total) total = undefined;
+   if (run.state === 'queued') activity = undefined;
+@@ -54,6 +60,7 @@
+     ...(end !== undefined && executionStarted !== undefined ? { execution_elapsed_ms: Math.max(0, end - executionStarted) } : {}),
+     ...(count(run.queue_wait_ms) !== undefined ? { queue_wait_ms: run.queue_wait_ms } : {}),
+     ...(completed !== undefined ? { completed, unit } : {}), ...(total !== undefined ? { total, unit } : {}),
++    ...(unit === 'content_units' && unitCounts ? { unit_counts: unitCounts } : {}), ...(unit === 'content_units' && completedCounts ? { completed_unit_counts: completedCounts } : {}),
+     ...(inventory || batches.size ? { completed_batches: completedBatches } : {}), ...(totalBatches !== undefined ? { total_batches: totalBatches } : {}),
+     candidate_records: run.candidate_count, ...(gap !== undefined ? { source_gap_blocks: gap } : {}),
+     ...(summaryComplete !== undefined || inventory ? { summary_completed: summaryComplete ?? false } : {}),
+--- a/apps/server/src/workflow-runner.ts
++++ b/apps/server/src/workflow-runner.ts
+@@ -6,6 +6,7 @@
+ import { modelProfile } from './workbench-models.js';
+ import { SOURCE_GLYPH_INPUT_POLICY_VERSION } from '../../../packages/agent/src/source-glyph-policy.js';
+ import { TABLE_SUPPORT_POLICY_VERSION } from '../../../packages/agent/src/table-support.js';
++import { CONTENT_ORGANIZATION_VERSION } from '../../../packages/agent/src/paragraph-units.js';
+ 
+ export async function executeWorkbenchExtraction(context: WorkflowExecution, config: ModelConfig, budget: ExtractionBudget, documentTimeoutMs = 1800_000, stopOnBatchFailure = false, profile = workbenchModelPolicy(config).profile) {
+   const result = await runExtractionDocument({ input: context.input, document: context.document, catalog: context.evidence_catalog ?? unavailableMedicalCatalog,
+@@ -13,7 +14,8 @@
+     strategy: 'baseline', sourceSelectionCondition: 'B0', signal: context.signal, figureCatalog: context.catalog,
+     figureDiscovery: 'not_requested', precreatedRun: true, documentTimeoutMs, stopOnBatchFailure,
+     prefillBatchSource: true,
+-    inputOrganization: 'paragraphs', sourceGlyphPolicyVersion: SOURCE_GLYPH_INPUT_POLICY_VERSION, tableSupportPolicyVersion: TABLE_SUPPORT_POLICY_VERSION,
++    inputOrganization: 'paragraphs', inputOrganizationVersion: CONTENT_ORGANIZATION_VERSION,
++    sourceGlyphPolicyVersion: SOURCE_GLYPH_INPUT_POLICY_VERSION, tableSupportPolicyVersion: TABLE_SUPPORT_POLICY_VERSION,
+     batchOptions: { maxCodePoints: 8500, maxBlocks: 128, contextBlocks: 6 }, batchMaxResponses: 16 });
+   return { coverage: result.coverage, summary: result.summary };
+ }
+--- a/apps/server/src/workflow.ts
++++ b/apps/server/src/workflow.ts
+@@ -222,14 +222,16 @@
+     // Read only progress fields; never copy full prompts, tool arguments, candidate text or request ledgers into the run list.
+     const rows = this.store.db.prepare(`SELECT seq,json_extract(payload_json,'$.type','$.timestamp','$.detail.state','$.detail.status','$.detail.batch_id',
+       '$.detail.assigned_block_ids','$.detail.dispatched_blocks','$.detail.total_batches','$.detail.source_glyph_quarantined_block_ids',
+-      '$.detail.source_gap_blocks','$.detail.complete','$.detail.explicit_completion_received','$.detail.progress_unit','$.detail.total_paragraphs','$.detail.completed_paragraph_ids') p FROM s4_events
++      '$.detail.source_gap_blocks','$.detail.complete','$.detail.explicit_completion_received','$.detail.progress_unit','$.detail.total_paragraphs','$.detail.completed_paragraph_ids',
++      '$.detail.total_content_units','$.detail.completed_content_unit_ids','$.detail.input_unit_counts','$.detail.explicitly_completed_input_unit_counts') p FROM s4_events
+       WHERE run_id=? AND seq>? AND json_extract(payload_json,'$.type') IN
+       ('state','coverage_inventory','batch','document_summary','source_parse_started','source_parse_completed','figure_discovery_started','figure_discovery_completed','source_saved','run_result_saved') ORDER BY seq`).all(id, cached?.seq ?? 0);
+     const events = [...(cached?.events ?? []), ...rows.map(row => {
+       const [type, timestamp, state, status, batch_id, assigned_block_ids, dispatched_blocks, total_batches, source_glyph_quarantined_block_ids,
+-        source_gap_blocks, complete, explicit_completion_received, progress_unit, total_paragraphs, completed_paragraph_ids] = JSON.parse(row.p as string);
++        source_gap_blocks, complete, explicit_completion_received, progress_unit, total_paragraphs, completed_paragraph_ids, total_content_units, completed_content_unit_ids, input_unit_counts, explicitly_completed_input_unit_counts] = JSON.parse(row.p as string);
+       return { run_id: id, seq: Number(row.seq), type, timestamp,
+-        detail: { state, status, batch_id, assigned_block_ids, dispatched_blocks, total_batches, source_glyph_quarantined_block_ids, source_gap_blocks, complete, explicit_completion_received, progress_unit, total_paragraphs, completed_paragraph_ids } } as WorkbenchEvent;
++        detail: { state, status, batch_id, assigned_block_ids, dispatched_blocks, total_batches, source_glyph_quarantined_block_ids, source_gap_blocks, complete, explicit_completion_received, progress_unit, total_paragraphs, completed_paragraph_ids,
++          total_content_units, completed_content_unit_ids, input_unit_counts, explicitly_completed_input_unit_counts } } as WorkbenchEvent;
+     })];
+     if (this.progressEventsCache.size >= 100) this.progressEventsCache.delete(this.progressEventsCache.keys().next().value!);
+     this.progressEventsCache.set(id, { seq, events }); return events;
+@@ -237,11 +239,12 @@
+   async runs(filterId?: string): Promise<WorkbenchRun[]> { await this.initialize();
+     return Promise.all(this.store.db.prepare(`SELECT w.id,w.paper_id,s.state,s.input_json,json_extract(w.payload_json,'$.origin','$.created_at','$.controlled','$.error','$.execution_started_at','$.queue_wait_ms','$.runtime_deadline','$.finished_at','$.submission','$.model_profile','$.scope_catalog','$.task_title','$.original_filename',
+       '$.coverage.explicitly_completed_source_blocks','$.coverage.dispatched_source_blocks','$.coverage.whole_document_summary_complete','$.coverage.task_processing_complete',
+-      '$.coverage.task_completion_rule_version','$.coverage.delivery_validation_status','$.coverage.progress_unit','$.coverage.explicitly_completed_paragraphs','$.coverage.dispatched_paragraphs') info,
++      '$.coverage.task_completion_rule_version','$.coverage.delivery_validation_status','$.coverage.progress_unit','$.coverage.explicitly_completed_paragraphs','$.coverage.dispatched_paragraphs',
++      '$.coverage.explicitly_completed_content_units','$.coverage.dispatched_content_units','$.coverage.input_unit_counts','$.coverage.explicitly_completed_input_unit_counts') info,
+       json_array_length(json_extract(w.payload_json,'$.coverage.source_glyph_quarantined_block_ids')) source_gap_blocks
+       FROM workbench_runs w JOIN s4_runs s ON w.id=s.id ${filterId ? 'WHERE w.id=?' : ''} ORDER BY w.rowid DESC`).all(...(filterId ? [filterId] : [])).map(async row => {
+       const [origin, created_at, controlled, error, execution_started_at, queue_wait_ms, runtime_deadline, finished_at, submission, model_profile, scope_catalog, task_title, original_filename,
+-        completed, total, summary_completed, task_processing_complete, completionRule, deliveryStatus, progressUnit, completedParagraphs, totalParagraphs] = JSON.parse(row.info as string), input = JSON.parse(row.input_json as string) as RunInput;
++        completed, total, summary_completed, task_processing_complete, completionRule, deliveryStatus, progressUnit, completedParagraphs, totalParagraphs, completedContent, totalContent, unitCounts, completedUnitCounts] = JSON.parse(row.info as string), input = JSON.parse(row.input_json as string) as RunInput;
+       const count = this.store.db.prepare(`SELECT COUNT(*) n FROM s4_versions v JOIN
+         (SELECT record_id,MAX(version) version FROM s4_versions WHERE run_id=? AND COALESCE(json_extract(envelope_json,'$.status'),'active')<>'proposed' GROUP BY record_id) current
+         ON v.record_id=current.record_id AND v.version=current.version
+@@ -255,6 +258,8 @@
+         ...(model_profile ? { model_profile } : {}), result_ready: terminals.has(rawState) && ready, ...(submission ? { submission } : {}), ...(finished_at ? { finished_at } : {}), ...(error ? { error } : {}), ...(execution_started_at ? { execution_started_at, queue_wait_ms, runtime_deadline } : {}) };
+       const coverage: ProgressCoverage = { ...(typeof completed === 'number' ? { completed } : {}), ...(typeof total === 'number' ? { total } : {}),
+         ...(progressUnit === 'paragraphs' ? { unit: 'paragraphs', ...(typeof completedParagraphs === 'number' ? { completed: completedParagraphs } : {}), ...(typeof totalParagraphs === 'number' ? { total: totalParagraphs } : {}) } : {}),
++        ...(progressUnit === 'content_units' ? { unit: 'content_units', ...(typeof completedContent === 'number' ? { completed: completedContent } : {}), ...(typeof totalContent === 'number' ? { total: totalContent } : {}),
++          ...(unitCounts && typeof unitCounts === 'object' ? { unit_counts: unitCounts } : {}), ...(completedUnitCounts && typeof completedUnitCounts === 'object' ? { completed_unit_counts: completedUnitCounts } : {}) } : {}),
+         ...(typeof summary_completed === 'boolean' || summary_completed === 0 || summary_completed === 1 ? { summary_completed: Boolean(summary_completed) } : {}),
+         ...(typeof row.source_gap_blocks === 'number' ? { source_gap_blocks: row.source_gap_blocks } : {}) };
+       const taskCompletion = await this.completionProjection(run, input, completionRule, deliveryStatus, coverage.source_gap_blocks ?? 0);
+@@ -726,6 +731,7 @@
+     const input = this.store.snapshot(row.id).input, record = old?.record;
+     const sourceGlyphPolicyVersion = record?.extraction_trace.source_glyph_policy_version ?? ((row.coverage as { source_glyph_policy_version?: string } | undefined)?.source_glyph_policy_version === 'agent-assesses-parsed-glyphs-1' ? 'agent-assesses-parsed-glyphs-1' as const : undefined);
+     const tableSupportPolicyVersion = record?.extraction_trace.table_support_policy_version;
++    const inputOrganizationVersion = record?.extraction_trace.input_organization_version ?? ((row.coverage as { input_organization_version?: string } | undefined)?.input_organization_version === 'source-content-units-2' ? 'source-content-units-2' as const : undefined);
+     const main = body.source_unit_ids ? this.selectedFragments(source, body.source_unit_ids, false, sourceGlyphPolicyVersion) : record?.quote_span.segments;
+     if (!main?.length) throw new ContractError('source_units_required_for_manual_record');
+     const context = body.context_unit_ids ? this.selectedFragments(source, body.context_unit_ids, true, sourceGlyphPolicyVersion) : body.source_unit_ids ? [] : record?.context.fragments ?? [];
+@@ -743,7 +749,7 @@
+     const blocks = taskSourceBlockIds(source.document, buildArticleScope(source.document), sourceGlyphPolicyVersion);
+     const validated = validateEvidenceSubmission(submission, { input, document: source.document, catalog: row.scope_catalog ?? this.catalog, metadata, toolCallId: 'human-' + randomUUID(),
+       allowedBlockIds: blocks, readBlockIds: blocks, evidencePolicyVersion: 'visual-statements-2', primaryAssessmentPolicyVersion: 'model-primary-assessment-1',
+-      sourceGlyphPolicyVersion, tableSupportPolicyVersion });
++      sourceGlyphPolicyVersion, tableSupportPolicyVersion, inputOrganizationVersion });
+     if (!validated.accepted || !validated.record) throw new ContractError('manual_source_validation_failed:' + validated.issues.map(i => i.code).join(','));
+     validated.record.record_id = record?.record_id ?? 'manual-' + randomUUID(); return validated.record;
+   }
+--- a/apps/server/test/content-progress-api.test.ts
++++ b/apps/server/test/content-progress-api.test.ts
+@@ -0,0 +1,37 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { mkdtemp, readFile, rm } from 'node:fs/promises';
++import { resolve } from 'node:path';
++import { ExtractionStore } from '@t1/agent';
++import { controlledFixture } from './controlled-fixture.js';
++import { WorkbenchWorkflow } from '../src/workflow.js';
++
++test('light SQL list/detail projection preserves v2 content classes and leaves old v1 counts without invented categories', async () => {
++  const directory = await mkdtemp(resolve('runtime-data/agent-notes/content-progress-api-')), store = new ExtractionStore(resolve(directory, 'fixture.sqlite'));
++  const replay = await controlledFixture({ delayMs: 1 }); let release!: () => void, entered!: () => void, execution = 0;
++  const gate = new Promise<void>(resolve => { release = resolve; }), running = new Promise<void>(resolve => { entered = resolve; });
++  const all = { paragraph: 1, figure_text: 1, text_item: 1 }, done = { paragraph: 1, figure_text: 0, text_item: 0 };
++  const workflow = new WorkbenchWorkflow(store, { directory, sources: false, ...replay, runner: { controlled: true, provider: 'no-provider', model_id: 'no-model', execute: async c => {
++    const v2 = execution++ === 0; c.store.transition(c.input.run_id, 'extracting');
++    c.store.event(c.input.run_id, 'coverage_inventory', v2 ? { progress_unit: 'content_units', total_content_units: 3, input_unit_counts: all, dispatched_blocks: 20 } : { progress_unit: 'paragraphs', total_paragraphs: 2158, dispatched_blocks: 4484 });
++    if (v2) { c.store.batch(c.input.run_id, 'batch-a', { batch_id: 'batch-a', status: 'completed', explicit_completion_received: true, assigned_block_ids: [c.document.blocks[0]!.block_id], completed_content_unit_ids: ['body-1'], explicitly_completed_input_unit_counts: done }); entered(); await gate; }
++    c.store.transition(c.input.run_id, 'reconciling'); c.store.transition(c.input.run_id, 'partial');
++    return { coverage: { progress_unit: v2 ? 'content_units' : 'paragraphs', task_processing_complete: false, whole_document_summary_complete: false,
++      ...(v2 ? { input_organization_version: 'source-content-units-2', dispatched_content_units: 3, explicitly_completed_content_units: 1, input_unit_counts: all, explicitly_completed_input_unit_counts: done }
++        : { input_organization_version: 'source-paragraph-units-1', dispatched_paragraphs: 2158, explicitly_completed_paragraphs: 0 }) } };
++  } } });
++  try {
++    const paper = (await workflow.upload(await readFile('evaluation/corpus/development-candidates/L05.pdf'), 'content-api-replay.pdf')).paper;
++    const id = (await workflow.start(paper.id, workflow.scopeCatalog().default_scope)).run.run_id; await running;
++    const active = (await workflow.runs(id))[0]!, detail = await workflow.runDetail(id);
++    assert.equal(active.progress!.unit, 'content_units'); assert.equal(active.progress!.completed, 1); assert.equal(active.progress!.total, 3);
++    assert.deepEqual(active.progress!.unit_counts, all); assert.deepEqual(active.progress!.completed_unit_counts, done);
++    const observedWork = (p: typeof active.progress) => ({ unit: p!.unit, completed: p!.completed, total: p!.total, unit_counts: p!.unit_counts, completed_unit_counts: p!.completed_unit_counts });
++    assert.deepEqual(observedWork(detail.run.progress), observedWork(active.progress));
++    release(); await workflow.waitForIdle(); const saved = (await workflow.runs(id))[0]!;
++    assert.equal(saved.progress!.unit, 'content_units'); assert.deepEqual(saved.progress!.unit_counts, all); assert.equal(saved.task_processing_complete, false);
++    const oldId = (await workflow.start(paper.id, workflow.scopeCatalog().default_scope)).run.run_id; await workflow.waitForIdle();
++    const old = (await workflow.runs(oldId))[0]!; assert.equal(old.progress!.unit, 'paragraphs'); assert.equal(old.progress!.total, 2158); assert.equal(old.progress!.unit_counts, undefined);
++    assert.equal((await workflow.runDetail(oldId)).output.coverage && ((await workflow.runDetail(oldId)).output.coverage as any).input_unit_counts, undefined);
++  } finally { release?.(); await workflow.close(); store.close(); await rm(directory, { recursive: true, force: true }); }
++});
+--- a/apps/server/test/workbench-progress.test.ts
++++ b/apps/server/test/workbench-progress.test.ts
+@@ -7,6 +7,20 @@
+ const run = (state = 'extracting'): WorkbenchRun => ({ run_id: 'test-run', document_id: 'test-paper', state, fixture: true,
+   candidate_count: 2, created_at: at(0), execution_started_at: at(3), queue_wait_ms: 3000 });
+ const event = (seq: number, type: string, detail: Record<string, unknown>): WorkbenchEvent => ({ run_id: 'test-run', seq, type, timestamp: at(seq), detail });
++
++test('v2 content progress preserves classified parent counts and does not count figure reads or unfinished parts', () => {
++  const all = { paragraph: 1, figure_text: 1, text_item: 1 };
++  const events = [event(1, 'coverage_inventory', { progress_unit: 'content_units', total_content_units: 3, input_unit_counts: all, dispatched_blocks: 20, total_batches: 4 }),
++    event(2, 'batch', { batch_id: 'a', status: 'completed', explicit_completion_received: true, assigned_block_ids: ['line-a'], completed_content_unit_ids: ['paragraph-1'], explicitly_completed_input_unit_counts: { paragraph: 1, figure_text: 0, text_item: 0 } }),
++    event(3, 'table_read', { completed_content_unit_ids: ['fake-figure'], input_unit_counts: { figure_text: 999 } }),
++    event(4, 'batch', { batch_id: 'figure-part1', status: 'completed', explicit_completion_received: true, assigned_block_ids: ['figure-line'], completed_content_unit_ids: ['paragraph-1'] })];
++  const before = workbenchRunProgress(run(), events)!; assert.equal(before.unit, 'content_units'); assert.equal(before.total, 3); assert.equal(before.completed, 1); assert.deepEqual(before.unit_counts, all);
++  assert.deepEqual(before.completed_unit_counts, { paragraph: 1, figure_text: 0, text_item: 0 });
++  events.push(event(5, 'batch', { batch_id: 'figure-part2', status: 'completed', explicit_completion_received: true, assigned_block_ids: ['figure-line2'], completed_content_unit_ids: ['paragraph-1', 'figure-1'], explicitly_completed_input_unit_counts: { paragraph: 1, figure_text: 1, text_item: 0 } }));
++  assert.equal(workbenchRunProgress(run(), events)!.completed, 2);
++  const old = workbenchRunProgress(run('cancelled'), [event(1, 'coverage_inventory', { progress_unit: 'paragraphs', total_paragraphs: 2158, dispatched_blocks: 4484 })])!;
++  assert.equal(old.unit, 'paragraphs'); assert.equal(old.total, 2158); assert.equal(old.unit_counts, undefined);
++});
+ 
+ test('paragraph progress follows completed parent receipts and ignores supplemental reads and failed parts', () => {
+   const events = [event(1, 'coverage_inventory', { progress_unit: 'paragraphs', total_paragraphs: 2, dispatched_blocks: 6, total_batches: 3 }),
+--- a/deploy/README.md
++++ b/deploy/README.md
+@@ -2,9 +2,11 @@
+ 
+ ## 当前宿主工作台（2026-11-15）
+ 
+-普通入口为`http://127.0.0.1:30141/`，后端为`http://127.0.0.1:3210`。当前构建`apps/pi-web/build/paragraph-glyph-table-values-validated-20261115`、BUILD_ID `TTsFAMBKuqGe6oPPX7LuB`；Next109824（wrapper109816）、后端109795。原第1—4项及追加反馈用户已审核通过；原第5项本次段落输入/进度、glyph原串直达agent、同段引用表格逐值补充已验证上线，待用户审核。新任务按内容块/段落单元计进度，长段全部句片完成才计父段；旧任务保持原始行统计。疑似字形不预跳过、不给普通界面增加人工核验门槛，后台诊断与原串不改。表格支持复用同记录`supporting_table_evidence`，host逐值保存`value_contexts`及实际所属主描述`description_evidence`，公共表名/脚注共享，展示与JSONL/CSV/包保留对应；旧缺字段不猜配。规则`task-flow-completion-2`的真实处理/自动汇总/交付/落盘、三态、旧足证只读投影与真正失败不升级继续保持；模型及8500/128/256和预算不变。详见[原报告本次反馈](../docs/acceptance/new-task-layout-2026-11-14/report.json) `item5.followup_paragraph_glyph_tables_20261115`。
++普通入口为`http://127.0.0.1:30141/`，后端为`http://127.0.0.1:3210`。当前构建`apps/pi-web/build/navigation-content-delivery-final-validated-20261115`、BUILD_ID `3vStVJbusRhBDfrFvff4U`；Next134701（wrapper134693）、后端134658。原第1—4项及追加反馈用户已审核通过；原第5项当前2158计数/导航反馈已限定验证并上线，待用户审核。新`source-content-units-2`正文优先可靠段落，已证同native同页续栏可衔接；明确图内标签独立成组，标题、图注、表格、列表、脚注、单项和回退片段分列，可靠正文不因大图框覆盖改类。长正文按句界、长图内组按原成员边界分片，全部显式完成才计父单元。`content_units`进度及可选九类计数来自实际计划/完成回执；旧v1计数不改、缺分类不推自然段，更早按原行。处理批次不等于模型请求。创建/历史清旧paper/run URL与原件上下文，结果/原件仍精确跟随有效任务。glyph原串直达agent及同段表引用逐值`supporting_table_evidence.value_contexts`规则保持；v2已证续栏表引用沿实际版本绑定，旧记录无版本用原规则。`task-flow-completion-2`真实处理/自动汇总/交付/落盘、三态、旧足证只读投影与失败不升级保持；模型及8500/128/256和预算不变。详见[原报告本次反馈](../docs/acceptance/new-task-layout-2026-11-14/report.json) `item5.followup_paragraph_units_2158_20261115`。
+ 
+-本反馈分时点记录39主检查（18新增＋21回归），之后17受影响检查（4新增＋13复验）及最终同BUILD8组浏览器、4组线上GET/HEAD通过，不将复验加成全新测试。空闲切换先关闭入口复核无active/result_ready=false与prepare/parser，一致备份后优雅停空闲backend释放SSE，再恢复已验构建。18表、9paper/6run、164workbench产物、两env及手工配置/模型前后hash一致，integrity ok/外键0，无活动等待或中断。备份`runtime-data/backups/paragraph-glyph-tables-20261115-before/t1.sqlite`、原源码`runtime-data/rollbacks/paragraph-glyph-tables-20261115-before`及上一E23构建`build/summary-completion-delivery-validated-20261115`保留。生产业务测试写入、真实导出与新增付费0；尚未真实模型语义复验。
++本次20项限定后端检查（13组织/SDK、6进度、1隔离SQL/API）、另1项glyph单行表引用兼容确认及后端类型检查通过；前端唯一24项helper、最终同BUILD8组隔离浏览器、4组线上GET/HEAD通过。缓存IR离线观察807父单元/816片/42批、4484行227669码点全保留，不代表真实新任务或速度/医学效果。空闲切换先关闭入口，再确认无活动/未收尾/解析，备份后优雅停空闲backend释放SSE；保全实际当时18表、10paper/1cancelled run、110个源/产物文件、两env及配置/模型，integrity ok/外键0。备份`runtime-data/backups/content-units-navigation-20261115-before/t1.sqlite`、原后端源码`runtime-data/rollbacks/content-units-navigation-20261115-before`及上一TTs构建`build/paragraph-glyph-table-values-validated-20261115`保留。线上仅GET/HEAD，前后runs/papers/models相同；真实模型调用/生产业务测试写入/导出0。新v2真实模型效果未验证。
++
++上一TTs反馈分时点记录39主检查（18新增＋21回归），之后17受影响检查（4新增＋13复验）及最终同BUILD8组浏览器、4组线上GET/HEAD通过，不将复验加成全新测试。当时18表、9paper/6run、164workbench产物、两env及手工配置/模型前后hash一致，integrity ok/外键0，无活动等待或中断。该次备份与源码回退/证据保留；生产业务测试写入、真实导出与新增付费0，未做真实模型语义复验。计数仅对应前次交付时点，不恢复已由用户自然改变的数据。
+ 
+ 以下段落保留上一E23交付时点的步骤、计数与检查事实：
+ 
+@@ -21,7 +23,7 @@
+ 需复用当前构建启动前端时，先确认原前端监听已经关闭，从`code/`执行：
+ 
+ ```bash
+-T1_NEXT_DIST_DIR=build/paragraph-glyph-table-values-validated-20261115 bash scripts/with-node.sh npm run start:web
++T1_NEXT_DIST_DIR=build/navigation-content-delivery-final-validated-20261115 bash scripts/with-node.sh npm run start:web
+ ```
+ 
+ 后续历史段中的构建、PID、数据计数和命令只对应各交付时点；当前宿主状态以本节与本轮报告为准。Docker30142使用下述独立部署，不承载现有30141数据。
+--- a/packages/agent/src/evidence-delivery.ts
++++ b/packages/agent/src/evidence-delivery.ts
+@@ -224,7 +224,7 @@
+       const support = record.context.supporting_table_evidence ?? [];
+       if (record.extraction_trace.table_support_policy_version === 'paragraph-linked-table-support-2' && support.some(t => !t.value_contexts?.length || !t.description_evidence?.length)) throw new ContractError('delivery_table_per_value_context_missing');
+       for (const segment of [...fieldEvidence, ...support.flatMap(t => [...t.reference_evidence, ...(t.description_evidence ?? []), ...t.fragments, ...(t.context_fragments ?? []), ...(t.value_contexts ?? []).flatMap(v => [...v.fragments, ...v.context_fragments])])]) assertLocated(document, segment, allowUnverifiedGlyphs);
+-      const issues = visualStatementIssues(document, record, record.quote_span.segments, record.context.fragments, fieldEvidence, support, record.extraction_trace.source_glyph_policy_version, record.extraction_trace.table_support_policy_version);
++      const issues = visualStatementIssues(document, record, record.quote_span.segments, record.context.fragments, fieldEvidence, support, record.extraction_trace.source_glyph_policy_version, record.extraction_trace.table_support_policy_version, record.extraction_trace.input_organization_version);
+       if (issues.some(i => i.severity === 'reject')) throw new ContractError('delivery_visual_statement_policy_failed');
+     } else if (verbatimOmissionIssues(document, record.quote_span.segments).length) throw new ContractError('delivery_source_qualifier_omitted');
+     scopes.set(evidenceDigest(record.extraction_trace.scope), record.extraction_trace.scope);
+--- a/packages/agent/src/evidence-validation.ts
++++ b/packages/agent/src/evidence-validation.ts
+@@ -175,7 +175,7 @@
+     .map(b => locateEvidenceFragment(document, { block_id: b.block_id, exact_quote: b.text }, agentAssessesSourceGlyphs(context.sourceGlyphPolicyVersion)));
+   const contextFragments = uniqueFragments([...suppliedContext, ...fieldEvidence, ...supportingFragments, ...automaticContext])
+     .filter(f => !source.some(s => fragmentKey(s) === fragmentKey(f)));
+-  if (statementPolicy && source.length) for (const issue of visualStatementIssues(document, submission, source, contextFragments, fieldEvidence, supportingTables, context.sourceGlyphPolicyVersion, context.tableSupportPolicyVersion)) {
++  if (statementPolicy && source.length) for (const issue of visualStatementIssues(document, submission, source, contextFragments, fieldEvidence, supportingTables, context.sourceGlyphPolicyVersion, context.tableSupportPolicyVersion, context.inputOrganizationVersion)) {
+     add(issue.code, issue.severity, issue.path, issue.detail);
+   }
+   const suppliedText = [...source, ...suppliedContext, ...fieldEvidence, ...supportingFragments].map(f => f.exact_quote).join('\n');
+@@ -262,7 +262,7 @@
+       structure_references: clone(submission.structure_references ?? []), article_scope_status: uncertainArticleScope ? 'uncertain' : 'within_provided_scope',
+       ...(supportingTables.length ? { supporting_table_evidence: supportingTables.map(t => ({ ...clone(t),
+         ...(context.tableSupportPolicyVersion === TABLE_SUPPORT_POLICY_VERSION ? {
+-          description_evidence: fragmentsForSourceSpans(document, tableDescriptionSpans(document, source, t.reference_evidence)).map(f => locateEvidenceFragment(document, f, agentAssessesSourceGlyphs(context.sourceGlyphPolicyVersion))),
++          description_evidence: fragmentsForSourceSpans(document, tableDescriptionSpans(document, source, t.reference_evidence, context.inputOrganizationVersion)).map(f => locateEvidenceFragment(document, f, agentAssessesSourceGlyphs(context.sourceGlyphPolicyVersion))),
+           value_contexts: tableValueContexts(document, t.table_id, t.selected_cell_ids ?? []).map(({ value_spans, context_spans, ...identity }) => ({ ...identity,
+           fragments: fragmentsForSourceSpans(document, value_spans).map(f => locateEvidenceFragment(document, f, agentAssessesSourceGlyphs(context.sourceGlyphPolicyVersion))),
+           context_fragments: fragmentsForSourceSpans(document, context_spans).map(f => locateEvidenceFragment(document, f, agentAssessesSourceGlyphs(context.sourceGlyphPolicyVersion))) })) } : {}),
+@@ -291,6 +291,7 @@
+       ...(statementPolicy ? { evidence_policy_version: VISUAL_STATEMENT_POLICY_VERSION, source_evidence_unit_version: SOURCE_EVIDENCE_UNIT_VERSION } : {}),
+       ...(context.primaryAssessmentPolicyVersion ? { primary_assessment_policy_version: context.primaryAssessmentPolicyVersion } : {}),
+       ...(context.sourceGlyphPolicyVersion ? { source_glyph_policy_version: context.sourceGlyphPolicyVersion } : {}),
++      ...(context.inputOrganizationVersion ? { input_organization_version: context.inputOrganizationVersion } : {}),
+       ...(context.tableSupportPolicyVersion ? { table_support_policy_version: context.tableSupportPolicyVersion } : {}) },
+     review_status: needsContext ? 'needs_context' : 'pending', review_events: [], handoff_status: 'candidate_only',
+   };
+--- a/packages/agent/src/extraction-run.ts
++++ b/packages/agent/src/extraction-run.ts
+@@ -21,7 +21,7 @@
+ import { PRIMARY_ASSESSMENT_POLICY_VERSION, PRIMARY_ASSESSMENT_RULE, PRIMARY_SCOPE_RULE, DIAGNOSTIC_VISUAL_SCOPE_RULE_VERSION, NORMAL_ANATOMIC_SCOPE_RULE_VERSION } from './primary-evidence-assessment.js';
+ import { TASK_COMPLETION_RULE_VERSION } from '../../contracts/src/workbench.js';
+ import { agentAssessesSourceGlyphs, SOURCE_GLYPH_INPUT_RULE } from './source-glyph-policy.js';
+-import { planParagraphBatches, type ParagraphBatch } from './paragraph-units.js';
++import { planParagraphBatches, CONTENT_ORGANIZATION_VERSION, type ParagraphBatch } from './paragraph-units.js';
+ 
+ export interface ExtractionRunOptions {
+   input: RunInput; document: ExtractionDocument; catalog: EvidenceCatalog; metadata: EvidenceValidationContext['metadata'];
+@@ -44,6 +44,7 @@
+   /** Fresh workbench runs may supply the same authorized context/source projections in their first prompt. */
+   prefillBatchSource?: boolean;
+   inputOrganization?: 'paragraphs';
++  inputOrganizationVersion?: typeof CONTENT_ORGANIZATION_VERSION;
+   sourceGlyphPolicyVersion?: 'agent-assesses-parsed-glyphs-1';
+   tableSupportPolicyVersion?: 'paragraph-linked-table-support-2';
+ }
+@@ -60,7 +61,10 @@
+   const taskAllowed = taskSourceBlockIds(document, article, options.sourceGlyphPolicyVersion);
+   const taskScopeIds = article.included_block_ids.filter(id => !selection.excluded_block_ids.includes(id));
+   const paragraphPlan = options.inputOrganization === 'paragraphs' ? planParagraphBatches(document, { ...article, included_block_ids: selection.kept_block_ids },
+-    { ...options.batchOptions, sourceGlyphPolicyVersion: options.sourceGlyphPolicyVersion }) : undefined;
++    { ...options.batchOptions, sourceGlyphPolicyVersion: options.sourceGlyphPolicyVersion, organizationVersion: options.inputOrganizationVersion }) : undefined;
++  const contentOrganization = paragraphPlan?.version === CONTENT_ORGANIZATION_VERSION;
++  const unitCounts = (complete?: ReadonlySet<string>) => Object.fromEntries([...new Set(paragraphPlan?.paragraphs.map(p => p.kind) ?? [])].map(kind => [kind,
++    paragraphPlan!.paragraphs.filter(p => p.kind === kind && (!complete || complete.has(p.paragraph_id))).length]));
+   const batches = addSourceStatementContext(document,
+     paragraphPlan?.batches ?? planExtractionBatches(document, { ...article, included_block_ids: selection.kept_block_ids }, options.batchOptions), taskAllowed);
+   if (paragraphPlan && batches.some(b => new Set([...b.assigned_block_ids, ...b.context_block_ids]).size > 256)) throw new ContractError('paragraph_context_exceeds_tool_line_limit');
+@@ -124,7 +128,8 @@
+       assigned_blocks: article.included_block_ids.length, quarantined_blocks: article.quarantined_block_ids.length,
+       dispatched_blocks: selection.kept_block_ids.length, deferred_blocks: selection.deferred_block_ids.length,
+       total_batches: batches.length,
+-      ...(paragraphPlan ? { progress_unit: 'paragraphs', input_organization_version: paragraphPlan.version, total_paragraphs: paragraphPlan.paragraphs.length } : {}),
++      ...(paragraphPlan ? { input_organization_version: paragraphPlan.version, ...(contentOrganization ? { progress_unit: 'content_units', total_content_units: paragraphPlan.paragraphs.length, input_unit_counts: unitCounts() }
++        : { progress_unit: 'paragraphs', total_paragraphs: paragraphPlan.paragraphs.length }) } : {}),
+       excluded_input_copy_blocks: selection.excluded_block_ids.length, source_selection_digest: selection.digest,
+       bibliography_scope_rule_version: BIBLIOGRAPHY_SCOPE_RULE_VERSION, task_scope_blocks: taskScopeIds.length,
+       source_glyph_check_status: sourceGlyphCheckStatus(document), source_glyph_quarantined_block_ids: glyphQuarantine,
+@@ -136,6 +141,7 @@
+       budget.check(); let succeeded = false;
+       for (let attempt = 0; attempt <= S4_LIMITS.transient_retries; attempt++) {
+         const context = { input, document, catalog, metadata, allowDevelopmentCatalog: options.allowDevelopmentCatalog,
++          ...(options.inputOrganizationVersion ? { inputOrganizationVersion: options.inputOrganizationVersion } : {}),
+           evidencePolicyVersion: VISUAL_STATEMENT_POLICY_VERSION, primaryAssessmentPolicyVersion: PRIMARY_ASSESSMENT_POLICY_VERSION,
+           ...(options.sourceGlyphPolicyVersion ? { sourceGlyphPolicyVersion: options.sourceGlyphPolicyVersion } : {}),
+           ...(options.tableSupportPolicyVersion ? { tableSupportPolicyVersion: options.tableSupportPolicyVersion } : {}) };
+@@ -162,7 +168,7 @@
+           'Use evidence_type and source provenance to distinguish definitions, this-study observations and cited research. ' +
+           'Unknown facts remain unknown with null values and empty evidence. Do not infer facts from selection. ' +
+           (options.sourceGlyphPolicyVersion ? SOURCE_GLYPH_INPUT_RULE + ' ' : '') +
+-          (paragraphPlan ? 'Input is organized as original paragraphs and separate caption/heading/table units. Processing units retain their parent paragraph and exact source spans. Long paragraphs have sentence-based parts; consider every assigned part. Quote only complete target sentences and necessary context, not all unrelated text in the paragraph. Context/table rereads never complete another assigned unit. ' : '') +
++          (paragraphPlan ? 'Input is organized as original prose paragraphs and separate caption/heading/table/figure-text/other units. A figure_text group contains independent labels inside one figure region; member units remain separate and must never be turned into a continuous sentence or a primary table-column description. Each processing part retains its parent group and exact source spans. Long prose splits at sentences; long figure groups split at source member boundaries. Consider every assigned part and its parent context. Quote only complete target sentences and necessary context, not all unrelated text in a group. Context/table rereads never complete another assigned unit. ' : '') +
+           FEATURE_NAME_RAW_RULE + ' ' + STATEMENT_SELECTOR_RULE + ' ' + statementIndexRule('batch') + ' ' + SOURCE_UNIT_BOUNDARY_RULE + ' ' + STRUCTURE_HINT_RULE + ' ' + TABLE_SUPPORT_RULE + ' ' + PRIMARY_SCOPE_RULE + ' ' +
+           'Submit candidates in groups of at most THREE; incomplete known sentence spans are rejected. No source_indices/exact_quote/source_fragments/context_fragments fields exist. The host saves exact text and identity. ' +
+           'Independent table rows, feature-name/measurement checklists, evaluators, cohort/experimental setup and pure statistical associations are not primary visual statements. General visual definitions do not require a case/image. Keep all necessary subjects/conditions and literal dimensions; do not reject entire Methods/Conclusion sections or all numbers. Semantics and figure type remain unapproved. ' +
+@@ -176,7 +182,8 @@
+         contextExposures += batch.context_block_ids.filter(id => tools.readBlocks.has(id)).length;
+         if (!result.error && tools.completed) markParagraphWork(batch);
+         const detail = { ...batch, attempt, status: !result.error && tools.completed ? 'completed' : 'failed',
+-          ...(paragraphPlan ? { progress_unit: 'paragraphs', completed_paragraph_ids: [...completedParagraphs], completed_processing_unit_ids: [...completedUnits] } : {}),
++          ...(paragraphPlan ? { ...(contentOrganization ? { progress_unit: 'content_units', completed_content_unit_ids: [...completedParagraphs], explicitly_completed_input_unit_counts: unitCounts(completedParagraphs) }
++            : { progress_unit: 'paragraphs', completed_paragraph_ids: [...completedParagraphs] }), completed_processing_unit_ids: [...completedUnits] } : {}),
+           read_block_ids: [...tools.readBlocks], explicit_completion_received: tools.completed, result,
+           tool_calls: tools.calls, issues: tools.issues, candidate_count_so_far: store.current(input.run_id).length };
+         attempts.push(detail); store.batch(input.run_id, batch.batch_id, detail);
+@@ -204,6 +211,7 @@
+     if (signal.aborted) throw new ContractError(options.signal?.aborted ? 'run_cancelled' : 'document_time_limit');
+     budget.check();
+     const summaryTools = new ExtractionSummaryTools({ input, document, catalog, metadata,
++      ...(options.inputOrganizationVersion ? { inputOrganizationVersion: options.inputOrganizationVersion } : {}),
+       allowDevelopmentCatalog: options.allowDevelopmentCatalog, evidencePolicyVersion: VISUAL_STATEMENT_POLICY_VERSION,
+       primaryAssessmentPolicyVersion: PRIMARY_ASSESSMENT_POLICY_VERSION,
+       ...(options.sourceGlyphPolicyVersion ? { sourceGlyphPolicyVersion: options.sourceGlyphPolicyVersion } : {}),
+@@ -297,6 +305,15 @@
+     ...(!delivery || deliveryError ? ['delivery_validation_incomplete'] : []),
+     ...(error ? [error.code] : [])];
+   const taskProcessingComplete = taskBlockers.length === 0;
++  const organizationCoverage: { input_organization_version?: string; progress_unit?: 'paragraphs' | 'content_units'; dispatched_paragraphs?: number;
++    explicitly_completed_paragraphs?: number; completed_paragraph_ids?: string[]; dispatched_content_units?: number; explicitly_completed_content_units?: number;
++    completed_content_unit_ids?: string[]; input_unit_counts?: Record<string, number>; explicitly_completed_input_unit_counts?: Record<string, number>;
++    dispatched_processing_units?: number; explicitly_completed_processing_units?: number } = paragraphPlan ? {
++      input_organization_version: paragraphPlan.version,
++      ...(contentOrganization ? { progress_unit: 'content_units', dispatched_content_units: paragraphPlan.paragraphs.length, explicitly_completed_content_units: completedParagraphs.size,
++        completed_content_unit_ids: [...completedParagraphs], input_unit_counts: unitCounts(), explicitly_completed_input_unit_counts: unitCounts(completedParagraphs) }
++        : { progress_unit: 'paragraphs', dispatched_paragraphs: paragraphPlan.paragraphs.length, explicitly_completed_paragraphs: completedParagraphs.size, completed_paragraph_ids: [...completedParagraphs] }),
++      dispatched_processing_units: paragraphPlan.processing_units.length, explicitly_completed_processing_units: completedUnits.size } : {};
+   const result = { schema_version: 's4-extraction-run-1', run_id: input.run_id, document_id: input.document_id,
+     model_id: profile.model_id, reasoning_effort: profile.reasoning_effort, strategy, source_selection_condition: selection.condition,
+     batch_source_delivery: options.prefillBatchSource ? 'host_prefill_same_authorized_tool_projections' : 'model_requested_tools',
+@@ -327,9 +344,7 @@
+     coverage: { physical_pages: document.pages.length, parser_status: document.parser.status,
+       ...(options.sourceGlyphPolicyVersion ? { source_glyph_policy_version: options.sourceGlyphPolicyVersion, source_glyph_issue_block_ids: glyphIssues, source_glyph_issues_are_model_input: true } : {}),
+       ...(options.tableSupportPolicyVersion ? { table_support_policy_version: options.tableSupportPolicyVersion } : {}),
+-      ...(paragraphPlan ? { progress_unit: 'paragraphs', input_organization_version: paragraphPlan.version, dispatched_paragraphs: paragraphPlan.paragraphs.length,
+-        explicitly_completed_paragraphs: completedParagraphs.size, completed_paragraph_ids: [...completedParagraphs],
+-        dispatched_processing_units: paragraphPlan.processing_units.length, explicitly_completed_processing_units: completedUnits.size } : {}),
++      ...organizationCoverage,
+       task_completion_rule_version: TASK_COMPLETION_RULE_VERSION,
+       delivery_validation_status: delivery && !deliveryError ? 'passed' : 'rejected',
+       all_source_blocks: document.blocks.length, assigned_source_blocks: article.included_block_ids.length,
+--- a/packages/agent/src/extraction-tools.ts
++++ b/packages/agent/src/extraction-tools.ts
+@@ -74,7 +74,7 @@
+           const request = p.table_request as { table_id: string; reference_block_ids: string[]; cell_ids?: string[]; row_indices?: number[] };
+           if (request.reference_block_ids.some(id => !this.readBlocks.has(id) || !this.allowed().includes(id))) throw new ContractError('table_reference_requires_actual_source_read');
+           const spans = (values: string[]) => values.map(id => { const b = this.document.blocks.find(b => b.block_id === id)!; return { block_id: id, text_version: this.document.text_version, start: 0, end: Array.from(b.text).length }; });
+-          const read = readReferencedTable(this.document, request.table_id, spans(request.reference_block_ids), spans(this.batch.assigned_block_ids), request, new Set(this.taskAllowedIds));
++          const read = readReferencedTable(this.document, request.table_id, spans(request.reference_block_ids), spans(this.batch.assigned_block_ids), request, new Set(this.taskAllowedIds), this.context.inputOrganizationVersion);
+           if (new Set([...this.allowed(), ...read.block_ids]).size > 256) throw new ContractError('table_reread_exceeds_tool_line_limit');
+           read.block_ids.forEach(id => this.supplementalIds.add(id)); ids = read.block_ids;
+           requestedTable = { table_id: request.table_id, number: read.number, selected_cell_ids: read.requested_cell_ids,
+@@ -250,8 +250,10 @@
+           scope: this.context.input.scope, catalog_status: this.catalog.status,
+           title: this.context.metadata.bibliographic_identity?.title ?? this.document.title,
+           source_line_count: lines.length, assigned_line_count: this.batch.assigned_block_ids.length,
+-          ...('processing_units' in this.batch ? { input_organization: 'paragraphs_and_separate_structure_units', processing_units: (this.batch as import('./paragraph-units.js').ParagraphBatch).processing_units.map(u => ({ unit_id: u.unit_id, parent_paragraph_id: u.paragraph_id, kind: u.kind,
+-            fragment_index: u.fragment_index, fragment_count: u.fragment_count, line_spans: u.source_spans.map(s => [lines.findIndex(b => b.block_id === s.block_id), s.start, s.end]) })) } : {}),
++          ...('processing_units' in this.batch ? { input_organization: 'prose_paragraphs_and_separate_structure_groups', processing_units: (this.batch as import('./paragraph-units.js').ParagraphBatch).processing_units.map(u => ({ unit_id: u.unit_id, parent_content_unit_id: u.paragraph_id, parent_paragraph_id: u.paragraph_id, kind: u.kind,
++            fragment_index: u.fragment_index, fragment_count: u.fragment_count, line_spans: u.source_spans.map(s => [lines.findIndex(b => b.block_id === s.block_id), s.start, s.end]),
++            ...(u.region_id ? { region_id: u.region_id, source_members_are_independent: true } : {}), ...(u.boundary_evidence ? { input_boundary_evidence: u.boundary_evidence } : {}),
++            ...(u.member_units ? { member_units: u.member_units.map(m => ({ member_id: m.member_id, line_spans: m.source_spans.map(s => [lines.findIndex(b => b.block_id === s.block_id), s.start, s.end]) })) } : {}) })) } : {}),
+           ...(this.context.tableSupportPolicyVersion && this.document.schema_version === '3' ? { table_reread_help: 'For an explicit table reference in this source paragraph, use read_document_blocks({table_request:{table_id,reference_line_indices,row_indices or cell_ids}}). Returned cell_ids can attach exact values and required metric/group/unit/footnote context. These reads do not complete another batch.',
+             table_inventory: this.document.structure.tables.flatMap(t => { try { const table = tableSourceCells(this.document, t.table_id); if (!table.number) return [];
+               const text = lines.map(b => b.text).join('\n'); if (!new RegExp(`(?:Table\\s*${table.number}\\b|表\\s*${table.number})`, 'iu').test(text)) return [];
+--- a/packages/agent/src/paragraph-units.ts
++++ b/packages/agent/src/paragraph-units.ts
+@@ -4,14 +4,18 @@
+ import { buildSourceEvidenceUnits, classifySourceSpan, type SourceSpan } from './source-evidence-units.js';
+ 
+ export const PARAGRAPH_ORGANIZATION_VERSION = 'source-paragraph-units-1';
++export const CONTENT_ORGANIZATION_VERSION = 'source-content-units-2';
+ export interface SourceParagraph {
+-  paragraph_id: string; kind: 'paragraph' | 'caption' | 'heading' | 'table_row' | 'source_fragment';
+-  basis: 'native_paragraph' | 'checked_continuation' | 'native_boundary_fragment' | 'source_line_fallback';
++  paragraph_id: string; kind: 'paragraph' | 'caption' | 'heading' | 'table_row' | 'figure_text' | 'list_item' | 'footnote' | 'text_item' | 'source_fragment';
++  basis: 'native_paragraph' | 'checked_continuation' | 'native_boundary_fragment' | 'source_line_fallback' | 'checked_native_column_continuation' | 'mapped_figure_labels';
+   native_unit_ids: string[]; source_spans: SourceSpan[]; block_ids: string[];
++  region_id?: string; member_units?: Array<{ member_id: string; source_spans: SourceSpan[] }>;
++  boundary_evidence?: string[];
+ }
+ export interface ParagraphProcessingUnit {
+   unit_id: string; paragraph_id: string; kind: SourceParagraph['kind'];
+   fragment_index: number; fragment_count: number; source_spans: SourceSpan[]; block_ids: string[];
++  member_units?: SourceParagraph['member_units']; region_id?: string; boundary_evidence?: string[];
+ }
+ export type ParagraphBatch = ExtractionBatch & { processing_units: ParagraphProcessingUnit[] };
+ const unique = (ids: string[]) => [...new Set(ids)];
+@@ -82,20 +86,102 @@
+ 
+ /** Same-paragraph table references may be necessary context rather than part
+  * of the target visual sentence. This never joins unrelated paragraphs. */
+-export function sameSourceParagraph(document: ExtractionDocument, primary: readonly SourceSpan[], references: readonly SourceSpan[]) {
+-  return primary.length > 0 && references.length > 0 && buildSourceParagraphs(document).some(p => ['native_paragraph', 'checked_continuation'].includes(p.basis) &&
++export function sameSourceParagraph(document: ExtractionDocument, primary: readonly SourceSpan[], references: readonly SourceSpan[], inputOrganizationVersion?: string) {
++  const parents = inputOrganizationVersion === CONTENT_ORGANIZATION_VERSION ? buildSourceContentUnits(document) : buildSourceParagraphs(document);
++  return primary.length > 0 && references.length > 0 && parents.some(p => ['native_paragraph', 'checked_continuation', 'checked_native_column_continuation'].includes(p.basis) &&
+     ['paragraph', 'caption'].includes(p.kind) && primary.some(s => p.source_spans.some(t => contains(t, s))) &&
+     references.every(s => p.source_spans.some(t => contains(t, s))));
+ }
+ 
++const terminal = (text: string) => /[.!?。！？][\s\p{Pe}\p{Pf}'"]*$/u.test(text.trimEnd());
++const median = (values: number[]) => values.length ? [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)]! : 0;
++
++/** Versioned input organization only. It never rewrites the IR, citations or
++ * historical plans. A native text label alone is not a natural paragraph. */
++export function buildSourceContentUnits(document: ExtractionDocument, sourceGlyphPolicyVersion?: string): SourceParagraph[] {
++  const result = buildSourceParagraphs(document).map(p => ({ ...p, block_ids: [...p.block_ids], source_spans: [...p.source_spans] }));
++  if (document.schema_version !== '3') return result;
++  const blocks = new Map(document.blocks.map(b => [b.block_id, b])), native = new Map(document.structure.units.map(u => [u.unit_id, u]));
++  const stableId = (kind: string, spans: SourceSpan[], region = '') => 'content-' + createHash('sha256').update(JSON.stringify([CONTENT_ORGANIZATION_VERSION, document.text_version, kind, region, spans])).digest('hex').slice(0, 20);
++  // Glyph fidelity does not change a mechanically known sentence boundary.
++  const knownSentences = buildSourceEvidenceUnits(document, sourceGlyphPolicyVersion).filter(u => u.kind === 'sentence' && u.source_type === 'body');
++  const isCompleteProse = (p: SourceParagraph) => p.source_spans.some(span => knownSentences.some(u => u.segments.every(s => contains(span, s))));
++  const pictures = document.structure.units.filter(u => u.kind === 'picture').flatMap(u => u.provenance.filter(p => p.bbox && p.coordinate_system === 'crop_rotated_top_left_pt').map(p => ({ id: u.unit_id, page: p.physical_page, box: p.bbox! })));
++  const pictureOf = (p: SourceParagraph) => {
++    // Reliable multiline prose, captions, headings, lists and tables win over
++    // an oversized native picture rectangle. Only clearly independent mapped
++    // single-line labels without a complete prose sentence enter a picture group.
++    if (p.block_ids.length !== 1 || p.native_unit_ids.length !== 1 || !['paragraph', 'source_fragment'].includes(p.kind) || isCompleteProse(p)) return undefined;
++    const unit = native.get(p.native_unit_ids[0]!);
++    if (!unit || unit.kind !== 'text' || !['exact', 'normalized_alignment'].includes(unit.mapping.status)) return undefined;
++    const b = blocks.get(p.block_ids[0]!)!, box = b.bbox;
++    const matches = pictures.filter(q => q.page === b.page && box[0]! >= q.box[0]! - 1 && box[1]! >= q.box[1]! - 1 && box[2]! <= q.box[2]! + 1 && box[3]! <= q.box[3]! + 1);
++    return matches.length === 1 ? matches[0] : undefined;
++  };
++  const figureMembers = new Map<string, { picture: typeof pictures[number]; members: SourceParagraph[] }>();
++  for (const p of [...result]) {
++    const picture = pictureOf(p); if (!picture) continue;
++    const key = `${picture.id}:${picture.page}`, group = figureMembers.get(key) ?? { picture, members: [] };
++    group.members.push(p); figureMembers.set(key, group); result.splice(result.indexOf(p), 1);
++  }
++  for (const { picture, members } of figureMembers.values()) {
++    members.sort((a, b) => blocks.get(a.block_ids[0]!)!.reading_order - blocks.get(b.block_ids[0]!)!.reading_order);
++    const spans = members.flatMap(p => p.source_spans);
++    result.push({ paragraph_id: stableId('figure_text', spans, picture.id), kind: 'figure_text', basis: 'mapped_figure_labels',
++      native_unit_ids: unique(members.flatMap(p => p.native_unit_ids)), block_ids: unique(members.flatMap(p => p.block_ids)), source_spans: spans,
++      region_id: picture.id, member_units: members.map(p => ({ member_id: p.paragraph_id, source_spans: p.source_spans })),
++      boundary_evidence: ['single_mapped_labels_inside_one_picture', 'not_body_caption_heading_list_or_table', 'members_remain_independent_not_continuous_prose'] });
++  }
++  // A vendor node can accidentally join body text and a caption across pages.
++  // Recover only same-page column continuations with independent source-flow
++  // witnesses. Other page/region/identity boundaries remain intact.
++  for (const u of document.structure.units.filter(u => u.kind === 'text' && u.source_regions && u.provenance.length > 1)) {
++    for (let i = 1; i < u.source_regions!.length; i++) {
++      const leftRegion = u.source_regions![i - 1]!, rightRegion = u.source_regions![i]!;
++      const leftLocation = u.provenance[leftRegion.provenance_index], rightLocation = u.provenance[rightRegion.provenance_index];
++      if (!leftLocation?.bbox || !rightLocation?.bbox || leftLocation.physical_page !== rightLocation.physical_page || !['exact', 'normalized_alignment'].includes(leftRegion.mapping_status) || !['exact', 'normalized_alignment'].includes(rightRegion.mapping_status)) continue;
++      const aIds = unique(leftRegion.source_segments.map(s => s.block_id)), bIds = unique(rightRegion.source_segments.map(s => s.block_id));
++      const a = result.find(p => p.native_unit_ids.includes(u.unit_id) && p.kind !== 'figure_text' && aIds.every(id => p.block_ids.includes(id)));
++      const b = result.find(p => p.native_unit_ids.includes(u.unit_id) && p.kind !== 'figure_text' && bIds.every(id => p.block_ids.includes(id)));
++      if (!a || !b || a === b || !['paragraph', 'source_fragment'].includes(a.kind) || !['paragraph', 'source_fragment'].includes(b.kind) || aIds.length < 2 || bIds.length < 2) continue;
++      const left = aIds.map(id => blocks.get(id)!), right = bIds.map(id => blocks.get(id)!);
++      if ([...left, ...right].some(v => !v) || [...left, ...right].some(v => v.page !== leftLocation.physical_page)) continue;
++      const first = right[0]!, last = left.at(-1)!, lb = leftLocation.bbox, rb = rightLocation.bbox;
++      const height = (values: typeof left) => median(values.map(v => v.bbox[3]! - v.bbox[1]!));
++      const pitch = (values: typeof left) => median(values.slice(1).map((v, index) => v.bbox[1]! - values[index]!.bbox[1]!).filter(v => v > 0));
++      const ah = height(left), bh = height(right), ap = pitch(left), bp = pitch(right), tolerance = Math.max(2, ah * .5);
++      const ac = leftLocation.native_charspan, bc = rightLocation.native_charspan;
++      if (!ac || !bc || ac.length < 2 || bc.length < 2 || ac[1]! > bc[0]! || u.native_text.slice(ac[1]!, bc[0]!).trim() ||
++        rb[0]! <= lb[2]! || first.bbox[1]! >= last.bbox[1]! || ah <= 0 || bh <= 0 || Math.max(ah, bh) / Math.min(ah, bh) > 1.12 ||
++        ap <= 0 || bp <= 0 || Math.max(ap, bp) / Math.min(ap, bp) > 1.15 || terminal(last.text) ||
++        last.bbox[2]! < lb[2]! - tolerance || first.bbox[0]! > rb[0]! + tolerance) continue;
++      const x = caseIds(left.map(v => v.text).join('\n')), y = caseIds(right.map(v => v.text).join('\n'));
++      if (x.length && y.length && !x.some(id => y.includes(id))) continue;
++      // Never bridge an explicitly mapped heading/caption/table region.
++      if ([...left, ...right].some(v => document.structure.units.some(other => other.unit_id !== u.unit_id && ['section_header', 'caption', 'table', 'table_cell', 'footnote'].includes(other.kind) && other.source_segments.some(s => s.block_id === v.block_id)))) continue;
++      a.block_ids.push(...b.block_ids); a.source_spans.push(...b.source_spans); a.kind = 'paragraph'; a.basis = 'checked_native_column_continuation';
++      a.boundary_evidence = ['same_native_paragraph_contiguous_charspans', 'same_page_different_columns', 'similar_source_line_height_and_pitch', 'nonterminal_full_column_end', 'unindented_next_column_start', 'no_heading_caption_table_or_explicit_case_conflict'];
++      a.paragraph_id = stableId(a.kind, a.source_spans); result.splice(result.indexOf(b), 1);
++    }
++  }
++  for (const p of result) {
++    if (p.kind !== 'paragraph' && p.kind !== 'caption') continue;
++    const kinds = p.native_unit_ids.map(id => native.get(id)?.kind);
++    if (kinds.length && kinds.every(kind => kind === 'list_item')) p.kind = 'list_item';
++    else if (kinds.length && kinds.every(kind => kind === 'footnote')) p.kind = 'footnote';
++    else if (p.kind === 'paragraph' && p.block_ids.length === 1 && !isCompleteProse(p)) p.kind = 'text_item';
++  }
++  return result.sort((a, b) => blocks.get(a.block_ids[0]!)!.reading_order - blocks.get(b.block_ids[0]!)!.reading_order);
++}
++
+ export function planParagraphBatches(document: ExtractionDocument, scope: ArticleScopeManifest,
+-  options: { maxCodePoints?: number; maxBlocks?: number; contextBlocks?: number; sourceGlyphPolicyVersion?: string } = {}) {
++  options: { maxCodePoints?: number; maxBlocks?: number; contextBlocks?: number; sourceGlyphPolicyVersion?: string; organizationVersion?: typeof CONTENT_ORGANIZATION_VERSION } = {}) {
+   const maxChars = options.maxCodePoints ?? 8500, maxBlocks = options.maxBlocks ?? 128, context = options.contextBlocks ?? 6;
+   if (maxChars < 100 || maxBlocks < 1 || maxBlocks > 128 || context < 0) throw new ContractError('invalid_paragraph_batch_limits');
+   const allowed = new Set(scope.included_block_ids), blocks = new Map(document.blocks.map(b => [b.block_id, b]));
+   const size = (ids: string[]) => unique(ids).reduce((n, id) => n + Array.from(blocks.get(id)!.text).length, 0);
+   const fits = (ids: string[]) => unique(ids).length <= maxBlocks && size(ids) <= maxChars;
+-  const parents = buildSourceParagraphs(document).flatMap(p => {
++  const parents = (options.organizationVersion === CONTENT_ORGANIZATION_VERSION ? buildSourceContentUnits(document, options.sourceGlyphPolicyVersion) : buildSourceParagraphs(document)).flatMap(p => {
+     const kept = p.block_ids.filter(id => allowed.has(id));
+     if (!kept.length) return [];
+     // Task scope boundaries cannot be closed by omitting an intervening source.
+@@ -106,7 +192,15 @@
+   const statements = buildSourceEvidenceUnits(document, options.sourceGlyphPolicyVersion), units: ParagraphProcessingUnit[] = [];
+   for (const p of parents) {
+     let pieces: SourceSpan[][] = [p.source_spans];
+-    if (!fits(p.block_ids)) {
++    if (!fits(p.block_ids) && p.kind === 'figure_text') {
++      pieces = []; let spans: SourceSpan[] = [];
++      for (const member of p.member_units ?? []) {
++        if (!fits(member.source_spans.map(s => s.block_id))) throw new ContractError('source_figure_label_exceeds_batch_limits');
++        if (spans.length && !fits([...spans, ...member.source_spans].map(s => s.block_id))) { pieces.push(spans); spans = []; }
++        spans.push(...member.source_spans);
++      }
++      if (spans.length) pieces.push(spans);
++    } else if (!fits(p.block_ids)) {
+       const sentences = statements.filter(u => u.segments.every(s => p.source_spans.some(t => contains(t, s))));
+       const covered = new Set(sentences.flatMap(u => u.segments.map(s => s.block_id)));
+       if (p.block_ids.some(id => !covered.has(id))) throw new ContractError('paragraph_statement_boundaries_exceed_batch_limits');
+@@ -120,7 +214,9 @@
+       if (spans.length) pieces.push(spans);
+     }
+     pieces.forEach((spans, i) => units.push({ unit_id: p.paragraph_id + '-part-' + (i + 1), paragraph_id: p.paragraph_id, kind: p.kind,
+-      fragment_index: i + 1, fragment_count: pieces.length, source_spans: spans, block_ids: unique(spans.map(s => s.block_id)) }));
++      fragment_index: i + 1, fragment_count: pieces.length, source_spans: spans, block_ids: unique(spans.map(s => s.block_id)),
++      ...(p.region_id ? { region_id: p.region_id } : {}), ...(p.boundary_evidence ? { boundary_evidence: p.boundary_evidence } : {}),
++      ...(p.member_units ? { member_units: p.member_units.filter(member => member.source_spans.every(s => spans.some(t => contains(t, s)))) } : {}) }));
+   }
+   const batches: ParagraphBatch[] = []; let group: ParagraphProcessingUnit[] = [];
+   const flush = () => {
+@@ -136,5 +232,5 @@
+   flush();
+   const assigned = new Set(batches.flatMap(b => b.assigned_block_ids));
+   if (assigned.size !== allowed.size || [...allowed].some(id => !assigned.has(id)) || units.some(u => !u.block_ids.length)) throw new ContractError('paragraph_inventory_incomplete');
+-  return { version: PARAGRAPH_ORGANIZATION_VERSION, paragraphs: parents, processing_units: units, batches };
+-}
++  return { version: options.organizationVersion ?? PARAGRAPH_ORGANIZATION_VERSION, paragraphs: parents, processing_units: units, batches };
++}
+--- a/packages/agent/src/table-support.ts
++++ b/packages/agent/src/table-support.ts
+@@ -1,7 +1,7 @@
+ import { ContractError, type EvidenceFragment } from '@t1/contracts';
+ import type { ExtractionDocument } from './article-scope.js';
+ import { checkedSourceGrid, tableStructureStatus } from './document-structure-context.js';
+-import { buildSourceParagraphs } from './paragraph-units.js';
++import { buildSourceParagraphs, buildSourceContentUnits, CONTENT_ORGANIZATION_VERSION } from './paragraph-units.js';
+ import type { SourceSpan } from './source-evidence-units.js';
+ 
+ export const TABLE_SUPPORT_POLICY_VERSION = 'paragraph-linked-table-support-2' as const;
+@@ -14,10 +14,11 @@
+ /** Bind a support to actual primary fragments in the reference's paragraph.
+  * Other independent primary fragments are preserved, but cannot supply this
+  * table's case/condition labels. A bare table citation supplies no description. */
+-export function tableDescriptionSpans(document: ExtractionDocument, primary: readonly SourceSpan[], references: readonly SourceSpan[]) {
++export function tableDescriptionSpans(document: ExtractionDocument, primary: readonly SourceSpan[], references: readonly SourceSpan[], inputOrganizationVersion?: string) {
+   if (!references.length) return [];
+   const citationOnly = (text: string) => /^(?:(?:see(?:\s+also)?|cf\.?|见|参见)\s*)?(?:Table\s*\d+|表\s*[0-9０-９]+)[\s\p{P}\p{S}]*$/iu.test(text.trim());
+-  return buildSourceParagraphs(document).filter(p => ['native_paragraph', 'checked_continuation'].includes(p.basis) && ['paragraph', 'caption'].includes(p.kind) &&
++  const parents = inputOrganizationVersion === CONTENT_ORGANIZATION_VERSION ? buildSourceContentUnits(document) : buildSourceParagraphs(document);
++  return parents.filter(p => ['native_paragraph', 'checked_continuation', 'checked_native_column_continuation'].includes(p.basis) && ['paragraph', 'caption'].includes(p.kind) &&
+     references.every(s => p.source_spans.some(t => contains(t, s)))).flatMap(p => primary.filter(s => p.source_spans.some(t => contains(t, s)) && !citationOnly(sourceText(document, [s]))));
+ }
+ 
+@@ -62,9 +63,9 @@
+ /** Only source-span evidence is returned. Row/column metadata preserves its
+  * checked/native status; it does not prove a medical value-feature match. */
+ export function readReferencedTable(document: ExtractionDocument, tableId: string, referenceSpans: SourceSpan[], primarySpans: SourceSpan[],
+-  selection: { cell_ids?: string[]; row_indices?: number[] }, authorized: ReadonlySet<string>) {
++  selection: { cell_ids?: string[]; row_indices?: number[] }, authorized: ReadonlySet<string>, inputOrganizationVersion?: string) {
+   const source = tableSourceCells(document, tableId), referenceNumbers = markers(sourceText(document, referenceSpans));
+-  const description_spans = tableDescriptionSpans(document, primarySpans, referenceSpans);
++  const description_spans = tableDescriptionSpans(document, primarySpans, referenceSpans, inputOrganizationVersion);
+   if (!source.number || !referenceNumbers.includes(source.number) || !description_spans.length) throw new ContractError('supporting_table_same_paragraph_reference_required');
+   const ids = selection.cell_ids?.length ? selection.cell_ids : source.cells.filter(c => !c.header && !c.rowHeader && selection.row_indices?.some(row => c.row_start <= row && row < c.row_end) && /[0-9０-９]/u.test(sourceText(document, c.spans))).map(c => c.id);
+   const resolved = resolveTableSupportCells(document, tableId, ids);
+--- a/packages/agent/src/visual-evidence-policy.ts
++++ b/packages/agent/src/visual-evidence-policy.ts
+@@ -19,7 +19,7 @@
+ /** Only mechanical evidence roles, source spans and explicit table identities are hard checks.
+  * Neither a model's label nor these lexical checks establish medical visual semantics. */
+ export function visualStatementIssues(document: Document, submission: Pick<EvidenceSubmission, 'evidence_type'>, source: LocatedEvidenceFragment[],
+-  context: LocatedEvidenceFragment[], fieldEvidence: LocatedEvidenceFragment[], support: LocatedTableSupport[], sourceGlyphPolicyVersion?: string, tableSupportPolicyVersion?: string): ValidationIssue[] {
++  context: LocatedEvidenceFragment[], fieldEvidence: LocatedEvidenceFragment[], support: LocatedTableSupport[], sourceGlyphPolicyVersion?: string, tableSupportPolicyVersion?: string, inputOrganizationVersion?: string): ValidationIssue[] {
+   const issues: ValidationIssue[] = [];
+   const add = (code: string, severity: ValidationIssue['severity'], path: string, detail: string) => {
+     if (!issues.some(i => i.code === code && i.path === path)) issues.push({ code, severity, path, detail });
+@@ -64,7 +64,7 @@
+     const activeGrid = checkedSourceGrid(document, table), sourceTitle = activeGrid?.caption_status === 'geometry_checked_numbered_title' ? activeGrid.caption_segments : undefined;
+     if (table.association_status === 'conflict' && !sourceTitle?.length) add('supporting_table_caption_conflict', 'reject', path, 'The table/caption association is explicitly conflicted.');
+     const sameParagraphReference = tableSupportPolicyVersion === TABLE_SUPPORT_POLICY_VERSION &&
+-      s.reference_evidence.every(f => [...source, ...context].some(p => contains(p, f))) && sameSourceParagraph(document, source, s.reference_evidence);
++      s.reference_evidence.every(f => [...source, ...context].some(p => contains(p, f))) && sameSourceParagraph(document, source, s.reference_evidence, inputOrganizationVersion);
+     if (!s.reference_evidence.length || !s.reference_evidence.every(f => source.some(p => contains(p, f))) && !sameParagraphReference) {
+       add('supporting_table_reference_not_in_primary', 'reject', path, 'The literal table reference must belong to the primary visual statement.');
+     }
+@@ -96,7 +96,7 @@
+         }
+         if (supportingContext.some(f => !resolved.context_spans.some(span => contains({ ...span } as LocatedEvidenceFragment, f)))) add('supporting_table_context_source_mismatch', 'reject', path, 'Context must belong to the selected values\' source row/column/title/footnotes.');
+         const ids = (text: string) => [...text.matchAll(/\b(?:case|patient|lesion)\s*(?:no\.?\s*)?\d+\b|(?:病例|患者|病灶)\s*\d+/giu)].map(m => m[0].replace(/\s+/g, '').toLowerCase());
+-        const descriptions = tableDescriptionSpans(document, source, s.reference_evidence);
++        const descriptions = tableDescriptionSpans(document, source, s.reference_evidence, inputOrganizationVersion);
+         if (!descriptions.length) add('supporting_table_primary_description_binding_required', 'reject', path, 'A bare citation cannot stand in for an actual primary source description in that paragraph.');
+         const mainText = sourceText(document, descriptions) + '\n' + s.reference_evidence.map(f => f.exact_quote).join('\n');
+         const modalities = (text: string) => [...new Set(text.match(/\b(?:CT|MRI|PET|US)\b/gu) ?? [])];
+--- a/packages/contracts/schema/EvidenceRecord.json
++++ b/packages/contracts/schema/EvidenceRecord.json
+@@ -2171,6 +2171,10 @@
+           "type": "string",
+           "const": "agent-assesses-parsed-glyphs-1"
+         },
++        "input_organization_version": {
++          "type": "string",
++          "const": "source-content-units-2"
++        },
+         "table_support_policy_version": {
+           "type": "string",
+           "const": "paragraph-linked-table-support-2"
+--- a/packages/contracts/src/extraction-evidence.ts
++++ b/packages/contracts/src/extraction-evidence.ts
+@@ -140,6 +140,7 @@
+     evidence_policy_version: Type.Optional(id), source_evidence_unit_version: Type.Optional(id),
+     primary_assessment_policy_version: Type.Optional(Type.Literal('model-primary-assessment-1')),
+     source_glyph_policy_version: Type.Optional(Type.Literal('agent-assesses-parsed-glyphs-1')),
++    input_organization_version: Type.Optional(Type.Literal('source-content-units-2')),
+     table_support_policy_version: Type.Optional(Type.Literal('paragraph-linked-table-support-2')) }, closed),
+   review_status: Type.Enum(['pending', 'approved', 'rejected', 'needs_context']),
+   review_events: Type.Array(Type.Object({ action: id, actor: id, timestamp: text, reason: text, version: Type.Integer({ minimum: 1 }) }, closed)),
+@@ -172,6 +173,7 @@
+   evidencePolicyVersion?: 'visual-statements-2';
+   primaryAssessmentPolicyVersion?: 'model-primary-assessment-1';
+   sourceGlyphPolicyVersion?: 'agent-assesses-parsed-glyphs-1';
++  inputOrganizationVersion?: 'source-content-units-2';
+   tableSupportPolicyVersion?: 'paragraph-linked-table-support-2';
+ }
+ export interface EvidenceValidationResult {
+--- a/packages/contracts/src/workbench.ts
++++ b/packages/contracts/src/workbench.ts
+@@ -94,7 +94,9 @@
+   stage: 'queued' | 'parsing' | 'extracting' | 'reconciling' | 'completed' | 'partial' | 'failed' | 'cancelled' | 'interrupted';
+   updated_at?: string; stage_started_at?: string;
+   elapsed_ms?: number; execution_elapsed_ms?: number; queue_wait_ms?: number;
+-  completed?: number; total?: number; unit?: 'source_blocks' | 'paragraphs';
++  completed?: number; total?: number; unit?: 'source_blocks' | 'paragraphs' | 'content_units';
++  /** Present only when the saved versioned plan recorded actual categories. */
++  unit_counts?: Record<string, number>; completed_unit_counts?: Record<string, number>;
+   completed_batches?: number; total_batches?: number; candidate_records: number;
+   source_gap_blocks?: number; summary_completed?: boolean;
+   activity?: 'pdf_parse' | 'figure_discovery' | 'source_extraction' | 'whole_document_reconciliation';
+--- a/tests/extraction/content-units.test.ts
++++ b/tests/extraction/content-units.test.ts
+@@ -0,0 +1,146 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { mkdtemp, readFile, rm } from 'node:fs/promises';
++import { resolve } from 'node:path';
++import type { StructureUnit } from '@t1/contracts';
++import { makeEvidenceFixture } from './fixtures/evidence-fixtures.js';
++import { buildArticleScope } from '../../packages/agent/src/article-scope.js';
++import { buildSourceContentUnits, buildSourceParagraphs, planParagraphBatches, CONTENT_ORGANIZATION_VERSION } from '../../packages/agent/src/paragraph-units.js';
++import { buildSourceEvidenceUnits } from '../../packages/agent/src/source-evidence-units.js';
++import { expandBatchLineEvidence } from '../../packages/agent/src/extraction-protocol.js';
++import { validateEvidenceSubmission } from '../../packages/agent/src/evidence-validation.js';
++import { buildEvidenceDelivery } from '../../packages/agent/src/evidence-delivery.js';
++import { tableDescriptionSpans, readReferencedTable } from '../../packages/agent/src/table-support.js';
++import { runExtractionDocument } from '../../packages/agent/src/extraction-run.js';
++import { ExtractionStore } from '../../packages/agent/src/extraction-store.js';
++import { ExtractionBudget } from '../../packages/agent/src/extraction-budget.js';
++import { developmentProfile } from '../../packages/agent/src/extraction-pi.js';
++import { createRuntimeResponsesFixture } from './fixtures/runtime-responses.js';
++type Fixture = ReturnType<typeof makeEvidenceFixture>;
++const glyph = 'agent-assesses-parsed-glyphs-1' as const;
++const span = (f: Fixture, i: number) => ({ block_id: f.document.blocks[i]!.block_id, text_version: f.document.text_version, start: 0, end: Array.from(f.document.blocks[i]!.text).length });
++function mapped(f: Fixture, indices: number[], kind: StructureUnit['kind'] = 'text', id = 'native-paragraph') {
++  const u: StructureUnit = { unit_id: id, native_ref: '#/' + id, kind, native_label: kind, content_layer: 'body',
++    native_text: indices.map(i => f.document.blocks[i]!.text).join(' '), native_original_text: null, native_text_role: 'processed_native_not_literal_quote',
++    source_segments: indices.map(i => span(f, i)), provenance: [], mapping: { status: 'exact', method: 'geometry_and_nfkd_whitespace_hyphen_alignment_4',
++      matched_native_code_points: 1, alignable_native_code_points: 1, transformations: [], warnings: [] } };
++  f.document.structure.units.push(u); f.document.structure.reading_order.push(id); return u;
++}
++function picture(f: Fixture, id = 'native-picture') {
++  const u = mapped(f, [], 'picture', id); u.mapping.status = 'not_text';
++  u.provenance = [{ physical_page: 1, bbox: [0, 0, 600, 800], coordinate_system: 'crop_rotated_top_left_pt', native_ref: '#/picture',
++    native_bbox: {}, native_page_size: [600, 800], native_charspan: [0, 0], precision: 'native_element_bbox' }]; return u;
++}
++function columnFixture(table = false) {
++  const f = makeEvidenceFixture(table ? ['CT shows a round nodule.', 'The source lists dimensions in', 'the referenced Table 2, with', 'the original groups and units.',
++    'Table 2 Diameter', 'Diameter (mm)', '4.2 ± 1.1'] : ['The source describes a lesion with', 'a stable size in', 'the next column, preserving its', 'original context and qualifiers.']);
++  [[10, 600, 260, 610], [10, 612, 260, 622], [310, 100, 560, 110], [310, 112, 560, 122]].forEach((box, i) => { f.document.blocks[i]!.bbox = box; });
++  const u = mapped(f, [0, 1, 2, 3]), leftEnd = f.document.blocks.slice(0, 2).map(b => b.text).join(' ').length;
++  u.provenance = [[10, 600, 260, 622], [310, 100, 560, 122]].map((bbox, i) => ({ physical_page: 1, bbox, coordinate_system: 'crop_rotated_top_left_pt',
++    native_ref: u.native_ref, native_bbox: {}, native_page_size: [600, 800], native_charspan: i ? [leftEnd + 1, u.native_text.length] : [0, leftEnd], precision: 'native_element_bbox' }));
++  u.source_regions = [[0, 1], [2, 3]].map((indices, i) => ({ provenance_index: i, source_segments: indices.map(i => span(f, i)), mapping_status: 'exact' }));
++  if (table) {
++    mapped(f, [4], 'caption', 'caption'); mapped(f, [5], 'table_cell', 'header'); mapped(f, [6], 'table_cell', 'value');
++    f.document.structure.tables.push({ table_id: 'table-2', native_ref: '#/table', physical_pages: [1], caption_unit_ids: ['caption'], footnote_unit_ids: [], association_basis: 'native_explicit',
++      n_rows: 2, n_cols: 1, cells: ['header', 'value'].map((unit_id, i) => ({ unit_id, row_start: i, row_end: i + 1, col_start: 0, col_end: 1,
++        row_span: 1, col_span: 1, column_header: i === 0, row_header: false, row_section: false })), native_html: null, cross_page_continuation: 'not_assumed' });
++  }
++  return f;
++}
++function graphFixture(n = 5) { const f = makeEvidenceFixture(Array.from({ length: n }, (_, i) => `Label ${i}`));
++  f.document.blocks.forEach((_, i) => mapped(f, [i], 'text', 'label-' + i)); picture(f); return f; }
++
++test('v2 groups figure labels as independent members and preserves reliable prose, captions, headings and tables', () => {
++  const f = makeEvidenceFixture(['Axis', '0 50 100', 'CT shows a round', 'nodule with unchanged margins.', 'A complete one-line source sentence.',
++    'A caption.', 'A heading', '4.2 mm']);
++  mapped(f, [0], 'text', 'axis'); mapped(f, [1], 'text', 'ticks'); mapped(f, [2, 3]); mapped(f, [4], 'text', 'sentence');
++  mapped(f, [5], 'caption', 'caption'); mapped(f, [6], 'section_header', 'heading'); mapped(f, [7], 'table_cell', 'cell'); picture(f);
++  f.document.structure.tables.push({ table_id: 'table', native_ref: '#/table', physical_pages: [1], caption_unit_ids: [], footnote_unit_ids: [], association_basis: 'none', n_rows: 1, n_cols: 1,
++    cells: [{ unit_id: 'cell', row_start: 0, row_end: 1, col_start: 0, col_end: 1, row_span: 1, col_span: 1, column_header: false, row_header: false, row_section: false }], native_html: null, cross_page_continuation: 'not_assumed' });
++  const before = JSON.stringify(f.document), old = buildSourceParagraphs(f.document), current = buildSourceContentUnits(f.document, glyph);
++  const graph = current.find(u => u.kind === 'figure_text')!; assert.equal(graph.member_units!.length, 2); assert.deepEqual(graph.block_ids, f.document.blocks.slice(0, 2).map(b => b.block_id));
++  assert.equal(current.filter(u => u.kind === 'paragraph').length, 2); assert.ok(current.some(u => u.kind === 'caption')); assert.ok(current.some(u => u.kind === 'heading')); assert.ok(current.some(u => u.kind === 'table_row'));
++  assert.equal(old.filter(u => u.kind === 'figure_text').length, 0, 'legacy v1 grouping is immutable');
++  const plan = planParagraphBatches(f.document, buildArticleScope(f.document), { organizationVersion: CONTENT_ORGANIZATION_VERSION, sourceGlyphPolicyVersion: glyph });
++  assert.equal(new Set(plan.batches.flatMap(b => b.assigned_block_ids)).size, f.document.blocks.length); assert.equal(JSON.stringify(f.document), before);
++});
++
++test('an overlapping or ambiguous picture region never guesses ownership or swallows body prose', () => {
++  const f = graphFixture(); picture(f, 'overlapping-picture');
++  assert.equal(buildSourceContentUnits(f.document, glyph).some(u => u.kind === 'figure_text'), false);
++  assert.equal(buildSourceContentUnits(f.document, glyph).length, 5);
++});
++
++test('checked same-native same-page column continuation supplies one complete input paragraph with exact original spans', () => {
++  const f = columnFixture(), before = JSON.stringify(f.document), old = buildSourceParagraphs(f.document), current = buildSourceContentUnits(f.document, glyph);
++  assert.equal(old.length, 2); assert.equal(current.length, 1); assert.equal(current[0]!.basis, 'checked_native_column_continuation');
++  assert.deepEqual(current[0]!.source_spans, f.document.blocks.map((_, i) => span(f, i))); assert.equal(JSON.stringify(f.document), before);
++});
++
++for (const reason of ['page', 'line-height', 'terminal', 'indent', 'native-gap', 'case', 'caption'] as const) test(`column continuation keeps ${reason} boundary conservative`, () => {
++  const f = columnFixture(), u = f.document.structure.units[0]!;
++  if (reason === 'page') { u.provenance[1]!.physical_page = 2; f.document.blocks[2]!.page = 2; f.document.blocks[3]!.page = 2; }
++  if (reason === 'line-height') for (const b of f.document.blocks.slice(2)) b.bbox[3] = b.bbox[1]! + 6;
++  if (reason === 'terminal') f.document.blocks[1]!.text += '.';
++  if (reason === 'indent') f.document.blocks[2]!.bbox[0] = 340;
++  if (reason === 'native-gap') { const end = u.provenance[0]!.native_charspan![1]!; u.native_text = u.native_text.slice(0, end) + ' DIFFERENT PARAGRAPH ' + u.native_text.slice(end); u.provenance[1]!.native_charspan![0]! += 20; }
++  if (reason === 'case') { f.document.blocks[0]!.text = 'Case 1 starts'; f.document.blocks[2]!.text = 'Case 2 ends'; }
++  if (reason === 'caption') mapped(f, [2, 3], 'caption', 'explicit-caption');
++  assert.equal(buildSourceContentUnits(f.document, glyph).some(p => p.basis === 'checked_native_column_continuation'), false);
++});
++
++test('v2 table binding follows a proved same-native column continuation while v1 and unrelated groups remain conservative', () => {
++  const f = columnFixture(true), refs = [span(f, 2)], source = [span(f, 0)];
++  assert.equal(tableDescriptionSpans(f.document, source, refs).length, 0); assert.equal(tableDescriptionSpans(f.document, source, refs, CONTENT_ORGANIZATION_VERSION).length, 1);
++  const units = buildSourceEvidenceUnits(f.document, glyph), primary = units.find(u => u.segments[0]!.block_id === f.document.blocks[0]!.block_id)!;
++  const submission = expandBatchLineEvidence({ source_unit_ids: [primary.unit_id], context_line_indices: [1, 2, 3], supporting_table_evidence: [{ table_id: 'table-2', reference_line_indices: [2], cell_ids: ['value'] }],
++    feature_name_raw: null, feature_category: 'synthetic', evidence_type: 'imaging_observation', assertion: 'affirmed', origin: 'study_authors' }, f.document.blocks, f.submission.binding, units, f.document);
++  const context = { ...f.context, evidencePolicyVersion: 'visual-statements-2' as const, sourceGlyphPolicyVersion: glyph, tableSupportPolicyVersion: 'paragraph-linked-table-support-2' as const };
++  assert.equal(validateEvidenceSubmission(submission, context).accepted, false);
++  const valid = validateEvidenceSubmission(submission, { ...context, inputOrganizationVersion: CONTENT_ORGANIZATION_VERSION });
++  assert.equal(valid.accepted, true, JSON.stringify(valid.issues)); assert.equal(valid.record!.extraction_trace.input_organization_version, CONTENT_ORGANIZATION_VERSION);
++  assert.equal(buildEvidenceDelivery(f.document, [{ record: valid.record!, version: 1, actor: 'automatic' }]).records[0]!.supporting_table_evidence![0]!.value_contexts![0]!.fragments[0]!.exact_quote, '4.2 ± 1.1');
++  readReferencedTable(f.document, 'table-2', refs, source, { cell_ids: ['value'] }, new Set(f.document.blocks.map(b => b.block_id)), CONTENT_ORGANIZATION_VERSION);
++  const saved = structuredClone(valid.record!); delete saved.extraction_trace.input_organization_version;
++  assert.throws(() => buildEvidenceDelivery(f.document, [{ record: saved, version: 1, actor: 'automatic' }]), /delivery_visual_statement_policy_failed/);
++  const graph = graphFixture(); assert.equal(tableDescriptionSpans(graph.document, [span(graph, 0)], [span(graph, 1)], CONTENT_ORGANIZATION_VERSION).length, 0);
++});
++
++test('v2 glyph-bearing single-line description keeps its explicit table support and original string through delivery', () => {
++  const f = makeEvidenceFixture(['CT shows a round 5 m\u0001m nodule (Table 2).', 'Table 2 Diameter', 'Diameter (mm)', '4.2']);
++  mapped(f, [0]); mapped(f, [1], 'caption', 'caption'); mapped(f, [2], 'table_cell', 'header'); mapped(f, [3], 'table_cell', 'value');
++  f.document.blocks[0]!.source_glyph_issues = [{ code: 'sparse_embedded_font_without_unicode_mapping', start: 0, end: 1, font_name: 'Synthetic', font_program_sha256: 'a'.repeat(64), pdf_character_code: 1, precision: 'glyph_offset' }];
++  f.document.parser.status = 'partial';
++  f.document.structure.tables.push({ table_id: 'table-2', native_ref: '#/table', physical_pages: [1], caption_unit_ids: ['caption'], footnote_unit_ids: [], association_basis: 'native_explicit', n_rows: 2, n_cols: 1,
++    cells: ['header', 'value'].map((unit_id, i) => ({ unit_id, row_start: i, row_end: i + 1, col_start: 0, col_end: 1, row_span: 1, col_span: 1, column_header: i === 0, row_header: false, row_section: false })), native_html: null, cross_page_continuation: 'not_assumed' });
++  assert.equal(buildSourceEvidenceUnits(f.document)[0]!.completeness, 'unverified', 'legacy glyph diagnostic remains');
++  assert.equal(buildSourceEvidenceUnits(f.document)[0]!.kind, 'sentence', 'mechanical source sentence boundary is unchanged');
++  assert.equal(buildSourceContentUnits(f.document).find(p => p.block_ids.includes(f.document.blocks[0]!.block_id))!.kind, 'paragraph');
++  const units = buildSourceEvidenceUnits(f.document, glyph), submission = expandBatchLineEvidence({ source_unit_ids: [units[0]!.unit_id], supporting_table_evidence: [{ table_id: 'table-2', reference_line_indices: [0], cell_ids: ['value'] }],
++    feature_name_raw: null, feature_category: 'synthetic', evidence_type: 'imaging_observation', assertion: 'affirmed', origin: 'study_authors' }, f.document.blocks, f.submission.binding, units, f.document);
++  const valid = validateEvidenceSubmission(submission, { ...f.context, evidencePolicyVersion: 'visual-statements-2', sourceGlyphPolicyVersion: glyph,
++    inputOrganizationVersion: CONTENT_ORGANIZATION_VERSION, tableSupportPolicyVersion: 'paragraph-linked-table-support-2' });
++  assert.equal(valid.accepted, true, JSON.stringify(valid.issues)); const delivery = buildEvidenceDelivery(f.document, [{ record: valid.record!, version: 1, actor: 'automatic' }]);
++  assert.equal(delivery.records[0]!.original_fragments[0]!.exact_quote, f.document.blocks[0]!.text);
++  assert.equal(delivery.records[0]!.supporting_table_evidence![0]!.value_contexts![0]!.fragments[0]!.exact_quote, '4.2');
++});
++
++for (const failLast of [false, true]) test(`installed SDK v2 figure parts retain parent/member context and only complete the group after every part (${failLast ? 'failure' : 'success'})`, async () => {
++  const f = graphFixture(); f.document.blocks[0]!.source_glyph_issues = [{ code: 'sparse_embedded_font_without_unicode_mapping', start: 0, end: 1, font_name: 'Synthetic', font_program_sha256: 'a'.repeat(64), pdf_character_code: 1, precision: 'glyph_offset' }]; f.document.parser.status = 'partial';
++  const directory = await mkdtemp(resolve('runtime-data/agent-notes/content-sdk-')), store = new ExtractionStore(':memory:'); let batches = 0;
++  const server = await createRuntimeResponsesFixture(() => {
++    if (store.snapshot(f.input.run_id).state === 'extracting') { if (failLast && batches >= 2) return { status: 400 }; batches++; return { calls: [{ name: 'submit_candidate_records', arguments: { records: [], batch_complete: true } }] }; }
++    return { calls: [{ name: 'get_document_context', arguments: {} }, { name: 'submit_candidate_records', arguments: { summary: 'Synthetic input organization receipt only.', reviews: [], links: [], updates: [], summary_complete: true } }] };
++  });
++  try {
++    const result = await runExtractionDocument({ input: f.input, document: f.document, catalog: f.catalog, metadata: f.context.metadata,
++      config: server.config, profile: developmentProfile(server.config.modelId), budget: new ExtractionBudget(resolve(directory, 'ledger.json'), server.endpoint), store, directory: resolve(directory, 'run'), strategy: 'baseline',
++      sourceGlyphPolicyVersion: glyph, inputOrganization: 'paragraphs', inputOrganizationVersion: CONTENT_ORGANIZATION_VERSION, batchOptions: { maxBlocks: 2, contextBlocks: 0 }, prefillBatchSource: true, stopOnBatchFailure: true });
++    assert.equal(result.coverage.progress_unit, 'content_units'); assert.equal(result.coverage.dispatched_content_units, 1); assert.equal(result.coverage.dispatched_processing_units, 3);
++    assert.deepEqual(result.coverage.input_unit_counts, { figure_text: 1 }); assert.equal(result.coverage.explicitly_completed_content_units, failLast ? 0 : 1); assert.equal(result.task_processing_complete, !failLast);
++    const receipts = result.events.filter(e => e.type === 'batch').map(e => e.detail as any);
++    assert.deepEqual(receipts[0].completed_content_unit_ids, []); assert.deepEqual(receipts[1].completed_content_unit_ids, []);
++    const prompt = JSON.stringify(server.requests[0]!.body); for (const field of ['figure_text', 'member_units', 'parent_content_unit_id', 'source_members_are_independent', 'fragment_count']) assert.ok(prompt.includes(field), field);
++    assert.ok(prompt.includes('Label 0')); assert.equal(result.medical_quality_approved, false);
++  } finally { store.close(); await server.close(); await rm(directory, { recursive: true, force: true }); }
++});

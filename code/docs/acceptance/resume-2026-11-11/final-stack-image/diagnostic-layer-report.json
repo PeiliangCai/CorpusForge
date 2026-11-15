@@ -1,0 +1,114 @@
+{
+  "schema_version": "t1-final-diagnostic-image-lineage-1",
+  "cold_build": false,
+  "started_at": "2026-11-11T10:53:45.426542+00:00",
+  "prior_tested_stack_report": {
+    "path": "docs/acceptance/resume-2026-11-11/final-stack-image/report.json",
+    "sha256": "d63012c46e22e07481b17d96f96614a26d7a49b5af47187b54c62595fea7038c",
+    "local_image_id": "sha256:bc08b00b2dd818e8fd2c0fca68912bf828f78eb43be0be63ccb516769a437b68",
+    "binding_preserved_for_executed_IN06_plan": true
+  },
+  "diagnostic_only": true,
+  "provider_capacity_or_prior_error_repair_claimed": false,
+  "original_failed_IN06_record_or_allowance_modified": false,
+  "model_calls_for_image_construction": 0,
+  "application_services_started_for_construction": 0,
+  "status": "diagnostic-image-built-offline-pins-verified-awaiting-owner-preflight",
+  "final_local_image_id": "sha256:32a0e53ab6be8bed82c579b8be589cbb25787f076d5133f74163999724d76977",
+  "final_image_tag": "t1-workbench:s7-final-sdk-diagnostic-20261111",
+  "image_lineage": [
+    "sha256:174bf034452d4a58aa94d83b69bd670d68d23f750020afade5ed9ee0c35cfe3d",
+    "sha256:4bd87702fd41461e745e96c230b5d3b9b53dbc030c0de84140a5df7e131a3a75",
+    "sha256:bc08b00b2dd818e8fd2c0fca68912bf828f78eb43be0be63ccb516769a437b68",
+    "sha256:32a0e53ab6be8bed82c579b8be589cbb25787f076d5133f74163999724d76977"
+  ],
+  "diagnostic_overlay": {
+    "parent_local_image_id": "sha256:bc08b00b2dd818e8fd2c0fca68912bf828f78eb43be0be63ccb516769a437b68",
+    "local_image_id": "sha256:32a0e53ab6be8bed82c579b8be589cbb25787f076d5133f74163999724d76977",
+    "repo_digests": [
+      "t1-workbench@sha256:32a0e53ab6be8bed82c579b8be589cbb25787f076d5133f74163999724d76977"
+    ],
+    "registry_push_performed": false,
+    "source_freeze_record": "docs/acceptance/resume-2026-11-11/diagnostic-source-freeze.json",
+    "source_freeze_sha256": "c79af952edf6009a1cf45fc205c7113030af2c2de4667458edd10c91c0047f60",
+    "source_snapshot": "runtime-data/s7-source-snapshot-20261111-diagnostic",
+    "source_frozen_at": "2026-11-11T10:50:03.934192+00:00",
+    "overlay_files": {
+      "packages/agent/src/extraction-pi.ts": "8ac8ad75456b90b76df85ecbf52f4e7cdc234e12c0b0b2f092b044b1cf4863d8",
+      "packages/agent/src/extraction-sdk-diagnostic.ts": "dede766f520b5800717750668c6587f936212ae68c5d1336091a98ddc6672260",
+      "tests/extraction/sdk-error-diagnostics.test.ts": "28285dd1b26f426905fe0f1d3db8dd7e948afe455ac00547b0214cd1b2bcbaf8"
+    },
+    "dockerfile": "FROM sha256:bc08b00b2dd818e8fd2c0fca68912bf828f78eb43be0be63ccb516769a437b68\nUSER root\nCOPY overlay/ /app/\nLABEL t1.source.freeze.sha256=\"c79af952edf6009a1cf45fc205c7113030af2c2de4667458edd10c91c0047f60\" t1.diagnostic.overlay.parent=\"sha256:bc08b00b2dd818e8fd2c0fca68912bf828f78eb43be0be63ccb516769a437b68\"\nUSER 10001:10001\n",
+    "dockerfile_sha256": "5ecafaf420c27ef71b3965088c6bf1e97999fce34bf0e5f90fceb39aa6e17329",
+    "actual_build_command": [
+      "sudo",
+      "-n",
+      "env",
+      "DOCKER_BUILDKIT=0",
+      "docker",
+      "build",
+      "--pull=false",
+      "--network=none",
+      "-f",
+      "/home/ecs-user/projects/t1-agent/code/runtime-data/final-diagnostic-overlay-tprfnayl/Dockerfile",
+      "-t",
+      "t1-workbench:s7-final-sdk-diagnostic-20261111",
+      "/home/ecs-user/projects/t1-agent/code/runtime-data/final-diagnostic-overlay-tprfnayl"
+    ],
+    "image_size_bytes": 1030125261,
+    "build_log_sha256": "c259d637a70166984f2b6c39cfd5f25ba1b875e7ccf53087b4cc04ab9f1d599d",
+    "construction_definition": "docs/acceptance/resume-2026-11-11/final-stack-image/construct-diagnostic-overlay.py",
+    "construction_definition_sha256": "86cf29343be1f88aa631f800e6213c5b66f59b5db745464816e3560aa6fd8f57",
+    "no_dependency_or_UI_build": true,
+    "no_syntax_frontend_or_registry_pull": true,
+    "credentials_databases_input_pdfs_copied": false,
+    "parent_rootfs_layers_preserved": true,
+    "image_environment_verified": {
+      "NODE_ENV": "production",
+      "T1_NEXT_DIST_DIR": "build/ui-next-20261111",
+      "T1_WORKBENCH_MODEL_ENABLED": "false",
+      "T1_IMPORT_RETAINED": "false"
+    },
+    "image_user": "10001:10001",
+    "image_cmd": [
+      "node",
+      "deploy/supervisor.mjs"
+    ]
+  },
+  "all_frozen_source_pins": {
+    "expected": 1174,
+    "matched": 1174,
+    "missing": [],
+    "mismatches": [],
+    "expected_manifest_sha256": "53de359ed928691163f09d9489ededd3b5ffdee9477074dad92d7c4b49be4242",
+    "actual_image_manifest_sha256": "53de359ed928691163f09d9489ededd3b5ffdee9477074dad92d7c4b49be4242",
+    "method": "Grouped docker cp tar streams from an unstarted final-image container; files whitelisted and hashed by Python against freeze JSON, never a large argv."
+  },
+  "final_UI_artifact_verification": {
+    "source_pins": {
+      "apps/pi-web/t1/T1Workbench.tsx": "c89e3db0b27164960f873f116ad704159e8c6c7b32cb8edb089fbe3495c313af",
+      "apps/pi-web/t1/EvidenceSource.tsx": "bcec5844e2f778cb23ce0bdd4ba341e12b7e0336c4f3b830af5bbfa31fe9bad3",
+      "apps/pi-web/t1/ResultIndex.tsx": "c00596885692cf5086a1431d57670b6af01c8a610c502ceaa598219d2565967e",
+      "apps/pi-web/t1/result-navigation.ts": "ec874c385c3ec4d1e18b6757d2aa3e20dcb53fabbc2e581dfe76b18940c61a56",
+      "apps/pi-web/t1/messages.mjs": "bdfb01298a5f2bebf1a9baa68892d79ef2ab6175c08a3d43e888aa8982bee006",
+      "apps/pi-web/t1/workbench.css": "078e5413231d76471dc73ca7421197fc8be30c4e14e72df1ad90a2618d4ba719"
+    },
+    "build_id": "9WeI9zkvHd20Y0lBTDX5C",
+    "dist_dir": "build/ui-next-20261111",
+    "expected_files": 161,
+    "matched_files": 161,
+    "manifest_sha256": "8520fb671c2349ed0459374ab4caf5b7afca6632839977d1ce7b2b762b31a3d3",
+    "byte_for_byte_identical_to_accepted_UI": true
+  },
+  "source_roles": {
+    "IN06": "parser_regression; extraction_model_unseen",
+    "IN07": "independent_first_structure_check_failed_before_model; now parser_regression; extraction_model_unseen"
+  },
+  "S6_complete_acceptance_claimed": false,
+  "medical_quality_approved": false,
+  "ordinary_30141_or_shared_next_modified": false,
+  "next_owner": "resume_s6_s7 alone starts first final-container preflight; root alone dispatches paid model work.",
+  "temporary_final_context_cleaned": true,
+  "finished_at": "2026-11-11T10:54:02.667929+00:00",
+  "parent_tested_report_bytes_unchanged": true
+}

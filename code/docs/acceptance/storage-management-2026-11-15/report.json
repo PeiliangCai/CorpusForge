@@ -1,0 +1,252 @@
+{
+  "task": "T1-F02 storage management and safe manual cleanup",
+  "status": "engineering_complete_deployed_awaiting_user_review",
+  "formal_review": {
+    "used": 3,
+    "limit": 3,
+    "scope": "new T1-F02; original five-item task remains3/3",
+    "planning_1": "判断：继续。风险：1.共享文件/历史引用漏判；2.预览后并发使资格过期；3.部分失败误报成功。",
+    "final_preacceptance_2": "判断：继续。风险：1.存在引用资料须持续保护；2.旧草稿可能需重新上传；3.文件大小不等于df释放。",
+    "error_reproduction_3": "判断：修改。风险：1.普通原文误识别路径；2.缩窄规则漏真实引用；3.错误统计沿用交付。"
+  },
+  "backend": {
+    "files": [
+      "apps/server/src/storage-management.ts",
+      "apps/server/src/workflow.ts",
+      "apps/server/src/app.ts",
+      "packages/contracts/src/workbench.ts",
+      "apps/server/test/storage-management.test.ts"
+    ],
+    "diff": "backend.diff",
+    "diff_sha256": "6d7caca23ba4fabe81b783ae933392685f5bd0892b0840b4f521bac6261070dc",
+    "scope": [
+      "configured workflowDirectory/pdf",
+      "configured workflowDirectory/runs",
+      "configured workflowDirectory/figure-reviews",
+      "configured workflowDirectory/exports",
+      "codeRoot/runtime-data/s3-native-artifacts: only known workbench live/tombstone run native files; historical development artifacts protected unknown"
+    ],
+    "statistics": "lstat regular-file size, deduplicated dev/inode; protected+reclaimable+unknown=total. Symlink targets not traversed and hard links protected. statfs disk available bytes separate, no disk-space-release promise.",
+    "reference_safety": "All persisted JSON columns except deletion/request/storage management metadata; paper own source refs, any run/document/SHA/versions/reviews/events/exports. Explicit path/file_reference/directory/*_path references are conservative including ancestor directories; unknown-key strings count as paths only when resolved inside one of the five fixed managed roots. Literal native prose slash is not a filesystem root reference. Invalid JSON, unreadable run state or incomplete filesystem scan disables cleanup targets. Live run directories/native sources are protected including terminal and zero-candidate runs.",
+    "unused_upload": "Only uploaded paper with no run/document/SHA/historical reference and24h grace elapsed; whole shared paper group explicit; confirmed logical removal committed with recovery plan before any bytes unlink. Only exclusively owned known artifacts selected; unselected/live/shared references protected.",
+    "concurrency": "global cleanup gate fails409 if upload/preparing/active/queued/human/export/delete/pendingcleanup present. New writes fail409 while cleanup runs. Full scan version recheck then short per-candidate SQLite transactions with live all-reference checks; O_NOFOLLOW directory descriptors and exact dev/inode/size/mtime/ctime/mode/nlink leaf recheck; unlink only approved regular files, no recursive rm.",
+    "manual_policy": {
+      "automatic_cleanup": false,
+      "recent_upload_hours": 24,
+      "preview_minutes": 10,
+      "max_previews": 32,
+      "max_complete_receipts": 128,
+      "max_interrupted_receipts": 128,
+      "complete_receipt_retention_days": 7,
+      "completed_receipts_keep_path_inventory": false
+    },
+    "recovery": "partial per-candidate receipt reports actual unlinked regular-file sizes/files; logical paper removals explicit. Same preview+selection returns durable receipt; different selection409; remaining files require a new preview/confirmation. An interrupted executing plan does not resume at startup; explicit retry rechecks current file identity and references.",
+    "actual_current_workflow_directory": "runtime-data/workbench"
+  },
+  "checks": {
+    "storage_specialized": {
+      "passed": 19,
+      "failed": 0,
+      "log": "reference-fix-full-tests.log",
+      "initial18_pass_log": "backend-tests.log",
+      "counting": "18 original unique cases plus1 reproduced slash/unknown-key/explicit-parent reference case. Final19 run in full after collector correction; isolated1 recheck and earlier18 runs are not additional unique cases."
+    },
+    "related_submission_paper_run_batch_deletion": {
+      "passed": 32,
+      "failed": 0,
+      "log": "backend-related-regression.log"
+    },
+    "typecheck": {
+      "status": "passed",
+      "log": "reference-fix-typecheck.log"
+    },
+    "initial_fixture_error": {
+      "log": "backend-tests-initial.log",
+      "passed": 13,
+      "failed": 2,
+      "cause": "new seedRun fixture called ExtractionStore.create without required metadata; tests only corrected; no production behavior failure",
+      "formal_error_review_needed": false
+    },
+    "latest_malformed_run_recheck": {
+      "passed": 1,
+      "log": "backend-malformed-run-recheck.log",
+      "counting": "Extension/recheck of one existing malformed JSON case; not an additional unique case"
+    },
+    "reference_fix_initial_scoped_test": {
+      "passed": 1,
+      "log": "reference-fix-test.log",
+      "counting": "Same new19th case; not another unique case."
+    }
+  },
+  "production": {
+    "business_test_writes": 0,
+    "new_paid_calls": 0,
+    "cleanup_executed": false,
+    "storage_preview_POSTs": 0,
+    "storage_cleanup_POSTs": 0,
+    "storage_operation_rows_after_readonly_checks": 0,
+    "initial_deployment": "deployment.json",
+    "final_deployment": "reference-fix-deployment.json",
+    "final_BUILD_ID": "mYxCBdDdcBK7amEeDhlnC",
+    "final_backend_pid": 177071,
+    "final_frontend_pid": 177090,
+    "final_frontend_wrapper_pid": 177083,
+    "same_frontend_build_retained_during_backend_correction": true,
+    "logical_data_artifacts_configuration_models_preserved": true,
+    "tables": 19,
+    "paper": 10,
+    "run": 2,
+    "preserved_current_source_artifact_files": 174,
+    "integrity": "ok",
+    "foreign_key_errors": 0,
+    "final_storage_readonly": "storage-readonly.json",
+    "frontend_entry_readonly": "live-readonly.json",
+    "frontend_entry_readonly_phase": "Before backend classifier correction; entry/static geometry unchanged, no production POST; browser scenarios were not repeated after backend-only source correction."
+  },
+  "not_verified": [
+    "No production deletion/upload/export or new model request.",
+    "No medical quality, provider reliability or total extraction speed claim.",
+    "File-byte removal does not measure filesystem/volume blocks reclaimed.",
+    "User24h+ browser drafts are only observable through retained paper metadata; explicit preview lists exact candidates.",
+    "Supported host is Linux with /proc/self/fd; manual cleanup fails closed if unavailable."
+  ],
+  "updated_at_utc": "2026-11-15T13:27:23.860053+00:00",
+  "frontend": {
+    "BUILD_ID": "mYxCBdDdcBK7amEeDhlnC",
+    "dist": "apps/pi-web/build/storage-management-validated-20261115",
+    "build_log": "frontend-build.log",
+    "source_report": "frontend.json",
+    "same_build_browser": "same-build-browser.json",
+    "same_build_unique_scenarios": 5,
+    "same_build_errors": 0,
+    "same_build_unknown_or_unallowed_requests": 0,
+    "gateway_and_related_tests_passed": 9,
+    "source_typecheck_lint": "passed by frontend owner",
+    "method": "actual Next production page and assets; all business API requests mocked in browser; no production API mutations",
+    "counting": "5 unique UI scenarios; earlier4 and later2 related rechecks overlap one scenario. Same production build reruns5, not additional10.",
+    "live_entry_readonly": "live-readonly.json",
+    "live_screenshots": [
+      "live-desktop.png",
+      "live-mobile.png"
+    ]
+  },
+  "final_real_storage_summary": {
+    "summary": {
+      "schema_version": "t1-storage-summary-1",
+      "observed_at": "2026-11-15T13:22:59.423Z",
+      "scope": "managed_workbench_files",
+      "total_bytes": 148414676,
+      "protected_bytes": 113519598,
+      "reclaimable_bytes": 23260942,
+      "unknown_bytes": 11634136,
+      "file_count": 187,
+      "categories": [
+        {
+          "kind": "pdf",
+          "bytes": 44815688,
+          "files": 3
+        },
+        {
+          "kind": "parse",
+          "bytes": 86065192,
+          "files": 131
+        },
+        {
+          "kind": "figures",
+          "bytes": 17533796,
+          "files": 53
+        },
+        {
+          "kind": "exports",
+          "bytes": 0,
+          "files": 0
+        },
+        {
+          "kind": "other",
+          "bytes": 0,
+          "files": 0
+        }
+      ],
+      "protected_reasons": [
+        {
+          "code": "referenced",
+          "bytes": 50977722,
+          "files": 89
+        },
+        {
+          "code": "recent_upload",
+          "bytes": 59683162,
+          "files": 19
+        },
+        {
+          "code": "immutable_source",
+          "bytes": 2858714,
+          "files": 6
+        }
+      ],
+      "disk": {
+        "total_bytes": 105286258688,
+        "available_bytes": 40540782592
+      },
+      "cleanup_available": true,
+      "policy": {
+        "automatic_cleanup": false,
+        "recent_upload_protection_hours": 24
+      }
+    },
+    "backend_GET_elapsed_ms": 1656.6040430043358,
+    "gateway_GET_elapsed_ms": 1577.2140990011394,
+    "measurement": "End-to-end two read-only GET observations, not an extraction-speed benchmark; file sizes do not guarantee filesystem block reclamation."
+  },
+  "backend_reference_correction": {
+    "status": "corrected_and_final_real_GET_verified",
+    "reproduction": "reference-classification-reproduction.json",
+    "cause": "Generic absolute-string collection interpreted96 retained IR native_text slash entries as filesystem root, causing false immutable protection for every file. No user file was deleted.",
+    "initial_incorrect_summary": "storage-readonly-before-reference-fix.json",
+    "initial_result_not_final": "reclaimable0 and total immutable protection were an identified defect, not the final cleanup estimate.",
+    "minimal_change": "Only reference collector and one necessary regression case; explicit path fields remain conservative, unknown-key strings require resolved containment in five managed roots. Fixed namespace component prefilter avoids normalizing all prose while keeping full containment check.",
+    "hard_readonly_real_DB_projection": "reference-fix-readonly-projection.json",
+    "validation": "19 storage cases plus root TypeScript passed;32 related regressions and same-build5 UI scenarios were not unnecessarily repeated.",
+    "rollout": "reference-fix-deployment.json",
+    "frontend_rebuild_or_UI_scenario_repeat": false,
+    "diff": "reference-fix.diff"
+  },
+  "documentation": {
+    "status": "synchronized_and_scoped_validation_passed",
+    "owner": "/root/storage_management_docs GPT-6.1-Sol(max)",
+    "primary_plan_pointer": "方案/子任务T1/开发计划.json#/future_extensions/1",
+    "validation": "documentation/validation.json",
+    "source_files": 9,
+    "DOCX_sha256": {
+      "T1智能体开发计划.docx": "3bbe7c602a059d6bce2f61f40f431f208381255b168281ed25e5ae72cc11bd86",
+      "T1开发执行说明.docx": "d859654528fae4576d641a02a2d1e40aaf6a038e7ab718502afdccd972c9047d"
+    },
+    "scope": "F02 actual design/engineering completion and directly obsolete future-boundary crossreferences; other task/stage facts and unrelated DOCX ZIP parts preserved",
+    "user_review": "pending",
+    "README_and_deploy_current_pointers": "Updated to final same build/pids and current F02 behavior; historical facts remain at original checkpoints."
+  },
+  "cleanup": "cleanup.json",
+  "execution_handoff": {
+    "original_goal": "占用统计、无引用PDF/解析/图片/导出安全清理；用户手动预览并确认，不开启定时自动清理",
+    "backend_owner": "/root/storage_management_backend GPT-6.1-Sol(max)",
+    "frontend_owner": "/root/storage_management_frontend GPT-6.1-Sol(max)",
+    "docs_owner": "/root/storage_management_docs GPT-6.1-Sol(max)",
+    "authorization": {
+      "production_business_test_writes": false,
+      "new_model_calls": 0,
+      "interrupt_active_runs": false,
+      "safe_idle_deploy_after_review": true
+    },
+    "final_production_access": "GET/HEAD only; no preview/cleanupPOST or upload/export/model calls",
+    "formal_review_scope": "This independent F02 task3/3; original five-item task remains unchanged3/3",
+    "completion": "Engineering implemented, isolated checks and same build rollout verified, plan documents synchronized; user review pending",
+    "remaining_unverified": [
+      "No production deletion/upload/export or new model request.",
+      "No medical quality, provider reliability or total extraction speed claim.",
+      "File-byte removal does not measure filesystem/volume blocks reclaimed.",
+      "User24h+ browser drafts are only observable through retained paper metadata; explicit preview lists exact candidates.",
+      "Supported host is Linux with /proc/self/fd; manual cleanup fails closed if unavailable."
+    ],
+    "next": "User reviews the deployed storage management feature; no automated cleanup scheduled."
+  }
+}

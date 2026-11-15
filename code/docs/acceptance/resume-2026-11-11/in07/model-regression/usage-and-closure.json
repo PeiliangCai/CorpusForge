@@ -1,0 +1,27 @@
+{
+  "schema_version": "t1-round-usage-closure-1",
+  "run_id": "run-137e8f96-47f8-43e9-ac7f-98f41bd6a79f",
+  "admission_at": "2026-11-11T10:57:36.065Z",
+  "first_model_request_at": "2026-11-11T10:57:46.600Z",
+  "finished_at": "2026-11-11T10:58:14.127Z",
+  "usage": {
+    "physical_requests": 2,
+    "provider_reported_input_tokens": 4782,
+    "provider_reported_output_tokens": 15,
+    "budget_accounted_input_tokens": 79879,
+    "budget_accounted_output_tokens": 8207,
+    "missing_usage_requests": 1,
+    "cache_read_tokens_reported": 0,
+    "cache_write_tokens_reported": 4779,
+    "reasoning_tokens_reported": 0,
+    "actual_currency_cost": null,
+    "currency_cost_status": "unknown_gateway_billing",
+    "unused_requests_closed": 22,
+    "all_unused_allowance_closed": true,
+    "current_effective_API_allowance": 0,
+    "current_paid_requests_running": false
+  },
+  "container_stopped": true,
+  "private_key_copy_removed": true,
+  "ordinary_preserved": true
+}

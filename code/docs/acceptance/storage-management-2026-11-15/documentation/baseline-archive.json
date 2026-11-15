@@ -1,0 +1,7 @@
+{
+  "artifact": "before.zip",
+  "files": 9,
+  "sha256": "a916596f8903cb2cca6ca820b945d549666e8ea50110c1c73dadb54a52ab4b75",
+  "bytes": 433727,
+  "verification": "All nine original source files match before-manifest SHA-256; duplicate uncompressed copies removed; full rollback preserved."
+}

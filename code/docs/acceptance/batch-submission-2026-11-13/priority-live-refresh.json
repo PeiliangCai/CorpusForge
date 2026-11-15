@@ -1,0 +1,14 @@
+{
+  "origin": "http://127.0.0.1:30141",
+  "checks": [
+    "brand_removed_and_source_passages_preserved",
+    "busy_no_early_success_and_selected_record_preserved",
+    "failed_current_result_read_reports_failure_and_retry_recovers",
+    "mobile_feedback_visible_without_sidebar_or_horizontal_overflow"
+  ],
+  "errors": [],
+  "blocked": [],
+  "paid_model_calls": 0,
+  "write_requests": 0,
+  "status": "passed"
+}

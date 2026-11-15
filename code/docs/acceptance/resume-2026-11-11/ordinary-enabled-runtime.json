@@ -1,0 +1,49 @@
+{
+  "schema_version": "t1-ordinary-enabled-runtime-1",
+  "checked_at_utc": "2026-11-11T11:18:10.240726+00:00",
+  "frontend": "http://127.0.0.1:30141/",
+  "backend": "http://127.0.0.1:3210",
+  "frontend_HTTP": 200,
+  "backend_HTTP": 200,
+  "public_model_enabled": true,
+  "controlled_fixture": false,
+  "model_runtime": {
+    "provider": "agicto",
+    "model_id": "gpt-6-luna",
+    "reasoning_effort": "medium",
+    "limits": {
+      "requests": 80,
+      "input_tokens": 2000000,
+      "output_tokens": 120000,
+      "execution_seconds": 1800
+    }
+  },
+  "concurrent_slots": 2,
+  "cancel_queued_and_running_supported": true,
+  "no_automatic_resume_or_background_paid_loop": true,
+  "active_tasks": 0,
+  "runtime_related_source_pins_verified": 124,
+  "final_source_freeze": "delivery-source-freeze.json",
+  "public_config": "code/deploy/local/workbench.env",
+  "retained_import": false,
+  "production_table_count": 13,
+  "all13_tables_rows_unchanged": true,
+  "private_env_bytes_unchanged": true,
+  "new_model_calls_by_enabling_and_GET_checks": 0,
+  "Start_clicked_by_agent": false,
+  "all_experimental_allowances_closed": true,
+  "window_physical_requests_final": 24,
+  "last_busy_retry_patch_validation": "30related+4existing focused tests andTS passed; actual AGICTO recovery after patch not tested",
+  "AGICTO_recovery_after_last_patch_live_verified": false,
+  "complete_medical_S2_independent_S6_and_full_S7_gates_passed": false,
+  "UI_owner_enabled_readonly_smoke": {
+    "status": "passed",
+    "checks": 4,
+    "report": "ui/delivery-readonly-report.json",
+    "model_calls": 0,
+    "Start_upload_review_export_actions": 0
+  },
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3,
+  "final_integrity_report": "final-integrity.json"
+}

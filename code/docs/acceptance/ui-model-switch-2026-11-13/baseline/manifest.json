@@ -1,0 +1,80 @@
+[
+  {
+    "path": "code/apps/pi-web/t1/T1Workbench.tsx",
+    "sha256": "760f64d831afe96dd6af14098e4aee9162d843679d45d8803012ba08312e1d2c"
+  },
+  {
+    "path": "code/apps/pi-web/t1/BatchSubmission.tsx",
+    "sha256": "ac9c07f5de992562f3dbb63ff57a1be1236090e0b6fc9969cf51e5920321151f"
+  },
+  {
+    "path": "code/apps/pi-web/t1/messages.mjs",
+    "sha256": "e97c33c9f28cc94f29caa4dfcd6dac0641283c89bf4995d054c73897c0edfe5e"
+  },
+  {
+    "path": "code/apps/pi-web/t1/api.ts",
+    "sha256": "368037589fa32d7a1c0dc671e1d3eb0f97b477417e414c64a9da197c7858f497"
+  },
+  {
+    "path": "code/apps/pi-web/t1/TaskKindBadge.tsx",
+    "sha256": "4f88a66b4dff0f0d0837fc79a215b9dbb29bb1ffb77dd3d043ccd047895aada8"
+  },
+  {
+    "path": "code/apps/pi-web/t1/workbench.css",
+    "sha256": "86133e9a67f8e5bd006c4c3f5b7317cfb22ef143704410e91fe165fe5d4f1f84"
+  },
+  {
+    "path": "code/apps/server/src/workbench.ts",
+    "sha256": "80ed26de2476cab6cc7c282b46038c57c5bab4025a0a0986b3218bb0d5ab483c"
+  },
+  {
+    "path": "code/apps/server/src/workflow.ts",
+    "sha256": "aa24fdc75a66a31d7514a8118a9fb5d67f6b2f261eea5ac32181a4bb8ab04666"
+  },
+  {
+    "path": "code/apps/server/src/workflow-runner.ts",
+    "sha256": "c88dad5f022c66e43a00102e1b126e440649ccf18becc73a4a1945f0723954dd"
+  },
+  {
+    "path": "code/apps/server/src/runtime-config.ts",
+    "sha256": "c360f9985b58ea98c96aa95db495453e637901bd3d8e35d71aa1336c6412897b"
+  },
+  {
+    "path": "code/apps/server/src/model-policy.ts",
+    "sha256": "cc7fc86cc9a57f5b22994f79a91fb54463222829f2b0686e9e6c0bf02bd184ba"
+  },
+  {
+    "path": "code/config/workbench-response-model-policy.json",
+    "sha256": "9c261cd263921b5c949926da4448dcf10c9e971e2ed43f814015a4025ab1d9a1"
+  },
+  {
+    "path": "code/packages/agent/src/extraction-pi.ts",
+    "sha256": "8e5982c1bc5ba3fe11dd168e336c439dc7b7a1c482250cd9f3a9c3671050509c",
+    "note": "captured before model changes"
+  },
+  {
+    "path": "code/packages/contracts/src/workbench.ts",
+    "sha256": "60433ae9391cae787db6052837786cfc2b75efb42aaddd6e261c831c85109536",
+    "note": "captured before model changes"
+  },
+  {
+    "path": "code/apps/pi-web/t1/gateway-policy.ts",
+    "sha256": "467c19def671bc9c445c75b52fca9f7f69bb3a8c92021d03dbdd59852618697f",
+    "note": "captured before model changes"
+  },
+  {
+    "path": "code/apps/pi-web/t1/result-navigation.ts",
+    "sha256": "d454a0902f7e3d83ac11ec1fd7b4c707baf3154906ef00680de68245bcb7c9bc",
+    "note": "captured before model changes; navigation files include task UI increment"
+  },
+  {
+    "path": "code/apps/pi-web/t1/result-navigation.test.ts",
+    "sha256": "e2370f6c137b109ca34e77b13f3991adfd4b4db6ade603d9de8df1dcac1fa072",
+    "note": "captured before model changes; navigation files include task UI increment"
+  },
+  {
+    "path": "code/apps/server/src/app.ts",
+    "sha256": "137dbb3e02d13be8bbe3638e92c5144b533a8e48a2d9c21011143644be785e94",
+    "note": "captured before model changes"
+  }
+]

@@ -33,7 +33,18 @@ const bytes = await readFile(resolve(planPath)), plan = JSON.parse(bytes.toStrin
 inside(planPath); inside(plan.input.path); inside(plan.evidence_directory);
 assert.match(plan.plan_id, /^[a-z0-9-]{1,55}$/);
 assert.equal(hash(await readFile(resolve(plan.input.path))), plan.input.sha256);
-for (const [path, digest] of Object.entries(plan.code_sha256 ?? {})) { inside(path); assert.equal(hash(await readFile(resolve(path))), digest, 'host source pin changed'); }
+const hostCodeRoot = plan.host_code_snapshot ? resolve(plan.host_code_snapshot) : code;
+if (plan.host_code_snapshot) inside(plan.host_code_snapshot);
+if (plan.trial_response_model_alias) {
+  const alias = plan.trial_response_model_alias;
+  assert.equal(plan.host_evidence_sha256?.[alias.authority_path], alias.authority_sha256, 'trial alias authority must be pinned in host evidence');
+}
+for (const [path, digest] of Object.entries(plan.code_sha256 ?? {})) {
+  inside(path); assert.equal(hash(await readFile(resolve(hostCodeRoot, path))), digest, 'host source pin changed');
+}
+for (const [path, digest] of Object.entries(plan.host_evidence_sha256 ?? {})) {
+  inside(path); assert.equal(hash(await readFile(resolve(path))), digest, 'host evidence pin changed');
+}
 const docker = (...args) => execFileSync('sudo', ['-n', 'docker', ...args], { encoding: 'utf8', timeout: 160_000 });
 function collectState(imageId, volume) {
   // SQLite in WAL mode may need transient -shm files even for a read-only connection.

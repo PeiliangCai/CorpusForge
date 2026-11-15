@@ -20,18 +20,18 @@ function readDraft(runId: string, record: WorkbenchRecord | null): Draft {
 export function SourceEditor({ runId, record, units, onPage, onSaved, onClose }: { runId: string; record: WorkbenchRecord | null; units: WorkbenchSourceUnit[]; onPage: (page: number) => void; onSaved: () => Promise<void>; onClose: () => void }) {
   const { t } = useI18n();
   const [draft, setDraft] = useState<Draft>(() => readDraft(runId, record));
-  const [search, setSearch] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState(""), [conflict, setConflict] = useState(false), [deleting, setDeleting] = useState(false);
+  const [search, setSearch] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState(""), [conflict, setConflict] = useState(false);
   const storageKey = prefix(runId, record?.id ?? "new") + draft.version;
   useEffect(() => { try { sessionStorage.setItem(storageKey, JSON.stringify(draft)); } catch { /* in-memory draft remains usable */ } }, [draft, storageKey]);
   const updateLabel = (value: WorkbenchLabels) => setDraft(current => ({ ...current, labels: { ...current.labels, ...value } }));
-  async function save(remove = false) {
-    if (!draft.reviewer.trim()) { setError(t("t1.reviewerRequired")); return; }
-    if (!remove && !draft.source.length) { setError(t("t1.selectionRequired")); return; }
+  async function save() {
+    if (!draft.reviewer.trim()) { setError(t("t1.editorNameRequired")); return; }
+    if (!draft.source.length) { setError(t("t1.selectionRequired")); return; }
     setBusy(true); setError("");
     try {
       const path = `workbench/runs/${encodeURIComponent(runId)}/records${record ? `/${encodeURIComponent(record.id)}` : ""}`;
       const input: WorkbenchRevisionInput = { ...(record ? { expected_version: draft.version } : {}), source_unit_ids: draft.source, context_unit_ids: draft.context, labels: { ...draft.labels, tags: (draft.tagsText ?? draft.labels.tags?.join(", ") ?? "").split(/[,，]/).map(tag => tag.trim()).filter(Boolean) }, reviewer: draft.reviewer.trim(), reason: draft.reason };
-      await api(path, jsonBody(remove ? "DELETE" : record ? "PATCH" : "POST", input));
+      await api(path, jsonBody(record ? "PATCH" : "POST", input));
       try { sessionStorage.removeItem(storageKey); } catch { /* optional storage */ }
       await onSaved(); onClose();
     } catch (cause) {
@@ -61,10 +61,9 @@ export function SourceEditor({ runId, record, units, onPage, onSaved, onClose }:
       <label className="t1-field">{t("t1.evidenceRole")}<select aria-label={t("t1.evidenceRole")} value={draft.labels.evidence_role ?? record?.evidence_role ?? "primary_candidate"} onChange={e => updateLabel({ evidence_role: e.target.value as WorkbenchLabels["evidence_role"] })}><option value="primary_candidate">{t("t1.primary")}</option><option value="background_suggestion">{t("t1.background")}</option></select></label>
       <label className="t1-field">{t("t1.tags")}<input aria-label={t("t1.tags")} value={draft.tagsText ?? draft.labels.tags?.join(", ") ?? ""} onChange={e => setDraft(current => ({ ...current, tagsText: e.target.value }))} maxLength={1000} /></label></div>
     <label className="t1-field">{t("t1.comment")}<textarea aria-label={t("t1.comment")} value={draft.labels.comment ?? ""} onChange={e => updateLabel({ comment: e.target.value })} maxLength={4000} rows={2} /></label>
-    <label className="t1-field">{t("t1.reviewer")}<input aria-label={t("t1.reviewer")} value={draft.reviewer} onChange={e => setDraft(current => ({ ...current, reviewer: e.target.value }))} maxLength={120} /></label>
+    <label className="t1-field">{t("t1.editorName")}<input aria-label={t("t1.editorName")} value={draft.reviewer} onChange={e => setDraft(current => ({ ...current, reviewer: e.target.value }))} maxLength={120} /></label>
     <label className="t1-field">{t("t1.reason")}<textarea aria-label={t("t1.reason")} value={draft.reason} onChange={e => setDraft(current => ({ ...current, reason: e.target.value }))} maxLength={4000} rows={2} /></label>
     {error && <div className="t1-alert" role="alert">{error}{conflict && <button onClick={() => void loadCurrent().catch(cause => setError(cause instanceof Error ? cause.message : t("t1.requestFailed")))}>{t("t1.loadCurrent")}</button>}</div>}
-    <div className="t1-actions"><button className="t1-primary" disabled={busy || conflict || !draft.reviewer.trim() || !draft.source.length} onClick={() => void save()}>{t(record ? "t1.saveRevision" : "t1.add")}</button>
-      {record && !deleting && <button disabled={busy} onClick={() => setDeleting(true)}>{t("t1.deleteRecord")}</button>}{deleting && <button disabled={busy || conflict || !draft.reviewer.trim()} onClick={() => void save(true)}>{t("t1.confirmDelete")}</button>}</div>
+    <div className="t1-actions"><button className="t1-primary" disabled={busy || conflict || !draft.reviewer.trim() || !draft.source.length} onClick={() => void save()}>{t(record ? "t1.saveRevision" : "t1.add")}</button></div>
   </section>;
 }

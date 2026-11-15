@@ -46,6 +46,9 @@ export async function runContainerBrowser(options) {
     await page.getByRole('button', { name: '上传论文', exact: true }).click(); assert.equal((await pendingUpload).status(), 201);
     const papers = (await json('papers')).papers; assert.equal(papers.length, 1); const paper = papers[0]; assert.equal(paper.sha256, options.input.sha256);
     report.paper_id = paper.id; await page.getByLabel('本次任务论文', { exact: true }).selectOption(paper.id);
+    // The result-focused UI opens the original PDF on demand.
+    const originalToggle = page.locator('.t1-source-toggle');
+    if (await originalToggle.getAttribute('aria-pressed') === 'false') await originalToggle.click();
     await page.locator('.t1-pdf-reader canvas[data-page="1"]').waitFor();
     await page.screenshot({ path: resolve(root, 'browser-upload-original.png'), fullPage: true });
     const pendingStart = page.waitForResponse(response => response.url().endsWith('/runs') && response.request().method() === 'POST');

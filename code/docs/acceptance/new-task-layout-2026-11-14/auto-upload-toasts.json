@@ -1,0 +1,38 @@
+{
+  "status": "passed",
+  "method": "Bundled actual BatchSubmission, GlobalToasts and CSS; all HTTP fulfilled by Playwright without a listening server.",
+  "checks": [
+    {
+      "name": "selection_automatically_uploads_only_new_valid_content_sequentially_without_starting_extraction",
+      "status": "passed"
+    },
+    {
+      "name": "lost_upload_response_and_historical_reuse_keep_same_key_and_retry_only_the_failed_member",
+      "status": "passed"
+    },
+    {
+      "name": "folder_selection_uploads_nested_pdfs_and_skips_other_files_and_duplicate_content",
+      "status": "passed"
+    },
+    {
+      "name": "batch_completion_waits_for_all_admissions_and_retry_preserves_batch_identity_scope_title_and_keys",
+      "status": "passed"
+    },
+    {
+      "name": "single_admission_keeps_success_callback_and_keyed_form_reset",
+      "status": "passed"
+    },
+    {
+      "name": "toast_uses_four_and_six_second_timers_restarts_for_new_notice_survives_navigation_and_keeps_real_error",
+      "status": "passed"
+    },
+    {
+      "name": "mobile_toast_is_centered_below_navigation_without_layout_shift_and_has_entrance_and_exit_animation",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "paid_calls": 0,
+  "production_business_writes": 0
+}

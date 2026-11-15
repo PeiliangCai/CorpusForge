@@ -1,0 +1,59 @@
+{
+  "schema_version": "verbatim-figure-export-1",
+  "mode": "candidates",
+  "output_policy": "verbatim-fragments-1",
+  "document_id": "paper-281379c7-3582-4f64-a6c4-9af96ea83e60",
+  "file_sha256": "50427f2871550116a3ef9530b09fe5a8591299f6352ab58af1aaa46273437a3b",
+  "text_version": "s3v3-aca4249a97701be2fbfcfe1bbc36ec79",
+  "record_count": 8,
+  "total_output_count": 8,
+  "primary_candidate_count": 8,
+  "background_suggestion_count": 0,
+  "unique_source_group_count": 8,
+  "same_source_duplicate_member_count": 0,
+  "source_grouping_is_not_medical_deduplication": true,
+  "model_classification_is_not_quality_improvement": true,
+  "source_grouping_policy_version": "strict-source-groups-1",
+  "source_groups": "delivery.json strict_source_groups; records.jsonl/CSV retain every original member and fragment",
+  "primary_assessment_policy_version": "model-primary-assessment-1",
+  "background_suggestions": "background-records.jsonl / background-records.csv; only background suggested, not human confirmed",
+  "fixture": false,
+  "record_level_human_confirmation": false,
+  "approved_by_model": false,
+  "full_recall_claimed": false,
+  "medical_quality_approved": false,
+  "assets": [
+    {
+      "asset_id": "figure-6f0c283fc60db961c220377d-0",
+      "source_path": "runtime-data/workbench/runs/run-1cd86d00-1256-465a-8a9a-cddd2a8294ac/figure-assets/figure-6f0c283fc60db961c220377d-p2-0.png",
+      "package_path": "review-materials/0388615292b6fb8153e3d478f7d41e90.png",
+      "sha256": "6824bc255b89b6aceaadf6e229945cf144d2a1c09286f39e21f11da6ee5aebd0"
+    },
+    {
+      "asset_id": "figure-585f21cde5ec4e495da3bc44-0",
+      "source_path": "runtime-data/workbench/runs/run-1cd86d00-1256-465a-8a9a-cddd2a8294ac/figure-assets/figure-585f21cde5ec4e495da3bc44-p4-0.png",
+      "package_path": "review-materials/8dc08eed4bb45ac797c5f2352883fb64.png",
+      "sha256": "c33d71e300a7a7e6e2178e50a138e56109e7539526b2972c06935a9ae3eb40b0"
+    },
+    {
+      "asset_id": "figure-238cb9a0ed7333a79112612d-0",
+      "source_path": "runtime-data/workbench/runs/run-1cd86d00-1256-465a-8a9a-cddd2a8294ac/figure-assets/figure-238cb9a0ed7333a79112612d-p3-0.png",
+      "package_path": "review-materials/706fad499315092d3c5e81e4f38941cc.png",
+      "sha256": "44cc7d85f36622c53d91c360e67ea18d4555fafe4b7aa66c43a567d27c998d45"
+    }
+  ],
+  "authoritative_description": "records.jsonl original_fragments; records.csv has one row per fragment",
+  "source_ir_fidelity_is_not_medical_approval": true,
+  "legacy_records_modified": false,
+  "source_glyph_check": {
+    "status": "checked_with_gaps",
+    "detects_all_font_encoding_errors": false,
+    "source_page_review_still_required": true
+  },
+  "controlled_fixture": false,
+  "origin": "workbench_run",
+  "run_id": "run-1cd86d00-1256-465a-8a9a-cddd2a8294ac",
+  "source_ir_sha256": "3762b9c72fb6a800075ea573a9dbdd2043b301938cac60f23addcc3d59eaa25b",
+  "figure_catalog_sha256": "44b5546ec1ea2e5b1c9954043fe08167287eb89932dd5593d878498d18792e87",
+  "original_28_field_records": "source-record-versions.jsonl; human-annotations.json is separate from paper text"
+}

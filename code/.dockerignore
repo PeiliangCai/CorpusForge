@@ -9,6 +9,8 @@
 !apps/pi-web/**
 !services/pdf-parser/**
 !config/pdf-parser.json
+!config/workbench-response-model-policy.json
+!config/scope-catalog.json
 !scripts/pi-web.mjs
 !deploy/**
 !tests/extraction/fixtures/runtime-responses.ts
@@ -34,4 +36,5 @@ apps/pi-web/output-review
 apps/pi-web/demo
 apps/pi-web/docs
 apps/pi-web/.github
+apps/pi-web/build
 **/*.tsbuildinfo

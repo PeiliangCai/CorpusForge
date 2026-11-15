@@ -33,6 +33,8 @@ export type ResponsesStep = {
   stall_after_headers?: boolean;
   disconnect_after_ms?: number;
   response_gate?: Promise<void>;
+  sse_error_message?: string;
+  sse_error_after_output?: boolean;
 };
 
 const normalUsage: ResponsesUsage = { input_tokens: 100, output_tokens: 20, total_tokens: 120 };
@@ -95,6 +97,10 @@ export async function createRuntimeResponsesFixture(
       response.flushHeaders();
       if (step.response_gate) { await step.response_gate; if (response.destroyed) return; }
       if (step.stall_after_headers) return;
+      const sendError = () => response.end('event: error\ndata: ' + JSON.stringify({
+        error: { message: step!.sse_error_message, type: 'synthetic_fixture_error', code: 'synthetic_fixture_error' },
+      }) + '\n\n');
+      if (step.sse_error_message && !step.sse_error_after_output) { sendError(); return; }
       let sequence = 0;
       const send = (event: Record<string, unknown>) => response.write(`event: ${event.type}\ndata: ${JSON.stringify({ ...event, sequence_number: sequence++ })}\n\n`);
       const id = `resp-fixture-${observation.index}`;
@@ -119,6 +125,7 @@ export async function createRuntimeResponsesFixture(
         send({ type: 'response.output_item.done', output_index: index, item });
         output.push(item);
       }
+      if (step.sse_error_message) { sendError(); return; }
       if (!step.omit_terminal_event) send({ type: step.incomplete ? 'response.incomplete' : 'response.completed', response: {
         id, object: 'response', model: step.response_model ?? body.model, status: step.incomplete ? 'incomplete' : 'completed', output,
         ...(step.incomplete ? { incomplete_details: { reason: 'max_output_tokens' } } : {}),

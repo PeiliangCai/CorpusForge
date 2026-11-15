@@ -11,10 +11,13 @@ import type { ModelConfig } from './config.js';
 import { safeError } from './config.js';
 import { ExtractionBudget, S4_LIMITS, type RequestAccounting } from './extraction-budget.js';
 import { classifyToolError, toolArgumentDiagnostic } from './extraction-tool-recovery.js';
+import { sdkErrorDiagnostic } from './extraction-sdk-diagnostic.js';
+import { PROVIDER_HIGH_LOAD_MESSAGE, retryUnansweredHighLoadResponse } from './extraction-high-load-retry.js';
 import { PRIMARY_ASSESSMENT_RULE } from './primary-evidence-assessment.js';
 
 export interface ExtractionModelProfile { model_id: string; api: 'openai-responses' | 'openai-completions';
-  reasoning_effort: 'medium'; context_window: number; max_output_tokens: number; profile_version: string; }
+  reasoning_effort: 'medium' | 'none'; context_window: number; max_output_tokens: number; profile_version: string;
+  model_capacity_source?: 'user_configured_local_limits_not_verified_supplier_capacity'; }
 export const developmentProfile = (modelId: string, api: ExtractionModelProfile['api'] = 'openai-responses'): ExtractionModelProfile => ({
   model_id: modelId, api, reasoning_effort: 'medium', context_window: 1_050_000, max_output_tokens: 8192,
   profile_version: 's4-development-medium-official-context-3' });
@@ -42,10 +45,18 @@ Every candidate remains pending or needs_context. Never create human approval, a
 ${PRIMARY_ASSESSMENT_RULE}
 Be efficient: use the current batch and supplied context; submit all valid candidates together and explicitly complete the assigned batch even with zero candidates.`;
 export const EXTRACTION_STREAM_EOF_MESSAGE = 'OpenAI Responses stream ended before a terminal response event';
+/** Host lifecycle metadata only: no prompts, arguments, model text or heartbeat-derived work. */
+export interface ExtractionActivity {
+  type: 'request_started' | 'request_response' | 'request_finished' | 'tool_started' | 'tool_finished' | 'retry_scheduled';
+  started_at: string; request_id?: string; finished_at?: string; attempt?: number; max_retries?: number;
+  tool_name?: string; tool_call_id?: string; outcome?: 'response_received' | 'failed'; error_code?: string;
+}
+interface ExtractionLifecycle { onInitialProviderEvent?: () => void; onActivity?: (activity: ExtractionActivity) => void }
 
 export async function createExtractionSession(config: ModelConfig, profile: ExtractionModelProfile, definitions: ToolDefinition[],
   directory: string, budget: ExtractionBudget, purpose: string, attempt = 0, maxResponses: number = S4_LIMITS.batch_responses,
-  systemRules = EXTRACTION_SYSTEM_RULES, requestTimeoutMs = S4_LIMITS.request_seconds * 1000) {
+  systemRules = EXTRACTION_SYSTEM_RULES, requestTimeoutMs = S4_LIMITS.request_seconds * 1000,
+  lifecycle?: ExtractionLifecycle) {
   const agentDir = join(directory, 'pi-config'); await mkdir(agentDir, { recursive: true, mode: 0o700 });
   // Pi includes cwd in its provider prompt even with a custom system prompt. Keep it
   // neutral and identical across methods; storage, sessions and tool closures stay per run.
@@ -62,18 +73,20 @@ export async function createExtractionSession(config: ModelConfig, profile: Extr
     allowModelNetwork: false, refreshOnCreate: false });
   runtime.registerProvider(config.provider, { baseUrl: config.baseUrl, api: profile.api, authHeader: true,
     models: [{ id: profile.model_id, name: profile.model_id + ' (S4 development comparison)', api: profile.api,
-      reasoning: true, input: ['text'], contextWindow: profile.context_window, maxTokens: profile.max_output_tokens,
+      reasoning: profile.reasoning_effort !== 'none', input: ['text'], contextWindow: profile.context_window, maxTokens: profile.max_output_tokens,
       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
       compat: profile.api === 'openai-completions' ? { supportsStore: false, supportsDeveloperRole: false,
-        supportsUsageInStreaming: true, supportsReasoningEffort: true } : {} }] });
-  await runtime.setRuntimeApiKey(config.provider, config.apiKey());
+        supportsUsageInStreaming: true, supportsReasoningEffort: profile.reasoning_effort !== 'none' } : {} }] });
+  const apiKey = config.apiKey();
+  await runtime.setRuntimeApiKey(config.provider, apiKey);
   const model = runtime.getModel(config.provider, profile.model_id); if (!model) throw new ContractError('model_not_registered');
   const result = await createAgentSession({ cwd: modelContextDirectory, agentDir, settingsManager: settings, resourceLoader: loader,
-    modelRuntime: runtime, model, thinkingLevel: profile.reasoning_effort, tools: definitions.map(d => d.name),
+    modelRuntime: runtime, model, thinkingLevel: profile.reasoning_effort === 'none' ? 'off' : profile.reasoning_effort, tools: definitions.map(d => d.name),
     customTools: definitions, sessionManager: SessionManager.inMemory(modelContextDirectory) });
+  const contextLimit = Math.min(128000, profile.context_window - profile.max_output_tokens);
   const audit = { pi_version: '1.4.0', model_id: profile.model_id, api: profile.api, reasoning_effort: profile.reasoning_effort,
-    model_context_window_metadata: profile.context_window, model_capacity_source: 'official_OpenAI_model_specification_not_supplier_stress_test',
-    application_context_estimate_limit: 128000, configured_max_output_tokens: profile.max_output_tokens,
+    model_context_window_metadata: profile.context_window, model_capacity_source: profile.model_capacity_source ?? 'official_OpenAI_model_specification_not_supplier_stress_test',
+    application_context_estimate_limit: contextLimit, configured_max_output_tokens: profile.max_output_tokens,
     active_tools: result.session.getActiveToolNames().sort(), context_file_count: loader.getAgentsFiles().agentsFiles.length,
     skill_count: loader.getSkills().skills.length, extension_count: result.extensionsResult.extensions.length,
     prompt_count: loader.getPrompts().prompts.length, theme_count: loader.getThemes().themes.length,
@@ -84,20 +97,34 @@ export async function createExtractionSession(config: ModelConfig, profile: Extr
   const entries: RequestAccounting[] = [];
   let policyFailureCode: string | undefined;
   let lastTelemetryPersist = 0;
+  let highLoadRetriesUsed = 0;
+  let initialProviderEventObserved = false;
+  const reportedFinished = new Set<string>();
+  const notifyRequestFinished = (entry: RequestAccounting, failed = false, errorCode?: string) => {
+    if (!entry.finished_at || reportedFinished.has(entry.id)) return;
+    reportedFinished.add(entry.id);
+    const error_code = errorCode ?? entry.error_code;
+    lifecycle?.onActivity?.({ type: 'request_finished', request_id: entry.id, started_at: entry.started_at,
+      finished_at: entry.finished_at, outcome: failed || error_code || (entry.status ?? 200) >= 400 ? 'failed' : 'response_received',
+      ...(error_code ? { error_code } : {}) });
+  };
+  const requestRetries: Array<Record<string, unknown>> = [];
   const originalStream = result.session.agent.streamFunction.bind(result.session.agent);
   result.session.agent.streamFunction = (m, context, options) => {
     const estimate = estimateContextTokens(context).tokens;
-    if (estimate > 128000) { policyFailureCode = 'application_context_estimate_limit'; throw new ContractError(policyFailureCode); }
-    return originalStream(m, context, { ...options,
+    if (estimate > contextLimit) { policyFailureCode = 'application_context_estimate_limit'; throw new ContractError(policyFailureCode); }
+    return retryUnansweredHighLoadResponse(() => originalStream(m, context, { ...options,
     maxTokens: profile.max_output_tokens, maxRetries: 0, timeoutMs: 120000, transport: 'sse', cacheRetention: 'none',
     fetch: budget.guardedFetch(profile.model_id, purpose, attempt, entries, maxResponses, profile.max_output_tokens, requestTimeoutMs,
-      { application_context_estimate: estimate, model_context_window_metadata: profile.context_window }),
+      { application_context_estimate: estimate, model_context_window_metadata: profile.context_window }, entry => lifecycle?.onActivity?.({
+        type: 'request_started', request_id: entry.id, started_at: entry.started_at, attempt: attempt + highLoadRetriesUsed, max_retries: S4_LIMITS.transient_retries })),
     onProviderStreamEvent: (data) => {
       if (!data || typeof data !== 'object') return;
       const e = data as { response?: { usage?: Record<string, unknown> }; usage?: Record<string, unknown> };
       const counterEvent = data as { type?: string; delta?: unknown };
       const entry = entries.at(-1);
       if (entry) {
+        if (!entry.stream_event_count) lifecycle?.onActivity?.({ type: 'request_response', request_id: entry.id, started_at: entry.started_at });
         entry.stream_event_count = (entry.stream_event_count ?? 0) + 1;
         entry.first_stream_event_at ??= new Date().toISOString(); entry.last_stream_event_at = new Date().toISOString();
         if (typeof counterEvent.delta === 'string') {
@@ -111,10 +138,39 @@ export async function createExtractionSession(config: ModelConfig, profile: Extr
       const response = e.response as { model?: unknown; id?: unknown } | undefined;
       if (entries.length && typeof response?.id === 'string' && /^[a-zA-Z0-9_./:@+-]{1,160}$/.test(response.id)) entries.at(-1)!.provider_response_id = response.id;
       if (entry && response) budget.observeResponseModel(entry, response.model, counterEvent.type ?? 'unknown_event_type');
+      if (entry && profile.api === 'openai-completions') {
+        const chunk = data as { model?: unknown; object?: string; id?: unknown };
+        budget.observeResponseModel(entry, chunk.model, chunk.object ?? 'chat.completion.chunk', 'provider_stream_event.chat_completion.model');
+        if (typeof chunk.id === 'string' && /^[a-zA-Z0-9_./:@+-]{1,160}$/.test(chunk.id)) entry.provider_response_id = chunk.id;
+      }
+      if (!initialProviderEventObserved) {
+        initialProviderEventObserved = true; lifecycle?.onInitialProviderEvent?.();
+      }
       if (Date.now() - lastTelemetryPersist >= 1000) { lastTelemetryPersist = Date.now(); budget.persist(); }
-    } });
+    } }), {
+      signal: options?.signal,
+      canRetry: () => budget.ledger.halted === null && entries.length < maxResponses &&
+        attempt + highLoadRetriesUsed < S4_LIMITS.transient_retries,
+      onRetry: message => {
+        const entry = entries.at(-1); if (!entry) throw new ContractError('missing_high_load_request_accounting');
+        entry.error_code = 'provider_reported_high_load';
+        budget.settle(entry); // Missing usage retains the full conservative reservation.
+        highLoadRetriesUsed++;
+        notifyRequestFinished(entry, true);
+        lifecycle?.onActivity?.({ type: 'retry_scheduled', started_at: new Date().toISOString(),
+          attempt: attempt + highLoadRetriesUsed, max_retries: S4_LIMITS.transient_retries });
+        requestRetries.push({ type: 'provider_request_retry', reason: 'exact_provider_high_load',
+          failed_request_id: entry.id, retry_index: highLoadRetriesUsed, prior_fresh_attempts: attempt,
+          maximum_combined_retries: S4_LIMITS.transient_retries, previously_completed_tools_replayed: false,
+          ...sdkErrorDiagnostic(message.errorMessage ?? '', [apiKey]) });
+      },
+      delayMs: () => 250 * highLoadRetriesUsed,
+    });
   };
-  return { session: result.session, audit, entries, get policyFailureCode() { return policyFailureCode; } };
+  return { session: result.session, audit, entries, onActivity: lifecycle?.onActivity, notifyRequestFinished,
+    sdkErrorDiagnostic: (message: string) => sdkErrorDiagnostic(message, [apiKey]),
+    requestRetries, get highLoadRetriesUsed() { return highLoadRetriesUsed; },
+    get policyFailureCode() { return policyFailureCode; } };
 }
 function numericUsage(value: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
@@ -129,10 +185,16 @@ export async function promptExtractionSession(created: Awaited<ReturnType<typeof
   budget: ExtractionBudget, signal?: AbortSignal, timeoutMs = 180000) {
   const { session, entries } = created; let settled = false, responses = 0, apiFailed = false;
   const events: Array<Record<string, unknown>> = [];
+  const toolStarts = new Map<string, string>();
   const usage: Usage[] = [];
   const unsubscribe = session.subscribe(event => {
     if (event.type === 'agent_settled') settled = !event.aborted;
     if (event.type === 'tool_execution_start' || event.type === 'tool_execution_end') {
+      const now = new Date().toISOString();
+      if (event.type === 'tool_execution_start') toolStarts.set(event.toolCallId, now);
+      created.onActivity?.({ type: event.type === 'tool_execution_start' ? 'tool_started' : 'tool_finished',
+        started_at: toolStarts.get(event.toolCallId) ?? now, tool_name: event.toolName, tool_call_id: event.toolCallId });
+      if (event.type === 'tool_execution_end') toolStarts.delete(event.toolCallId);
       const raw = event.type === 'tool_execution_end' ? JSON.stringify(event.result) ?? '' : '';
       events.push({ type: event.type, tool: event.toolName, call_id: event.toolCallId,
         ...(event.type === 'tool_execution_start' ? toolArgumentDiagnostic(event.args) : {
@@ -150,10 +212,13 @@ export async function promptExtractionSession(created: Awaited<ReturnType<typeof
       if (entry && sdkError === EXTRACTION_STREAM_EOF_MESSAGE) {
         entry.error_code ??= 'provider_stream_missing_terminal_event'; budget.persist();
       }
+      if (entry) created.notifyRequestFinished(entry, ['error', 'aborted', 'length'].includes(event.message.stopReason),
+        ['error', 'aborted', 'length'].includes(event.message.stopReason) ? entry.error_code ?? 'model_response_failed' : undefined);
       events.push({ type: 'assistant_response', stop_reason: event.message.stopReason,
         ...(typeof sdkError === 'string' && sdkError ? { sdk_error_sha256: createHash('sha256').update(sdkError).digest('hex'),
-          sdk_error_characters: sdkError.length,
+          sdk_error_characters: sdkError.length, ...created.sdkErrorDiagnostic(sdkError),
           sdk_error_classification: sdkError === EXTRACTION_STREAM_EOF_MESSAGE ? 'provider_stream_missing_terminal_event' :
+            sdkError === PROVIDER_HIGH_LOAD_MESSAGE ? 'provider_reported_high_load' :
             /capacity|overload|rate.?limit|too many requests/i.test(sdkError) ? 'provider_capacity_or_rate_limit' :
             /timeout|timed out|connection|network|fetch failed|socket/i.test(sdkError) ? 'transport_or_timeout' :
             /application_context_estimate_limit/.test(sdkError) ? 'application_context_estimate_limit' : 'unclassified_sdk_error' } : {}) });
@@ -177,9 +242,13 @@ export async function promptExtractionSession(created: Awaited<ReturnType<typeof
   finally {
     clearTimeout(timeout); signal?.removeEventListener('abort', abort); unsubscribe(); session.dispose();
     for (const entry of entries) if (!entry.finished_at) { try { budget.settle(entry); } catch { /* ledger retains limit */ } }
+    for (const entry of entries) created.notifyRequestFinished(entry, Boolean(error), error ? entry.error_code ?? error.code : undefined);
   }
   return { settled, responses, events, usage, request_ids: entries.map(e => e.id), error,
-    transient_error: budget.ledger.halted === null &&
+    provider_request_retries: created.requestRetries,
+    // Physical high-load retries consume this phase's existing two retries;
+    // never add a fresh-agent retry on top of them after a later error.
+    transient_error: created.highLoadRetriesUsed === 0 && budget.ledger.halted === null &&
       entries.some(e => [408, 429, 500, 502, 503, 504].includes(e.status ?? 0) ||
         ['transport_failure', 'request_time_limit', 'provider_stream_missing_terminal_event'].includes(e.error_code ?? '')) };
 }

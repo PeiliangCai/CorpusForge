@@ -1,0 +1,300 @@
+--- before/packages/contracts/src/workbench.ts
++++ after/packages/contracts/src/workbench.ts
+@@ -54,4 +54,6 @@
+   source_units?: WorkbenchSourceUnit[];
+ }
++/** Admission metadata is immutable per submission. Missing metadata means the legacy type was not recorded. */
++export type WorkbenchSubmission = { kind: 'single' } | { kind: 'batch'; batch_id: string };
+ export interface WorkbenchRun {
+   run_id: string; document_id: string; state: string; fixture: boolean; candidate_count: number;
+@@ -59,4 +61,5 @@
+   execution_started_at?: string; queue_wait_ms?: number; runtime_deadline?: string;
+   result_ready?: boolean; finished_at?: string;
++  submission?: WorkbenchSubmission;
+ }
+ export interface WorkbenchCapabilities {
+--- before/apps/server/src/workflow.ts
++++ after/apps/server/src/workflow.ts
+@@ -13,5 +13,5 @@
+ import type { WorkbenchCapabilities, WorkbenchEvent, WorkbenchExportKind, WorkbenchLabels, WorkbenchOutput, WorkbenchPaper,
+   WorkbenchPaperDetail, WorkbenchRecord, WorkbenchRevisionInput, WorkbenchReviewInput, WorkbenchRun, WorkbenchSourceUnit, WorkbenchFigureCheckInput,
+-  WorkbenchRetention, WorkbenchRetentionInput } from '../../../packages/contracts/src/workbench.js';
++  WorkbenchRetention, WorkbenchRetentionInput, WorkbenchSubmission } from '../../../packages/contracts/src/workbench.js';
+ import { WorkbenchSources, type Artifact } from './workbench.js';
+ import { readingPassages } from './reading-passages.js';
+@@ -24,4 +24,13 @@
+   ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b))) : item);
+ const terminals = new Set(['completed', 'partial', 'failed', 'cancelled', 'interrupted']);
++function submissionMetadata(value: unknown): WorkbenchSubmission | undefined {
++  if (value === undefined) return undefined;
++  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new ContractError('invalid_submission_metadata');
++  const input = value as Record<string, unknown>, keys = Object.keys(input);
++  if (input.kind === 'single' && keys.length === 1) return { kind: 'single' };
++  if (input.kind === 'batch' && keys.length === 2 && keys.includes('batch_id') && typeof input.batch_id === 'string'
++    && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(input.batch_id)) return { kind: 'batch', batch_id: input.batch_id };
++  throw new ContractError('invalid_submission_metadata');
++}
+ export const unavailableMedicalCatalog: EvidenceCatalog = { catalog_version: 'medical-unavailable-1', status: 'unavailable', fixture: false,
+   cancers: [], image_types: [], features: [], bindings: [] };
+@@ -31,5 +40,5 @@
+ interface RunRow { id: string; paper_id: string; created_at: string; origin: WorkbenchOutput['origin']; controlled: boolean;
+   source?: SourceSnapshot; coverage?: unknown; error?: string; directory: string; strategy?: string; summary?: string;
+-  execution_started_at?: string; queue_wait_ms?: number; runtime_deadline?: string; finished_at?: string }
++  execution_started_at?: string; queue_wait_ms?: number; runtime_deadline?: string; finished_at?: string; submission?: WorkbenchSubmission }
+ interface Annotation { labels: WorkbenchLabels; deleted: boolean; reviewer: string; reason: string }
+ export interface WorkflowExecution {
+@@ -158,7 +167,7 @@
+   async papers() { await this.initialize(); return this.store.db.prepare('SELECT payload_json FROM workbench_papers ORDER BY rowid DESC').all().map(r => this.summary(JSON.parse(r.payload_json as string))); }
+   async runs(filterId?: string): Promise<WorkbenchRun[]> { await this.initialize();
+-    return this.store.db.prepare(`SELECT w.id,w.paper_id,s.state,s.input_json,json_extract(w.payload_json,'$.origin','$.created_at','$.controlled','$.error','$.execution_started_at','$.queue_wait_ms','$.runtime_deadline','$.finished_at') info
++    return this.store.db.prepare(`SELECT w.id,w.paper_id,s.state,s.input_json,json_extract(w.payload_json,'$.origin','$.created_at','$.controlled','$.error','$.execution_started_at','$.queue_wait_ms','$.runtime_deadline','$.finished_at','$.submission') info
+       FROM workbench_runs w JOIN s4_runs s ON w.id=s.id ${filterId ? 'WHERE w.id=?' : ''} ORDER BY w.rowid DESC`).all(...(filterId ? [filterId] : [])).map(row => {
+-      const [origin, created_at, controlled, error, execution_started_at, queue_wait_ms, runtime_deadline, finished_at] = JSON.parse(row.info as string), input = JSON.parse(row.input_json as string) as RunInput;
++      const [origin, created_at, controlled, error, execution_started_at, queue_wait_ms, runtime_deadline, finished_at, submission] = JSON.parse(row.info as string), input = JSON.parse(row.input_json as string) as RunInput;
+       const count = this.store.db.prepare(`SELECT COUNT(*) n FROM s4_versions v JOIN
+         (SELECT record_id,MAX(version) version FROM s4_versions WHERE run_id=? AND COALESCE(json_extract(envelope_json,'$.status'),'active')<>'proposed' GROUP BY record_id) current
+@@ -168,5 +177,5 @@
+       const ready = Boolean(finished_at) || !this.active.has(row.id as string), rawState = row.state as string;
+       return { run_id: row.id as string, document_id: row.paper_id as string, state: ['completed', 'partial'].includes(rawState) && !ready ? 'reconciling' : rawState, fixture: Boolean(controlled), candidate_count: Number(count.n),
+-        scope: input.scope, origin, created_at, result_ready: terminals.has(rawState) && ready, ...(finished_at ? { finished_at } : {}), ...(error ? { error } : {}), ...(execution_started_at ? { execution_started_at, queue_wait_ms, runtime_deadline } : {}) };
++        scope: input.scope, origin, created_at, result_ready: terminals.has(rawState) && ready, ...(submission ? { submission } : {}), ...(finished_at ? { finished_at } : {}), ...(error ? { error } : {}), ...(execution_started_at ? { execution_started_at, queue_wait_ms, runtime_deadline } : {}) };
+     });
+   }
+@@ -376,9 +385,11 @@
+   }
+   events(id: string, after = 0): WorkbenchEvent[] { this.run(id); return (this.store.events(id) as WorkbenchEvent[]).filter(e => e.seq > after); }
+-  async start(id: string, scope: Scope, requestId?: string) {
++  async start(id: string, scope: Scope, requestId?: string, metadata?: WorkbenchSubmission) {
++    const submission = submissionMetadata(metadata);
+     await this.initialize();
+     // Replaying a committed request is read-only even after the server restarts,
+     // an allowance closes, or a catalogue changes. The original scope is immutable.
+-    return this.submission('start', requestId, { paper_id: id, scope }, async runId => ({ run: (await this.runs(runId))[0]! }), async remember => {
++    // Keep the exact legacy payload when metadata is absent so old keys still replay after an upgrade.
++    return this.submission('start', requestId, { paper_id: id, scope, ...(submission ? { submission } : {}) }, async runId => ({ run: (await this.runs(runId))[0]! }), async remember => {
+     if (this.shuttingDown) throw new ContractError('server_shutting_down');
+     const admittedAt = now();
+@@ -394,5 +405,5 @@
+       rule_version: 'visual-statements-2', runtime_profile: { provider: runner.provider, model_id: runner.model_id, endpoint: '', pi_version: '1.4.0', version: 's5-workbench-1' } };
+     await runner.prepare?.(input, directory);
+-    const row: RunRow = { id: runId, paper_id: id, created_at: admittedAt, origin: runner.controlled ? 'controlled_fixture' : 'workbench_run', controlled: runner.controlled, directory, strategy: 'B0' };
++    const row: RunRow = { id: runId, paper_id: id, created_at: admittedAt, origin: runner.controlled ? 'controlled_fixture' : 'workbench_run', controlled: runner.controlled, directory, strategy: 'B0', ...(submission ? { submission } : {}) };
+     this.store.atomic(() => { this.store.create(input, { fixed_method: 'B0', controlled_fixture: runner.controlled }); this.saveRun(row); remember(runId); });
+     const controller = new AbortController();
+--- before/apps/server/src/app.ts
++++ after/apps/server/src/app.ts
+@@ -5,5 +5,5 @@
+ import { MAX_PDF_BYTES, WorkbenchWorkflow, WorkflowConflict, WorkflowCatalogConflict, WorkflowRetentionConflict } from './workflow.js';
+ import type { Scope } from '@t1/contracts';
+-import type { WorkbenchExportKind, WorkbenchRevisionInput, WorkbenchReviewInput, WorkbenchFigureCheckInput, WorkbenchRetentionInput } from '../../../packages/contracts/src/workbench.js';
++import type { WorkbenchExportKind, WorkbenchRevisionInput, WorkbenchReviewInput, WorkbenchFigureCheckInput, WorkbenchRetentionInput, WorkbenchSubmission } from '../../../packages/contracts/src/workbench.js';
+ 
+ export function buildApp(store: RunStore, sources = new WorkbenchSources(), workflow?: WorkbenchWorkflow) {
+@@ -53,7 +53,7 @@
+     });
+     app.delete<{ Params: { paperId: string } }>('/api/workbench/papers/:paperId', async request => workflow.deletePaper(request.params.paperId));
+-    app.post<{ Params: { paperId: string }; Body: { scope: Scope } }>('/api/workbench/papers/:paperId/runs', async (request, reply) => {
+-      if (!request.body || Object.keys(request.body).some(k => k !== 'scope')) throw new ContractError('immutable_server_run_configuration');
+-      return reply.code(202).send(await workflow.start(request.params.paperId, request.body.scope, requestId(request.headers['x-t1-request-id'])));
++    app.post<{ Params: { paperId: string }; Body: { scope: Scope; submission?: WorkbenchSubmission } }>('/api/workbench/papers/:paperId/runs', async (request, reply) => {
++      if (!request.body || typeof request.body !== 'object' || Array.isArray(request.body) || Object.keys(request.body).some(k => k !== 'scope' && k !== 'submission')) throw new ContractError('immutable_server_run_configuration');
++      return reply.code(202).send(await workflow.start(request.params.paperId, request.body.scope, requestId(request.headers['x-t1-request-id']), request.body.submission));
+     });
+     app.get<{ Params: { runId: string } }>('/api/workbench/runs/:runId', async request => workflow.runDetail(request.params.runId));
+--- before/apps/pi-web/t1/BatchSubmission.tsx
++++ after/apps/pi-web/t1/BatchSubmission.tsx
+@@ -7,10 +7,11 @@
+ import { scopeProblems, type ScopeCatalog } from "./scope";
+ import { runPresentation } from "./run-presentation";
++import { TaskKindBadge } from "./TaskKindBadge";
+ import type { Scope } from "../../../packages/contracts/src/index";
+-import type { WorkbenchPaper, WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import type { WorkbenchPaper, WorkbenchRun, WorkbenchSubmission } from "../../../packages/contracts/src/workbench";
+ 
+ const MAX_FILES = 20, MAX_BYTES = 50 * 1024 * 1024;
+ type Status = "pending" | "invalid" | "uploading" | "uploadFailed" | "uploaded" | "starting" | "startFailed" | "submitted";
+-type Member = { id: string; file: File; title: string; status: Status; error?: string; paper?: WorkbenchPaper; run?: WorkbenchRun; uploadKey: string; startKey: string };
++type Member = { id: string; file: File; displayName: string; title: string; status: Status; error?: string; paper?: WorkbenchPaper; run?: WorkbenchRun; uploadKey: string; startKey: string };
+ type Props = { scope: Scope | null; catalog: ScopeCatalog | null; canUpload: boolean; canStart: boolean; runs: WorkbenchRun[];
+   onScopeChange: (scope: Scope) => void;
+@@ -23,6 +24,7 @@
+   const [members, setMembers] = useState<Member[]>([]), [phase, setPhase] = useState<"upload" | "start" | null>(null), [notice, setNotice] = useState("");
+   const busy = phase !== null;
+-  const [savedScope, setSavedScope] = useState<Scope | null>(null);
+-  const busyRef = useRef(false), inputRef = useRef<HTMLInputElement>(null);
++  const [admission, setAdmission] = useState<{ scope: Scope; submission: WorkbenchSubmission } | null>(null);
++  const busyRef = useRef(false), inputRef = useRef<HTMLInputElement>(null), folderRef = useRef<HTMLInputElement>(null);
++  const savedScope = admission?.scope;
+   const patch = (id: string, change: Partial<Member>) => setMembers(current => current.map(member => member.id === id ? { ...member, ...change } : member));
+   const uploaded = members.filter(member => member.paper).length, submitted = members.filter(member => member.run).length;
+@@ -31,18 +33,29 @@
+   const batchScope = savedScope ?? scope;
+   const invalidScope = !batchScope || !catalog || scopeProblems(batchScope, catalog).length > 0;
++  const validMembers = members.filter(member => member.status !== "invalid");
++  const taskKind = admission?.submission.kind ?? (validMembers.length > 1 ? "batch" : "single");
+ 
+-  function choose(files: FileList | null) {
++  function choose(files: FileList | null, folder = false) {
+     if (!files || busyRef.current || savedScope) return;
+-    const selected = [...members]; let omitted = 0, sameName = 0;
+-    for (const file of Array.from(files)) {
+-      if (selected.length >= MAX_FILES) { omitted++; continue; }
++    const selected = [...members], incoming = Array.from(files).filter(file => !folder || /\.pdf$/i.test(file.name));
++    const resetInputs = () => { if (inputRef.current) inputRef.current.value = ""; if (folderRef.current) folderRef.current.value = ""; };
++    if (folder && !incoming.length) { setNotice(t("t1.folderNoPdf")); resetInputs(); return; }
++    if (incoming.length > MAX_FILES - selected.length) {
++      setNotice(t("t1.batchLimitReached", { count: incoming.length, remaining: MAX_FILES - selected.length })); resetInputs(); return;
++    }
++    let sameName = 0;
++    for (const file of incoming) {
+       // Metadata cannot prove file identity (different folders can have identical
+       // names, sizes and timestamps). Keep both and make the ambiguity visible.
+       if (selected.some(member => member.file.name === file.name)) sameName++;
+       const invalid = !/\.pdf$/i.test(file.name) || file.size === 0 || file.size > MAX_BYTES || file.name.length > 240;
+-      selected.push({ id: crypto.randomUUID(), file, title: "", status: invalid ? "invalid" : "pending", ...(invalid ? { error: t("t1.invalidPdf") } : {}), uploadKey: crypto.randomUUID(), startKey: crypto.randomUUID() });
++      const displayName = folder ? file.webkitRelativePath || file.name : file.name;
++      selected.push({ id: crypto.randomUUID(), file, displayName, title: folder ? displayName.replace(/[\x00-\x1f]/g, "").slice(-500) : "", status: invalid ? "invalid" : "pending", ...(invalid ? { error: t("t1.invalidPdf") } : {}), uploadKey: crypto.randomUUID(), startKey: crypto.randomUUID() });
+     }
+-    setMembers(selected); setNotice([omitted ? t("t1.batchLimitReached", { count: omitted }) : "", sameName ? t("t1.batchSameName", { count: sameName }) : ""].filter(Boolean).join(" "));
+-    if (inputRef.current) inputRef.current.value = "";
++    setMembers(selected); setNotice([folder ? t("t1.folderSelected", { count: incoming.length, skipped: files.length - incoming.length }) : "", sameName ? t("t1.batchSameName", { count: sameName }) : ""].filter(Boolean).join(" ")); resetInputs();
++  }
++  function chooseFolder() {
++    if (!folderRef.current || !("webkitdirectory" in folderRef.current)) { setNotice(t("t1.folderUnsupported")); return; }
++    folderRef.current.click();
+   }
+   async function upload(selected = uploadable) {
+@@ -63,5 +76,8 @@
+     if (busyRef.current || !canStart || invalidScope || !batchScope) return;
+     busyRef.current = true; setPhase("start"); setNotice("");
+-    const snapshot = structuredClone(batchScope); setSavedScope(snapshot);
++    // Count every valid selected member, including failed uploads that may retry later.
++    // Scope and submission identity freeze together before the first start request.
++    const saved = admission ?? { scope: structuredClone(batchScope), submission: taskKind === "batch" ? { kind: "batch", batch_id: crypto.randomUUID() } as const : { kind: "single" } as const };
++    setAdmission(saved);
+     try {
+       for (const member of selected) {
+@@ -70,5 +86,5 @@
+         try {
+           const value = await api<{ run: WorkbenchRun }>(`workbench/papers/${encodeURIComponent(member.paper.id)}/runs`, {
+-            ...jsonBody("POST", { scope: snapshot }), headers: { "content-type": "application/json", "x-t1-request-id": member.startKey } });
++            ...jsonBody("POST", { scope: saved.scope, submission: saved.submission }), headers: { "content-type": "application/json", "x-t1-request-id": member.startKey } });
+           patch(member.id, { run: value.run, status: "submitted", error: undefined }); onStarted(value.run);
+         } catch (cause) { patch(member.id, { status: "startFailed", error: errorText(cause) }); }
+@@ -79,13 +95,18 @@
+   return <section className="t1-upload t1-batch" aria-label={t("t1.batchTitle")} aria-busy={busy}>
+     <h2>{t("t1.uploadTitle")}</h2><p className="t1-lead">{t("t1.batchHelp")}</p>
+-    <label className="t1-field">{t("t1.choosePdf")}<input aria-label={t("t1.choosePdf")} type="file" accept="application/pdf,.pdf" multiple ref={inputRef} disabled={busy || Boolean(savedScope) || members.length >= MAX_FILES} onChange={event => choose(event.target.files)} /></label>
++    <div className="t1-file-choices">
++      <button className="t1-button" disabled={busy || Boolean(savedScope) || members.length >= MAX_FILES} onClick={() => inputRef.current?.click()}>{t("t1.chooseFiles")}</button>
++      <button className="t1-button" disabled={busy || Boolean(savedScope) || members.length >= MAX_FILES} onClick={chooseFolder}>{t("t1.chooseFolder")}</button>
++      <input hidden aria-label={t("t1.choosePdf")} type="file" accept="application/pdf,.pdf" multiple ref={inputRef} disabled={busy || Boolean(savedScope)} onChange={event => choose(event.target.files)} />
++      <input hidden aria-label={t("t1.chooseFolder")} type="file" multiple {...{ webkitdirectory: "" }} ref={folderRef} disabled={busy || Boolean(savedScope)} onChange={event => choose(event.target.files, true)} />
++    </div><p className="t1-footnote">{t("t1.folderHelp")}</p>
+     {notice && <p className="t1-notice" role="status">{notice}</p>}
+     {!!members.length && <>
+-      <p className="t1-batch-counts" role="status">{t("t1.batchCounts", { total: members.length, uploaded, submitted })}</p>
++      <p className="t1-batch-counts" role="status">{t("t1.batchCounts", { total: members.length, uploaded, submitted })}{validMembers.length > 0 && <> · <TaskKindBadge kind={taskKind} /></>}</p>
+       <ul className="t1-batch-members">{members.map(member => {
+         const run = runs.find(run => run.run_id === member.run?.run_id) ?? member.run;
+         return <li key={member.id} data-batch-member={member.id} data-upload-state={member.status}>
+-          <div className="t1-batch-file"><strong title={member.file.name}>{member.file.name}</strong><small>{(member.file.size / 1024 / 1024).toFixed(1)} MiB</small></div>
+-          {!member.paper && <label className="t1-field">{t("t1.paperTitle")}<input aria-label={`${t("t1.paperTitle")} · ${member.file.name}`} value={member.title} disabled={busy || member.status === "invalid" || member.status === "uploadFailed"} onChange={event => patch(member.id, { title: event.target.value })} maxLength={500} /></label>}
++          <div className="t1-batch-file"><strong title={member.displayName}>{member.displayName}</strong><small>{(member.file.size / 1024 / 1024).toFixed(1)} MiB</small>{member.status !== "invalid" && <TaskKindBadge kind={run?.submission?.kind ?? taskKind} />}</div>
++          {!member.paper && <label className="t1-field">{t("t1.paperTitle")}<input aria-label={`${t("t1.paperTitle")} · ${member.displayName}`} value={member.title} disabled={busy || member.status === "invalid" || member.status === "uploadFailed"} onChange={event => patch(member.id, { title: event.target.value })} maxLength={500} /></label>}
+           <div className="t1-batch-member-actions"><span className="t1-batch-state" role="status">{t(`t1.batch_${member.status}`)}{run && ` · ${t(`t1.${runPresentation(run.state, undefined).statusKey}`)}`}</span>
+             {member.status === "uploadFailed" && <button className="t1-button" disabled={busy} onClick={() => void upload([member])}>{t("t1.retryUpload")}</button>}
+@@ -100,7 +121,7 @@
+     {!!members.length && <>
+       <div className="t1-batch-actions">
+-        <button className="t1-primary" disabled={busy || !startable.length || !canStart || invalidScope} onClick={() => void start()}>{t(phase === "start" ? "t1.starting" : "t1.startBatch", { count: startable.length })}</button>
+-        <button className="t1-button" disabled={busy} onClick={() => { setMembers([]); setSavedScope(null); setNotice(""); }}>{t("t1.clearBatch")}</button></div>
+-      {savedScope && <div className="t1-batch-scope"><strong>{t("t1.batchSavedScope")}</strong><ScopeSummary scope={savedScope} data={catalog} /><p className="t1-footnote">{t("t1.batchScopeHelp")}</p></div>}
++        <button className="t1-primary" disabled={busy || !startable.length || !canStart || invalidScope} onClick={() => void start()}>{t(phase === "start" ? "t1.starting" : taskKind === "single" ? "t1.startSingle" : "t1.startBatch", { count: startable.length })}</button>
++        <button className="t1-button" disabled={busy} onClick={() => { setMembers([]); setAdmission(null); setNotice(""); }}>{t("t1.clearBatch")}</button></div>
++      {savedScope && <div className="t1-batch-scope"><strong>{t("t1.batchSavedScope")}</strong><ScopeSummary scope={savedScope} data={catalog} /><p className="t1-footnote">{t("t1.batchScopeHelp")}</p><p className="t1-footnote">{t("t1.batchTypeFrozen")}</p></div>}
+       <p className="t1-footnote">{t("t1.batchIndependent")}</p>
+     </>}
+--- before/apps/pi-web/t1/TaskKindBadge.tsx
++++ after/apps/pi-web/t1/TaskKindBadge.tsx
+@@ -0,0 +1,11 @@
++"use client";
++
++import { useI18n } from "@/hooks/useI18n";
++import type { WorkbenchSubmission } from "../../../packages/contracts/src/workbench";
++
++export const taskKindKey = (kind?: WorkbenchSubmission["kind"]) => kind === "single" ? "t1.taskSingle" : kind === "batch" ? "t1.taskBatch" : "t1.taskKindUnrecorded";
++
++export function TaskKindBadge({ kind }: { kind?: WorkbenchSubmission["kind"] }) {
++  const { t } = useI18n();
++  return <span className="t1-task-kind" data-task-kind={kind ?? "unrecorded"}>{t(taskKindKey(kind))}</span>;
++}
+--- before/apps/pi-web/t1/T1Workbench.tsx
++++ after/apps/pi-web/t1/T1Workbench.tsx
+@@ -27,4 +27,5 @@
+ import { WorkbenchNotes } from "./WorkbenchNotes";
+ import { BatchSubmission } from "./BatchSubmission";
++import { TaskKindBadge, taskKindKey } from "./TaskKindBadge";
+ import { runPresentation } from "./run-presentation";
+ import { initialWorkbenchSelection, resultRunForPaper } from "./result-navigation";
+@@ -264,5 +265,5 @@
+     setStarting(true); setActionError("");
+     try {
+-      const value = await api<{ run: WorkbenchRun }>(`workbench/papers/${encodeURIComponent(paperId)}/runs`, { ...jsonBody("POST", { scope }), headers: { "content-type": "application/json", "x-t1-request-id": key } });
++      const value = await api<{ run: WorkbenchRun }>(`workbench/papers/${encodeURIComponent(paperId)}/runs`, { ...jsonBody("POST", { scope, submission: { kind: "single" } }), headers: { "content-type": "application/json", "x-t1-request-id": key } });
+       startRequests.current.delete(request);
+       selectRun(value.run); refresh();
+@@ -330,5 +331,5 @@
+               onUploaded={paper => { setPapers(current => [paper, ...current.filter(item => item.id !== paper.id)]); setPaperId(current => current || paper.id); }}
+               onStarted={run => setRuns(current => [run, ...current.filter(item => item.run_id !== run.run_id)])} onView={selectRun} />
+-            <h2>{t("t1.singlePaperTask")}</h2>
++            <h2>{t("t1.singlePaperTask")} <TaskKindBadge kind="single" /></h2>
+             <label className="t1-field">{t("t1.selectPaper")}<select aria-label={t("t1.selectPaper")} value={paperId} onChange={e => { setPaperId(e.target.value); setRunId(null); setRunDetail(null); }}><option value="">{t("t1.choosePaper")}</option>{papers.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+             {!capabilities?.extraction_start && <p className="t1-notice">{t("t1.extractionUnavailable")}{capabilities?.extraction_unavailable_reason && capabilities.extraction_unavailable_reason !== "server_model_not_enabled" && <small>{capabilities.extraction_unavailable_reason}</small>}</p>}
+@@ -338,6 +339,6 @@
+           {activeTab === "records" && <>
+             <div className="t1-heading t1-results-heading"><h1>{t("t1.extractionResults")}</h1>
+-              <div className="t1-output-toolbar"><details className="t1-task-picker"><summary>{t("t1.task")}{selectedRun?.created_at && <time dateTime={selectedRun.created_at}>{new Date(selectedRun.created_at).toLocaleDateString(locale)}</time>}</summary><label>{t("t1.task")}<select aria-label={t("t1.task")} value={runId ? `run:${runId}` : `history:${historyId}`} onChange={e => { const value = e.target.value; setRecordId(""); if (value.startsWith("run:")) { setRunId(value.slice(4)); setHistoryId(""); } else { setRunId(null); setHistoryId(value.slice(8)); } }}>
+-                {!paperRuns.length && !currentPaper?.outputs.length && <option value="history:">{t("t1.noTasks")}</option>}{paperRuns.map(run => <option key={run.run_id} value={`run:${run.run_id}`}>{run.created_at ? new Date(run.created_at).toLocaleString(locale) : t("t1.task")} · {t("t1.recordCount", { count: run.candidate_count })}{run.fixture ? ` · ${t("t1.controlledTask")}` : ""}</option>)}{currentPaper?.outputs.filter(item => item.origin === "historical_compatibility_replay" && !paperRuns.some(run => run.run_id === item.id)).map(item => <option key={item.id} value={`history:${item.id}`}>{t("t1.historical")} · {item.strategy} · {item.records.length}</option>)}</select></label></details>
++              <div className="t1-output-toolbar"><details className="t1-task-picker"><summary>{t("t1.task")} <TaskKindBadge kind={(currentRun?.run ?? selectedRun)?.submission?.kind} />{selectedRun?.created_at && <time dateTime={selectedRun.created_at}>{new Date(selectedRun.created_at).toLocaleDateString(locale)}</time>}</summary><label>{t("t1.task")}<select aria-label={t("t1.task")} value={runId ? `run:${runId}` : `history:${historyId}`} onChange={e => { const value = e.target.value; setRecordId(""); if (value.startsWith("run:")) { setRunId(value.slice(4)); setHistoryId(""); } else { setRunId(null); setHistoryId(value.slice(8)); } }}>
++                {!paperRuns.length && !currentPaper?.outputs.length && <option value="history:">{t("t1.noTasks")}</option>}{paperRuns.map(run => <option key={run.run_id} value={`run:${run.run_id}`}>{t(taskKindKey(run.submission?.kind))} · {run.created_at ? new Date(run.created_at).toLocaleString(locale) : t("t1.task")} · {t("t1.recordCount", { count: run.candidate_count })}{run.fixture ? ` · ${t("t1.controlledTask")}` : ""}</option>)}{currentPaper?.outputs.filter(item => item.origin === "historical_compatibility_replay" && !paperRuns.some(run => run.run_id === item.id)).map(item => <option key={item.id} value={`history:${item.id}`}>{t("t1.taskKindUnrecorded")} · {t("t1.historical")} · {item.strategy} · {item.records.length}</option>)}</select></label></details>
+                 {state && <div className="t1-task-progress" role="status" data-state={state} data-status={presentation.statusKey}><button className="t1-status-button" onClick={() => setShowNotes(true)}><span className="t1-status-dot" />{t(`t1.${presentation.statusKey}`)}</button>{runId && !terminal.has(state) && <button className="t1-button" onClick={() => void cancelRun(runId)}>{t("t1.cancel")}</button>}</div>}
+                 {presentation.sourceLimited && <button className="t1-source-limits-chip" onClick={() => setShowNotes(true)}>{t("t1.sourceLimitsBadge")}</button>}
+@@ -370,5 +371,5 @@
+           </>}
+           {activeTab === "figures" && <><div className="t1-heading"><h1>{t("t1.figures")}</h1></div><p className="t1-lead">{t("t1.independentFigure")}</p>{figures.length ? figures.map(figure => <FigureView key={figure.id} figure={figure} onPage={sourcePage} />) : <p className="t1-empty">{t("t1.noFigures")}</p>}</>}
+-          {activeTab === "tasks" && <><div className="t1-heading"><h1>{t("t1.tasks")}</h1></div><p className="t1-lead">{t("t1.separateTasks")}</p><div className="t1-run-list">{runs.length ? runs.map(run => <div className="t1-task-row" key={run.run_id}><button onClick={() => selectRun(run)}><strong>{papers.find(item => item.id === run.document_id)?.title ?? run.document_id}</strong><span>{runLabel(run)} · {run.candidate_count}{run.fixture && " · fixture"}</span><small>{run.created_at ? new Date(run.created_at).toLocaleString(locale) : ""}</small></button>{!terminal.has(run.state) && <button onClick={() => void cancelRun(run.run_id)}>{t("t1.cancel")}</button>}<details><summary>{t("t1.sourceVersion")}</summary><code>{run.run_id}</code></details></div>) : <p>{t("t1.noTasks")}</p>}</div>
++          {activeTab === "tasks" && <><div className="t1-heading"><h1>{t("t1.tasks")}</h1></div><p className="t1-lead">{t("t1.separateTasks")}</p><div className="t1-run-list">{runs.length ? runs.map(run => <div className="t1-task-row" key={run.run_id}><button onClick={() => selectRun(run)}><strong>{papers.find(item => item.id === run.document_id)?.title ?? run.document_id}</strong><TaskKindBadge kind={run.submission?.kind} /><span>{runLabel(run)} · {run.candidate_count}{run.fixture && " · fixture"}</span><small>{run.created_at ? new Date(run.created_at).toLocaleString(locale) : ""}</small></button>{!terminal.has(run.state) && <button onClick={() => void cancelRun(run.run_id)}>{t("t1.cancel")}</button>}<details><summary>{t("t1.sourceVersion")}</summary><code>{run.run_id}</code></details></div>) : <p>{t("t1.noTasks")}</p>}</div>
+             {paper && <details className="t1-context"><summary>{t("t1.deletePaper")}</summary><p>{t("t1.deletePaperHelp")}</p><button onClick={() => setDeletePaperConfirm(true)}>{t("t1.deletePaper")}</button>{deletePaperConfirm && <button onClick={() => void deletePaper()}>{t("t1.confirmDeletePaper")}</button>}</details>}
+             <h2>{t("t1.events")}</h2><div className="t1-stream-status" role="status">{t(`t1.${connection}`)}</div>{events.length ? <ol className="t1-events">{events.map(event => <li key={event.seq}><span>#{event.seq} · {event.type}</span><p>{event.summary}</p><time>{event.timestamp}</time></li>)}</ol> : <p>{t("t1.noEvents")}</p>}
+--- before/apps/pi-web/t1/messages.mjs
++++ after/apps/pi-web/t1/messages.mjs
+@@ -6,6 +6,17 @@
+   refreshFailed: ["Refresh incomplete: {reason}. Your current selection is kept; try again.", "刷新未完成：{reason}。当前选择已保留，可重试。", "重新整理未完成：{reason}。目前選擇已保留，可重試。"],
+   batchTitle: ["PDF submission", "PDF 批量提交", "PDF 批次提交"],
+-  batchHelp: ["Choose one or more PDFs, up to 20 per batch and 50 MiB per file. Upload first, then start extraction with the scope below. Uploading does not call a model.", "可一次选择一篇或多篇 PDF，每批最多 20 篇、每篇不超过 50 MiB。先上传，再使用下方范围开始抽取；上传不调用模型。", "可一次選擇一篇或多篇 PDF，每批最多 20 篇、每篇不超過 50 MiB。先上傳，再使用下方範圍開始擷取；上傳不呼叫模型。"],
+-  batchLimitReached: ["Up to 20 files per batch; {count} additional files were not added.", "每批最多 20 篇，另有 {count} 个文件未加入。", "每批最多 20 篇，另有 {count} 個檔案未加入。"],
++  batchHelp: ["Choose PDFs or a folder, up to 20 papers per selection and 50 MiB per file. Upload first, then start extraction with the scope below. Uploading does not call a model.", "可选择 PDF 文件或文件夹，每批最多 20 篇、每篇不超过 50 MiB。先上传，再使用下方范围开始抽取；上传不调用模型。", "可選擇 PDF 檔案或資料夾，每批最多 20 篇、每篇不超過 50 MiB。先上傳，再使用下方範圍開始擷取；上傳不呼叫模型。"],
++  batchLimitReached: ["This selection has {count} files, but only {remaining} places remain (20 per batch). None were added; your current list is kept. Choose a smaller subfolder or use Choose files to add PDFs in smaller groups.", "本次选择 {count} 个文件，当前还可加入 {remaining} 篇（每批最多 20 篇）。本次未加入，原清单已保留；请选择更小的子文件夹，或用“选择文件”分批加入。", "本次選擇 {count} 個檔案，目前還可加入 {remaining} 篇（每批最多 20 篇）。本次未加入，原清單已保留；請選擇較小的子資料夾，或用「選擇檔案」分批加入。"],
++  chooseFiles: ["Choose files", "选择文件", "選擇檔案"],
++  chooseFolder: ["Choose folder", "选择文件夹", "選擇資料夾"],
++  folderHelp: ["Folders include PDFs in subfolders. Other file types are skipped.", "文件夹会包含子文件夹中的 PDF，跳过其他类型文件。", "資料夾會包含子資料夾中的 PDF，略過其他類型檔案。"],
++  folderSelected: ["Found {count} PDFs in the folder; skipped {skipped} other files.", "从文件夹识别到 {count} 个 PDF，已跳过 {skipped} 个其他文件。", "從資料夾辨識到 {count} 個 PDF，已略過 {skipped} 個其他檔案。"],
++  folderNoPdf: ["No PDF files were found in this folder or its subfolders. Your current list is kept.", "此文件夹及子文件夹中没有 PDF，原清单已保留。", "此資料夾及子資料夾中沒有 PDF，原清單已保留。"],
++  folderUnsupported: ["This browser does not support folder selection. Use Choose files to select multiple PDFs.", "此浏览器不支持选择文件夹，请用“选择文件”多选 PDF。", "此瀏覽器不支援選擇資料夾，請用「選擇檔案」多選 PDF。"],
++  taskSingle: ["Single", "单篇", "單篇"],
++  taskBatch: ["Batch", "批量", "批次"],
++  taskKindUnrecorded: ["Type unrecorded", "类型未记录", "類型未記錄"],
++  startSingle: ["Start single extraction ({count})", "开始单篇抽取（{count} 篇）", "開始單篇擷取（{count} 篇）"],
++  batchTypeFrozen: ["The task type is saved with the scope at the first start. Retrying only one remaining paper keeps that original type.", "首次开始时一并保存任务类型；即使重试只剩一篇，也沿用原类型。", "首次開始時一併儲存任務類型；即使重試僅剩一篇，也沿用原類型。"],
+   batchSameName: ["{count} additional files share a name with another selected file. Both are kept; check the list before uploading.", "另有 {count} 个文件与已选文件同名，已分别加入；请核对列表后上传。", "另有 {count} 個檔案與已選檔案同名，已分別加入；請核對清單後上傳。"],
+   batchCounts: ["{total} files · {uploaded} uploaded · {submitted} tasks submitted", "共 {total} 篇 · 已上传 {uploaded} 篇 · 已提交抽取 {submitted} 篇", "共 {total} 篇 · 已上傳 {uploaded} 篇 · 已提交擷取 {submitted} 篇"],
+--- before/apps/pi-web/t1/workbench.css
++++ after/apps/pi-web/t1/workbench.css
+@@ -20,4 +20,6 @@
+ .t1-refresh-dismiss { display: flex; padding: 3px; border: 0; border-radius: 4px; background: transparent; color: var(--text-muted); }
+ .t1-new-task-panel[hidden] { display: none; }
++.t1-file-choices { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
++.t1-task-kind { display: inline-flex; align-items: center; padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-panel); color: var(--text-muted); font-size: 10px; font-weight: 400; line-height: 1.4; white-space: nowrap; vertical-align: middle; }
+ .t1-batch-members { margin: 12px 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+ .t1-batch-members > li { padding: 12px; border: 1px solid var(--border); border-radius: 7px; background: var(--t1-surface); }

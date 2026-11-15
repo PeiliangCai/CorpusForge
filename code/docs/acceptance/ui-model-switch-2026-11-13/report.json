@@ -1,0 +1,434 @@
+{
+  "status": "completed",
+  "formal_review": {
+    "used": 2,
+    "limit": 3,
+    "round1": "判断：继续。风险：1. 左栏标记与实际运行不一致；2. 切换后排队或重试任务误用模型；3. 模型配置绕过现有额度。",
+    "prior_folder_task": "2/3 unchanged",
+    "prior_batch_task": "3/3 unchanged",
+    "round2": "判断：继续。风险：1. 新模型供应商兼容性未实测；2. 自定义上下文过小可能中止抽取；3. 浏览器验证仅覆盖Chromium。"
+  },
+  "browser": {
+    "origin": "http://127.0.0.1:30153",
+    "backend": "http://127.0.0.1:3213",
+    "checks": [
+      "sidebar_type_matches_default_result_run_and_explicit_run_history_navigation",
+      "upload_copy_is_precise_in_three_locales_and_preserves_batch_limits",
+      "adding_a_model_uses_saved_server_profiles_and_browser_choice_survives_reload",
+      "batch_start_freezes_model_with_scope_and_submission_across_lost_response_and_switch",
+      "single_start_keys_change_with_model_and_original_lost_submission_replays_once",
+      "unavailable_remembered_profile_requires_reselection_and_disables_start",
+      "mobile_model_picker_and_advanced_form_fit_without_scattered_type_badges"
+    ],
+    "errors": [],
+    "blocked": [],
+    "paid_model_calls": 0,
+    "production_write_requests": 0,
+    "batch_model_frozen": "model-5aa7649633b13e6c9c91f26cd5580846",
+    "status": "passed",
+    "submissions": [
+      {
+        "paper_id": "paper-8a101f2a-3523-45af-b7f6-72743bfef725",
+        "key": "6d2f49d9-28b0-4406-8cd2-45455085dd66",
+        "scope": {
+          "scope_version": "1",
+          "cancers": {
+            "mode": "all",
+            "ids": []
+          },
+          "image_types": {
+            "mode": "all",
+            "ids": []
+          },
+          "features": {
+            "mode": "all",
+            "binding_ids": []
+          },
+          "catalog_version": "medical-unavailable-1",
+          "matching_policy_version": "exact-explicit-synonyms-1"
+        },
+        "submission": {
+          "kind": "batch",
+          "batch_id": "9a8f1ab5-96a2-46a5-89e1-cbedbe123b8a"
+        },
+        "model_profile_id": "model-5aa7649633b13e6c9c91f26cd5580846"
+      },
+      {
+        "paper_id": "paper-d1606f1f-01fb-4fec-ba0f-442d871caab4",
+        "key": "fc68989e-7626-411c-8ff0-a91ae1b5f9d4",
+        "scope": {
+          "scope_version": "1",
+          "cancers": {
+            "mode": "all",
+            "ids": []
+          },
+          "image_types": {
+            "mode": "all",
+            "ids": []
+          },
+          "features": {
+            "mode": "all",
+            "binding_ids": []
+          },
+          "catalog_version": "medical-unavailable-1",
+          "matching_policy_version": "exact-explicit-synonyms-1"
+        },
+        "submission": {
+          "kind": "batch",
+          "batch_id": "9a8f1ab5-96a2-46a5-89e1-cbedbe123b8a"
+        },
+        "model_profile_id": "model-5aa7649633b13e6c9c91f26cd5580846"
+      },
+      {
+        "paper_id": "paper-8a101f2a-3523-45af-b7f6-72743bfef725",
+        "key": "6d2f49d9-28b0-4406-8cd2-45455085dd66",
+        "scope": {
+          "scope_version": "1",
+          "cancers": {
+            "mode": "all",
+            "ids": []
+          },
+          "image_types": {
+            "mode": "all",
+            "ids": []
+          },
+          "features": {
+            "mode": "all",
+            "binding_ids": []
+          },
+          "catalog_version": "medical-unavailable-1",
+          "matching_policy_version": "exact-explicit-synonyms-1"
+        },
+        "submission": {
+          "kind": "batch",
+          "batch_id": "9a8f1ab5-96a2-46a5-89e1-cbedbe123b8a"
+        },
+        "model_profile_id": "model-5aa7649633b13e6c9c91f26cd5580846"
+      },
+      {
+        "paper_id": "L01",
+        "key": "1c503989-49fe-48d5-81bc-a1c15ebe8a11",
+        "scope": {
+          "scope_version": "1",
+          "cancers": {
+            "mode": "all",
+            "ids": []
+          },
+          "image_types": {
+            "mode": "all",
+            "ids": []
+          },
+          "features": {
+            "mode": "all",
+            "binding_ids": []
+          },
+          "catalog_version": "medical-unavailable-1",
+          "matching_policy_version": "exact-explicit-synonyms-1"
+        },
+        "submission": {
+          "kind": "single"
+        },
+        "model_profile_id": "model-7dff32ff056468c86d77e317f52a2450"
+      },
+      {
+        "paper_id": "L01",
+        "key": "4c2aa19c-e212-4844-bea4-bc89ded40441",
+        "scope": {
+          "scope_version": "1",
+          "cancers": {
+            "mode": "all",
+            "ids": []
+          },
+          "image_types": {
+            "mode": "all",
+            "ids": []
+          },
+          "features": {
+            "mode": "all",
+            "binding_ids": []
+          },
+          "catalog_version": "medical-unavailable-1",
+          "matching_policy_version": "exact-explicit-synonyms-1"
+        },
+        "submission": {
+          "kind": "single"
+        },
+        "model_profile_id": "model-5aa7649633b13e6c9c91f26cd5580846"
+      },
+      {
+        "paper_id": "L01",
+        "key": "1c503989-49fe-48d5-81bc-a1c15ebe8a11",
+        "scope": {
+          "scope_version": "1",
+          "cancers": {
+            "mode": "all",
+            "ids": []
+          },
+          "image_types": {
+            "mode": "all",
+            "ids": []
+          },
+          "features": {
+            "mode": "all",
+            "binding_ids": []
+          },
+          "catalog_version": "medical-unavailable-1",
+          "matching_policy_version": "exact-explicit-synonyms-1"
+        },
+        "submission": {
+          "kind": "single"
+        },
+        "model_profile_id": "model-7dff32ff056468c86d77e317f52a2450"
+      }
+    ]
+  },
+  "BUILD_ID": "UJ2UUlfLzdmh_OcyhFLrq",
+  "dist": "apps/pi-web/build/ui-model-switch-20261113",
+  "requirements": [
+    "上传句精确简化并保持三语言一致与原限额说明",
+    "类型仅左栏、与实际run/history选择关联，旧数据不推断",
+    "AGICTO内新增并切换模型，凭据/端点保留服务器，后续任务冻结profile"
+  ],
+  "backend_tests": {
+    "status": "passed",
+    "tests": 18,
+    "record": "necessary-tests.log",
+    "sdk_default_luna_and_custom_same_id_isolation": "sdk-luna-isolation.log",
+    "SDK_HTTP_combinations": [
+      "Responses none",
+      "Responses medium",
+      "Chat Completions none",
+      "Chat Completions medium"
+    ],
+    "requests_are_synthetic_intercepts_not_paid": true
+  },
+  "frontend_tests": {
+    "status": "passed",
+    "tests": 11,
+    "record": "frontend-necessary-tests.log"
+  },
+  "typecheck": {
+    "backend": "passed after fixture-only type corrections",
+    "frontend": "passed; build TypeScript passed",
+    "build": "passed",
+    "record": "build.log",
+    "generated_tsconfig_and_next_env_restored": true
+  },
+  "model_configuration": {
+    "table": "workbench_model_profiles",
+    "append_only": true,
+    "deduplicated": true,
+    "GET_POST": "/api/t1/workbench/models",
+    "start_field": "model_profile_id",
+    "new_profile_defaults": {
+      "api": "openai-completions",
+      "reasoning_effort": "none",
+      "context_window": 32768,
+      "max_output_tokens": 4096
+    },
+    "context_guard": "min(128000, context_window - max_output_tokens)",
+    "profile_on_run": "full immutable model_profile snapshot and original runtime_profile model_id",
+    "server_endpoints_and_credentials_exposed": false,
+    "custom_compatibility_tested_against_supplier": false,
+    "custom_cost_known": false
+  },
+  "fixture_diagnostics": [
+    {
+      "record": "sdk-diagnostic.log",
+      "cause": "old retained IR lacks current glyph guard",
+      "fix": "explicit synthetic transport parser contract only, production guard preserved",
+      "product_defect": false
+    },
+    {
+      "record": "browser-fixture-role-diagnostic.log",
+      "cause": "test selected role button instead of existing option role",
+      "fix": "correct role option",
+      "product_defect": false
+    },
+    {
+      "record": "browser-mobile-timing-diagnostic.log",
+      "cause": "test clicked sidebar during existing mobile resize auto-close effect",
+      "fix": "wait for already-open common model region",
+      "product_defect": false
+    }
+  ],
+  "production": {
+    "status": "deployed_and_readonly_browser_verified",
+    "backend_pid": 58379,
+    "frontend_launcher_pid": 58402,
+    "frontend_pid": 58409,
+    "UI_dist": "apps/pi-web/build/ui-model-switch-20261113",
+    "BUILD_ID": "UJ2UUlfLzdmh_OcyhFLrq",
+    "rollback_dist": "apps/pi-web/build/folder-task-types-20261113",
+    "database_backup": "runtime-data/ui-model-switch-rollback-20261113/before-model-profiles.sqlite",
+    "active_runs_before": 0,
+    "old_run_count": 9,
+    "test_mutations": 0,
+    "paid_model_calls": 0,
+    "production_table_count": 16,
+    "existing_tables_unchanged": 15,
+    "new_tables": [
+      "workbench_model_profiles"
+    ],
+    "new_profile_rows": 1,
+    "existing_runs": 9,
+    "active_runs_after": 0,
+    "new_runs": 0,
+    "new_submission_rows": 0,
+    "private_and_public_env_bytes_unchanged": true,
+    "integrity_check": "ok",
+    "build_manifest_bytes_match": true,
+    "rollback_available": true,
+    "browser": {
+      "status": "passed",
+      "origin": "http://127.0.0.1:30141",
+      "methods": [
+        "GET"
+      ],
+      "mutation_requests": 0,
+      "page_errors": [],
+      "blocked": []
+    },
+    "screenshots": [
+      "production-desktop.png",
+      "production-mobile.png"
+    ],
+    "post_browser_original_tables_unchanged": 15,
+    "post_browser_new_profile_rows": 1,
+    "post_browser_new_runs": 0,
+    "post_browser_new_submissions": 0,
+    "post_browser_environment_bytes_unchanged": true,
+    "old_Docker_image_updated": false
+  },
+  "review_materials": [
+    "core-review.diff",
+    "ui-review.diff"
+  ],
+  "screenshots": [
+    "model-selector-desktop.png",
+    "model-add-desktop.png",
+    "model-picker-mobile.png",
+    "model-add-mobile.png",
+    "model-add-mobile-lower.png",
+    "sidebar-types-mobile.png"
+  ],
+  "limitations": [
+    "No new supplier model compatibility/quality test or paid call.",
+    "Browser engineering checks use installed Chromium; native mobile keyboard not tested.",
+    "S2/S6/S7 and medical approvals unchanged."
+  ],
+  "completed_at": "2026-11-13T04:47:02.953Z",
+  "cleanup": {
+    "own_fixture_processes_stopped": [
+      56158,
+      53495
+    ],
+    "own_temporary_paths_removed": [
+      "runtime-data/ui-model-switch-fixture",
+      "docs/acceptance/ui-model-switch-2026-11-13/browser-failure.png",
+      "runtime-data/agent-notes/ui-model-switch-2026-11-13.json"
+    ],
+    "acceptance_and_minimal_rollback_preserved": true,
+    "other_task_files_removed": false
+  },
+  "documentation_sync": {
+    "status": "passed",
+    "actual_modified_file_count": 12,
+    "files": [
+      {
+        "path": "方案/子任务T1/T1智能体开发计划.docx",
+        "sha256": "9c7c95afe010ad6aec39fae34aee3a92623cad111dfc9450497ceaabfeb166a7"
+      },
+      {
+        "path": "方案/子任务T1/T1开发执行说明.docx",
+        "sha256": "7348db9563bc81f99ed122accee0d56a50158697ffcccc7fbee225026dd05c56"
+      },
+      {
+        "path": "方案/子任务T1/当前版本.json",
+        "sha256": "a179858e05fbee5a95a8494e357f9e313446c9a59c570f0ed1abda4d819e0a52"
+      },
+      {
+        "path": "方案/子任务T1/开发计划.json",
+        "sha256": "13a5de8b87d082fdb5465ca17f3491aa3b193f67f660b31e172ffbe8bd598665"
+      },
+      {
+        "path": "方案/当前版本.json",
+        "sha256": "82fbfd4c327231494194db34a76b807714f2b8c95ef884117d3f21db76438e22"
+      },
+      {
+        "path": "方案/子任务T1/开发任务清单.csv",
+        "sha256": "81ba72ee6e503bf0c6d6f8e216a8eab50c6a14be7d7745ab39456d4bc79e6684"
+      },
+      {
+        "path": "方案/子任务T1/开发阶段与验收.csv",
+        "sha256": "38aec83a0954211b0a39e3ccc09cfcfbf9d3d3580ee156952d8a97f637dd31c6"
+      },
+      {
+        "path": "方案/子任务T1/验收清单.csv",
+        "sha256": "c30cae4ebe011f0f48100dbc131d010bbc7eb88a586ba03ee867d044cca0242c"
+      },
+      {
+        "path": "方案/子任务T1/待讨论实现决策.csv",
+        "sha256": "05c66355eca6fe38e09f1e34666c5624a155e84d90d39c87fa046ab4f25a292f"
+      },
+      {
+        "path": "方案/子任务T1/质量与性能验收契约.json",
+        "sha256": "6ae79c758c6366c7e1e312c39090ed327553c75ddf84064040a624f08697bfa1"
+      },
+      {
+        "path": "code/README.md",
+        "sha256": "38beeb944859f2c7fd5643430230ee9cf8e7d1d72d1ae943178e39d287a4c619"
+      },
+      {
+        "path": "code/deploy/README.md",
+        "sha256": "2b3999061d9f087dbd2b7417b38d208c5e9a5b651e022ce1686e0ac95a9ee56a"
+      }
+    ],
+    "docx_preservation": {
+      "T1智能体开发计划.docx": {
+        "paragraphs": 65,
+        "tables": 2,
+        "rows": 12,
+        "cells": 33,
+        "runs": 65,
+        "non_document_members_preserved": 14,
+        "formatting_and_structure_preserved": true
+      },
+      "T1开发执行说明.docx": {
+        "paragraphs": 84,
+        "tables": 3,
+        "rows": 15,
+        "cells": 42,
+        "runs": 84,
+        "non_document_members_preserved": 14,
+        "formatting_and_structure_preserved": true
+      }
+    },
+    "semantics": {
+      "upload_copy_exact": true,
+      "badges_only_left_paper_list_for_actual_run_or_history": true,
+      "model_provider_scope": "agicto_existing_server_endpoint_and_credentials",
+      "new_profile_defaults": {
+        "api": "openai-completions",
+        "reasoning_effort": "none",
+        "context_window": 32768,
+        "max_output_tokens": 4096
+      },
+      "new_supplier_model_compatibility_verified": false,
+      "per_run_model_scope_submission_frozen": true,
+      "hard_limits_and_two_FIFO_slots_preserved": true,
+      "historical_folder_2_of_3_and_batch_3_of_3_preserved": true,
+      "current_formal_reviews_used": 2,
+      "medical_and_S2_S6_S7_states_unchanged": true,
+      "quality_thresholds_and_unrelated_invariants_preserved": true
+    },
+    "production_evidence": "code/docs/acceptance/ui-model-switch-2026-11-13/report.json#/production",
+    "current_BUILD_ID": "UJ2UUlfLzdmh_OcyhFLrq",
+    "paid_model_calls": 0,
+    "no_application_or_runtime_configuration_files_written_by_docs_owner": true,
+    "report_write_scope": "Explicit root reassignment: documentation_sync and status only; existing test, production and formal-review facts preserved.",
+    "semantic_validation": "passed",
+    "modified_file_count_scope": "12 current documentation files; this authoritative report metadata update is separate.",
+    "completed_at": "2026-11-13T04:50:17.538247+00:00"
+  }
+}

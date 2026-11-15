@@ -1,0 +1,28 @@
+{
+  "schema_version": "t1-ordinary-model-enable-authority-1",
+  "recorded_at_utc": "2026-11-11T11:17:30.776835+00:00",
+  "decision_owner": "Main session GPT-6-Astra max under user3h autonomy",
+  "root_decision_quote": "普通工作台可以开放给用户点击使用，因为已证实配置/密钥/模型可响应，当前剩余是供应商间歇繁忙；不能把普通开启称S7最终真实门槛通过。离线通过后以当前验证代码重启普通backend，在deploy/local/workbench.env显式开启模型、私有.env/key字节不变，先确认0活动任务并保持13表原业务数据不变。开启本身不点击Start/不调用模型。",
+  "public_config": "code/deploy/local/workbench.env",
+  "public_model_enabled": true,
+  "retained_import": false,
+  "pre_enable_active_tasks": 0,
+  "pre_enable_all13_table_rows_unchanged": true,
+  "pre_enable_private_env_bytes_unchanged": true,
+  "all_experimental_allowances_closed": true,
+  "experimental_physical_requests_final": 24,
+  "agent_will_not_click_Start_or_make_model_requests": true,
+  "normal_per_click_limits": {
+    "requests": 80,
+    "input_tokens": 2000000,
+    "output_tokens": 120000,
+    "seconds": 1800,
+    "concurrent_slots": 2,
+    "transient_retries": 2
+  },
+  "final_patch_AGICTO_recovery_live_verified": false,
+  "medical_quality_approved": false,
+  "complete_S2_S6_S7_gates_passed": false,
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3
+}

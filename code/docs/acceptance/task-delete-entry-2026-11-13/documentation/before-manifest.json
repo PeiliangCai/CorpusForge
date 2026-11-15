@@ -1,0 +1,52 @@
+[
+  {
+    "file": "方案/子任务T1/T1智能体开发计划.docx",
+    "sha256_before": "fe649907c94b2af7c5ff01d908b7b246c5485f7a2474cb6f116fb59b40937c6c",
+    "bytes_before": 23216
+  },
+  {
+    "file": "方案/子任务T1/T1开发执行说明.docx",
+    "sha256_before": "af122ea2ebb3d491403eaa7b9ccb6caec185b9715789f94938e1eced09766979",
+    "bytes_before": 25052
+  },
+  {
+    "file": "方案/子任务T1/开发计划.json",
+    "sha256_before": "13a5de8b87d082fdb5465ca17f3491aa3b193f67f660b31e172ffbe8bd598665",
+    "bytes_before": 310432
+  },
+  {
+    "file": "方案/子任务T1/当前版本.json",
+    "sha256_before": "d0975dba8dc397fa1ebe3c0fd73e59706d319731fd3a320c5271c3e632ecf18f",
+    "bytes_before": 234445
+  },
+  {
+    "file": "方案/子任务T1/开发任务清单.csv",
+    "sha256_before": "81ba72ee6e503bf0c6d6f8e216a8eab50c6a14be7d7745ab39456d4bc79e6684",
+    "bytes_before": 28313
+  },
+  {
+    "file": "方案/子任务T1/验收清单.csv",
+    "sha256_before": "c30cae4ebe011f0f48100dbc131d010bbc7eb88a586ba03ee867d044cca0242c",
+    "bytes_before": 27321
+  },
+  {
+    "file": "方案/当前版本.json",
+    "sha256_before": "bdcc8d9787654b16797ffb19bc205f81c3e3c5ff12d4e44b6eb1dd84aa9c0779",
+    "bytes_before": 25624
+  },
+  {
+    "file": "code/README.md",
+    "sha256_before": "b08463f5a5be237d1fe763fffb11572d04a6403f2b75115a141a83a8f91712e3",
+    "bytes_before": 10313
+  },
+  {
+    "file": "code/deploy/README.md",
+    "sha256_before": "82dfd5e95dd4055190ce0b4d42d5372a3db61f2c6ad2c94dbd6ef4c416faee39",
+    "bytes_before": 19673
+  },
+  {
+    "file": "方案/子任务T1/材料检查结果.json",
+    "sha256_before": "23643dff848201c00c35367c418591f171bdb0aa8979d636baa87c772e3a7e50",
+    "bytes_before": 61335
+  }
+]

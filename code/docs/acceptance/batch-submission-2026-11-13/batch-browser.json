@@ -1,0 +1,51 @@
+{
+  "origin": "http://127.0.0.1:30152",
+  "backend": "http://127.0.0.1:3211",
+  "BUILD_ID": "t0cjrNmAjUgmxljnnYC-P",
+  "controlled": true,
+  "checks": [
+    {
+      "name": "single_PDF_upload_and_explicit_start_remain_supported",
+      "status": "passed"
+    },
+    {
+      "name": "same_name_metadata_does_not_drop_distinct_files_and_twenty_file_limit_is_visible",
+      "status": "passed"
+    },
+    {
+      "name": "mixed_valid_invalid_empty_and_oversize_continue_with_valid_files_and_keep_batch_across_tabs",
+      "status": "passed"
+    },
+    {
+      "name": "retry_only_failed_uploads_reuses_keys_and_preserves_successful_members",
+      "status": "passed"
+    },
+    {
+      "name": "invalid_scope_blocks_both_start_paths_then_batch_uses_one_saved_scope_without_widening",
+      "status": "passed"
+    },
+    {
+      "name": "mobile_batch_status_and_view_task_preserve_the_batch",
+      "status": "passed"
+    },
+    {
+      "name": "existing_continuous_source_and_keep_exclude_restore_survive_refresh",
+      "status": "passed"
+    },
+    {
+      "name": "selection_change_during_refresh_waits_for_new_result_and_old_read_cannot_overwrite",
+      "status": "passed"
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "paid_model_calls": 0,
+  "production_write_requests": 0,
+  "expected_failures": [
+    "a upload committed, response lost",
+    "b upload before commit",
+    "b start before commit",
+    "c start committed, response lost"
+  ],
+  "status": "passed"
+}

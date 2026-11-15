@@ -1,0 +1,290 @@
+--- before/code/apps/pi-web/t1/T1Workbench.tsx
++++ after/code/apps/pi-web/t1/T1Workbench.tsx
+@@ -5,7 +5,7 @@
+ import { TabBar, type Tab } from "@/components/TabBar";
+ import { SidebarMenu, type SidebarMenuAnchor } from "@/components/SidebarMenu";
+ import { SidebarToast, type SidebarToastData } from "@/components/SidebarToast";
+-import { PlusIcon, RefreshIcon, SearchIcon, ChevronIcon, CloseIcon, EyeIcon, MessageIcon, OpenInNewTabIcon } from "@/components/SidebarIcons";
++import { PlusIcon, RefreshIcon, SearchIcon, ChevronIcon, CloseIcon, EyeIcon, MessageIcon, MoreIcon, OpenInNewTabIcon } from "@/components/SidebarIcons";
+ import { GenericFileIcon } from "@/components/FileIcons";
+ import { useResizablePanel } from "@/hooks/useResizablePanel";
+ import { useTheme } from "@/hooks/useTheme";
+@@ -28,13 +28,14 @@
+ import { WorkbenchNotes } from "./WorkbenchNotes";
+ import { BatchSubmission } from "./BatchSubmission";
+ import { TaskKindBadge } from "./TaskKindBadge";
++import { PaperTaskMenu, type PaperTaskMenuState } from "./PaperTaskMenu";
++import { canCancelRun, cancellationResult } from "./task-actions";
+ import { runPresentation } from "./run-presentation";
+ import { initialWorkbenchSelection, sidebarPaperSelection } from "./result-navigation";
+ import type { Scope } from "../../../packages/contracts/src/index";
+ import type { WorkbenchCapabilities, WorkbenchExportKind, WorkbenchPaper, WorkbenchPaperDetail, WorkbenchRun, WorkbenchRunDetail, WorkbenchScopeCatalog, WorkbenchModels } from "../../../packages/contracts/src/workbench";
+ 
+ const PdfSource = dynamic(() => import("./PdfSource").then(module => module.PdfSource), { ssr: false });
+-const terminal = new Set(["completed", "partial", "failed", "cancelled", "interrupted"]);
+ type RunDetail = WorkbenchRunDetail;
+ const exportKinds: WorkbenchExportKind[] = ["retained_jsonl", "retained_csv", "retained_package"];
+ 
+@@ -60,6 +61,9 @@
+   const [activeTab, setActiveTab] = useState("newTask"), [tabIds, setTabIds] = useState(["newTask", "records", "figures", "tasks"]);
+   const [showSource, setShowSource] = useState(false), [showSidebar, setShowSidebar] = useState(true), [showNotes, setShowNotes] = useState(false);
+   const [menu, setMenu] = useState<SidebarMenuAnchor | null>(null), [toast, setToast] = useState<SidebarToastData | null>(null);
++  const [taskMenu, setTaskMenu] = useState<PaperTaskMenuState | null>(null), [cancelling, setCancelling] = useState<ReadonlySet<string>>(new Set());
++  const cancellingRef = useRef(new Set<string>());
++  const [taskNotice, setTaskNotice] = useState<{ id: string; busy: boolean; failed: boolean; text: string } | null>(null);
+   const [starting, setStarting] = useState(false), [actionError, setActionError] = useState("");
+   const startingRef = useRef(false), startRequests = useRef(new Map<string, string>());
+   const [restoreFile, setRestoreFile] = useState<File | null>(null), [restoreBusy, setRestoreBusy] = useState(false), [deletePaperConfirm, setDeletePaperConfirm] = useState(false);
+@@ -70,6 +74,7 @@
+   const selectionRef = useRef({ paperId, runId, historyId });
+   selectionRef.current = { paperId, runId, historyId };
+   const refreshingRef = useRef(false), runsReadVersion = useRef(0);
++  const runMutationVersions = useRef(new Map<string, number>());
+   const [refreshing, setRefreshing] = useState(false), [refreshMessage, setRefreshMessage] = useState<{ failed: boolean; text: string } | null>(null);
+   const locatedRecordRef = useRef("");
+   const initialized = useRef(false), sidebarWidth = useRef(224), sourceWidth = useRef(520);
+@@ -109,6 +114,12 @@
+     const timer = window.setTimeout(() => setRefreshMessage(null), 5000);
+     return () => window.clearTimeout(timer);
+   }, [refreshMessage]);
++  useEffect(() => {
++    if (!taskNotice || taskNotice.busy || taskNotice.failed) return;
++    const timer = window.setTimeout(() => setTaskNotice(null), 8000);
++    return () => window.clearTimeout(timer);
++  }, [taskNotice]);
++  useEffect(() => { if (!showSidebar) setTaskMenu(null); }, [showSidebar]);
+   useEffect(() => { if (mobile) setShowSidebar(false); }, [mobile]);
+   useEffect(() => { setRecordQuery(""); setRecordRole("all"); setRetentionView("kept"); }, [paperId, runId, historyId]);
+   useEffect(() => { setShowNotes(false); setEditor(null); setExportError(""); }, [paperId, runId, historyId]);
+@@ -229,10 +240,11 @@
+       flight = (async () => {
+         do {
+           dirty = false;
++          const mutationVersion = runMutationVersions.current.get(runId!) ?? 0;
+           try {
+             const value = await api<RunDetail>(`workbench/runs/${encodeURIComponent(runId!)}`, { signal: controller.signal });
+-            if (!controller.signal.aborted) { setRunDetail(value); setDetailError(""); setPapers(current => current.map(paper => paper.id === value.paper.id ? value.paper : paper)); }
+-          } catch (cause) { if (!controller.signal.aborted && !refreshingRef.current) setDetailError(errorText(cause)); throw cause; }
++            if (!controller.signal.aborted && mutationVersion === (runMutationVersions.current.get(runId!) ?? 0)) { setRunDetail(value); setDetailError(""); setPapers(current => current.map(paper => paper.id === value.paper.id ? value.paper : paper)); }
++          } catch (cause) { if (!controller.signal.aborted && !refreshingRef.current && !cancellingRef.current.has(runId!)) setDetailError(errorText(cause)); throw cause; }
+         } while (dirty && !controller.signal.aborted);
+       })();
+       try { await flight; } finally { flight = null; }
+@@ -284,7 +296,30 @@
+     } catch (cause) { setActionError(`${errorText(cause)} ${t("t1.batchRetrySafe")}`); } finally { startingRef.current = false; setStarting(false); }
+   }
+   async function cancelRun(id: string) {
+-    try { setActionError(""); await api(`workbench/runs/${encodeURIComponent(id)}/cancel`, jsonBody("POST", {})); await reloadCurrent(); } catch (cause) { setActionError(errorText(cause)); }
++    if (cancellingRef.current.has(id)) return;
++    cancellingRef.current.add(id); setCancelling(new Set(cancellingRef.current));
++    const target = runs.find(run => run.run_id === id);
++    const label = `${papers.find(item => item.id === target?.document_id)?.title ?? target?.document_id ?? ""} · #${id.slice(-8)}`;
++    setTaskNotice({ id, busy: true, failed: false, text: `${t("t1.cancelling")} · ${label}` });
++    try {
++      const value = await api<{ run: WorkbenchRun }>(`workbench/runs/${encodeURIComponent(id)}/cancel`, jsonBody("POST", {}));
++      // Invalidate list reads started before the mutation, including workspace refresh.
++      ++runsReadVersion.current;
++      runMutationVersions.current.set(id, (runMutationVersions.current.get(id) ?? 0) + 1);
++      setRuns(current => current.map(run => run.run_id === id ? value.run : run));
++      setRunDetail(current => current?.run.run_id === id ? { ...current, run: value.run } : current);
++      const version = ++runsReadVersion.current;
++      const reader = refreshRunRef.current;
++      const reads = await Promise.allSettled([
++        api<{ runs: WorkbenchRun[] }>("workbench/runs").then(listed => { if (version === runsReadVersion.current) setRuns(listed.runs); }),
++        selectionRef.current.runId === id && reader?.id === id ? reader.load() : Promise.resolve(),
++      ]);
++      const key = cancellationResult(value.run.state), failed = key === "cancelUnconfirmed";
++      const suffix = reads.some(read => read.status === "rejected") ? ` ${t("t1.cancelRefreshFailed")}` : "";
++      setTaskNotice(current => current?.id === id ? { id, busy: false, failed, text: `${t(`t1.${key}`)} · ${label}${suffix}` } : current);
++    } catch (cause) {
++      setTaskNotice(current => current?.id === id ? { id, busy: false, failed: true, text: `${t("t1.cancelFailed", { reason: errorText(cause) })} · ${label}` } : current);
++    } finally { cancellingRef.current.delete(id); setCancelling(new Set(cancellingRef.current)); }
+   }
+   async function downloadExport(kind: WorkbenchExportKind) {
+     if (!runId) return;
+@@ -323,13 +358,14 @@
+     </header>
+     <span className="t1-sr-only" role="status" aria-live="polite">{refreshing ? t("t1.refreshing") : ""}</span>
+     {refreshMessage && <div className="t1-refresh-toast" data-failed={refreshMessage.failed} role={refreshMessage.failed ? "alert" : "status"}><span>{refreshMessage.text}</span>{refreshMessage.failed && <button className="t1-button" onClick={() => void refreshWorkspace()}>{t("t1.retry")}</button>}<button className="t1-refresh-dismiss" aria-label={t("t1.close")} onClick={() => setRefreshMessage(null)}><CloseIcon size={14} /></button></div>}
++    {taskNotice && <div className="t1-refresh-toast t1-task-toast" data-failed={taskNotice.failed} aria-busy={taskNotice.busy} role={taskNotice.failed ? "alert" : "status"}><span>{taskNotice.text}</span>{taskNotice.failed && <button className="t1-button" onClick={() => void cancelRun(taskNotice.id)}>{t("t1.retry")}</button>}<button className="t1-refresh-dismiss" aria-label={t("t1.close")} onClick={() => setTaskNotice(null)}><CloseIcon size={14} /></button></div>}
+     <div className="t1-body" ref={source.panelRef}>
+       {showSidebar && <><aside className="t1-sidebar" aria-label={t("t1.paperNav")}><div className="t1-sidebar-heading"><strong>{t("t1.papers")}</strong><span>{papers.length}</span><button className="t1-sidebar-close" aria-label={t("t1.close")} onClick={() => setShowSidebar(false)}><CloseIcon size={18} /></button></div>
+         <button className="t1-new-task" onClick={() => { openTab("newTask"); if (mobile) setShowSidebar(false); }}><PlusIcon size={16} />{t("t1.newTask")}</button>
+         <div className="t1-paper-list-region" aria-busy={refreshing}><div className="t1-paper-list">{papers.map(item => {
+           const selected = sidebarPaperSelection(item.id, runs, selectionRef.current);
+           const run = runs.find(run => run.run_id === selected.runId && run.document_id === item.id);
+-          return <button key={item.id} data-paper-id={item.id} data-sidebar-run-id={selected.runId ?? undefined} className={paperId === item.id ? "selected" : ""} aria-current={paperId === item.id ? "page" : undefined} title={item.title} onClick={() => selectPaper(item.id)}><span className="t1-paper-label"><GenericFileIcon size={14} /><b>{item.uploaded || item.id.startsWith("paper-") ? t("t1.uploadedPaper") : item.id}</b><small>{item.pages || "—"} {t("t1.pagesShort")}</small></span><strong>{item.title}</strong>{(selected.runId || selected.historyId || item.output_ids.length > 0) && <span className="t1-paper-meta"><TaskKindBadge kind={run?.submission?.kind} /></span>}<em>{item.uploaded ? "PDF" : t("t1.historical")}</em></button>;
++          return <div key={item.id} className={paperId === item.id ? "t1-paper-row selected" : "t1-paper-row"}><button data-paper-id={item.id} data-sidebar-run-id={selected.runId ?? undefined} className={paperId === item.id ? "t1-paper-select selected" : "t1-paper-select"} aria-current={paperId === item.id ? "page" : undefined} title={item.title} onClick={() => selectPaper(item.id)}><span className="t1-paper-label"><GenericFileIcon size={14} /><b>{item.uploaded || item.id.startsWith("paper-") ? t("t1.uploadedPaper") : item.id}</b><small>{item.pages || "—"} {t("t1.pagesShort")}</small></span><strong>{item.title}</strong>{(selected.runId || selected.historyId || item.output_ids.length > 0) && <span className="t1-paper-meta"><TaskKindBadge kind={run?.submission?.kind} /></span>}<em>{item.uploaded ? "PDF" : t("t1.historical")}</em></button><button type="button" className="t1-paper-actions" aria-label={t("t1.taskActions")} title={t("t1.taskActions")} aria-haspopup={mobile ? "dialog" : "menu"} aria-expanded={taskMenu?.paperId === item.id} onClick={event => { setMenu(null); const opener = event.currentTarget, rect = opener.getBoundingClientRect(); setTaskMenu({ paperId: item.id, anchor: { kind: "rect", rect, align: "start" }, opener }); }}><MoreIcon size={17} /></button></div>;
+         })}</div>{refreshing && <div className="t1-refresh-overlay" aria-hidden="true" />}</div>
+         <div className="t1-sidebar-bottom"><button onClick={() => openTab("tasks")}><MessageIcon size={15} />{t("t1.tasks")}</button><details><summary>{t("t1.aboutWorkbench")}</summary><span>Pi Web 0.15.0 · T1 Pi SDK 1.4.0</span></details></div>
+         <SidebarToast toast={toast} onDismiss={() => setToast(null)} dismissLabel={t("t1.close")} /></aside><div className="t1-resize" {...sidebar.separatorProps} /></>}
+@@ -359,7 +395,7 @@
+             <div className="t1-heading t1-results-heading"><h1>{t("t1.extractionResults")}</h1>
+               <div className="t1-output-toolbar"><details className="t1-task-picker"><summary>{t("t1.task")} {selectedRun?.created_at && <time dateTime={selectedRun.created_at}>{new Date(selectedRun.created_at).toLocaleDateString(locale)}</time>}</summary><label>{t("t1.task")}<select aria-label={t("t1.task")} value={runId ? `run:${runId}` : `history:${historyId}`} onChange={e => { const value = e.target.value; setRecordId(""); if (value.startsWith("run:")) { setRunId(value.slice(4)); setHistoryId(""); } else { setRunId(null); setHistoryId(value.slice(8)); } }}>
+                 {!paperRuns.length && !currentPaper?.outputs.length && <option value="history:">{t("t1.noTasks")}</option>}{paperRuns.map(run => <option key={run.run_id} value={`run:${run.run_id}`}>{run.created_at ? new Date(run.created_at).toLocaleString(locale) : t("t1.task")} · {t("t1.recordCount", { count: run.candidate_count })}{run.fixture ? ` · ${t("t1.controlledTask")}` : ""}</option>)}{currentPaper?.outputs.filter(item => item.origin === "historical_compatibility_replay" && !paperRuns.some(run => run.run_id === item.id)).map(item => <option key={item.id} value={`history:${item.id}`}>{t("t1.historical")} · {item.strategy} · {item.records.length}</option>)}</select></label></details>
+-                {state && <div className="t1-task-progress" role="status" data-state={state} data-status={presentation.statusKey}><button className="t1-status-button" onClick={() => setShowNotes(true)}><span className="t1-status-dot" />{t(`t1.${presentation.statusKey}`)}</button>{runId && !terminal.has(state) && <button className="t1-button" onClick={() => void cancelRun(runId)}>{t("t1.cancel")}</button>}</div>}
++                {state && <div className="t1-task-progress" role="status" data-state={state} data-status={presentation.statusKey}><button className="t1-status-button" onClick={() => setShowNotes(true)}><span className="t1-status-dot" />{t(`t1.${presentation.statusKey}`)}</button>{runId && canCancelRun({ state }) && <button className="t1-button" disabled={cancelling.has(runId)} aria-busy={cancelling.has(runId)} onClick={() => void cancelRun(runId)}>{t(cancelling.has(runId) ? "t1.cancelling" : "t1.cancel")}</button>}</div>}
+                 {presentation.sourceLimited && <button className="t1-source-limits-chip" onClick={() => setShowNotes(true)}>{t("t1.sourceLimitsBadge")}</button>}
+               </div>
+               <div className="t1-results-actions"><button className="t1-button t1-notes-toggle" aria-haspopup="dialog" aria-expanded={showNotes} onClick={() => setShowNotes(true)}><MessageIcon size={14} />{t("t1.notes")}</button>
+@@ -389,7 +425,7 @@
+             </section>
+           </>}
+           {activeTab === "figures" && <><div className="t1-heading"><h1>{t("t1.figures")}</h1></div><p className="t1-lead">{t("t1.independentFigure")}</p>{figures.length ? figures.map(figure => <FigureView key={figure.id} figure={figure} onPage={sourcePage} />) : <p className="t1-empty">{t("t1.noFigures")}</p>}</>}
+-          {activeTab === "tasks" && <><div className="t1-heading"><h1>{t("t1.tasks")}</h1></div><p className="t1-lead">{t("t1.separateTasks")}</p><div className="t1-run-list">{runs.length ? runs.map(run => <div className="t1-task-row" key={run.run_id}><button onClick={() => selectRun(run)}><strong>{papers.find(item => item.id === run.document_id)?.title ?? run.document_id}</strong><span>{runLabel(run)} · {run.candidate_count}{run.fixture && " · fixture"}</span><small>{run.created_at ? new Date(run.created_at).toLocaleString(locale) : ""}</small></button>{!terminal.has(run.state) && <button onClick={() => void cancelRun(run.run_id)}>{t("t1.cancel")}</button>}<details><summary>{t("t1.sourceVersion")}</summary><code>{run.run_id}</code>{run.model_id && <p data-run-model={run.model_id}>{t("t1.extractionModel")}: {run.model_id}{run.model_profile && ` · ${run.model_profile.api} · ${run.model_profile.reasoning_effort === "none" ? t("t1.noReasoningParameter") : run.model_profile.reasoning_effort}`}</p>}</details></div>) : <p>{t("t1.noTasks")}</p>}</div>
++          {activeTab === "tasks" && <><div className="t1-heading"><h1>{t("t1.tasks")}</h1></div><p className="t1-lead">{t("t1.separateTasks")}</p><div className="t1-run-list">{runs.length ? runs.map(run => <div className="t1-task-row" key={run.run_id}><button onClick={() => selectRun(run)}><strong>{papers.find(item => item.id === run.document_id)?.title ?? run.document_id}</strong><span>{runLabel(run)} · {run.candidate_count}{run.fixture && " · fixture"}</span><small>{run.created_at ? new Date(run.created_at).toLocaleString(locale) : ""}</small></button>{canCancelRun(run) && <button disabled={cancelling.has(run.run_id)} aria-busy={cancelling.has(run.run_id)} onClick={() => void cancelRun(run.run_id)}>{t(cancelling.has(run.run_id) ? "t1.cancelling" : "t1.cancel")}</button>}<details><summary>{t("t1.sourceVersion")}</summary><code>{run.run_id}</code>{run.model_id && <p data-run-model={run.model_id}>{t("t1.extractionModel")}: {run.model_id}{run.model_profile && ` · ${run.model_profile.api} · ${run.model_profile.reasoning_effort === "none" ? t("t1.noReasoningParameter") : run.model_profile.reasoning_effort}`}</p>}</details></div>) : <p>{t("t1.noTasks")}</p>}</div>
+             {paper && <details className="t1-context"><summary>{t("t1.deletePaper")}</summary><p>{t("t1.deletePaperHelp")}</p><button onClick={() => setDeletePaperConfirm(true)}>{t("t1.deletePaper")}</button>{deletePaperConfirm && <button onClick={() => void deletePaper()}>{t("t1.confirmDeletePaper")}</button>}</details>}
+             <h2>{t("t1.events")}</h2><div className="t1-stream-status" role="status">{t(`t1.${connection}`)}</div>{events.length ? <ol className="t1-events">{events.map(event => <li key={event.seq}><span>#{event.seq} · {event.type}</span><p>{event.summary}</p><time>{event.timestamp}</time></li>)}</ol> : <p>{t("t1.noEvents")}</p>}
+           </>}
+@@ -413,5 +449,6 @@
+       </>}
+     </WorkbenchNotes>
+     <SidebarMenu open={menu !== null} anchor={menu} sheet={mobile} ariaLabel={t("t1.theme")} title={t("t1.theme")} cancelLabel={t("t1.close")} onClose={() => setMenu(null)} items={([['auto', 'system'], ['light', 'light'], ['dark', 'dark']] as const).map(([id, key]) => ({ type: "item", id, label: t(`t1.${key}`), checked: preference === id, onSelect: () => setThemePreference(id) }))} />
++    <PaperTaskMenu menu={taskMenu} paper={papers.find(item => item.id === taskMenu?.paperId)} runs={runs} cancelling={cancelling} mobile={mobile} onClose={() => setTaskMenu(null)} onCancel={id => void cancelRun(id)} onView={() => { openTab("tasks"); if (mobile) setShowSidebar(false); }} />
+   </div>;
+ }
+--- before/code/apps/pi-web/t1/PaperTaskMenu.tsx
++++ after/code/apps/pi-web/t1/PaperTaskMenu.tsx
+@@ -0,0 +1,48 @@
++"use client";
++
++import { SidebarMenu, type SidebarMenuAnchor, type SidebarMenuItem } from "@/components/SidebarMenu";
++import { CloseIcon, MessageIcon } from "@/components/SidebarIcons";
++import { useI18n } from "@/hooks/useI18n";
++import type { WorkbenchPaper, WorkbenchRun } from "../../../packages/contracts/src/workbench";
++import { cancellablePaperRuns } from "./task-actions";
++
++export interface PaperTaskMenuState {
++  paperId: string;
++  anchor: SidebarMenuAnchor;
++  opener: HTMLButtonElement;
++}
++
++export function PaperTaskMenu({ menu, paper, runs, cancelling, mobile, onClose, onCancel, onView }: {
++  menu: PaperTaskMenuState | null;
++  paper: WorkbenchPaper | undefined;
++  runs: WorkbenchRun[];
++  cancelling: ReadonlySet<string>;
++  mobile: boolean;
++  onClose(): void;
++  onCancel(id: string): void;
++  onView(): void;
++}) {
++  const { t, locale } = useI18n();
++  const active = cancellablePaperRuns(menu?.paperId ?? "", runs);
++  const items: SidebarMenuItem[] = [
++    { type: "header", id: "paper", label: paper?.title ?? t("t1.taskActions") },
++    { type: "item", id: "history", label: t("t1.viewTaskHistory"), icon: <MessageIcon size={14} />, onSelect: onView },
++    { type: "separator", id: "tasks" },
++    ...active.map((run): SidebarMenuItem => {
++      const busy = cancelling.has(run.run_id);
++      const created = run.created_at ? new Date(run.created_at).toLocaleString(locale, { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }) : t("t1.timeUnrecorded");
++      return { type: "custom", id: run.run_id, content: <button
++        type="button" role="menuitem" tabIndex={-1} data-sidebar-menu-item="" data-cancel-run-id={run.run_id}
++        className="sidebar-menu-item t1-task-action" aria-disabled={busy || undefined} aria-busy={busy}
++        title={[created, run.model_id, run.run_id].filter(Boolean).join(" · ")}
++        onClick={() => { if (!busy) { onCancel(run.run_id); onClose(); } }}
++      >
++        <CloseIcon size={14} />
++        <span className="t1-task-action-copy"><strong>{t(busy ? "t1.cancelling" : "t1.cancel")} · {t(`t1.${run.state}`)}</strong><time dateTime={run.created_at}>{created}</time><small>{[run.model_id, `#${run.run_id.slice(-8)}`].filter(Boolean).join(" · ")}</small></span>
++      </button> };
++    }),
++    ...(!active.length ? [{ type: "custom" as const, id: "empty", content: <p className="t1-task-menu-empty">{t("t1.noCancellableTasks")}</p> }] : []),
++  ];
++  return <SidebarMenu open={menu !== null} anchor={menu?.anchor ?? null} returnFocusTo={menu?.opener} sheet={mobile}
++    ariaLabel={t("t1.taskActions")} title={t("t1.taskActions")} cancelLabel={t("t1.close")} width={352} items={items} onClose={onClose} />;
++}
+--- before/code/apps/pi-web/t1/task-actions.ts
++++ after/code/apps/pi-web/t1/task-actions.ts
+@@ -0,0 +1,25 @@
++import type { WorkbenchRun } from "../../../packages/contracts/src/workbench";
++
++// Native reconciliation is cancellable. The API also uses this state during
++// terminal finalization, so the cancel response decides the actual outcome.
++const cancellable = new Set(["queued", "parsing", "extracting", "reconciling"]);
++const ended = new Set(["completed", "partial", "failed", "interrupted"]);
++
++export function canCancelRun(run: Pick<WorkbenchRun, "state">) {
++  return cancellable.has(run.state);
++}
++
++/** A paper's displayed result can be older than its running tasks. */
++export function cancellablePaperRuns(paperId: string, runs: WorkbenchRun[]) {
++  return runs.filter(run => run.document_id === paperId && canCancelRun(run))
++    .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? "") || a.run_id.localeCompare(b.run_id));
++}
++
++export function cancellationResult(state: string) {
++  if (state === "cancelled") return "cancelDone";
++  if (ended.has(state)) return "cancelEnded";
++  // The API also reports reconciling while a completed task finishes saving.
++  // cancel() preserves that terminal task: a 200 response alone is not success.
++  if (state === "reconciling") return "cancelFinalizing";
++  return "cancelUnconfirmed";
++}
+--- before/code/apps/pi-web/t1/messages.mjs
++++ after/code/apps/pi-web/t1/messages.mjs
+@@ -1,6 +1,17 @@
+ /** T1 messages are part of each existing Pi Web locale package. Paper content is never translated. */
+ /** @type {Record<string, [string, string, string]>} */
+ const rows = {
++  taskActions: ["Task actions", "任务操作", "任務操作"],
++  viewTaskHistory: ["View tasks and history", "查看任务与历史", "檢視任務與歷史"],
++  noCancellableTasks: ["No tasks to cancel", "暂无可取消的任务", "暫無可取消的任務"],
++  timeUnrecorded: ["Time unrecorded", "时间未记录", "時間未記錄"],
++  cancelling: ["Cancelling…", "正在取消…", "正在取消…"],
++  cancelDone: ["Task cancelled. Saved results are kept.", "已取消此任务，已有结果已保留。", "已取消此任務，已有結果已保留。"],
++  cancelEnded: ["Task already ended; no cancellation was needed.", "任务已结束，无需取消。", "任務已結束，無需取消。"],
++  cancelFinalizing: ["Task is finishing and was not cancelled. Check its status shortly.", "任务正在收尾，未取消；请稍后查看状态。", "任務正在收尾，未取消；請稍後查看狀態。"],
++  cancelUnconfirmed: ["Cancellation was not confirmed. Check the task status before retrying.", "尚未确认取消，请核对任务状态后重试。", "尚未確認取消，請核對任務狀態後重試。"],
++  cancelFailed: ["Cancellation not confirmed: {reason}", "取消未确认：{reason}", "取消未確認：{reason}"],
++  cancelRefreshFailed: ["Some status reads failed; refresh to check the latest state.", "部分状态读取失败，请刷新核对最新状态。", "部分狀態讀取失敗，請重新整理核對最新狀態。"],
+   extractionModel: ["Extraction model", "抽取模型", "擷取模型"],
+   chooseModel: ["Choose a model", "选择模型", "選擇模型"],
+   addModel: ["Add model", "添加模型", "新增模型"],
+--- before/code/apps/pi-web/t1/workbench.css
++++ after/code/apps/pi-web/t1/workbench.css
+@@ -136,14 +136,25 @@
+ .t1-new-task { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 0 12px 16px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--t1-surface); color: var(--text); font-size: 12px !important; box-shadow: 0 1px 2px #00000005; }
+ .t1-new-task:hover { background: var(--bg-hover); border-color: var(--text-dim); }
+ .t1-paper-list { flex: 1; overflow: auto; padding: 0 8px 12px; scrollbar-width: thin; }
+-.t1-paper-list > button { width: 100%; display: block; margin-bottom: 3px; padding: 9px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text); text-align: left; }
+-.t1-paper-list > button:hover { background: var(--bg-hover); }
+-.t1-paper-list > button.selected { background: var(--bg-selected); }
++.t1-paper-row { display: flex; align-items: flex-start; margin-bottom: 3px; border-radius: 6px; }
++.t1-paper-row:hover { background: var(--bg-hover); }
++.t1-paper-row.selected { background: var(--bg-selected); }
++.t1-paper-select { display: block; flex: 1; min-width: 0; padding: 9px 0 9px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text); text-align: left; }
++.t1-paper-actions { flex: 0 0 32px; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin: 4px 2px 0; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--text-muted); }
++.t1-paper-actions:hover, .t1-paper-actions[aria-expanded="true"] { background: var(--bg-hover); color: var(--text); }
++.t1-paper-actions:focus-visible, .t1-paper-select:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
++.sidebar-menu-item.t1-task-action { height: auto; min-height: 66px; align-items: flex-start; padding: 9px 8px; gap: 8px; }
++.t1-task-action > svg { flex-shrink: 0; margin-top: 3px; color: var(--text-muted); }
++.t1-task-action-copy { display: grid; min-width: 0; gap: 2px; line-height: 1.5; }
++.t1-task-action-copy strong { font-size: 12px; font-weight: 500; }
++.t1-task-action-copy time, .t1-task-action-copy small { color: var(--text-muted); font-size: 11px; overflow-wrap: anywhere; }
++.t1-task-menu-empty { margin: 0; padding: 12px 9px; color: var(--text-muted); font-size: 12px; }
++.t1-task-toast { z-index: 450; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+ .t1-paper-label { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; color: var(--text-dim); }
+ .t1-paper-label b { font-size: 10px; font-weight: 500; }
+ .t1-paper-label small { margin-left: auto; font-size: 10px; }
+ .t1-paper-list strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12px; font-weight: 400; line-height: 1.65; }
+-.t1-paper-list > button.selected strong { color: var(--text); font-weight: 600; }
++.t1-paper-row.selected .t1-paper-select > strong { color: var(--text); font-weight: 600; }
+ .t1-paper-meta { display: block; margin-top: 5px; }
+ .t1-paper-list em { display: none; }
+ .t1-sidebar-bottom { padding: 14px 16px; border-top: 1px solid var(--border); }
+@@ -421,6 +432,7 @@
+   .t1-top-actions button { width: 27px; height: 28px; }
+   .t1-sidebar { position: absolute; top: 0; height: 100%; width: min(280px, 86vw); z-index: 20; border-right: 1px solid var(--border); box-shadow: 10px 0 35px #0002; }
+   .t1-sidebar-close { display: flex; }
++  .t1-paper-actions { flex-basis: 44px; width: 44px; height: 44px; margin-top: 0; }
+   .t1-workspace-bar { height: 34px; padding: 0 7px; gap: 4px; }
+   .t1-workspace-bar > span { font-size: 10px; }
+   .t1-content { padding: 18px 14px 28px; scrollbar-gutter: auto; }
+@@ -440,4 +452,4 @@
+   .t1-field :is(input, select), .t1-workbench textarea { font-size: 16px; }
+   .t1-source-choices { max-height: 330px; }
+ }
+-@media (prefers-reduced-motion: no-preference) { .t1-index-list > button, .t1-paper-list > button, .t1-button, .t1-top-actions button { transition: background-color 120ms ease, border-color 120ms ease; } }
++@media (prefers-reduced-motion: no-preference) { .t1-index-list > button, .t1-paper-row, .t1-button, .t1-top-actions button { transition: background-color 120ms ease, border-color 120ms ease; } }

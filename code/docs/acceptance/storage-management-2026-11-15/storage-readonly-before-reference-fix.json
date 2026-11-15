@@ -1,0 +1,136 @@
+{
+  "method": "GET only; no storage preview or cleanup POST",
+  "checks": [
+    {
+      "port": 3210,
+      "path": "/health",
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "service": "t1-workbench",
+        "runtime_mode": "workflow",
+        "backend_pi_sdk": "1.4.0",
+        "controlled_fixture": false,
+        "extraction_available": true
+      }
+    },
+    {
+      "port": 3210,
+      "path": "/api/workbench/storage",
+      "status": 200,
+      "body": {
+        "schema_version": "t1-storage-summary-1",
+        "observed_at": "2026-11-15T13:15:41.886Z",
+        "scope": "managed_workbench_files",
+        "total_bytes": 148414676,
+        "protected_bytes": 148414676,
+        "reclaimable_bytes": 0,
+        "unknown_bytes": 0,
+        "file_count": 187,
+        "categories": [
+          {
+            "kind": "pdf",
+            "bytes": 44815688,
+            "files": 3
+          },
+          {
+            "kind": "parse",
+            "bytes": 86065192,
+            "files": 131
+          },
+          {
+            "kind": "figures",
+            "bytes": 17533796,
+            "files": 53
+          },
+          {
+            "kind": "exports",
+            "bytes": 0,
+            "files": 0
+          },
+          {
+            "kind": "other",
+            "bytes": 0,
+            "files": 0
+          }
+        ],
+        "protected_reasons": [
+          {
+            "code": "immutable_source",
+            "bytes": 148414676,
+            "files": 187
+          }
+        ],
+        "disk": {
+          "total_bytes": 105286258688,
+          "available_bytes": 40601608192
+        },
+        "cleanup_available": true,
+        "policy": {
+          "automatic_cleanup": false,
+          "recent_upload_protection_hours": 24
+        }
+      }
+    },
+    {
+      "port": 30141,
+      "path": "/api/t1/workbench/storage",
+      "status": 200,
+      "body": {
+        "schema_version": "t1-storage-summary-1",
+        "observed_at": "2026-11-15T13:15:43.439Z",
+        "scope": "managed_workbench_files",
+        "total_bytes": 148414676,
+        "protected_bytes": 148414676,
+        "reclaimable_bytes": 0,
+        "unknown_bytes": 0,
+        "file_count": 187,
+        "categories": [
+          {
+            "kind": "pdf",
+            "bytes": 44815688,
+            "files": 3
+          },
+          {
+            "kind": "parse",
+            "bytes": 86065192,
+            "files": 131
+          },
+          {
+            "kind": "figures",
+            "bytes": 17533796,
+            "files": 53
+          },
+          {
+            "kind": "exports",
+            "bytes": 0,
+            "files": 0
+          },
+          {
+            "kind": "other",
+            "bytes": 0,
+            "files": 0
+          }
+        ],
+        "protected_reasons": [
+          {
+            "code": "immutable_source",
+            "bytes": 148414676,
+            "files": 187
+          }
+        ],
+        "disk": {
+          "total_bytes": 105286258688,
+          "available_bytes": 40601608192
+        },
+        "cleanup_available": true,
+        "policy": {
+          "automatic_cleanup": false,
+          "recent_upload_protection_hours": 24
+        }
+      }
+    }
+  ],
+  "production_business_writes": 0,
+  "new_paid_calls": 0
+}

@@ -1,0 +1,34 @@
+{
+  "schema_version": "t1-workbench-response-model-policy-1",
+  "policy_id": "luna-exact-deployment-choice-20261111",
+  "recorded_at": "2026-11-11T10:14:42.577818+00:00",
+  "provider": "agicto",
+  "endpoint": "https://api.agicto.cn/v1",
+  "requested_model": "gpt-6-luna",
+  "reasoning_effort": "medium",
+  "prior_supplier_confirmation": {
+    "path": "docs/acceptance/s4/selection-optimization/continuation-2026-11-03/supplier-alias-confirmation.json",
+    "sha256": "54289c509f5c5ce7327459e84af26763e45423b91bcd31aa271ca0c87d2490a1",
+    "unchanged": true
+  },
+  "additional_exact_pairs": [
+    {
+      "requested_model": "gpt-6-luna",
+      "response_model": "data-zone-standard-gpt-6-luna"
+    }
+  ],
+  "additional_pair_authority": {
+    "actor": "Main session GPT-6-Astra max under user3-hour deployment delegation",
+    "user_quotes": [
+      "应该也是部署标识，不管这个了，继续测试吧。",
+      "接下来3小时你自行执行即可，我到时候直接看最终效果。"
+    ],
+    "main_session_decision": "The exact requested gpt-6-luna to returned data-zone-standard-gpt-6-luna pair is accepted for ordinary workbench deployment as well as scoped verification, with all other unknown names still stopped.",
+    "basis": "user_or_delegated_deployment_choice",
+    "supplier_confirmed": false,
+    "weight_identity_verified": false
+  },
+  "wildcard_or_prefix_stripping_allowed": false,
+  "ledger_confirmed_alias_meaning": "Exact returned label accepted by this recorded policy; the new pair is not supplier confirmation or underlying weight verification.",
+  "model_requests_authorized_by_this_configuration_alone": false
+}

@@ -1,0 +1,322 @@
+diff --git a/code/packages/contracts/src/index.ts b/code/packages/contracts/src/index.ts
+index 7deba42..eefc6f6 100644
+--- a/code/packages/contracts/src/index.ts
++++ b/code/packages/contracts/src/index.ts
+@@ -6,6 +6,7 @@ import { StructuredDocumentIRSchema } from './document-ir-v3.js';
+ export * from './document-ir-v3.js';
+ export * from './extraction-evidence.js';
+ export * from './figure-evidence.js';
++export * from './catalog-material.js';
+ 
+ const closed = { additionalProperties: false } as const;
+ const id = Type.String({ minLength: 1, maxLength: 160 });
+diff --git a/code/package.json b/code/package.json
+index 3e46001..28a0f07 100644
+--- a/code/package.json
++++ b/code/package.json
+@@ -22,6 +22,7 @@
+     "check:web": "node scripts/pi-web.mjs check",
+     "verify:s1": "tsx scripts/accept-s1.ts",
+     "test:evaluation": "tsx --test tests/evaluation/*.test.ts",
++    "check:catalog-material": "tsx scripts/check-catalog-material.ts",
+     "eval:quality": "tsx scripts/evaluate-quality.ts",
+     "eval:export-contracts": "tsx scripts/export-evaluation-contracts.ts",
+     "parser:contracts": "tsx scripts/export-parser-contracts.ts",
+
+# This task adds only these two deploy/README.md paragraphs.
+S2目录核验材料的唯一人工维护源为[`config/medical-catalog-material.json`](../config/medical-catalog-material.json)。它保留原35项线索，将当前T1用途、词语对应、真正上下位关系、适用关联与条件分别列出，并分开记录工程来源定位和医学人工核验。核验人员主要填写结论及修改建议；资料准备方负责补齐`preparation_gaps`中的原文定位等缺口。特征目录核验不要求逐篇论文完整标准答案；未知适用范围的空数组不代表“所有”，来源主题不自动产生癌种绑定。旧`evaluation/catalog`三草案保留为历史输入，不并列维护当前数据。
+在`code/`执行`bash scripts/with-node.sh npm run check:catalog-material`检查结构、重复ID、悬空引用、独立核验状态及关系一致性；该包装器复用项目现有固定Node，默认PATH无npm时也可运行。修改后递增`material_version`，稳定ID不可复用。服务端`readMedicalCatalogMaterial()`只从固定位置重新读取、校验并返回内容SHA及数量，不接受浏览器文件路径，不转成已批准`EvidenceCatalog`。本轮没有接通对外API、网页显示/编辑或批准发布，也没有重启当前工作台；后续页面可调用该加载模块，并须同时贯通精确GET接口和前端网关。即使材料中某项获得`confirmed`结论，也不会自动进入正式抽取选项；原生产目录守卫及不限模式保持独立。
+
+# Round 2: current documentation changed paths and DOCX insertion (all other parts preserved).
+{"path": "方案/子任务T1/开发计划.json", "changed_paths": ["/current_S2_catalog_material", "/current_document_fingerprints/execution_guide_sha256", "/current_document_fingerprints/plan_sha256", "/current_document_fingerprints/validation", "/current_document_fingerprints/validation_status", "/date", "/tasks/7/current_progress_evidence", "/tasks/7/deliverable", "/tasks/7/engineering_progress", "/tasks/7/material_file"]}
+{"path": "方案/子任务T1/当前版本.json", "changed_paths": ["/current_S2_catalog_material", "/current_document_fingerprints/execution_guide_sha256", "/current_document_fingerprints/plan_sha256", "/current_document_fingerprints/validation", "/current_document_fingerprints/validation_status", "/date", "/stages/S2/current_evidence", "/stages/S2/current_progress"]}
+{"path": "方案/当前版本.json", "changed_paths": ["/current_S2_catalog_material"]}
+{"path": "方案/子任务T1/开发任务清单.csv", "changed_paths": ["交付物", "工程进度", "本次工程交付"]}
+{"path": "方案/子任务T1/开发阶段与验收.csv", "changed_paths": ["交付物", "工程进度", "本次工程交付"]}
+方案/子任务T1/T1智能体开发计划.docx
+BEFORE: 目录Schema只读配置入口及同版本向真实runner传递已补齐并经离线/本地Pi回环核验；真实医学目录内容尚未核验。 不限模式可继续，未批准目录不开放为医学可信限制选项。
+AFTER: 目录Schema只读配置入口及同版本向真实runner传递已补齐并经离线/本地Pi回环核验；真实医学目录内容尚未核验。 不限模式可继续，未批准目录不开放为医学可信限制选项。 2026-11-14材料增量：唯一人工维护源为code/config/medical-catalog-material.json；原35项完整保全，当前T1用途、词语对应、上下位、适用关联及条件分开核验。材料检查、增改删/引用/生产守卫26项检查与后端typecheck通过，工程证据见code/docs/acceptance/s2-catalog-source-2026-11-14/report.json。MED01–05仅完成来源身份及部分原文定位核对，33处已定位、23处仍仅历史线索；真实医学核验0、S2整体未通过。缺失资料由工程准备方补齐，核验人员主要给结论/修改建议；可读模块未接入当前网页，无部署/重启或正式选项发布。
+方案/子任务T1/T1开发执行说明.docx
+BEFORE: 目录Schema只读配置入口及同版本向真实runner传递已补齐并经离线/本地Pi回环核验；真实医学目录内容尚未核验。 不限模式可继续，未批准目录不开放为医学可信限制选项。
+AFTER: 目录Schema只读配置入口及同版本向真实runner传递已补齐并经离线/本地Pi回环核验；真实医学目录内容尚未核验。 不限模式可继续，未批准目录不开放为医学可信限制选项。 2026-11-14材料增量：唯一人工维护源为code/config/medical-catalog-material.json；原35项完整保全，当前T1用途、词语对应、上下位、适用关联及条件分开核验。材料检查、增改删/引用/生产守卫26项检查与后端typecheck通过，工程证据见code/docs/acceptance/s2-catalog-source-2026-11-14/report.json。MED01–05仅完成来源身份及部分原文定位核对，33处已定位、23处仍仅历史线索；真实医学核验0、S2整体未通过。缺失资料由工程准备方补齐，核验人员主要给结论/修改建议；可读模块未接入当前网页，无部署/重启或正式选项发布。
+
+# New code files, for focused review: fixed loader (no route), CLI and test fixture/state-evolution changes.
+diff --git a/code/apps/server/src/catalog-material.ts b/code/apps/server/src/catalog-material.ts
+new file mode 100644
+index 0000000..bb05943
+--- /dev/null
++++ b/code/apps/server/src/catalog-material.ts
+@@ -0,0 +1,51 @@
++import { createHash } from 'node:crypto';
++import { open } from 'node:fs/promises';
++import { assertMedicalCatalogMaterial, MedicalCatalogMaterialValidationError, medicalCatalogMaterialSummary, type MedicalCatalogMaterial } from '@t1/contracts';
++
++export const MEDICAL_CATALOG_MATERIAL_FILE = 'config/medical-catalog-material.json';
++export const MAX_MEDICAL_CATALOG_MATERIAL_BYTES = 4 * 1024 * 1024;
++const materialUrl = new URL('../../../config/medical-catalog-material.json', import.meta.url);
++
++export interface MedicalCatalogMaterialSnapshot {
++  material: MedicalCatalogMaterial;
++  sha256: string;
++  byte_length: number;
++  summary: ReturnType<typeof medicalCatalogMaterialSummary>;
++}
++
++export class MedicalCatalogMaterialReadError extends Error {
++  constructor(readonly code: 'medical_catalog_material_unavailable' | 'medical_catalog_material_too_large' | 'medical_catalog_material_json_invalid') { super(code); }
++}
++
++/** Pure decoder for the fixed operator-maintained source. No conversion to EvidenceCatalog exists. */
++export function decodeMedicalCatalogMaterial(bytes: Uint8Array): MedicalCatalogMaterialSnapshot {
++  if (bytes.byteLength > MAX_MEDICAL_CATALOG_MATERIAL_BYTES) throw new MedicalCatalogMaterialReadError('medical_catalog_material_too_large');
++  const buffer = Buffer.from(bytes);
++  let value: unknown;
++  try { value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(buffer)); }
++  catch { throw new MedicalCatalogMaterialReadError('medical_catalog_material_json_invalid'); }
++  assertMedicalCatalogMaterial(value);
++  return { material: value, sha256: createHash('sha256').update(buffer).digest('hex'), byte_length: buffer.length,
++    summary: medicalCatalogMaterialSummary(value) };
++}
++
++/** Fixed server path only; re-read and validate each call so a future read-only page can see edits. */
++export async function readMedicalCatalogMaterial(): Promise<MedicalCatalogMaterialSnapshot> {
++  let handle;
++  try { handle = await open(materialUrl, 'r'); }
++  catch { throw new MedicalCatalogMaterialReadError('medical_catalog_material_unavailable'); }
++  try {
++    // A bounded read also covers a file growing between open and read. Read-only; no runtime state is touched.
++    const buffer = Buffer.alloc(MAX_MEDICAL_CATALOG_MATERIAL_BYTES + 1);
++    let length = 0;
++    while (length < buffer.length) {
++      const { bytesRead } = await handle.read(buffer, length, buffer.length - length, length);
++      if (!bytesRead) break;
++      length += bytesRead;
++    }
++    return decodeMedicalCatalogMaterial(buffer.subarray(0, length));
++  } catch (error) {
++    if (error instanceof MedicalCatalogMaterialReadError || error instanceof MedicalCatalogMaterialValidationError) throw error;
++    throw new MedicalCatalogMaterialReadError('medical_catalog_material_unavailable');
++  } finally { await handle.close(); }
++}
+diff --git a/code/scripts/check-catalog-material.ts b/code/scripts/check-catalog-material.ts
+new file mode 100644
+index 0000000..934d10e
+--- /dev/null
++++ b/code/scripts/check-catalog-material.ts
+@@ -0,0 +1,15 @@
++import { MedicalCatalogMaterialValidationError } from '@t1/contracts';
++import { MEDICAL_CATALOG_MATERIAL_FILE, readMedicalCatalogMaterial } from '../apps/server/src/catalog-material.js';
++
++try {
++  if (process.argv.length !== 2) throw new Error('catalog_material_check_does_not_accept_paths');
++  const snapshot = await readMedicalCatalogMaterial();
++  process.stdout.write(JSON.stringify({ valid: true, file: MEDICAL_CATALOG_MATERIAL_FILE,
++    material_version: snapshot.material.material_version, sha256: snapshot.sha256, byte_length: snapshot.byte_length,
++    production_catalog_enabled: snapshot.material.production_catalog_enabled, ...snapshot.summary }, null, 2) + '\n');
++} catch (error) {
++  process.stderr.write(JSON.stringify({ valid: false, file: MEDICAL_CATALOG_MATERIAL_FILE,
++    error: error instanceof Error ? error.message : 'catalog_material_check_failed',
++    ...(error instanceof MedicalCatalogMaterialValidationError ? { issues: error.issues } : {}) }, null, 2) + '\n');
++  process.exitCode = 1;
++}
+diff --git a/code/apps/server/test/catalog-material.test.ts b/code/apps/server/test/catalog-material.test.ts
+new file mode 100644
+index 0000000..1efea4b
+--- /dev/null
++++ b/code/apps/server/test/catalog-material.test.ts
+@@ -0,0 +1,195 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { createHash } from 'node:crypto';
++import { readFile } from 'node:fs/promises';
++import { spawnSync } from 'node:child_process';
++import { fileURLToPath } from 'node:url';
++import { medicalCatalogMaterialIssues, type MedicalCatalogMaterial } from '@t1/contracts';
++import { configuredEvidenceCatalog } from '../src/catalog-config.js';
++import { decodeMedicalCatalogMaterial, MAX_MEDICAL_CATALOG_MATERIAL_BYTES, readMedicalCatalogMaterial } from '../src/catalog-material.js';
++
++const materialUrl = new URL('../../../config/medical-catalog-material.json', import.meta.url);
++const root = fileURLToPath(new URL('../../../', import.meta.url));
++const pendingReview = () => ({ status: 'pending' as const, reviewer: null, reviewed_at: null, notes: '', suggested_changes: '' });
++const codes = (value: unknown) => medicalCatalogMaterialIssues(value).map(x => x.code);
++
++/** Small, synthetic, in-memory fixture. It is independent of the editable real material and is never saved. */
++function fixture(): MedicalCatalogMaterial {
++  const noted = { evidence_ids: ['EVID-CHECKED'], review: pendingReview(), preparation_notes: 'SYNTHETIC TEST ONLY' };
++  const feature = (id: string, checked: boolean) => ({ id, name_proposal: id, definition_proposal: null,
++    proposed_t1_role: 'candidate_visual_description' as const, lifecycle: 'active' as const,
++    historical_record_id: 'LEGACY-' + id, ...structuredClone(noted), evidence_ids: [checked ? 'EVID-CHECKED' : 'EVID-LEAD'], review_questions: ['TEST QUESTION'] });
++  const source = { id: 'SOURCE-TEST', kind: 'medical_reference' as const, title: 'SYNTHETIC SOURCE', doi: '10.test/synthetic',
++    urls: ['https://example.test/source'], historical_input_id: 'INPUT-TEST', historical_pointer: '/synthetic',
++    source_check: { status: 'identity_checked' as const, checked_by: 'engineering_assistant' as const, checked_at: '2026-11-14',
++      checked_url: 'https://example.test/source', title_matches: true, doi_matches: true, notes: 'SYNTHETIC CHECK', remaining_gaps: [] },
++    review: pendingReview(), preparation_notes: 'SYNTHETIC TEST ONLY' };
++  const entity = (id: string, kind: 'cancer' | 'modality') => ({ id, kind, name: id, definition_proposal: null, lifecycle: 'active' as const, ...structuredClone(noted) });
++  const ids = ['FEATURE-A', 'FEATURE-B'];
++  return {
++    schema_version: 'medical-catalog-material-1', material_version: 'SYNTHETIC-TEST-1', updated_at: '2026-11-14',
++    title: 'SYNTHETIC TEST ONLY', status: 'pending_medical_review', production_catalog_enabled: false,
++    instructions: { purpose: 'TEST', scope_boundary: 'TEST', review_work: 'TEST', preparation_responsibility: 'TEST', relation_semantics: 'TEST',
++      unknown_applicability: 'TEST', original_text_boundary: 'TEST', production_boundary: 'TEST', maintenance: ['TEST'],
++      review_status_labels: { pending: '待核', confirmed: '确认', needs_changes: '需修改', rejected: '不采纳' },
++      field_guide: { test: 'TEST' }, review_checklist: ['TEST'], cautions: ['TEST'] },
++    starting_scope: { cancer_entity_ids: ['CANCER-A'], modality_entity_ids: ['MODALITY-X'], note: 'SYNTHETIC OPEN SCOPE' },
++    provenance: { preparation_method: 'SYNTHETIC TEST ONLY', historical_inputs: [{ id: 'INPUT-TEST', path: 'synthetic-not-read',
++      sha256: '0'.repeat(64), role: 'historical_draft', maintained_as_current_source: false, note: 'SYNTHETIC TEST ONLY' }] },
++    sources: [source, { ...structuredClone(source), id: 'SOURCE-ENGINEERING', kind: 'engineering_design', doi: null,
++      source_check: { status: 'not_checked', checked_by: null, checked_at: null, checked_url: null, title_matches: null, doi_matches: null, notes: '', remaining_gaps: [] } }],
++    evidence: [{ id: 'EVID-CHECKED', source_id: 'SOURCE-TEST', status: 'text_located', url: 'https://example.test/source', locator: 'SYNTHETIC SECTION',
++      exact_quote: 'SYNTHETIC', checked_by: 'engineering_assistant', checked_at: '2026-11-14', preparation_notes: 'SYNTHETIC TEST ONLY' },
++    { id: 'EVID-LEAD', source_id: 'SOURCE-ENGINEERING', status: 'historical_lead', url: null, locator: null,
++      exact_quote: null, checked_by: null, checked_at: null, preparation_notes: 'SYNTHETIC TEST ONLY' }],
++    entities: [entity('CANCER-A', 'cancer'), entity('CANCER-B', 'cancer'), entity('MODALITY-X', 'modality')],
++    features: [feature('FEATURE-A', true), feature('FEATURE-B', false)],
++    lexical_relations: ids.map((id, index) => ({ id: 'LEX-' + id, feature_id: id, term: 'TEST TERM ' + index,
++      language: 'en', relation_type: 'unclassified_correspondence', ...structuredClone(noted) })),
++    hierarchy_relations: [{ id: 'HIER-A-B', parent: { kind: 'entity', id: 'CANCER-A' }, child: { kind: 'entity', id: 'CANCER-B' }, ...structuredClone(noted) }],
++    applicability_relations: ids.map(id => ({ id: 'APPL-' + id, feature_id: id, scope_status: 'unknown', cancer_entity_ids: [],
++      context_entity_ids: [], modality_entity_ids: [], condition_ids: ['COND-' + id], historical_scope_hint: 'SYNTHETIC HINT', ...structuredClone(noted) })),
++    conditions: ids.map(id => ({ id: 'COND-' + id, feature_id: id, kind: 'description_context', description_proposal: 'SYNTHETIC CONDITION', ...structuredClone(noted) })),
++    historical_records: ids.map((id, index) => ({ id: 'LEGACY-' + id, input_id: 'INPUT-TEST', json_pointer: '/synthetic/' + index,
++      record: { feature_id: id, category: 'TEST', name: id, operational_definition: 'TEST', value_type: 'TEST', unit: '', assessment_level: 'TEST',
++        source_ids: index ? 'SOURCE-ENGINEERING' : 'SOURCE-TEST', evidence_locator: 'TEST', planned_stage: 'TEST', generation_support: 'TEST',
++        evaluation_plan: 'TEST', implementation_status: 'HISTORICAL TEST ONLY' } })),
++    preparation_gaps: [{ id: 'GAP-TEST', affected_ids: ['FEATURE-A'], owner: 'engineering_preparation', action: 'TEST', status: 'open', resolution: '' }],
++  };
++}
++const changed = (mutate: (material: MedicalCatalogMaterial) => void) => { const material = fixture(); mutate(material); return material; };
++const syntheticReview = () => ({ status: 'confirmed' as const,
++  reviewer: { kind: 'human' as const, name: 'ENGINEERING TEST ONLY', role: 'medical_reviewer' as const },
++  reviewed_at: '2026-11-14', notes: 'Synthetic validation fixture; no medical review performed.', suggested_changes: '' });
++
++test('editable real source passes general schema/reference/read checks without pinning counts or review decisions', async () => {
++  const snapshot = await readMedicalCatalogMaterial(), bytes = await readFile(materialUrl);
++  assert.equal(snapshot.sha256, createHash('sha256').update(bytes).digest('hex'));
++  assert.equal(snapshot.byte_length, bytes.length);
++  assert.deepEqual(codes(snapshot.material), []);
++  assert.equal(snapshot.material.production_catalog_enabled, false);
++});
++
++test('immutable original records and explicitly archived drafts are preserved; mutable source metadata hashes are import snapshots', async () => {
++  const material = (await readMedicalCatalogMaterial()).material;
++  const original = JSON.parse(await readFile(new URL('../../../../方案/首批医学影像特征清单.json', import.meta.url), 'utf8'));
++  const input = material.provenance.historical_inputs.find(x => x.path === '方案/首批医学影像特征清单.json')!;
++  assert.ok(input);
++  assert.deepEqual(material.historical_records.filter(x => x.input_id === input.id).map(x => x.record), original.features);
++  assert.ok(material.features.every(x => !('implementation_status' in x) && !('generation_support' in x)));
++  for (const archive of material.provenance.historical_inputs.filter(x => x.role !== 'source_metadata')) {
++    const bytes = await readFile(new URL('../../../../' + archive.path, import.meta.url));
++    assert.equal(createHash('sha256').update(bytes).digest('hex'), archive.sha256, archive.id);
++  }
++});
++
++test('read returns fresh data while edited content/version produces a new digest', async () => {
++  const snapshot = await readMedicalCatalogMaterial(), originalName = snapshot.material.features[0]?.name_proposal;
++  if (snapshot.material.features[0]) snapshot.material.features[0].name_proposal = 'IN MEMORY ONLY';
++  assert.equal((await readMedicalCatalogMaterial()).material.features[0]?.name_proposal, originalName);
++  const original = decodeMedicalCatalogMaterial(Buffer.from(JSON.stringify(fixture())));
++  const edited = changed(x => { x.material_version += '-edit'; x.features[0]!.preparation_notes += ' EDIT'; });
++  const decoded = decodeMedicalCatalogMaterial(Buffer.from(JSON.stringify(edited)));
++  assert.notEqual(decoded.sha256, original.sha256); assert.equal(decoded.material.material_version, edited.material_version);
++});
++
++test('maintenance accepts add, rename with stable ID, remove unreferenced entries and new source without historical import', () => {
++  const material = changed(x => {
++    x.features.push({ ...structuredClone(x.features[0]!), id: 'NEW-OPEN-SCOPE', historical_record_id: null });
++    x.entities.push({ ...structuredClone(x.entities[0]!), id: 'CANCER-NEW-OPEN-SCOPE' });
++    x.sources.push({ ...structuredClone(x.sources[0]!), id: 'SOURCE-NEW', historical_input_id: null, historical_pointer: null });
++  });
++  assert.deepEqual(codes(material), []);
++  const originalId = material.features[0]!.id; material.features[0]!.name_proposal = '显示名称修改';
++  assert.equal(material.features[0]!.id, originalId); assert.deepEqual(codes(material), []);
++  material.features = material.features.filter(x => x.id !== 'NEW-OPEN-SCOPE');
++  material.entities = material.entities.filter(x => x.id !== 'CANCER-NEW-OPEN-SCOPE');
++  material.sources = material.sources.filter(x => x.id !== 'SOURCE-NEW'); assert.deepEqual(codes(material), []);
++  material.features = material.features.filter(x => x.id !== originalId);
++  assert.ok(medicalCatalogMaterialIssues(material).some(x => x.code === 'dangling_reference' && x.path.startsWith('applicability_relations/')));
++  assert.equal(material.historical_records.length, fixture().historical_records.length);
++});
++
++test('valid human confirmation and proposed many-to-many applicability remain checkable without changing real material', () => {
++  const material = changed(x => {
++    x.features[0]!.review = syntheticReview();
++    x.lexical_relations[0]!.relation_type = 'true_synonym'; x.lexical_relations[0]!.review = syntheticReview();
++    x.applicability_relations[0]!.scope_status = 'proposed';
++    x.applicability_relations[0]!.cancer_entity_ids = ['CANCER-A', 'CANCER-B'];
++    x.applicability_relations[0]!.modality_entity_ids = ['MODALITY-X'];
++  });
++  assert.deepEqual(codes(material), []);
++  const decoded = decodeMedicalCatalogMaterial(Buffer.from(JSON.stringify(material)));
++  assert.equal(decoded.summary.reviews.confirmed, 2);
++  assert.equal(decoded.material.production_catalog_enabled, false);
++  assert.equal(decoded.material.applicability_relations[0]!.review.status, 'pending');
++});
++
++test('decoder rejects malformed JSON, invalid UTF-8 and oversized files with generic errors', () => {
++  assert.throws(() => decodeMedicalCatalogMaterial(Buffer.from('{private-path')), /^Error: medical_catalog_material_json_invalid$/u);
++  assert.throws(() => decodeMedicalCatalogMaterial(Buffer.from([0xc0, 0xaf])), /medical_catalog_material_json_invalid/u);
++  assert.throws(() => decodeMedicalCatalogMaterial(Buffer.alloc(MAX_MEDICAL_CATALOG_MATERIAL_BYTES + 1)), /medical_catalog_material_too_large/u);
++});
++
++test('closed schema rejects illegal review states, production flags, publication fields and machine reviewers', () => {
++  for (const value of [{ ...fixture(), production_catalog_enabled: true }, { ...fixture(), status: 'approved' }, { ...fixture(), publish: true },
++    changed(x => { Object.assign(x.features[0]!.review, { status: 'approved' }); }),
++    changed(x => { Object.assign(x.features[0]!.review, { reviewer: { kind: 'ai', name: 'AI', role: 'medical_reviewer' } }); })]) assert.deepEqual(codes(value), ['schema_invalid']);
++});
++
++for (const [name, mutate, expected] of [
++  ['duplicate stable ID', (x: MedicalCatalogMaterial) => { x.features[1]!.id = x.features[0]!.id; }, 'duplicate_id'],
++  ['cross-collection duplicate ID', (x: MedicalCatalogMaterial) => { x.entities[0]!.id = x.sources[0]!.id; }, 'duplicate_id'],
++  ['missing source', (x: MedicalCatalogMaterial) => { x.evidence[0]!.source_id = 'MISSING'; }, 'dangling_reference'],
++  ['missing evidence', (x: MedicalCatalogMaterial) => { x.features[0]!.evidence_ids.push('MISSING'); }, 'dangling_reference'],
++  ['missing feature', (x: MedicalCatalogMaterial) => { x.lexical_relations[0]!.feature_id = 'MISSING'; }, 'dangling_reference'],
++  ['missing historical record', (x: MedicalCatalogMaterial) => { x.features[0]!.historical_record_id = 'MISSING'; }, 'dangling_reference'],
++  ['wrong historical feature', (x: MedicalCatalogMaterial) => { x.features[0]!.historical_record_id = x.features[1]!.historical_record_id; }, 'historical_feature_id_mismatch'],
++  ['missing condition', (x: MedicalCatalogMaterial) => { x.applicability_relations[0]!.condition_ids.push('MISSING'); }, 'dangling_reference'],
++  ['condition belongs to another feature', (x: MedicalCatalogMaterial) => { x.applicability_relations[0]!.condition_ids.push(x.conditions[1]!.id); }, 'condition_feature_mismatch'],
++  ['wrong entity kind', (x: MedicalCatalogMaterial) => { x.starting_scope.cancer_entity_ids = ['MODALITY-X']; }, 'entity_kind_mismatch'],
++] as const) test(`reference validation rejects ${name}`, () => { assert.ok(codes(changed(mutate)).includes(expected)); });
++
++test('duplicate correspondences and applicability links are rejected even with different IDs', () => {
++  assert.ok(codes(changed(x => { const duplicate = structuredClone(x.lexical_relations[0]!); duplicate.id = 'LEX-DUPLICATE'; duplicate.term = '  ' + duplicate.term.toUpperCase() + '  '; x.lexical_relations.push(duplicate); })).includes('duplicate_lexical_relation'));
++  assert.ok(codes(changed(x => { x.applicability_relations.push({ ...structuredClone(x.applicability_relations[0]!), id: 'APPL-DUPLICATE' }); })).includes('duplicate_applicability_relation'));
++});
++
++test('hierarchy rejects duplicate/self/cyclic edges without imposing a tree on applicability', () => {
++  assert.ok(codes(changed(x => { x.hierarchy_relations.push({ ...structuredClone(x.hierarchy_relations[0]!), id: 'HIER-DUPLICATE' }); })).includes('duplicate_hierarchy_relation'));
++  assert.ok(codes(changed(x => { x.hierarchy_relations[0]!.child = structuredClone(x.hierarchy_relations[0]!.parent); })).includes('hierarchy_self_reference'));
++  assert.ok(codes(changed(x => { const edge = x.hierarchy_relations[0]!; x.hierarchy_relations.push({ ...structuredClone(edge), id: 'HIER-CYCLE', parent: edge.child, child: edge.parent }); })).includes('hierarchy_cycle'));
++});
++
++test('unknown scopes cannot hide bindings and specified scopes cannot bypass independent medical confirmation', () => {
++  assert.ok(codes(changed(x => { x.applicability_relations[0]!.cancer_entity_ids.push('CANCER-A'); })).includes('unknown_applicability_has_binding'));
++  assert.ok(codes(changed(x => { x.applicability_relations[0]!.scope_status = 'specified'; })).includes('specified_applicability_requires_confirmation'));
++  assert.ok(codes(changed(x => { x.applicability_relations[0]!.scope_status = 'proposed'; })).includes('applicability_scope_incomplete'));
++});
++
++test('a decision needs a review record, located medical source and separate upstream conclusions', () => {
++  assert.ok(codes(changed(x => { x.features[0]!.review.status = 'confirmed'; })).includes('review_decision_incomplete'));
++  assert.ok(codes(changed(x => { x.features[1]!.review = syntheticReview(); })).includes('confirmed_medical_entry_requires_located_source'));
++  assert.ok(codes(changed(x => { x.features[0]!.review = { ...syntheticReview(), reviewer: { kind: 'human', name: 'ENGINEERING TEST ONLY', role: 'source_reviewer' } }; })).includes('medical_review_role_required'));
++  assert.ok(codes(changed(x => { x.lexical_relations[0]!.relation_type = 'true_synonym'; })).includes('true_synonym_requires_confirmation'));
++  assert.ok(codes(changed(x => { x.lexical_relations[0]!.review = syntheticReview(); })).includes('confirmed_relation_has_unconfirmed_feature'));
++});
++
++test('engineering source checks require observed identity and locator; unresolved gaps cannot claim resolution', () => {
++  assert.ok(codes(changed(x => { x.sources[0]!.source_check.title_matches = null; })).includes('identity_check_incomplete'));
++  assert.ok(codes(changed(x => { x.evidence[0]!.locator = null; })).includes('located_evidence_incomplete'));
++  assert.ok(codes(changed(x => { x.evidence[1]!.exact_quote = 'not checked'; })).includes('historical_lead_cannot_claim_checked_quote'));
++  assert.ok(codes(changed(x => { x.preparation_gaps[0]!.status = 'resolved'; })).includes('resolved_gap_requires_resolution'));
++});
++
++test('material cannot be installed as production extraction catalog; default loader stays unavailable', () => {
++  assert.equal(configuredEvidenceCatalog({}).status, 'unavailable');
++  assert.throws(() => configuredEvidenceCatalog({ T1_WORKBENCH_CATALOG_FILE: fileURLToPath(materialUrl) }), /configured_medical_catalog_invalid/u);
++});
++
++test('fixed-source CLI succeeds and rejects any caller-supplied file path', () => {
++  const good = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/check-catalog-material.ts'], { cwd: root, encoding: 'utf8' });
++  assert.equal(good.status, 0, good.stderr); assert.equal(JSON.parse(good.stdout).valid, true);
++  const bad = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/check-catalog-material.ts', '/private/arbitrary-file'], { cwd: root, encoding: 'utf8' });
++  assert.equal(bad.status, 1); assert.equal(JSON.parse(bad.stderr).error, 'catalog_material_check_does_not_accept_paths');
++});

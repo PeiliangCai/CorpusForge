@@ -1,0 +1,107 @@
+{
+  "status": "passed",
+  "scope": "仅S2材料工程入口及证据增量；不改原工作/阶段通过条件、历史子树、用户原文或既有正式审查记录。",
+  "docx": [
+    {
+      "path": "方案/子任务T1/T1智能体开发计划.docx",
+      "before_sha256": "2a572010b7067c0641830e2d0ca74920286688ee60ffb7bc4496fa188c45a2b7",
+      "after_sha256": "5d782be1635f3342d5e3e566037d9f54c932ae49b08223a9b24983cd86a409db",
+      "changed_paragraph_index": 42,
+      "before_text": "目录Schema只读配置入口及同版本向真实runner传递已补齐并经离线/本地Pi回环核验；真实医学目录内容尚未核验。 不限模式可继续，未批准目录不开放为医学可信限制选项。",
+      "after_text": "目录Schema只读配置入口及同版本向真实runner传递已补齐并经离线/本地Pi回环核验；真实医学目录内容尚未核验。 不限模式可继续，未批准目录不开放为医学可信限制选项。 2026-11-14材料增量：唯一人工维护源为code/config/medical-catalog-material.json；原35项完整保全，当前T1用途、词语对应、上下位、适用关联及条件分开核验。材料检查、增改删/引用/生产守卫26项检查与后端typecheck通过，工程证据见code/docs/acceptance/s2-catalog-source-2026-11-14/report.json。MED01–05仅完成来源身份及部分原文定位核对，33处已定位、23处仍仅历史线索；真实医学核验0、S2整体未通过。缺失资料由工程准备方补齐，核验人员主要给结论/修改建议；可读模块未接入当前网页，无部署/重启或正式选项发布。",
+      "paragraph_count_unchanged": true,
+      "all_other_paragraphs_unchanged": true,
+      "all_other_zip_parts_identical": true,
+      "zip_integrity": "passed"
+    },
+    {
+      "path": "方案/子任务T1/T1开发执行说明.docx",
+      "before_sha256": "d4a821373c8e0a9ac90d8f2d28853042e28ba258f56fc1f8792ebf630226921d",
+      "after_sha256": "75f844c6b9dd9764b9d8db8227b51e43634df56631a6af689de319926b45afc8",
+      "changed_paragraph_index": 16,
+      "before_text": "目录Schema只读配置入口及同版本向真实runner传递已补齐并经离线/本地Pi回环核验；真实医学目录内容尚未核验。 不限模式可继续，未批准目录不开放为医学可信限制选项。",
+      "after_text": "目录Schema只读配置入口及同版本向真实runner传递已补齐并经离线/本地Pi回环核验；真实医学目录内容尚未核验。 不限模式可继续，未批准目录不开放为医学可信限制选项。 2026-11-14材料增量：唯一人工维护源为code/config/medical-catalog-material.json；原35项完整保全，当前T1用途、词语对应、上下位、适用关联及条件分开核验。材料检查、增改删/引用/生产守卫26项检查与后端typecheck通过，工程证据见code/docs/acceptance/s2-catalog-source-2026-11-14/report.json。MED01–05仅完成来源身份及部分原文定位核对，33处已定位、23处仍仅历史线索；真实医学核验0、S2整体未通过。缺失资料由工程准备方补齐，核验人员主要给结论/修改建议；可读模块未接入当前网页，无部署/重启或正式选项发布。",
+      "paragraph_count_unchanged": true,
+      "all_other_paragraphs_unchanged": true,
+      "all_other_zip_parts_identical": true,
+      "zip_integrity": "passed"
+    }
+  ],
+  "json": [
+    {
+      "path": "方案/子任务T1/开发计划.json",
+      "before_sha256": "a20bf3697ecc2ec6d6eb40f1eabddddfb77dbac9d3734a6ba512d135d219f309",
+      "after_sha256": "48dc39a59eece3c3f5d1085a2148fb8ecf8162b702540ebc241bbe31a0508004",
+      "changed_paths": [
+        "/current_S2_catalog_material",
+        "/current_document_fingerprints/execution_guide_sha256",
+        "/current_document_fingerprints/plan_sha256",
+        "/current_document_fingerprints/validation",
+        "/current_document_fingerprints/validation_status",
+        "/date",
+        "/tasks/7/current_progress_evidence",
+        "/tasks/7/deliverable",
+        "/tasks/7/engineering_progress",
+        "/tasks/7/material_file"
+      ],
+      "historical_subtrees_and_existing_formal_review_records_preserved": true,
+      "stage_conditions_and_acceptance_unchanged": true
+    },
+    {
+      "path": "方案/子任务T1/当前版本.json",
+      "before_sha256": "26730060a16c8afee43d83f5e3790b958dcae07a78d42e6042a7ad5409c75c31",
+      "after_sha256": "f5d4e3b534d841576a7434a5c6070a5b269c9e06429492086f6a20dba4d174bf",
+      "changed_paths": [
+        "/current_S2_catalog_material",
+        "/current_document_fingerprints/execution_guide_sha256",
+        "/current_document_fingerprints/plan_sha256",
+        "/current_document_fingerprints/validation",
+        "/current_document_fingerprints/validation_status",
+        "/date",
+        "/stages/S2/current_evidence",
+        "/stages/S2/current_progress"
+      ],
+      "historical_subtrees_and_existing_formal_review_records_preserved": true,
+      "stage_conditions_and_acceptance_unchanged": true
+    },
+    {
+      "path": "方案/当前版本.json",
+      "before_sha256": "3118e4976ab06b3e2b50d657a031ec235817dc5c1ba6ff596c0898dbd0015d86",
+      "after_sha256": "f716c1ca813a3de429fa74e567b45a9998e6b9fb226af720e8b38b0eef1f28b7",
+      "changed_paths": [
+        "/current_S2_catalog_material"
+      ],
+      "historical_subtrees_and_existing_formal_review_records_preserved": true,
+      "stage_conditions_and_acceptance_unchanged": true
+    }
+  ],
+  "csv": [
+    {
+      "path": "方案/子任务T1/开发任务清单.csv",
+      "before_sha256": "75cd0766fadc5d3344d90fc338988576d232717b46045ddfa7bdb45d8cb01ca6",
+      "after_sha256": "007fadd592aa6a11b02caef800d3350b121a0207039adce972561931c07dcac6",
+      "selected_row": "T1-R27",
+      "changed_fields": [
+        "交付物",
+        "工程进度",
+        "本次工程交付"
+      ],
+      "all_other_rows_and_selected_requirements_preserved": true
+    },
+    {
+      "path": "方案/子任务T1/开发阶段与验收.csv",
+      "before_sha256": "38aec83a0954211b0a39e3ccc09cfcfbf9d3d3580ee156952d8a97f637dd31c6",
+      "after_sha256": "2fdb3cff29de57bb22eeec46a0e003a5ae052f497a43d1de053b6f38b8d6a02e",
+      "selected_row": "S2",
+      "changed_fields": [
+        "交付物",
+        "工程进度",
+        "本次工程交付"
+      ],
+      "all_other_rows_and_selected_requirements_preserved": true
+    }
+  ],
+  "S2_stage_passed": false,
+  "medical_reviews_performed": 0,
+  "existing_task_formal_review_counters_unchanged": true
+}

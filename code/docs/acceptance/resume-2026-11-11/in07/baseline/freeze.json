@@ -1,0 +1,32 @@
+{
+  "schema_version": "t1-independent-first-source-check-failed-baseline-1",
+  "source_id": "IN07",
+  "frozen_at_utc": "2026-11-11T10:19:03.618307+00:00",
+  "first_fixed_parser_source_repair_freeze": "code/docs/acceptance/resume-2026-11-11/source-repair-freeze.json",
+  "first_independent_structure_outcome": "failed_before_model",
+  "root_actual_original_PDF_pages_viewed": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "failures": {
+    "Fig1": "Current caption includes title/PanelA but misses same-grey-frame PanelB and CT explanation.",
+    "Fig2": "Only two title lines included; same-grey-frame A/B and abbreviations omitted.",
+    "Fig3": "Title and H&E sentence included; same-grey-frame A/B explanations omitted."
+  },
+  "cause_scope": "Within-frame paragraph spacing and multiple title/body paragraphs were conservatively truncated by the first generic repair.",
+  "root_disposition": "Preserve this independent first-check failure. Source now participates in generic parser repair, so subsequent runs are regression, not new complete-pipeline independent acceptance.",
+  "source_role_after_this_record": "parser_regression; extraction_model_unseen",
+  "model_calls": 0,
+  "files": {
+    "parser-result.json": "04a41559524b57ee52f2a279108bdbffcce7d67e7b01bd6a56f348c225183e49",
+    "figure-catalog.json": "931e6a4b7191af395d21f9de48987db341616eb6919afe5911252cf68e508d02",
+    "source-scope.json": "754ff8f3dd616d095ce5847670b69613a0564e979bbf3c68759bd0d905179385",
+    "sampling-protocol.json": "6e6a9966c842b4dc1ccbe6499a285a81116061c694fd215cdf6757e50a3ffed2",
+    "source-quality.json": "c9809a5e2e6b613df489bb59b88eaba8d8cee38b5f18166478786c920fe0ae99"
+  },
+  "repair_authorized_scope": "One bounded at-most20min generalization inside one actual PDF caption rectangle, preserving outside-body/column/competing-Figure safeguards; no prompt, extraction algorithm or source replacement.",
+  "formal_reviews_used": 3,
+  "formal_review_limit": 3
+}

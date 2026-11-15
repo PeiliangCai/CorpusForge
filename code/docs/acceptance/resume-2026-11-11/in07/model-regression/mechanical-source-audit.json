@@ -1,0 +1,13 @@
+{
+  "schema_version": "s6-mechanical-source-audit-1",
+  "document_id": "paper-8e2775d9-4fe2-4e05-a50b-9ee7274a50dc",
+  "file_sha256": "4f6a305fd90cf0f138168f1953e1054319e79cbe7e2f58d9d4cf2f6c1f8070e6",
+  "output_count": 0,
+  "fragment_count": 18,
+  "issues": [],
+  "passed": true,
+  "scope": "Exact Unicode-point IR ranges, document/version identity and physical pages; PDF glyph fidelity and semantics are separate delegated checks.",
+  "rewritten_or_cross_document_fragments_observed": 0,
+  "medical_quality_approved": false,
+  "product_export_approved": false
+}

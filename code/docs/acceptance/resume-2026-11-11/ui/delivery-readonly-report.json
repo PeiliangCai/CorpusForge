@@ -1,0 +1,92 @@
+{
+  "schema_version": "t1-delivery-readonly-browser-1",
+  "at": "2026-11-11T11:20:55.367Z",
+  "origin": "http://127.0.0.1:30141",
+  "checks": [
+    {
+      "name": "ordinary_click_to_start_available_and_actual_paid_model_notice",
+      "passed": true,
+      "clicked": false,
+      "configured_model": "gpt-6-luna"
+    },
+    {
+      "name": "retained_results_and_complete_source_fragments",
+      "passed": true,
+      "paper": "L07",
+      "record_id": "ev-176eaf128d826f3065e1c62b922999b065c881c9",
+      "version": 3,
+      "text_approved": false
+    },
+    {
+      "name": "original_pdf_location",
+      "passed": true,
+      "physical_page": 5
+    },
+    {
+      "name": "candidate_export_controls_available_without_requesting_export",
+      "passed": true,
+      "controls": [
+        {
+          "label": "候选 JSONL",
+          "enabled": true,
+          "clicked": false
+        },
+        {
+          "label": "候选 CSV",
+          "enabled": true,
+          "clicked": false
+        },
+        {
+          "label": "候选证据包",
+          "enabled": true,
+          "clicked": false
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "http_errors": [],
+  "blocked_requests": [],
+  "screenshots": [
+    "delivery-model-notice-enabled.png",
+    "delivery-existing-results-original.png"
+  ],
+  "starts_clicked": 0,
+  "uploads": 0,
+  "review_actions": 0,
+  "exports_requested": 0,
+  "model_calls": 0,
+  "provider_success_claimed": false,
+  "full_S7_real_gate_passed": false,
+  "harness_adjustment": "The initial check incorrectly expected provider text in a notice designed to show model ID and reasoning; only that test expectation was corrected. Product UI unchanged.",
+  "capabilities": {
+    "extraction_start": true,
+    "controlled_fixture": false,
+    "model_runtime": {
+      "provider": "agicto",
+      "model_id": "gpt-6-luna",
+      "reasoning_effort": "medium",
+      "limits": {
+        "requests": 80,
+        "input_tokens": 2000000,
+        "output_tokens": 120000,
+        "execution_seconds": 1800
+      }
+    }
+  },
+  "rendered_run_budget": [
+    "80",
+    "2,000,000",
+    "120,000",
+    "30 分钟",
+    "2"
+  ],
+  "saved_output": {
+    "run_id": "b0-revalidation-2151bbfc-5883-49c4-9e17-d3b600f92a9f:source-L07",
+    "sha256_before": "9acfa0def461f3c6a92ce2fdc6bad2bd4ad9863bf2aecb53dc3a04cd03ad6e49",
+    "sha256_after": "9acfa0def461f3c6a92ce2fdc6bad2bd4ad9863bf2aecb53dc3a04cd03ad6e49",
+    "unchanged": true
+  },
+  "passed": true,
+  "finished_at": "2026-11-11T11:20:57.816Z"
+}

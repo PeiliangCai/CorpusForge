@@ -1,0 +1,28 @@
+{
+  "status": "passed",
+  "BUILD_ID": "E23zPq5epmvmz7hXKRFiM",
+  "checks": [
+    "same_validated_build_and_backend_health",
+    "real_single_batch_projections_preserve_original_false_and_cancelled_status",
+    "real_desktop_mobile_saved_status_gap_pages_offsets_and_bounded_notes",
+    "all_task_paper_model_lists_preserved_by_GET_HEAD_checks"
+  ],
+  "errors": [],
+  "blocked": [],
+  "production_business_writes": 0,
+  "paid_calls": 0,
+  "exports_requested": 0,
+  "api_sha256_before": {
+    "runs": "a0efafc006e90dcf6e395299d8de977558f09eb4b4b9819e366e90cf0503edd5",
+    "papers": "5b439c12a3b0fab3dd51d0a1c1ebfa98c700c2fbdf1a5a6820ad4fd7693f4621",
+    "models": "b0637c06e0eccda39b558dc0a13bd4084af97267e732f35a66cf5a06965b959c"
+  },
+  "api_sha256_after": {
+    "runs": "a0efafc006e90dcf6e395299d8de977558f09eb4b4b9819e366e90cf0503edd5",
+    "papers": "5b439c12a3b0fab3dd51d0a1c1ebfa98c700c2fbdf1a5a6820ad4fd7693f4621",
+    "models": "b0637c06e0eccda39b558dc0a13bd4084af97267e732f35a66cf5a06965b959c"
+  },
+  "run_count": 6,
+  "paper_count": 9,
+  "completed_at_utc": "2026-11-15T05:34:00.359Z"
+}

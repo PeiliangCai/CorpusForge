@@ -4,6 +4,7 @@
 demo
 e2e
 .next
+build
 node_modules
 coverage
 test-results

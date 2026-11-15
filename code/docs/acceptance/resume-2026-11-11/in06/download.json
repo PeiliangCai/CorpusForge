@@ -1,0 +1,15 @@
+{
+  "url": "https://assets.cureus.com/uploads/case_report/pdf/262878/20240724-411166-xxq9jt.pdf",
+  "requested_at": "2026-11-11T09:33:27.639503+00:00",
+  "access_method": "Normal unauthenticated public HTTPS; no cookies, credentials, challenge bypass or TLS override",
+  "model_calls": 0,
+  "status": 200,
+  "final_url": "https://assets.cureus.com/uploads/case_report/pdf/262878/20240724-411166-xxq9jt.pdf",
+  "content_type": "application/pdf",
+  "bytes": 2160324,
+  "downloaded": true,
+  "temporary_pdf": "runtime-data/agent-notes/IN06-download.pdf.tmp",
+  "sha256": "1784b4b7ab855b3d0dbe6797b2cf7d340ac90b750844c4d8a7df79aeb802a4c1",
+  "temporary_pdf_removed_after_byte_identical_registration": true,
+  "registered_PDF": "evaluation/corpus/independent-sealed/IN06.pdf"
+}

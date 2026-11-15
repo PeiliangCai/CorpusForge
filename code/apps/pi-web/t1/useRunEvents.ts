@@ -1,13 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
+import { retainProgressEvent, type ProgressEvent } from "./run-progress";
 
-export interface RunEvent { seq: number; type: string; summary: string; stage: string; timestamp: string; fixture: boolean }
+export interface RunEvent { seq: number; type: string; summary: string; stage: string; timestamp: string; fixture: boolean; detail?: Record<string, unknown> }
 /** Generic SSE framing; unlike a fixed event-name list, this keeps every typed business event. */
 export function useRunEvents(runId: string | null, workbench = false) {
-  const [events, setEvents] = useState<RunEvent[]>([]);
-  const [connection, setConnection] = useState("noSelectedTask");
+  const [eventSnapshot, setEventSnapshot] = useState<{ id: string | null; items: RunEvent[] }>({ id: null, items: [] });
+  const [progressSnapshot, setProgressSnapshot] = useState<{ id: string | null; items: readonly ProgressEvent[] }>({ id: null, items: [] });
+  const [connectionSnapshot, setConnectionSnapshot] = useState({ id: runId, status: "noSelectedTask" });
   useEffect(() => {
-    setEvents([]);
+    setEventSnapshot({ id: runId, items: [] });
+    setProgressSnapshot({ id: runId, items: [] });
+    const setConnection = (status: string) => setConnectionSnapshot({ id: runId, status });
     if (!runId) { setConnection("noSelectedTask"); return; }
     const controller = new AbortController();
     let cursor = 0;
@@ -16,6 +20,7 @@ export function useRunEvents(runId: string | null, workbench = false) {
         try {
           setConnection(cursor ? "reconnecting" : "connecting");
           const response = await fetch(`/api/t1/${workbench ? "workbench/" : ""}runs/${encodeURIComponent(runId!)}/events?after=${cursor}`, { signal: controller.signal, cache: "no-store" });
+          if (controller.signal.aborted) { await response.body?.cancel().catch(() => {}); return; }
           if (!response.ok || !response.body) throw new Error("stream_unavailable");
           setConnection("connected");
           const reader = response.body.getReader(), decoder = new TextDecoder();
@@ -23,10 +28,10 @@ export function useRunEvents(runId: string | null, workbench = false) {
           try {
             while (!controller.signal.aborted) {
               const { done, value } = await reader.read();
-              if (done) break;
+              if (done || controller.signal.aborted) break;
               pending += decoder.decode(value, { stream: true }).replaceAll("\r\n", "\n");
               let boundary;
-              while ((boundary = pending.indexOf("\n\n")) >= 0) {
+              while (!controller.signal.aborted && (boundary = pending.indexOf("\n\n")) >= 0) {
                 const frame = pending.slice(0, boundary); pending = pending.slice(boundary + 2);
                 const data = frame.split("\n").filter(line => line.startsWith("data:")).map(line => line.slice(5).trimStart()).join("\n");
                 if (!data) continue;
@@ -35,7 +40,8 @@ export function useRunEvents(runId: string | null, workbench = false) {
                 const event: RunEvent = { ...value, summary: value.summary ?? value.detail?.summary ?? value.type, stage: value.stage ?? value.detail?.state ?? "", fixture: value.fixture ?? value.detail?.controlled_fixture ?? false };
                 if (!Number.isSafeInteger(event.seq) || event.seq <= cursor) continue;
                 cursor = event.seq;
-                setEvents(previous => [...previous.filter(item => item.seq !== event.seq), event].slice(-500));
+                setEventSnapshot(previous => ({ id: runId, items: [...(previous.id === runId ? previous.items : []).filter(item => item.seq !== event.seq), event].slice(-500) }));
+                if (["state", "coverage_inventory", "batch"].includes(event.type)) setProgressSnapshot(previous => ({ id: runId, items: retainProgressEvent(previous.id === runId ? previous.items : [], event) }));
               }
             }
           } finally { await reader.cancel().catch(() => {}); }
@@ -54,5 +60,7 @@ export function useRunEvents(runId: string | null, workbench = false) {
     void connect();
     return () => controller.abort();
   }, [runId, workbench]);
-  return { events, connection };
+  return { events: eventSnapshot.id === runId ? eventSnapshot.items : [],
+    progressEvents: progressSnapshot.id === runId ? progressSnapshot.items : [],
+    connection: connectionSnapshot.id === runId ? connectionSnapshot.status : runId ? "connecting" : "noSelectedTask" };
 }

@@ -1,0 +1,458 @@
+{
+  "schema_version": "workbench-experience-acceptance-1",
+  "status": "completed",
+  "started_at": "2026-11-14T08:24:49Z",
+  "authorization_deadline": "2026-11-14T10:24:49Z",
+  "prepared_at": "2026-11-14T08:58:36.861324+00:00",
+  "goals": [
+    "Explain and simplify new-task entry choices",
+    "Show observed extraction progress and distinct terminal outcomes",
+    "Verify original-text Figure extraction/display association",
+    "Diagnose the user-started slow run and remove evidenced engineering overhead"
+  ],
+  "formal_reviews": {
+    "used": 3,
+    "max": 3,
+    "conclusions": [
+      {
+        "round": 1,
+        "node": "planning",
+        "judgement": "continue",
+        "risks": [
+          "Prefill must preserve identical original text, boundaries and authorization",
+          "Progress and figure relationships cannot infer completion or pairing",
+          "Rollout cannot interrupt the active user task"
+        ]
+      },
+      {
+        "round": 2,
+        "node": "observed_summary_error_reproduced_offline",
+        "judgement": "continue",
+        "risks": [
+          "Visible at least6 updates exceed3; not established as sole cause",
+          "Prefill cannot expand visible source or cost limits",
+          "Local request reduction is not a measured real total-time speedup"
+        ]
+      },
+      {
+        "round": 3,
+        "node": "final_acceptance",
+        "judgement": "continue",
+        "risks": [
+          "Local request savings do not establish real model total-time speedup",
+          "Original41 source gaps and incomplete summary must remain visible",
+          "Fresh no-active-task check, data backup and configuration preservation required for rollout"
+        ]
+      }
+    ],
+    "precision_correction": "Old safe selectors retained only first6 updates. At least6 exceeds max3; exact original array length is unknown. The offline same-shape fixture uses6."
+  },
+  "paid_model_calls": 0,
+  "extra_paid_model_calls": 0,
+  "existing_user_run_model_requests": 80,
+  "production_business_writes": 0,
+  "independent_IN_material_read": false,
+  "medical_quality_approved": false,
+  "S2_status": "unchanged: passed within previously adjusted two-layer preparation/configuration engineering scope",
+  "S6_S7_status": "unchanged; no new independent medical or full real acceptance",
+  "backend_changes": {
+    "progress": "Optional WorkbenchRun.progress derived from persisted stage/inventory/batch/summary receipts. Distinct partial/failed/cancelled/interrupted outcomes, elapsed/queue separation, source-gap counts; unknown totals stay absent. No percent supplied by a timer.",
+    "progress_compatibility": "Legacy rows/coverage are read without migration; completed source blocks deduplicate successful explicit batches. A source read or summary reread never completes a batch. Proposed/deleted evidence is excluded from candidate counts. New parse/Figure timing events apply only to future runs.",
+    "prefill": "Only fresh workbench executions opt into host-prefilled identical context+authorized source tool projections. Old experiments default to model-requested reads. Preparation does not mark read or model calls; first provider event creates actor=host exposure. Original validation, explicit batch completion, summary, context/token/request and network guards remain.",
+    "summary_protocol": "Prompt and recovery explicitly limit each submission to3 updates, matching the unchanged schema; safe array-length/limit diagnostics added without copying paper values.",
+    "event_polling": "SSE event reads check run existence without loading the source snapshot and query only seq>cursor using the existing run_id/seq primary key; exact persisted fields/order remain.",
+    "filename": "Optional original filename added to paper summaries for readable reuse choices; no source path exposed."
+  },
+  "real_run_diagnosis": {
+    "evidence": "live-final-diagnostics.json",
+    "run_id": "run-f5dc6144-9308-4875-ac96-269a645b10ca",
+    "state": "partial",
+    "total_ms": 1007881.0,
+    "queue_wait_ms": 7,
+    "parser_internal_seconds": 44.11994737599889,
+    "requests": 80,
+    "fixed_input_retrieval_requests": 46,
+    "fixed_input_retrieval_span_ms": 333614,
+    "summary_complete": false,
+    "processed_dispatched_blocks": 2929,
+    "dispatched_blocks": 2929,
+    "task_scope_blocks": 2970,
+    "source_glyph_gap_blocks": 41,
+    "final_candidates": 13,
+    "paired_records": 1,
+    "whole_available_figures": 3,
+    "actual_new_real_speedup_measured": false,
+    "request_wait_caveat": "Request and first-event waits combine supplier, gateway, network and inference time. Existing records cannot isolate model compute, supplier queueing or network latency. Inter-request gaps include host/SDK/tool work and scheduling; they are not a pure CPU measurement.",
+    "paired_record_evidence_role": "background_suggestion",
+    "paired_figure_kind": "paper_schematic_seen_in_UI; not a validated diagnostic medical image",
+    "pairing_validation_scope": "Explicit whole-Figure association and original text/caption/asset delivery chain only; no medical or diagnostic correctness approval."
+  },
+  "local_performance_evidence": {
+    "installed_sdk": "backend-new-tests.log",
+    "batch_requests_before": 3,
+    "batch_requests_after": 1,
+    "same_summary_total_requests_before": 4,
+    "same_summary_total_requests_after": 2,
+    "same_projection_and_original_fragments": true,
+    "event_query_benchmark": "events-query-benchmark.json",
+    "scope": "isolated same-real-task in-memory SQLite function benchmark; no global or paid performance claim"
+  },
+  "validation": {
+    "typescript": {
+      "status": "passed",
+      "log": "backend-typecheck.log"
+    },
+    "extraction": {
+      "status": "passed",
+      "tests": 346,
+      "log": "extraction-tests-final.log"
+    },
+    "server": {
+      "status": "passed",
+      "tests": 71,
+      "test_process_concurrency": 2,
+      "log": "server-tests-final-bounded.log"
+    },
+    "post_cleanup_targeted": {
+      "status": "passed",
+      "tests": 8,
+      "log": "events-deletion-final.log"
+    },
+    "new_prefill_progress_tests": {
+      "status": "passed",
+      "tests": 10,
+      "log": "backend-new-tests.log"
+    },
+    "cursor_progress_sql_tests": {
+      "status": "passed",
+      "tests": 2,
+      "log": "events-progress-tests.log"
+    },
+    "initial_failures_retained": [
+      "backend-typecheck-initial.log",
+      "backend-new-tests-initial.log",
+      "server-tests.log",
+      "extraction-tests.log",
+      "server-tests-final.log"
+    ],
+    "initial_failure_resolutions": [
+      "Local SDK execute arity and generic type inference corrected, final tsc passed",
+      "Two new-test assumptions corrected to preserve existing strict request-cap/fallback behavior; production guards unchanged",
+      "Gateway test requires apps/pi-web/tsconfig aliases; rerun and final suite passed",
+      "Old32K replay test expected obsolete128K app allowance; now verifies existing bounded guard stops unsafe followup and current profile keeps output allowance",
+      "Unbounded simultaneous local fixture load hit two old Fastify10s onReady timeouts; final test process concurrency2 passed without changing production timeout or run concurrency"
+    ],
+    "frontend": {
+      "status": "passed",
+      "browser_cases": 16,
+      "unit_tests": 14,
+      "report": "ui.json",
+      "same_build_and_source_verified": true
+    },
+    "production_readonly": {
+      "status": "passed",
+      "browser_checks": 5,
+      "database_backend_report": "postdeploy-readonly.json",
+      "browser_report": "ui.json#/live_readonly",
+      "scope": "No business mutations, exports, new extraction or paid model experiment."
+    },
+    "documentation": {
+      "status": "passed",
+      "documents": 12,
+      "formats": {
+        "json": 7,
+        "csv": 3,
+        "docx": 2
+      },
+      "report": "documentation-sync.json",
+      "unchanged_user_history_budget_review_objects": true,
+      "docx_other_zip_parts_preserved_per_file": 14,
+      "docx_exact_inverse_preservation_verified": true
+    }
+  },
+  "isolation": {
+    "real_service_methods": [
+      "GET",
+      "HEAD"
+    ],
+    "production_database_mode": "read-only",
+    "real_task_cancel_restart_replay_or_budget_change": false,
+    "model_or_env_config_change": false,
+    "local_test_data": "In-memory databases or unique mkdtemp paths under code/runtime-data/ and existing synthetic/local fixtures. Final workflow report explicitly goes to this acceptance directory.",
+    "legacy_initial_workflow_report": "code/runtime-data/test-results/workflow-report.json is only a local test summary, not live business rows.",
+    "extraction_strategy": "B0 unchanged",
+    "execution_slots": 2,
+    "fifo_preserved": true,
+    "per_run_budget_preserved": true,
+    "scope_snapshots_and_retention_deletion_preserved": true
+  },
+  "frontend": {
+    "owner": "/root/workbench_flow_ui",
+    "status": "passed_final_same_build_and_sealed_backend",
+    "BUILD_ID": "AvEqqRvnH42IteI6npju-",
+    "dist": "apps/pi-web/build/workbench-experience-validated-20261114",
+    "isolated_origin": "http://127.0.0.1:30156",
+    "isolated_backend": "http://127.0.0.1:3215",
+    "browser_cases": 16,
+    "ui_report": "ui.json",
+    "build_source_report": "ui-build-source.json",
+    "new_unit_tests": 14,
+    "typecheck": "passed",
+    "lint": "passed_0_warnings",
+    "build": "passed",
+    "partial_semantics": "2929/2929 is source-stage count only; partial has no percent/success fill and gap41 remains separately visible.",
+    "live_browser_cases": 5,
+    "live_status": "passed"
+  },
+  "deployment": {
+    "status": "deployed_and_readonly_verified",
+    "active_runs_at_last_read": [],
+    "last_read_at": "2026-11-14T08:54:43.332467+00:00",
+    "existing_frontend_dist": "apps/pi-web/build/two-layer-catalog-validated-20261114",
+    "existing_BUILD_ID": "DcG1glAOPcj0mod8YXzIX",
+    "existing_backend_pid": 33530,
+    "existing_frontend_pid": 33584,
+    "rollback_frontend_dist": "apps/pi-web/build/two-layer-catalog-validated-20261114",
+    "requirements": [
+      "Final review before cutover",
+      "Fresh just-before-stop active-run read required; wait if user starts new work",
+      "Back up SQLite with coordinated checkpoint and preserve env hashes",
+      "Keep existing validated frontend for rollback; backend own diff can restore exact previous source",
+      "Verify real service using GET/HEAD only; no upload/start/cancel/delete/export checks"
+    ],
+    "predeploy_snapshot": "predeploy-snapshot.json",
+    "database_backup": "runtime-data/backups/workbench-experience-20261114-before/t1.sqlite",
+    "before": {
+      "schema_version": "workbench-experience-predeploy-snapshot-1",
+      "captured_at": "2026-11-14T09:03:36.433811+00:00",
+      "backup": "runtime-data/backups/workbench-experience-20261114-before/t1.sqlite",
+      "backup_sha256": "28e76298d320ed6d3827754f25542ac0d0270139445fdb3a88819fc45c585ef1",
+      "tables": {
+        "events": {
+          "rows": 5,
+          "sha256": "0cce36023a57a5d15170afecc3948a61f8f6e060ca0370d92295d93c088976a4"
+        },
+        "records": {
+          "rows": 1,
+          "sha256": "f76d61870bf7a125fce7418afc751fa4603d923dc1cffe6305dd35b5d5e6e89a"
+        },
+        "runs": {
+          "rows": 1,
+          "sha256": "d9b9fdf5eff6120aae042947b77a3f01d4df2c4111cf9090b344a6631a18bbc4"
+        },
+        "s4_batches": {
+          "rows": 23,
+          "sha256": "70f3a229922cd466b25259d57177b5c872c50a3f08b3ba6971282f5bc49ede92"
+        },
+        "s4_events": {
+          "rows": 251,
+          "sha256": "48c517519f2cf2ff570f4ee4c0184ff13b9f5914d7221d875a9565a011a69906"
+        },
+        "s4_runs": {
+          "rows": 8,
+          "sha256": "c46227b149fca5bc4599c5c0af95309bd84f055c1ded0a0067bfe6d2c98366f4"
+        },
+        "s4_versions": {
+          "rows": 291,
+          "sha256": "c110f57ca8c92998ace2525b7c5f7a50ffbb370d85d535003acc0880ff731c6f"
+        },
+        "workbench_annotations": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_deleted_runs": {
+          "rows": 2,
+          "sha256": "f064f733a448f79f2682066b591ccdf0b3e17eb24afa383574219418d122f5f2"
+        },
+        "workbench_deleted_sources": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_exports": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_model_profiles": {
+          "rows": 1,
+          "sha256": "a125b996c6cdd75bf3a7a6b306e56df669cff6c683630308b27054575ff130cd"
+        },
+        "workbench_papers": {
+          "rows": 8,
+          "sha256": "491adf741bc63295b16b04418441d7a769352a33dbf9073a4253dae22549239b"
+        },
+        "workbench_requests": {
+          "rows": 3,
+          "sha256": "d3b173007c600b2da8063355d3ea412a85217c19b628c72d298acaedaaeec2fe"
+        },
+        "workbench_retentions": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_reviews": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_runs": {
+          "rows": 8,
+          "sha256": "b04d40728d4e16289e119fd7715df2cfec5e7aa1fea08bcd757fb3276a820d6c"
+        }
+      },
+      "table_count": 17,
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "active_runs": [],
+      "run_count": 8,
+      "paper_count": 8,
+      "environment_sha256": {
+        ".env": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+        "deploy/local/workbench.env": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea"
+      },
+      "scope_catalog_sha256": "cbb0b562e5f5a39e7c5f1ee1c855b736065235cb9a4fc7bc3d29d0a2b29e1c01",
+      "old_backend_pid": 33530,
+      "old_frontend_launcher_pid": 33563,
+      "old_frontend_wrapper_pid": 33577,
+      "old_frontend_pid": 33584,
+      "old_frontend_dist": "apps/pi-web/build/two-layer-catalog-validated-20261114",
+      "old_BUILD_ID": "DcG1glAOPcj0mod8YXzIX",
+      "new_frontend_dist": "apps/pi-web/build/workbench-experience-validated-20261114",
+      "new_BUILD_ID": "AvEqqRvnH42IteI6npju-",
+      "backend_rollback_diff": "docs/acceptance/workbench-experience-2026-11-14/backend-review.diff",
+      "business_mutation_requests_by_engineering": 0,
+      "extra_paid_requests_by_engineering": 0
+    },
+    "started_at": "2026-11-14T09:04:25.422025+00:00",
+    "backend_pid": 65746,
+    "frontend_launcher_pid": 65769,
+    "backend_log": "runtime-data/logs/t1-backend-workbench-experience-20261114.log",
+    "frontend_log": "runtime-data/logs/pi-web-workbench-experience-20261114.log",
+    "dist": "apps/pi-web/build/workbench-experience-validated-20261114",
+    "BUILD_ID": "AvEqqRvnH42IteI6npju-",
+    "backend_health": {
+      "status": "ok",
+      "service": "t1-workbench",
+      "runtime_mode": "workflow",
+      "backend_pi_sdk": "1.4.0",
+      "controlled_fixture": false,
+      "extraction_available": true
+    },
+    "frontend_GET_bytes": 18833,
+    "paid_calls_by_engineering": 0,
+    "business_mutation_requests_by_engineering": 0,
+    "after": "postdeploy-readonly.json",
+    "database_logical_tables_unchanged": true,
+    "environment_sha256_unchanged": true,
+    "scope_catalog_sha256_unchanged": true,
+    "interrupted_user_tasks": 0,
+    "frontend_pid": 65790,
+    "production_browser_report": "ui.json#/live_readonly",
+    "production_browser_checks": 5,
+    "production_browser_status": "passed",
+    "current_BUILD_ID": "AvEqqRvnH42IteI6npju-",
+    "current_frontend_dist": "apps/pi-web/build/workbench-experience-validated-20261114",
+    "database_and_configuration_preservation_scope": "Cutover window only; the user-started run naturally changed business state earlier in the session.",
+    "last_database_read_at": "2026-11-14T09:05:19.517887+00:00"
+  },
+  "source_manifest": {
+    "code/apps/server/src/workflow.ts": "8f6389c3bc21573fe8319de72b7c7b9f1b87cd169d1fb0690a9c3d8a4ad1d68e",
+    "code/apps/server/src/workflow-runner.ts": "724b227d27574e9a69808b6e2d947028948ea49124f3f3c2beb58f0023598c4c",
+    "code/apps/server/src/workbench-progress.ts": "0be485cad5bcb5543099f228e7292eaa8fd042fcdb1fabb0376d7cf6fe510f4f",
+    "code/packages/contracts/src/workbench.ts": "f716f8d458a5789e937a431949e537a928312946aa698b3d444e215010149c09",
+    "code/packages/agent/src/extraction-tools.ts": "b056471407ce97c86a9cd2359cff696cc5adf8b5a5ca689b480f83197fed0a39",
+    "code/packages/agent/src/extraction-pi.ts": "71f31e7fe7fad85b97b37bb4955a80442ee641420b0660167b1632202b860923",
+    "code/packages/agent/src/extraction-run.ts": "407da871a90c415f88751df395b1274129ee4e1b6ad43dbc67d95588e32d3788",
+    "code/packages/agent/src/extraction-summary.ts": "b74911b10b21c53aea10124aea0c28ea78da27bc67a8f7bdf15097c9705a1b3f",
+    "code/packages/agent/src/extraction-tool-recovery.ts": "c1c0368787f9d1d4e099a27a8b305ece435ae2ccc0b00543b72dd06321057e53",
+    "code/apps/server/test/workbench-progress.test.ts": "224686c34853b33ce01ebadabf0ce0eac80506f90d7f500054e0cd12648d5d47",
+    "code/apps/server/test/workflow-events.test.ts": "d81c16378775854a27624fb25a1758f1735d6f0c8b87be749988b4ddf36bef2a",
+    "code/tests/extraction/source-prefill.test.ts": "37b64a8ad6947c5269340e44f81eae68a5e010ccd69adb2649d3543cd98a25e7",
+    "code/tests/extraction/runtime.test.ts": "bd039378fc3d493b4d45f4c4aa43d4f2d4c8cf409d676c59a0abe61bd8d86519",
+    "code/scripts/benchmark-workbench-events.ts": "e05474470b86c8b82a10e44e081926d6ce86be429fb3ea5dc3e83c84f04e8359"
+  },
+  "review_diff": "backend-review.diff",
+  "test_diff": "backend-tests.diff",
+  "cleanup": {
+    "backend_baseline": "removed after both own diffs passed git apply --check --reverse; compact diffs retained",
+    "permanent_rules_removed": false,
+    "other_tasks_files_removed": false,
+    "new_backend_test_temp_residuals": [],
+    "baseline_removed_at": "2026-11-14T08:59:47.331768+00:00",
+    "ui": {
+      "isolated_frontend_30156": "stopped",
+      "isolated_fixture_3215": "stopped",
+      "task_owned_fixture_data": "removed",
+      "task_owned_folder_selection_data": "removed",
+      "current_and_rollback_builds": "preserved",
+      "scripts_and_required_evidence": "preserved"
+    },
+    "documentation": {
+      "own_continuity_log": "code/runtime-data/agent-notes/workbench-experience-docs-2026-11-14.json",
+      "own_continuity_log_removed": true,
+      "permanent_rules_or_other_task_material_removed": false,
+      "removed_after_handoff": true,
+      "completed_at_utc": "2026-11-14T09:11:09.278177+00:00"
+    },
+    "backend_temporary_note": "removed after final formal handoff; formal review count/conclusions retained in this report",
+    "backups_builds_reports_diffs_and_required_logs": "preserved"
+  },
+  "review_ready_at": "2026-11-14T09:02:20.359125+00:00",
+  "completed_at": "2026-11-14T09:12:29.882201+00:00",
+  "documentation": {
+    "readme": "code/README.md",
+    "deployment_readme": "code/deploy/README.md",
+    "current_runtime_header": "Single current host entry/build/process record at the top; later build/PID snapshots explicitly historical.",
+    "source_sha256": {
+      "README.md": "570bc7cdb371009c200b2eb1c1e6acdfe7b0536ec2d37adbe7cb3ef5849ba871",
+      "deploy/README.md": "45f3706b2189b6856008c7bfde666b185951c166e0f21922d39f966963c74329"
+    },
+    "scheme_report": "documentation-sync.json",
+    "scheme_owner_status": "final_documentation_verified",
+    "report": "documentation-sync.json",
+    "report_sha256": "4a08809ba268c3992501105b7f044f55e145d5fd8a15ae6ee076c25aab69c39b",
+    "file_count": 12,
+    "files": [
+      "方案/当前版本.json",
+      "方案/实施计划.json",
+      "方案/任务分解.json",
+      "方案/工作流与模块职责.json",
+      "方案/子任务T1/当前版本.json",
+      "方案/子任务T1/开发计划.json",
+      "方案/子任务T1/质量与性能验收契约.json",
+      "方案/子任务T1/开发任务清单.csv",
+      "方案/子任务T1/开发阶段与验收.csv",
+      "方案/子任务T1/验收清单.csv",
+      "方案/子任务T1/T1智能体开发计划.docx",
+      "方案/子任务T1/T1开发执行说明.docx"
+    ],
+    "file_sha256": {
+      "方案/当前版本.json": "260b85c6fb147ec4b4634ac559c6d299c9496acdb9e565509fa2ab877c821c70",
+      "方案/实施计划.json": "96dd8d0e44571452237011098f6deb69e6fd2ba9accffa26d8a24b599aeed2df",
+      "方案/任务分解.json": "f51fe9a158ccd16d2764738cefeafdd151e953a141fe5004ff3d978c0d7f264b",
+      "方案/工作流与模块职责.json": "04ad494081fb083395d3f4159211f55d924e1d10a2cf8108792e1f9cb54a7a0b",
+      "方案/子任务T1/当前版本.json": "aade788474462ceb3710ff6e2cf148ab0d20cda80afa2d6228320dee60feb0ce",
+      "方案/子任务T1/开发计划.json": "0593626c857fb46e31df975a32b8b4d35c7134fe1dc3c16a0d98122e38fc1a44",
+      "方案/子任务T1/质量与性能验收契约.json": "2d167efe03458bf016fbaa7745186ff1cbf9552ad5a475bfb266c93e661266ec",
+      "方案/子任务T1/开发任务清单.csv": "6c9bb8f40ae1f154368b2bd0b72e5e3339fc53605a05bc9f074b711d9118309b",
+      "方案/子任务T1/开发阶段与验收.csv": "e4da5bef94326954d660dd61ca7969f0d3261f7dbf518bb733eae9c7804fb9a3",
+      "方案/子任务T1/验收清单.csv": "93344a7adaee39d27b34b198c45390ac3ded83779b2db68d405176f3b8351bcb",
+      "方案/子任务T1/T1智能体开发计划.docx": "6c5c53ddf86ef4a9eeaa737f563698400745fda4b087cbab4bdd339cdbdb4ef9",
+      "方案/子任务T1/T1开发执行说明.docx": "af4b24729571e57ea8c17ff1ead14439fac6df7899b63b3e347c6bb50604a762"
+    },
+    "preservation": "passed",
+    "user_content_preservation": "passed: exact inverse checks preserve all untouched DOCX original XML,14 other ZIP parts per file, old CSV rows except current S5 increment, and original JSON history/budget/review objects; old current fingerprints/review references archived intact.",
+    "acceptance_boundary": {
+      "S2": "already_passed_current_preparation_and_two_layer_operator_configuration_engineering",
+      "medical_quality_approved": false,
+      "complete_S6_independent_validation_promoted": false,
+      "complete_S7_real_chain_promoted": false
+    },
+    "no_pending_items": true
+  },
+  "handoff_completed_at": "2026-11-14T09:12:29.882201+00:00",
+  "outstanding_implementation_or_validation_items": [],
+  "retained_limitations": [
+    "The original user run remains partial:41 source-glyph blocks unresolved and whole-document summary incomplete after the original80-request budget. No replay or allowance increase.",
+    "No new paid model run measured end-to-end acceleration; offline exact-projection request savings and local event-query timings are engineering evidence only.",
+    "The unique Figure5 pairing is a supplemental-background paper schematic; the check validates the original text/caption/whole-Figure delivery chain, not diagnostic medical-image or semantic correctness.",
+    "Medical quality and independent/full-real S6/S7 acceptance remain unchanged."
+  ]
+}

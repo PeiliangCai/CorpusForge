@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { ContractError } from '@t1/contracts';
 import type { ArticleScopeManifest, ExtractionDocument } from './article-scope.js';
 import { buildSourceEvidenceUnits, sourceGlyphQuarantine } from './source-evidence-units.js';
+import { agentAssessesSourceGlyphs } from './source-glyph-policy.js';
 
 export const SOURCE_SELECTION_CONDITIONS = ['B0', 'F'] as const;
 export type SourceSelectionCondition = typeof SOURCE_SELECTION_CONDITIONS[number];
@@ -11,8 +12,8 @@ export const isSourceSelectionCondition = (value: unknown): value is SourceSelec
   SOURCE_SELECTION_CONDITIONS.some(condition => condition === value);
 /** Exclusion is the shared task scope; F retrieval may additionally defer source. */
 export type SourceSelectionState = 'kept' | 'deferred' | 'excluded';
-export const SOURCE_SELECTION_VERSION = 's4-explainable-source-selection-3';
-export const BIBLIOGRAPHY_SCOPE_RULE_VERSION = 'explicit-bibliography-task-scope-1';
+export const SOURCE_SELECTION_VERSION = 's4-explainable-source-selection-4';
+export const BIBLIOGRAPHY_SCOPE_RULE_VERSION = 'explicit-bibliography-task-scope-2';
 export interface SourceSelectionEntry {
   block_id: string; document_line_index: number; physical_page: number; text_sha256: string;
   code_points: number; state: SourceSelectionState; rule_ids: string[]; reasons: string[];
@@ -24,6 +25,7 @@ export interface SourceSelectionManifest<
   /** Absent on historical manifests, which remain readable. */
   bibliography_scope_rule_version?: string;
   source_glyph_guard_version?: string;
+  source_glyph_policy_version?: string;
   document_id: string; file_sha256: string; text_version: string; article_scope_digest: string;
   entries: SourceSelectionEntry[]; kept_block_ids: string[]; deferred_block_ids: string[]; excluded_block_ids: string[];
   counts: Record<SourceSelectionState, number>; code_points: Record<SourceSelectionState, number>;
@@ -46,6 +48,11 @@ const bibliographicEnd = /(?:\b(?:18|19|20)\d{2}\s*[;，,]\s*\d+\s*(?:\([^)]*\))
 const referenceStart = /^(?:\[\s*\d+\s*\]|\d+\s*[.．、])\s*\S/;
 const referencePrefix = /^(?:\[\s*\d+\s*\]|\d+\s*[.．、])\s*/;
 const authorStart = /^(?:[\p{L}'’–-]+\s+[A-Z](?:[ .-]*[A-Z])*(?=[,.;\s])|[\p{Script=Han}]{2,6}[，,、])/u;
+// These additional citation forms require a complete same-page native list item
+// under an explicit References heading; raw/unmapped fallback keeps v1 guards.
+const nativeAuthorStart = /^(?:[\p{L}'’–-]+\s+[A-Z](?:[ .-]*[A-Z])*(?=[,.;:\s])|[\p{Script=Han}]{2,6}[，,、])/u;
+const nativePublicationYearVolume = /\b(?:18|19|20)\d{2}\s*[;，,]\s*\d+\s*(?:\([^)]*\))?\s*:/;
+const completeBareDoiEnd = /\b10\.\d{4,9}\/[A-Za-z0-9][A-Za-z0-9./()_:;%+–-]*\.?\s*$/i;
 const explicitBoilerplate = /^(?:【中图分类号】|【文献标识码】|【文章编号】|©\s*\d{4}|copyright\s+©|publisher['’]s note\b|vol:\.\(1234567890\)|\|\s*https?:\/\/doi\.org\/|open access\s+this article is licensed under|the authors declare no competing interests\.?$)/i;
 const statisticalOnly = /^(?:(?:all )?statistical analys(?:is|es) (?:was|were) (?:performed|conducted|carried out)|(?:所有)?(?:统计分析|统计学分析).*(?:SPSS|R\s*软件|软件)|采用\s*(?:SPSS|SAS)\s*[\d.]+.*(?:分析|统计))/i;
 
@@ -135,11 +142,11 @@ function positiveUnitChoices(document: ExtractionDocument, available: ReadonlySe
 
 /** Original blocks are never edited. Unknown structure/expressions stay visible. */
 export function selectSourceBlocks(document: ExtractionDocument, article: ArticleScopeManifest,
-  condition: SourceSelectionCondition = 'B0'): SourceSelectionManifest<SourceSelectionCondition> {
+  condition: SourceSelectionCondition = 'B0', options: { sourceGlyphPolicyVersion?: string } = {}): SourceSelectionManifest<SourceSelectionCondition> {
   if (!isSourceSelectionCondition(condition)) throw new ContractError('invalid_source_selection_condition');
   if (document.document_id !== article.document_id || document.file_sha256 !== article.file_sha256 || document.text_version !== article.text_version)
     throw new ContractError('source_selection_binding_mismatch');
-  const eligible = new Set(article.included_block_ids), glyphQuarantine = new Set(sourceGlyphQuarantine(document));
+  const eligible = new Set(article.included_block_ids), glyphQuarantine = new Set(agentAssessesSourceGlyphs(options.sourceGlyphPolicyVersion) ? [] : sourceGlyphQuarantine(document));
   const structural = new Map<string, string[]>(), protectedIds = new Set<string>(), sectionHeaders = new Set<string>(), furnitureIds = new Set<string>();
   if (document.schema_version === '3') {
     for (const u of document.structure.units) {
@@ -172,9 +179,11 @@ export function selectSourceBlocks(document: ExtractionDocument, article: Articl
   // bound multi-line entries; a raw range through the rest of a page never does.
   const bibliography = new Set<number>();
   const blockIndex = new Map(document.blocks.map((b, i) => [b.block_id, i]));
-  const completeEntry = (indices: number[]) => {
+  const completeEntry = (indices: number[], nativeListItem = false) => {
     const text = indices.map(i => document.blocks[i]!.text).join('\n').trim();
-    return referenceStart.test(text) && authorStart.test(text.replace(referencePrefix, '')) && bibliographicEnd.test(text) &&
+    const nativeFormat = nativeListItem && nativePublicationYearVolume.test(text);
+    return referenceStart.test(text) && (nativeFormat ? nativeAuthorStart : authorStart).test(text.replace(referencePrefix, '')) &&
+      (bibliographicEnd.test(text) || nativeFormat && completeBareDoiEnd.test(text)) &&
       indices.every((i, n) => references.has(i) && !protectedIds.has(document.blocks[i]!.block_id) &&
         (n === 0 || i === indices[n - 1]! + 1 && document.blocks[i]!.page === document.blocks[indices[0]!]!.page &&
           !(referenceStart.test(document.blocks[i]!.text.trim()) && authorStart.test(document.blocks[i]!.text.trim().replace(referencePrefix, '')))));
@@ -182,7 +191,7 @@ export function selectSourceBlocks(document: ExtractionDocument, article: Articl
   if (document.schema_version === '3') for (const unit of document.structure.units) {
     if (unit.kind !== 'list_item' || !['exact', 'normalized_alignment'].includes(unit.mapping.status) || !unit.source_segments.length) continue;
     const indices = [...new Set(unit.source_segments.map(s => blockIndex.get(s.block_id)))].filter((i): i is number => i !== undefined).sort((a, b) => a - b);
-    if (!indices.length || !completeEntry(indices)) continue;
+    if (!indices.length || !completeEntry(indices, true)) continue;
     // A block may contain both bibliography and prose. Whole-block exclusion is
     // allowed only if mapping covers every character except its numbered label.
     const wholeBlocks = indices.every((i, n) => {
@@ -263,6 +272,7 @@ export function selectSourceBlocks(document: ExtractionDocument, article: Articl
   const codePoints = Object.fromEntries(['kept', 'deferred', 'excluded'].map(state => [state, entries.filter(e => e.state === state).reduce((n, e) => n + e.code_points, 0)])) as Record<SourceSelectionState, number>;
   const manifest = { schema_version: 's4-source-selection-1' as const, rule_version: SOURCE_SELECTION_VERSION, condition,
     ...(typeof document.parser.config.font_glyph_guard_version === 'string' ? { source_glyph_guard_version: document.parser.config.font_glyph_guard_version } : {}),
+    ...(options.sourceGlyphPolicyVersion ? { source_glyph_policy_version: options.sourceGlyphPolicyVersion } : {}),
     bibliography_scope_rule_version: BIBLIOGRAPHY_SCOPE_RULE_VERSION,
     document_id: document.document_id, file_sha256: document.file_sha256, text_version: document.text_version, article_scope_digest: article.digest,
     entries, kept_block_ids: ids('kept'), deferred_block_ids: ids('deferred'), excluded_block_ids: ids('excluded'), counts, code_points: codePoints,
@@ -272,9 +282,9 @@ export function selectSourceBlocks(document: ExtractionDocument, article: Articl
 
 /** Article membership and this task's model-access scope are separate. Historical
  * input-copy exclusions are not a grant to bypass the current bibliography scope. */
-export function taskSourceBlockIds(document: ExtractionDocument, article: ArticleScopeManifest): string[] {
-  const excluded = new Set(selectSourceBlocks(document, article, 'B0').excluded_block_ids);
-  const unsafe = new Set(sourceGlyphQuarantine(document));
+export function taskSourceBlockIds(document: ExtractionDocument, article: ArticleScopeManifest, sourceGlyphPolicyVersion?: string): string[] {
+  const excluded = new Set(selectSourceBlocks(document, article, 'B0', { sourceGlyphPolicyVersion }).excluded_block_ids);
+  const unsafe = new Set(agentAssessesSourceGlyphs(sourceGlyphPolicyVersion) ? [] : sourceGlyphQuarantine(document));
   return article.included_block_ids.filter(id => !excluded.has(id) && !unsafe.has(id));
 }
 

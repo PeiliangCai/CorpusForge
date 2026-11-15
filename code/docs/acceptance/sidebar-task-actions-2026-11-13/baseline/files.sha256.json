@@ -1,0 +1,15 @@
+{
+  "code/apps/pi-web/t1/T1Workbench.tsx": "0b5f8f17757b810cb8a6668e0c40eae66587189673e1cf9393ac4c736ab347a3",
+  "code/apps/pi-web/t1/workbench.css": "80a7df074023842cd26cb9b6ef2573008cd64d99d120df8c6f6234c0d1b7b0d3",
+  "code/apps/pi-web/t1/messages.mjs": "bc102a167594a0bda817c5e66eb5939b61fa256f8bef4d1a8e8cbf9948c0b8d0",
+  "code/apps/pi-web/t1/result-navigation.ts": "d454a0902f7e3d83ac11ec1fd7b4c707baf3154906ef00680de68245bcb7c9bc",
+  "code/apps/pi-web/components/SidebarMenu.tsx": "ae2f77737e9e54fdaadae1895a950d4e63c3e369e4283d8f55a50bae56bbd67b",
+  "code/apps/pi-web/next-env.d.ts": "372b8026eab1e234ec13bc3241568584bf9b22110c5946dbb78c83b8ea38cda9",
+  "code/README.md": "38beeb944859f2c7fd5643430230ee9cf8e7d1d72d1ae943178e39d287a4c619",
+  "code/deploy/README.md": "2b3999061d9f087dbd2b7417b38d208c5e9a5b651e022ce1686e0ac95a9ee56a",
+  "方案/子任务T1/T1开发执行说明.docx": "7348db9563bc81f99ed122accee0d56a50158697ffcccc7fbee225026dd05c56",
+  "方案/子任务T1/T1智能体开发计划.docx": "9c7c95afe010ad6aec39fae34aee3a92623cad111dfc9450497ceaabfeb166a7",
+  "方案/子任务T1/当前版本.json": "a179858e05fbee5a95a8494e357f9e313446c9a59c570f0ed1abda4d819e0a52",
+  "方案/当前版本.json": "82fbfd4c327231494194db34a76b807714f2b8c95ef884117d3f21db76438e22",
+  "code/apps/pi-web/tsconfig.json": "bc8c9eb951562b35c078fb4c76c55cd2a8d0f46ad8bea005e5d4f8332f01cb1a"
+}

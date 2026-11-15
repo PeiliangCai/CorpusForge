@@ -1,0 +1,279 @@
+{
+  "status": "passed",
+  "method": "Live production Next page and fixed business GET requests; every non-GET/HEAD, export and non-allowlisted API request is blocked. Storage preview is never opened.",
+  "origin": "http://127.0.0.1:30141",
+  "BUILD_ID": "mYxCBdDdcBK7amEeDhlnC",
+  "started_at": "2026-11-15T13:19:20.180Z",
+  "summary_phase": "before-backend-reference-fix",
+  "checks": [
+    "live_storage_summary_readable_and_file_bytes_consistent",
+    "expected_build_manifest_served",
+    "desktop_storage_entry_visible_without_overflow_or_preview",
+    "mobile_storage_entry_visible_without_overflow_or_preview",
+    "papers_runs_models_response_hashes_unchanged",
+    "zero_page_errors_and_only_GET_HEAD_requests_no_preview_cleanup"
+  ],
+  "request_log": [
+    {
+      "source": "fixed-read",
+      "method": "GET",
+      "path": "/api/t1/workbench/papers",
+      "status": 200,
+      "sha256": "6f4c77ac11ca9acf56538e50ee30fe61bf2a771c524cbe635804b64cafe7f04d"
+    },
+    {
+      "source": "fixed-read",
+      "method": "GET",
+      "path": "/api/t1/workbench/runs",
+      "status": 200,
+      "sha256": "928b02921999eabc1de778011196df9249ea84b9d6bd16db508f467d9f9f7380"
+    },
+    {
+      "source": "fixed-read",
+      "method": "GET",
+      "path": "/api/t1/workbench/models",
+      "status": 200,
+      "sha256": "b0637c06e0eccda39b558dc0a13bd4084af97267e732f35a66cf5a06965b959c"
+    },
+    {
+      "source": "fixed-read",
+      "method": "GET",
+      "path": "/api/t1/workbench/storage",
+      "status": 200,
+      "sha256": "7d6aaa80e4995f2b85f3ca1bc7ca242663204e4a0249fbecb680ae9e5e70fcb1"
+    },
+    {
+      "source": "fixed-read",
+      "method": "GET",
+      "path": "/_next/static/mYxCBdDdcBK7amEeDhlnC/_buildManifest.js",
+      "status": 200,
+      "sha256": "4912d6e009442c01a1e31158dd02c44abf248e3f8020fe278ce93043a27efe69"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/_next/static/css/1346b4a27726c65b.css"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/_next/static/css/78dff03f8f1686de.css"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/_next/static/css/282d9f1fbd4a8104.css"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/_next/static/css/3d6afb470864f0ce.css"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/_next/static/chunks/webpack-c9282aef853bbdd6.js"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/_next/static/chunks/4bd1b696-c7408084347438ae.js"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/_next/static/chunks/794-b3cac4ade93feb62.js"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/_next/static/chunks/main-app-901aa796812d0838.js"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/_next/static/chunks/404-9f4950f5ab30adee.js"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/_next/static/chunks/app/page-c869f7387127687a.js"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/t1-assets/fonts/noto-cjk.woff2"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/icons/catppuccin/latte/_file.svg"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/api/t1/workbench/capabilities"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/api/t1/workbench/papers"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/api/t1/workbench/runs"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/api/t1/workbench/catalog"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/api/t1/workbench/models"
+    },
+    {
+      "source": "browser",
+      "method": "GET",
+      "path": "/favicon.ico"
+    },
+    {
+      "source": "fixed-read",
+      "method": "GET",
+      "path": "/api/t1/workbench/papers",
+      "status": 200,
+      "sha256": "6f4c77ac11ca9acf56538e50ee30fe61bf2a771c524cbe635804b64cafe7f04d"
+    },
+    {
+      "source": "fixed-read",
+      "method": "GET",
+      "path": "/api/t1/workbench/runs",
+      "status": 200,
+      "sha256": "928b02921999eabc1de778011196df9249ea84b9d6bd16db508f467d9f9f7380"
+    },
+    {
+      "source": "fixed-read",
+      "method": "GET",
+      "path": "/api/t1/workbench/models",
+      "status": 200,
+      "sha256": "b0637c06e0eccda39b558dc0a13bd4084af97267e732f35a66cf5a06965b959c"
+    }
+  ],
+  "blocked": [],
+  "errors": [],
+  "console_errors": [],
+  "layouts": {
+    "desktop": {
+      "viewport_width": 1440,
+      "viewport_height": 1000,
+      "document_width": 1440,
+      "document_height": 1000,
+      "entry": {
+        "x": 16,
+        "y": 918.8125,
+        "width": 70.015625,
+        "height": 32,
+        "right": 86.015625,
+        "bottom": 950.8125
+      },
+      "storage_dialog_open": false
+    },
+    "mobile": {
+      "viewport_width": 390,
+      "viewport_height": 844,
+      "document_width": 390,
+      "document_height": 844,
+      "entry": {
+        "x": 16,
+        "y": 750.8125,
+        "width": 70.015625,
+        "height": 44,
+        "right": 86.015625,
+        "bottom": 794.8125
+      },
+      "storage_dialog_open": false
+    }
+  },
+  "screenshots": [
+    "live-desktop.png",
+    "live-mobile.png"
+  ],
+  "paid_calls": 0,
+  "production_business_writes": 0,
+  "preview_requests": 0,
+  "cleanup_requests": 0,
+  "uploads": 0,
+  "exports": 0,
+  "before_hashes": {
+    "papers": "6f4c77ac11ca9acf56538e50ee30fe61bf2a771c524cbe635804b64cafe7f04d",
+    "runs": "928b02921999eabc1de778011196df9249ea84b9d6bd16db508f467d9f9f7380",
+    "models": "b0637c06e0eccda39b558dc0a13bd4084af97267e732f35a66cf5a06965b959c"
+  },
+  "storage_summary": {
+    "schema_version": "t1-storage-summary-1",
+    "observed_at": "2026-11-15T13:19:20.694Z",
+    "scope": "managed_workbench_files",
+    "total_bytes": 148414676,
+    "protected_bytes": 148414676,
+    "reclaimable_bytes": 0,
+    "unknown_bytes": 0,
+    "file_count": 187,
+    "categories": [
+      {
+        "kind": "pdf",
+        "bytes": 44815688,
+        "files": 3
+      },
+      {
+        "kind": "parse",
+        "bytes": 86065192,
+        "files": 131
+      },
+      {
+        "kind": "figures",
+        "bytes": 17533796,
+        "files": 53
+      },
+      {
+        "kind": "exports",
+        "bytes": 0,
+        "files": 0
+      },
+      {
+        "kind": "other",
+        "bytes": 0,
+        "files": 0
+      }
+    ],
+    "protected_reasons": [
+      {
+        "code": "immutable_source",
+        "bytes": 148414676,
+        "files": 187
+      }
+    ],
+    "disk": {
+      "total_bytes": 105286258688,
+      "available_bytes": 40599572480
+    },
+    "cleanup_available": true,
+    "policy": {
+      "automatic_cleanup": false,
+      "recent_upload_protection_hours": 24
+    }
+  },
+  "build_manifest_sha256": "4912d6e009442c01a1e31158dd02c44abf248e3f8020fe278ce93043a27efe69",
+  "after_hashes": {
+    "papers": "6f4c77ac11ca9acf56538e50ee30fe61bf2a771c524cbe635804b64cafe7f04d",
+    "runs": "928b02921999eabc1de778011196df9249ea84b9d6bd16db508f467d9f9f7380",
+    "models": "b0637c06e0eccda39b558dc0a13bd4084af97267e732f35a66cf5a06965b959c"
+  },
+  "finished_at": "2026-11-15T13:19:23.643Z"
+}

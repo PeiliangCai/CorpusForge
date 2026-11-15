@@ -1,0 +1,43 @@
+{
+  "schema_version": "t1-material-exposure-check-1",
+  "source_id": "IN07",
+  "checked_at": "2026-11-11T09:51:37.169796+00:00",
+  "preselection_frozen_at": "2026-11-11T09:45:15Z",
+  "replacement_based_on_results": false,
+  "executor_observed": [
+    "Parent-supplied bibliographic identity and prospective selection rationale only.",
+    "Publisher web reader exposed page title, generic site navigation, sign-in/download UI and public CC-BY 4.0 footer; no article abstract/body was returned in the inspected excerpts.",
+    "Normal request status/content type/byte count/official redirect and HTML challenge title for the page.",
+    "PDF file metadata, page count/encryption/SHA and narrowly filtered first-page title/DOI/publication/license/author/citation evidence.",
+    "A corresponding-author contact line was incidentally emitted by a surname metadata filter; it is not retained in these permanent records.",
+    "Additional old-PDF audit metadata and count/results only; known damaged/encrypted/white-raster fixture proof. IN07 was excluded from every body reader by its exact SHA before the old-PDF audit."
+  ],
+  "programmatic_pdf_scope": "pypdf opened the original PDF, counted pages and read first-page text in process solely to match bibliographic/license fields. Clinical body/caption content was neither emitted to the executor context nor stored as text. No page images, Docling IR, source units, figure catalog or detailed caption diagnostics were produced.",
+  "clinical_content_deliberately_inspected": false,
+  "abstract_passed_to_extraction_model": false,
+  "caption_or_case_findings_passed_to_repair_owner": false,
+  "messages_to_in06_repair_owner_about_this_material": 0,
+  "repairs_or_prompts_changed_using_this_material": false,
+  "post_repair_model_results_observed_by_executor": false,
+  "scope_limits": "This is intake/identity preparation, not extraction, medical quality approval or an independent-quality acceptance result.",
+  "paid_model_calls": 0,
+  "registry_registration": false,
+  "temporary_download_fragments_cleaned": true,
+  "prior_pdf_identity_audit": {
+    "path": "prior-pdf-identity-audit.json",
+    "sha256": "4e96e884c8365247a0076504d3f72ea9b797d3224764061cac8bd5d7a39e094c",
+    "existing_pdf_paths_hashed": 170,
+    "unique_prior_sha256": 48,
+    "readable_unique_pdf_count": 45,
+    "readable_copy_count": 107,
+    "unsearchable_copy_count": 63,
+    "known_unsearchable_fixture_sha_count": 3,
+    "unresolved_groups": 0,
+    "identity_or_family_matches": [],
+    "all_project_pdfs_readable_claimed": false,
+    "global_absence_of_exposure_claimed": false
+  },
+  "prior_pdf_additional_authorization": "Parent explicitly requested readable identity/family searches of old project PDFs, not additional IN07 body/caption inspection.",
+  "prior_pdf_programmatic_search": "Old PDF bodies were searched in memory for normalized IN07 DOI/title/distinctive-family markers; only identity fields, match results and fixture classifications were retained. No old body-text copies were written. Exact-SHA duplicates reused one parse per body.",
+  "completed_at": "2026-11-11T09:58:27.424662+00:00"
+}

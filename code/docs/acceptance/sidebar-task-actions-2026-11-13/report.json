@@ -1,0 +1,564 @@
+{
+  "status": "completed_deployed_and_readonly_verified",
+  "formal_review": {
+    "used": 3,
+    "limit": 3,
+    "remaining": 0,
+    "decision": "继续",
+    "round1": "判断：继续。风险：1. 同篇多任务误取消；2. 异步返回影响当前选择；3. 手机菜单/反馈遮挡。",
+    "scope": "Sidebar task actions only; UI/model2/3, folder2/3 and batch/refresh3/3 unchanged.",
+    "round2": "判断：修改。风险：1. 一律排除reconciling会剥夺真实汇总阶段的取消入口；2. 该state也覆盖已terminal收尾；3. 前端不能只凭state推断取消成功。",
+    "round3": "判断：继续。风险：1. 任务可能在点击时已结束；2. 手机验证为Chromium模拟；3. 未取消真实付费任务做验证。",
+    "risks": [
+      "任务可能在点击时已结束",
+      "手机验证为Chromium模拟",
+      "未取消真实付费任务做验证"
+    ]
+  },
+  "dist": "apps/pi-web/build/sidebar-task-actions-20261113",
+  "BUILD_ID": "gfTjcsXyU2enBIogzCRhB",
+  "browser": {
+    "origin": "http://127.0.0.1:30154",
+    "backend": "http://127.0.0.1:3214",
+    "checks": [
+      "always_visible_sibling_button_lists_all_active_runs_without_selecting_them",
+      "keyboard_escape_focus_return_and_outside_click_keep_navigation",
+      "noncurrent_paper_pending_deduplication_failure_after_sidebar_close_and_retry",
+      "one_queued_run_cancelled_without_cancelling_other_runs_or_switching_saved_results",
+      "terminal_race_and_derived_finalization_follow_actual_cancel_responses",
+      "older_workspace_list_response_cannot_restore_cancelled_run_and_one_center_refresh_is_preserved",
+      "explicit_run_history_navigation_and_sidebar_only_kind_labels_remain",
+      "mobile_touch_menu_visible_outside_close_and_current_task_cancellation"
+    ],
+    "errors": [],
+    "blocked": [],
+    "cancellation_requests": [
+      {
+        "run_id": "run-23a98f42-90eb-49e4-a8f0-1bebc413d9a1",
+        "method": "POST",
+        "body": {}
+      },
+      {
+        "run_id": "run-23a98f42-90eb-49e4-a8f0-1bebc413d9a1",
+        "method": "POST",
+        "body": {}
+      },
+      {
+        "run_id": "run-1e1d6a0f-e3e9-435b-bc30-b4d40a043b28",
+        "method": "POST",
+        "body": {}
+      },
+      {
+        "run_id": "run-833653d8-b96d-4d43-a393-12744355e2db",
+        "method": "POST",
+        "body": {}
+      },
+      {
+        "run_id": "run-3607d404-5373-4a70-a4d0-195506aed80b",
+        "method": "POST",
+        "body": {}
+      },
+      {
+        "run_id": "run-6e108e32-3096-437c-bac0-4a94f85a49a5",
+        "method": "POST",
+        "body": {}
+      },
+      {
+        "run_id": "run-3d5e172c-3a51-41e2-b19c-a26be495d72a",
+        "method": "POST",
+        "body": {}
+      }
+    ],
+    "production_write_requests": 0,
+    "paid_model_calls": 0,
+    "BUILD_ID": "nz3ILw9u7OmyIJyikPRdl",
+    "status": "passed_before_reconciling_candidate_correction"
+  },
+  "baseline": {
+    "db": "runtime-data/t1.sqlite",
+    "table_count": 16,
+    "table_manifest": {
+      "events": {
+        "rows": 5,
+        "sha256": "21d2f02b0a78d2c1b2e7c98de7e937bc68c971681349d1ec1690a701c1ee4b26"
+      },
+      "records": {
+        "rows": 1,
+        "sha256": "9c13a950ec91d12b21961dd066d7b1bc77cd9d6a19fe2a93cd51e5c3e598daf2"
+      },
+      "runs": {
+        "rows": 1,
+        "sha256": "f68fc5f71a3b65d7af4cf381b2d96b4161c4abf69368ca937cb7bd091db8a216"
+      },
+      "s4_batches": {
+        "rows": 5,
+        "sha256": "b69903ea02a32cd705a679dbcd7a6582c85e8f95d27cd4e7a6e941a83901380f"
+      },
+      "s4_events": {
+        "rows": 67,
+        "sha256": "c873d3432d51bb2c2bd4265fe5994f8fc0f4c200ebf7388df3da5637094d3146"
+      },
+      "s4_runs": {
+        "rows": 9,
+        "sha256": "8c0850c27a238c78cb5b274b8615a46a0fc4b7416fd88750752ae60b5a89bc59"
+      },
+      "s4_versions": {
+        "rows": 262,
+        "sha256": "0bba5ca8b7e99a36870a453209d5447fa3d2f335d0741b5ff5e0ea6df627fea5"
+      },
+      "workbench_annotations": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_deleted_sources": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_exports": {
+        "rows": 3,
+        "sha256": "7c6d616cd6a29812423360d1fa27e4023fbdfc00f6630aafbaa16716eff13c52"
+      },
+      "workbench_model_profiles": {
+        "rows": 1,
+        "sha256": "1a5bf11dec54f5ca4d6a6575f501cd8044d2cd4fed8db82f123724fd5b1a4111"
+      },
+      "workbench_papers": {
+        "rows": 6,
+        "sha256": "6d2be76551b6fd866b6ecbfda6f3ddefdfc2f7e790eb1495733a8a747210df73"
+      },
+      "workbench_requests": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_retentions": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_reviews": {
+        "rows": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "workbench_runs": {
+        "rows": 9,
+        "sha256": "20bf4f0407fc840c005406e82097fbfe2f531888502bb1c8d54f1a89872477b9"
+      }
+    },
+    "runs": 9,
+    "active_runs": [],
+    "model_profiles": 1,
+    "default_profile_id": "model-5aa7649633b13e6c9c91f26cd5580846",
+    "backend_pid": 58379,
+    "frontend_launcher_pid": 58402,
+    "frontend_pid": 58409,
+    "BUILD_ID": "UJ2UUlfLzdmh_OcyhFLrq",
+    "env_sha256": {
+      ".env": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+      "deploy/local/workbench.env": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea"
+    }
+  },
+  "validation": {
+    "task_navigation_tests": {
+      "passed": 7,
+      "record": "task-navigation-tests.log",
+      "final_candidate_rule_included": true
+    },
+    "existing_menu_gateway_tests": {
+      "passed": 21,
+      "record": "menu-gateway-tests.log"
+    },
+    "frontend_lint": "passed after candidate correction",
+    "frontend_typecheck": "passed; final build TypeScript passed",
+    "root_typecheck": "passed after new isolated fixture",
+    "production_build": "passed",
+    "browser_scenarios": {
+      "previous_build_broad": 8,
+      "final_build_targeted": 4
+    },
+    "browser_errors": 0,
+    "targeted_late_detail_response_and_followup_failure": "passed; successful POST remains cancelled with no running-state revival or inline alert",
+    "generated_build_config_restored": true,
+    "paid_model_calls": 0,
+    "production_test_mutations": 0,
+    "final_build_targeted_reconciling": "passed on desktop/completed and mobile/partial; one native candidate preserved in each case",
+    "production_readonly": {
+      "status": "passed",
+      "checks": 4,
+      "record": "production-readonly.log"
+    }
+  },
+  "source_manifest": {
+    "code/apps/pi-web/t1/T1Workbench.tsx": "d80e02bdb51538167568486224cd82ccb8c8e7bde494be30f2b37bd64bb436cc",
+    "code/apps/pi-web/t1/PaperTaskMenu.tsx": "fa8b517b4cc66f8395041b3ee743097480c88e306b78bc7a7f56fd9595c00214",
+    "code/apps/pi-web/t1/task-actions.ts": "1e44152ab3066c8ec0d45fc40b0bb6401e179436d78a9175def08e206b581fc3",
+    "code/apps/pi-web/t1/messages.mjs": "949ef1bdd20dee740f6846d764fbb64df01d22c6b17d1a9ec45e6afac90e11fb",
+    "code/apps/pi-web/t1/workbench.css": "10d62ab50bc3af79b9d2ad0a15f4806cc28edaa0e7e88ccab270cfaa71fc7f4d"
+  },
+  "documentation_sync": {
+    "status": "passed_current_documents_and_runtime_synced",
+    "files": {
+      "方案/子任务T1/T1智能体开发计划.docx": "fe649907c94b2af7c5ff01d908b7b246c5485f7a2474cb6f116fb59b40937c6c",
+      "方案/子任务T1/T1开发执行说明.docx": "af122ea2ebb3d491403eaa7b9ccb6caec185b9715789f94938e1eced09766979",
+      "方案/子任务T1/当前版本.json": "d0975dba8dc397fa1ebe3c0fd73e59706d319731fd3a320c5271c3e632ecf18f",
+      "方案/当前版本.json": "bdcc8d9787654b16797ffb19bc205f81c3e3c5ff12d4e44b6eb1dd84aa9c0779",
+      "code/README.md": "b08463f5a5be237d1fe763fffb11572d04a6403f2b75115a141a83a8f91712e3",
+      "code/deploy/README.md": "82dfd5e95dd4055190ce0b4d42d5372a3db61f2c6ad2c94dbd6ef4c416faee39"
+    },
+    "DOCX_original_entries_preserved": true,
+    "previous_model_switch_subtree_unchanged": true,
+    "old_task_review_counters_unchanged": true,
+    "plan_copies_added": 0,
+    "current_status": "deployed; formal review 3/3 continue",
+    "current_runtime_pids": {
+      "frontend": 79943,
+      "backend": 58379
+    }
+  },
+  "deployment": {
+    "status": "deployed_and_readonly_browser_verified",
+    "previous_frontend_pid": 58409,
+    "previous_launcher_pid": 58402,
+    "backend_pid": 58379,
+    "rollback_dist": "apps/pi-web/build/ui-model-switch-20261113",
+    "before": {
+      "table_count": 16,
+      "table_manifest": {
+        "events": {
+          "rows": 5,
+          "sha256": "21d2f02b0a78d2c1b2e7c98de7e937bc68c971681349d1ec1690a701c1ee4b26"
+        },
+        "records": {
+          "rows": 1,
+          "sha256": "9c13a950ec91d12b21961dd066d7b1bc77cd9d6a19fe2a93cd51e5c3e598daf2"
+        },
+        "runs": {
+          "rows": 1,
+          "sha256": "f68fc5f71a3b65d7af4cf381b2d96b4161c4abf69368ca937cb7bd091db8a216"
+        },
+        "s4_batches": {
+          "rows": 5,
+          "sha256": "b69903ea02a32cd705a679dbcd7a6582c85e8f95d27cd4e7a6e941a83901380f"
+        },
+        "s4_events": {
+          "rows": 67,
+          "sha256": "c873d3432d51bb2c2bd4265fe5994f8fc0f4c200ebf7388df3da5637094d3146"
+        },
+        "s4_runs": {
+          "rows": 9,
+          "sha256": "8c0850c27a238c78cb5b274b8615a46a0fc4b7416fd88750752ae60b5a89bc59"
+        },
+        "s4_versions": {
+          "rows": 262,
+          "sha256": "0bba5ca8b7e99a36870a453209d5447fa3d2f335d0741b5ff5e0ea6df627fea5"
+        },
+        "workbench_annotations": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_deleted_sources": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_exports": {
+          "rows": 3,
+          "sha256": "7c6d616cd6a29812423360d1fa27e4023fbdfc00f6630aafbaa16716eff13c52"
+        },
+        "workbench_model_profiles": {
+          "rows": 1,
+          "sha256": "1a5bf11dec54f5ca4d6a6575f501cd8044d2cd4fed8db82f123724fd5b1a4111"
+        },
+        "workbench_papers": {
+          "rows": 6,
+          "sha256": "6d2be76551b6fd866b6ecbfda6f3ddefdfc2f7e790eb1495733a8a747210df73"
+        },
+        "workbench_requests": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_retentions": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_reviews": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_runs": {
+          "rows": 9,
+          "sha256": "20bf4f0407fc840c005406e82097fbfe2f531888502bb1c8d54f1a89872477b9"
+        }
+      },
+      "integrity": "ok",
+      "run_count": 9,
+      "active_runs": [],
+      "model_profiles": 1,
+      "default_profile_id": "model-5aa7649633b13e6c9c91f26cd5580846",
+      "env_sha256": {
+        ".env": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+        "deploy/local/workbench.env": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea"
+      }
+    },
+    "frontend_only": true,
+    "test_cancel_or_start_requests": 0,
+    "paid_model_calls": 0,
+    "frontend_launcher_pid": 79936,
+    "frontend_pid": 79943,
+    "BUILD_ID": "gfTjcsXyU2enBIogzCRhB",
+    "dist": "apps/pi-web/build/sidebar-task-actions-20261113",
+    "frontend_log": "runtime-data/logs/pi-web-sidebar-task-actions-20261113.log",
+    "after": {
+      "table_count": 16,
+      "table_manifest": {
+        "events": {
+          "rows": 5,
+          "sha256": "21d2f02b0a78d2c1b2e7c98de7e937bc68c971681349d1ec1690a701c1ee4b26"
+        },
+        "records": {
+          "rows": 1,
+          "sha256": "9c13a950ec91d12b21961dd066d7b1bc77cd9d6a19fe2a93cd51e5c3e598daf2"
+        },
+        "runs": {
+          "rows": 1,
+          "sha256": "f68fc5f71a3b65d7af4cf381b2d96b4161c4abf69368ca937cb7bd091db8a216"
+        },
+        "s4_batches": {
+          "rows": 5,
+          "sha256": "b69903ea02a32cd705a679dbcd7a6582c85e8f95d27cd4e7a6e941a83901380f"
+        },
+        "s4_events": {
+          "rows": 67,
+          "sha256": "c873d3432d51bb2c2bd4265fe5994f8fc0f4c200ebf7388df3da5637094d3146"
+        },
+        "s4_runs": {
+          "rows": 9,
+          "sha256": "8c0850c27a238c78cb5b274b8615a46a0fc4b7416fd88750752ae60b5a89bc59"
+        },
+        "s4_versions": {
+          "rows": 262,
+          "sha256": "0bba5ca8b7e99a36870a453209d5447fa3d2f335d0741b5ff5e0ea6df627fea5"
+        },
+        "workbench_annotations": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_deleted_sources": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_exports": {
+          "rows": 3,
+          "sha256": "7c6d616cd6a29812423360d1fa27e4023fbdfc00f6630aafbaa16716eff13c52"
+        },
+        "workbench_model_profiles": {
+          "rows": 1,
+          "sha256": "1a5bf11dec54f5ca4d6a6575f501cd8044d2cd4fed8db82f123724fd5b1a4111"
+        },
+        "workbench_papers": {
+          "rows": 6,
+          "sha256": "6d2be76551b6fd866b6ecbfda6f3ddefdfc2f7e790eb1495733a8a747210df73"
+        },
+        "workbench_requests": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_retentions": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_reviews": {
+          "rows": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "workbench_runs": {
+          "rows": 9,
+          "sha256": "20bf4f0407fc840c005406e82097fbfe2f531888502bb1c8d54f1a89872477b9"
+        }
+      },
+      "integrity": "ok",
+      "run_count": 9,
+      "active_runs": [],
+      "model_profiles": 1,
+      "default_profile_id": "model-5aa7649633b13e6c9c91f26cd5580846",
+      "env_sha256": {
+        ".env": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+        "deploy/local/workbench.env": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea"
+      }
+    },
+    "all_tables_unchanged": true,
+    "env_unchanged": true,
+    "backend_pid_unchanged": true,
+    "all_tables_unchanged_after_readonly_verification": true,
+    "env_unchanged_after_readonly_verification": true,
+    "integrity": "ok",
+    "old_frontend_listener_closed_then_readonly_SSE_connections_retired": true
+  },
+  "prior_build_verification": {
+    "BUILD_ID": "nz3ILw9u7OmyIJyikPRdl",
+    "browser": {
+      "origin": "http://127.0.0.1:30154",
+      "backend": "http://127.0.0.1:3214",
+      "checks": [
+        "always_visible_sibling_button_lists_all_active_runs_without_selecting_them",
+        "keyboard_escape_focus_return_and_outside_click_keep_navigation",
+        "noncurrent_paper_pending_deduplication_failure_after_sidebar_close_and_retry",
+        "one_queued_run_cancelled_without_cancelling_other_runs_or_switching_saved_results",
+        "terminal_race_and_derived_finalization_follow_actual_cancel_responses",
+        "older_workspace_list_response_cannot_restore_cancelled_run_and_one_center_refresh_is_preserved",
+        "explicit_run_history_navigation_and_sidebar_only_kind_labels_remain",
+        "mobile_touch_menu_visible_outside_close_and_current_task_cancellation"
+      ],
+      "errors": [],
+      "blocked": [],
+      "cancellation_requests": [
+        {
+          "run_id": "run-23a98f42-90eb-49e4-a8f0-1bebc413d9a1",
+          "method": "POST",
+          "body": {}
+        },
+        {
+          "run_id": "run-23a98f42-90eb-49e4-a8f0-1bebc413d9a1",
+          "method": "POST",
+          "body": {}
+        },
+        {
+          "run_id": "run-1e1d6a0f-e3e9-435b-bc30-b4d40a043b28",
+          "method": "POST",
+          "body": {}
+        },
+        {
+          "run_id": "run-833653d8-b96d-4d43-a393-12744355e2db",
+          "method": "POST",
+          "body": {}
+        },
+        {
+          "run_id": "run-3607d404-5373-4a70-a4d0-195506aed80b",
+          "method": "POST",
+          "body": {}
+        },
+        {
+          "run_id": "run-6e108e32-3096-437c-bac0-4a94f85a49a5",
+          "method": "POST",
+          "body": {}
+        },
+        {
+          "run_id": "run-3d5e172c-3a51-41e2-b19c-a26be495d72a",
+          "method": "POST",
+          "body": {}
+        }
+      ],
+      "production_write_requests": 0,
+      "paid_model_calls": 0
+    },
+    "scope": "Eight broad scenarios passed before the reconciliation candidate correction; unchanged menu/layout/request protection remains covered by this prior build."
+  },
+  "reconciling_validation": {
+    "cases": [
+      {
+        "terminal_state": "completed",
+        "BUILD_ID": "gfTjcsXyU2enBIogzCRhB",
+        "checks": [
+          "terminal_finalization_is_an_actionable_candidate_but_backend_preserves_terminal_state",
+          "native_reconciling_can_be_cancelled_from_menu_and_saved_candidates_are_preserved"
+        ],
+        "requests": [
+          {
+            "run_id": "run-44ef08a3-41ac-4168-bb4d-d3810cc7125b",
+            "response_state": "reconciling",
+            "raw_state": "completed"
+          },
+          {
+            "run_id": "run-d936fd77-2119-41d1-8a36-e1238ce17bc4",
+            "response_state": "cancelled",
+            "raw_state": "cancelled"
+          }
+        ],
+        "errors": [],
+        "blocked": [],
+        "paid_model_calls": 0,
+        "production_write_requests": 0,
+        "preserved_candidate_count": 1,
+        "status": "passed"
+      },
+      {
+        "terminal_state": "partial",
+        "BUILD_ID": "gfTjcsXyU2enBIogzCRhB",
+        "checks": [
+          "terminal_finalization_is_an_actionable_candidate_but_backend_preserves_terminal_state",
+          "native_reconciling_can_be_cancelled_from_menu_and_saved_candidates_are_preserved"
+        ],
+        "requests": [
+          {
+            "run_id": "run-f148ab6c-557c-4c26-8cb7-0e91f5d25adb",
+            "response_state": "reconciling",
+            "raw_state": "partial"
+          },
+          {
+            "run_id": "run-f9baab7c-0bda-4b18-a7cc-25b75ed1ca74",
+            "response_state": "cancelled",
+            "raw_state": "cancelled"
+          }
+        ],
+        "errors": [],
+        "blocked": [],
+        "paid_model_calls": 0,
+        "production_write_requests": 0,
+        "preserved_candidate_count": 1,
+        "status": "passed"
+      }
+    ],
+    "status": "passed",
+    "BUILD_ID": "gfTjcsXyU2enBIogzCRhB",
+    "native_reconciling_was_cancelled": true,
+    "existing_record_counts_preserved": [
+      1,
+      1
+    ],
+    "raw_completed_and_partial_never_reported_as_cancelled": true,
+    "checks": 4
+  },
+  "production_readonly": {
+    "status": "passed",
+    "checks": [
+      "same_reviewed_build_existing_results_and_always_visible_menu_buttons",
+      "selected_and_other_paper_menus_preserve_current_result_and_query",
+      "view_history_is_available_without_changing_run",
+      "mobile_touch_target_sheet_and_no_horizontal_overflow"
+    ],
+    "blocked": [],
+    "errors": [],
+    "production_write_requests": 0,
+    "paid_model_calls": 0
+  },
+  "limitations": [
+    "Mobile coverage uses Chromium touch/viewport emulation.",
+    "No real user task was cancelled or started for validation, and no paid model request was made.",
+    "The backend may report a task as already ended or still finalizing when cancellation is clicked; the UI follows its actual response."
+  ],
+  "cleanup": {
+    "status": "completed",
+    "removed_own_temporary_files_and_directories": [
+      "runtime-data/sidebar-task-actions-fixture-20261113",
+      "runtime-data/sidebar-task-actions-fixture-20261113-v2",
+      "runtime-data/sidebar-task-actions-fixture-20261113-v3",
+      "runtime-data/sidebar-task-actions-fixture-20261113-v4",
+      "runtime-data/sidebar-task-actions-fixture-20261113-v5",
+      "runtime-data/sidebar-reconciling-completed-20261113",
+      "runtime-data/sidebar-reconciling-partial-20261113",
+      "docs/acceptance/sidebar-task-actions-2026-11-13/browser-failure.png",
+      "docs/acceptance/sidebar-task-actions-2026-11-13/reconciling-failure-completed.png",
+      "docs/acceptance/sidebar-task-actions-2026-11-13/browser-fixture-diagnostic.log",
+      "docs/acceptance/sidebar-task-actions-2026-11-13/fixture-v2.log",
+      "docs/acceptance/sidebar-task-actions-2026-11-13/fixture-v3.log",
+      "docs/acceptance/sidebar-task-actions-2026-11-13/fixture-v4.log",
+      "runtime-data/agent-notes/sidebar-task-actions-2026-11-13.json"
+    ],
+    "preview_and_isolated_fixture_stopped": true,
+    "only_this_task_temporary_data_removed": true,
+    "retained": [
+      "reusable engineering fixture and e2e sources",
+      "required acceptance logs and screenshots",
+      "live frontend log",
+      "previous ui-model-switch dist for rollback"
+    ],
+    "rollback_dist_exists": true
+  }
+}

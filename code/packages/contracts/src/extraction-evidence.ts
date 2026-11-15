@@ -26,7 +26,8 @@ export const StructureReferenceSchema = Type.Object({ kind: Type.Enum(['table', 
   relationship_used: Type.Boolean() }, closed);
 const supportingTableInput = Type.Object({ table_id: id,
   reference_fragments: Type.Array(EvidenceFragmentSchema, { minItems: 1, maxItems: 64 }),
-  value_fragments: Type.Array(EvidenceFragmentSchema, { minItems: 1, maxItems: 64 }) }, closed);
+  value_fragments: Type.Array(EvidenceFragmentSchema, { minItems: 1, maxItems: 64 }),
+  context_fragments: Type.Optional(Type.Array(EvidenceFragmentSchema, { maxItems: 128 })), selected_cell_ids: Type.Optional(ids) }, closed);
 /** Model suggestions only; these values already describe the semantic-audit conclusions. */
 export const PrimaryAssessmentSchema = Type.Enum(['context_only_suggested', 'visual_evidence_suggested', 'mixed_or_needs_context', 'uncertain']);
 export type PrimaryAssessment = Static<typeof PrimaryAssessmentSchema>;
@@ -53,12 +54,12 @@ export type EvidenceSubmission = Static<typeof EvidenceSubmissionSchema>;
 export const ExtractionSubmissionSchema = EvidenceSubmissionSchema;
 export type ExtractionSubmission = EvidenceSubmission;
 
-export const CatalogApprovalSchema = Type.Enum(['approved', 'development_only', 'unavailable']);
+export const CatalogApprovalSchema = Type.Enum(['approved', 'development_only', 'unavailable', 'operator_configured']);
 const synonym = Type.Object({ text: Type.String({ minLength: 1 }), source: Type.String({ minLength: 1 }),
   approval_status: CatalogApprovalSchema }, closed);
 const namedEntry = { id, name: Type.String({ minLength: 1 }), synonyms: Type.Array(synonym),
-  source: text, approval_status: CatalogApprovalSchema };
-/** This is separate from the S1 demo Catalog. A draft never becomes approved by conversion. */
+  source: text, approval_status: CatalogApprovalSchema, description: Type.Optional(text) };
+/** Historical approvals and operator configuration stay distinct; configured never means medically approved. */
 export const EvidenceCatalogSchema = Type.Object({
   catalog_version: id, status: CatalogApprovalSchema, fixture: Type.Boolean(),
   cancers: Type.Array(Type.Object(namedEntry, closed)),
@@ -110,6 +111,12 @@ export const EvidenceRecordSchema = Type.Object({
       cited_references: Type.Array(text), evidence: located }, closed),
     structure_references: Type.Array(StructureReferenceSchema), article_scope_status: Type.Enum(['within_provided_scope', 'uncertain']),
     supporting_table_evidence: Type.Optional(Type.Array(Type.Object({ table_id: id, reference_evidence: located, fragments: located,
+      description_evidence: Type.Optional(located),
+      value_contexts: Type.Optional(Type.Array(Type.Object({ cell_id: id, row_start: Type.Integer({ minimum: 0 }), row_end: Type.Integer({ minimum: 1 }),
+        col_start: Type.Integer({ minimum: 0 }), col_end: Type.Integer({ minimum: 1 }),
+        mapping_status: Type.Enum(['source_geometry_checked_semantics_unapproved', 'native_mapping_unapproved']),
+        fragments: located, context_fragments: located }, closed), { maxItems: 32 })),
+      context_fragments: Type.Optional(located), selected_cell_ids: Type.Optional(ids),
       relationship_status: Type.Literal('explicit_reference_value_relationship_unverified') }, closed))) }, closed),
   disease_or_lesion: observation, modality: observation, sequence_or_phase: Type.Union([observation, Type.Null()]),
   feature_name_raw: nullableText, feature_category: id, evidence_type: EvidenceSubmissionSchema.properties.evidence_type,
@@ -131,7 +138,10 @@ export const EvidenceRecordSchema = Type.Object({
     read_block_ids: ids, provided_block_ids: ids, tool_call_ids: ids, source_binding: SourceBindingSchema,
     updates_record_id: Type.Union([id, Type.Null()]),
     evidence_policy_version: Type.Optional(id), source_evidence_unit_version: Type.Optional(id),
-    primary_assessment_policy_version: Type.Optional(Type.Literal('model-primary-assessment-1')) }, closed),
+    primary_assessment_policy_version: Type.Optional(Type.Literal('model-primary-assessment-1')),
+    source_glyph_policy_version: Type.Optional(Type.Literal('agent-assesses-parsed-glyphs-1')),
+    input_organization_version: Type.Optional(Type.Literal('source-content-units-2')),
+    table_support_policy_version: Type.Optional(Type.Literal('paragraph-linked-table-support-2')) }, closed),
   review_status: Type.Enum(['pending', 'approved', 'rejected', 'needs_context']),
   review_events: Type.Array(Type.Object({ action: id, actor: id, timestamp: text, reason: text, version: Type.Integer({ minimum: 1 }) }, closed)),
   handoff_status: Type.Enum(['candidate_only', 'approved_for_T2']),
@@ -162,6 +172,9 @@ export interface EvidenceValidationContext extends ProvidedEvidence {
   /** Absent for historical reads/replay. New extraction runs explicitly bind the current policy. */
   evidencePolicyVersion?: 'visual-statements-2';
   primaryAssessmentPolicyVersion?: 'model-primary-assessment-1';
+  sourceGlyphPolicyVersion?: 'agent-assesses-parsed-glyphs-1';
+  inputOrganizationVersion?: 'source-content-units-2';
+  tableSupportPolicyVersion?: 'paragraph-linked-table-support-2';
 }
 export interface EvidenceValidationResult {
   accepted: boolean;

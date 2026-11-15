@@ -1,0 +1,111 @@
+{
+  "status": "frontend_engineering_verified_not_deployed",
+  "owner": "/root/batch_delete_progress_overlay_1115 GPT-6.1-Sol(max)",
+  "scope": "原第5项追加：全局页与明确任务上下文/来源/动作分层，content_units真实分类与处理批次说明",
+  "formal_review_shared_used": 3,
+  "formal_review_limit": 3,
+  "production_business_writes": 0,
+  "production_exports": 0,
+  "paid_calls": 0,
+  "backend_changes_by_this_owner": false,
+  "original_note_report_README_written_by_this_owner": false,
+  "deployed_by_this_owner": false,
+  "baseline_BUILD_ID": "TTsFAMBKuqGe6oPPX7LuB",
+  "BUILD_ID": "3vStVJbusRhBDfrFvff4U",
+  "dist": "apps/pi-web/build/navigation-content-delivery-final-validated-20261115",
+  "source_files": [
+    "apps/pi-web/t1/T1Workbench.tsx",
+    "apps/pi-web/t1/result-navigation.ts",
+    "apps/pi-web/t1/result-navigation.test.ts",
+    "apps/pi-web/t1/RunProgress.tsx",
+    "apps/pi-web/t1/run-progress.ts",
+    "apps/pi-web/t1/run-progress.test.ts",
+    "apps/pi-web/t1/messages.mjs",
+    "apps/pi-web/t1/workbench.css",
+    "apps/pi-web/t1/TaskCompletionNotes.tsx",
+    "apps/pi-web/e2e/navigation-context.mjs"
+  ],
+  "source_review_diff": "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-context/frontend.diff",
+  "source_review_diff_sha256": "8a08c58e242067a25e9184a84c2ae608042169ffb70d73d4149031ae8f2eb6dd",
+  "before": "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-context/before.json",
+  "browser": "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-context/browser-final.json",
+  "browser_checks": {
+    "passed": 8,
+    "failed": 0,
+    "errors": 0,
+    "unrecognized_or_external_requests": 0
+  },
+  "unit_checks": {
+    "pre_URL_fix_related_passed": 23,
+    "URL_fix_navigation_passed": 10,
+    "overlap_between_runs": 9,
+    "unique_passed": 24,
+    "failed": 0,
+    "logs": [
+      "runtime-data/logs/navigation-context-1115-unit-final.log",
+      "runtime-data/logs/navigation-context-1115-url-fix-unit.log"
+    ]
+  },
+  "web_typecheck": "passed independent check before URL fix; final production build includes final source TypeScript check",
+  "build_log": "runtime-data/logs/navigation-context-1115-build-delivery.log",
+  "lint_log": "runtime-data/logs/navigation-context-1115-lint-delivery.log",
+  "navigation_rules": {
+    "fresh_open": "Only creation tab; valid explicit run/history URL opens its corresponding view. No automatic paper or output selection.",
+    "views": "Still one task context; view tabs open when visited, without introducing independent per-task tab instances.",
+    "global_pages": "Creation/history titles belong to those pages; URL carries only view. No task original/side panel/detail errors/source warning/restore controls; global loading errors remain.",
+    "in_memory_context": "An explicitly selected valid task can remain in memory for returning to an already visited task tab, but global-page refresh does not restore that task context. Sidebar selection is absent on global pages.",
+    "invalid_selection": "Deleted, missing, refreshed-out or run-detail404 contexts clear paper/run/history/record, related view tabs and URL. Other tasks remain available but are never automatically substituted.",
+    "URL_normalization": "Shared serializer runs explicitly after the first successful server-list read, and on later valid view/selection changes. A failed initial list read leaves a potentially valid deep link intact.",
+    "draft": "Creation component remains mounted; switching views/deleting/refreshing task context does not reset the unsubmitted title/file list. Browser reload retains only already-admitted server tasks, as before.",
+    "actions": "Navigation toggle is .t1-nav-toggle in the global brand. Original controls live in .t1-results-actions only for a known task and matching nonblocked source. Batch source follows the selected record child run.",
+    "source_binding": "Single result response id/paper/output/records are checked against the exact run; batch binding remains unchanged."
+  },
+  "progress_rules": {
+    "new_content_units": "New coverage/SSE uses content_units and completed_content_unit_ids. Raw lines, long-group parts and summary reads cannot advance parent-group counts.",
+    "composition": "Notes display recorded nine-category totals/completed totals only; missing legacy classification cannot be inferred from 2158 or another overall total. Body passages/figure text/structural units/fragments stay distinct.",
+    "legacy": "paragraphs retains legacy content-unit totals; source_blocks remains historical lines; no rewrite/reclassification of old runs.",
+    "batch_label": "处理批次; Notes explain input-length grouping and multiple model exchanges per batch, which is not a request count.",
+    "completion": "Existing task completion gates and whole-submission aggregation remain unchanged."
+  },
+  "diagnostics": {
+    "isolated_dev": "Owned 30158 Turbopack remained at first compile; first browser navigation/HTTP read timed out. No dev webpack fallback or production restart. Stopped and restored generated files.",
+    "candidate_BUILD_ID": "z5qOyRRXGwS3gqwTjQ2HH",
+    "candidate_browser": "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-context/browser-candidate.json",
+    "candidate_result": "7/8; first normalized empty React selection did not rerun URL effect, leaving stale paper query. Fixed explicit initial normalization via shared serializer; final8/8. Candidate pass count is not final acceptance.",
+    "production_builds_completed": 2,
+    "only_final_validated_build_delivered": true
+  },
+  "test_limitations": [
+    "Chromium desktop and 390px emulation, no physical mobile device.",
+    "Task create/upload/delete fixture actions were fulfilled inside the browser; no real user task was created/deleted/cancelled.",
+    "No new provider call, no medical-quality or speed claim. New input composition is backend-owned; frontend presents supplied counts, not new extraction evidence."
+  ],
+  "screenshots": [
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-context/final-batch-figures-desktop.png",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-context/final-composition-content_units.png",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-context/final-composition-paragraphs.png",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-context/final-creation-desktop.png",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-context/final-creation-mobile.png",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-context/final-global-history.png",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-context/final-no-tasks.png",
+    "docs/acceptance/new-task-layout-2026-11-14/item5/navigation-context/final-results-mobile.png"
+  ],
+  "next": "Root/summary owner combines backend evidence, performs safe deployment and one real GET/HEAD validation; frontend owner does not deploy.",
+  "updated_at_utc": "2026-11-15T08:31:56.163511+00:00",
+  "lint": "passed_no_errors_or_warnings",
+  "cleanup": {
+    "owned_isolated_dev_30158_stopped": true,
+    "owned_isolated_production_30158_stopped": true,
+    "removed_only_owned_paths": [
+      "apps/pi-web/build/navigation-context-dev-20261115",
+      "apps/pi-web/build/navigation-content-delivery-validated-20261115",
+      "runtime-data/agent-notes/navigation-context-1115"
+    ],
+    "generated_tsconfig_next_env_AGENTS_restored": true,
+    "production_processes_signalled": false,
+    "production_business_data_removed": false,
+    "current_running_build_untouched": "TTsFAMBKuqGe6oPPX7LuB",
+    "final_validated_build_retained": "apps/pi-web/build/navigation-content-delivery-final-validated-20261115",
+    "candidate_failure_and_before_reproduction_evidence_retained": true
+  }
+}

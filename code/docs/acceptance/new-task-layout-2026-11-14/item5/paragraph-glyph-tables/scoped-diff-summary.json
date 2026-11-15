@@ -1,0 +1,252 @@
+{
+  "basis": "selected task-start snapshots, plus explicitly tracked new files; task-completion.ts original one-line mapping reconstructed; adjacent unchanged schemas/tests captured before edit; never whole git diff",
+  "generated_at": "2026-11-15T07:26:36.433481+00:00",
+  "files": [
+    {
+      "path": "README.md",
+      "added": 10,
+      "removed": 4,
+      "new": false
+    },
+    {
+      "path": "apps/pi-web/e2e/paragraph-glyph-tables-readonly.mjs",
+      "added": 69,
+      "removed": 0,
+      "new": true
+    },
+    {
+      "path": "apps/pi-web/e2e/paragraph-glyph-tables.mjs",
+      "added": 132,
+      "removed": 0,
+      "new": true
+    },
+    {
+      "path": "apps/pi-web/t1/RunProgress.tsx",
+      "added": 4,
+      "removed": 3,
+      "new": false
+    },
+    {
+      "path": "apps/pi-web/t1/T1Workbench.tsx",
+      "added": 2,
+      "removed": 0,
+      "new": false
+    },
+    {
+      "path": "apps/pi-web/t1/TableSupport.tsx",
+      "added": 27,
+      "removed": 0,
+      "new": true
+    },
+    {
+      "path": "apps/pi-web/t1/TaskCompletionNotes.tsx",
+      "added": 2,
+      "removed": 5,
+      "new": false
+    },
+    {
+      "path": "apps/pi-web/t1/messages.mjs",
+      "added": 13,
+      "removed": 2,
+      "new": false
+    },
+    {
+      "path": "apps/pi-web/t1/run-presentation.ts",
+      "added": 4,
+      "removed": 6,
+      "new": false
+    },
+    {
+      "path": "apps/pi-web/t1/run-progress.test.ts",
+      "added": 14,
+      "removed": 1,
+      "new": false
+    },
+    {
+      "path": "apps/pi-web/t1/run-progress.ts",
+      "added": 10,
+      "removed": 8,
+      "new": false
+    },
+    {
+      "path": "apps/pi-web/t1/submission-groups.test.ts",
+      "added": 10,
+      "removed": 1,
+      "new": false
+    },
+    {
+      "path": "apps/pi-web/t1/submission-groups.ts",
+      "added": 2,
+      "removed": 0,
+      "new": false
+    },
+    {
+      "path": "apps/pi-web/t1/task-completion.test.ts",
+      "added": 3,
+      "removed": 3,
+      "new": false
+    },
+    {
+      "path": "apps/pi-web/t1/task-completion.ts",
+      "added": 1,
+      "removed": 1,
+      "new": false
+    },
+    {
+      "path": "apps/pi-web/t1/workbench.css",
+      "added": 15,
+      "removed": 0,
+      "new": false
+    },
+    {
+      "path": "apps/server/src/workbench-progress.ts",
+      "added": 8,
+      "removed": 4,
+      "new": false
+    },
+    {
+      "path": "apps/server/src/workflow-runner.ts",
+      "added": 3,
+      "removed": 0,
+      "new": false
+    },
+    {
+      "path": "apps/server/src/workflow.ts",
+      "added": 23,
+      "removed": 18,
+      "new": false
+    },
+    {
+      "path": "apps/server/test/paragraph-table-api.test.ts",
+      "added": 66,
+      "removed": 0,
+      "new": true
+    },
+    {
+      "path": "apps/server/test/workbench-progress.test.ts",
+      "added": 11,
+      "removed": 0,
+      "new": false
+    },
+    {
+      "path": "deploy/README.md",
+      "added": 6,
+      "removed": 2,
+      "new": false
+    },
+    {
+      "path": "packages/agent/src/document-structure-context.ts",
+      "added": 3,
+      "removed": 2,
+      "new": false
+    },
+    {
+      "path": "packages/agent/src/evidence-delivery.ts",
+      "added": 22,
+      "removed": 6,
+      "new": false
+    },
+    {
+      "path": "packages/agent/src/evidence-validation.ts",
+      "added": 17,
+      "removed": 6,
+      "new": false
+    },
+    {
+      "path": "packages/agent/src/extraction-protocol.ts",
+      "added": 17,
+      "removed": 5,
+      "new": false
+    },
+    {
+      "path": "packages/agent/src/extraction-run.ts",
+      "added": 42,
+      "removed": 10,
+      "new": false
+    },
+    {
+      "path": "packages/agent/src/extraction-summary.ts",
+      "added": 9,
+      "removed": 7,
+      "new": false
+    },
+    {
+      "path": "packages/agent/src/extraction-tools.ts",
+      "added": 54,
+      "removed": 16,
+      "new": false
+    },
+    {
+      "path": "packages/agent/src/index.ts",
+      "added": 3,
+      "removed": 0,
+      "new": false
+    },
+    {
+      "path": "packages/agent/src/paragraph-units.ts",
+      "added": 140,
+      "removed": 0,
+      "new": true
+    },
+    {
+      "path": "packages/agent/src/source-evidence-units.ts",
+      "added": 4,
+      "removed": 2,
+      "new": false
+    },
+    {
+      "path": "packages/agent/src/source-glyph-policy.ts",
+      "added": 5,
+      "removed": 0,
+      "new": true
+    },
+    {
+      "path": "packages/agent/src/source-selection.ts",
+      "added": 8,
+      "removed": 5,
+      "new": false
+    },
+    {
+      "path": "packages/agent/src/table-support.ts",
+      "added": 86,
+      "removed": 0,
+      "new": true
+    },
+    {
+      "path": "packages/agent/src/visual-evidence-policy.ts",
+      "added": 46,
+      "removed": 6,
+      "new": false
+    },
+    {
+      "path": "packages/contracts/schema/EvidenceRecord.json",
+      "added": 312,
+      "removed": 0,
+      "new": false
+    },
+    {
+      "path": "packages/contracts/schema/EvidenceSubmission.json",
+      "added": 36,
+      "removed": 0,
+      "new": false
+    },
+    {
+      "path": "packages/contracts/src/extraction-evidence.ts",
+      "added": 13,
+      "removed": 2,
+      "new": false
+    },
+    {
+      "path": "packages/contracts/src/workbench.ts",
+      "added": 2,
+      "removed": 1,
+      "new": false
+    },
+    {
+      "path": "tests/extraction/paragraph-glyph-tables.test.ts",
+      "added": 313,
+      "removed": 0,
+      "new": true
+    }
+  ]
+}

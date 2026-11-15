@@ -1,0 +1,96 @@
+{
+  "checked_at": "2026-11-11T15:25:04.443349+00:00",
+  "source_sha256": {
+    "apps/pi-web/t1/EvidenceSource.tsx": "bcec5844e2f778cb23ce0bdd4ba341e12b7e0336c4f3b830af5bbfa31fe9bad3",
+    "apps/pi-web/t1/RecordReview.tsx": "3f65a311f7dab96ab57173cb0f7bb5236dbf69594d0f3a3a823c712dd78e7f3d",
+    "apps/pi-web/t1/T1Workbench.tsx": "c89e3db0b27164960f873f116ad704159e8c6c7b32cb8edb089fbe3495c313af",
+    "apps/pi-web/t1/ResultIndex.tsx": "c00596885692cf5086a1431d57670b6af01c8a610c502ceaa598219d2565967e",
+    "apps/pi-web/t1/SameSourceMembers.tsx": "2f99e1cae46b71dfbfbc701a501c9f6e3ec39a808da0bcf10aaec4696123b9be",
+    "apps/pi-web/t1/messages.mjs": "bdfb01298a5f2bebf1a9baa68892d79ef2ab6175c08a3d43e888aa8982bee006",
+    "apps/pi-web/t1/workbench.css": "078e5413231d76471dc73ca7421197fc8be30c4e14e72df1ad90a2618d4ba719",
+    "apps/pi-web/t1/gateway-policy.ts": "32e78c7db2b7508fa46afecda2fe89ecfe1a634ac52c34de5264f9404e503bc2",
+    "apps/server/src/workflow.ts": "c8295be2714b3717ae8842413fa5e5fd94c3ac6af7465a127ee083e6a0d341fb",
+    "apps/server/src/workbench.ts": "066b26252901085c35a01e35df096724e598acf00967fefc713dd42dfba9a4fe",
+    "apps/server/src/app.ts": "26545eb4b4ba13c92c3f20ce68294050ec71eaaa4887003fb09c9537a070e51e",
+    "packages/contracts/src/workbench.ts": "ecb72512efdcf14e7df8c6bb5603448071e085c3ecd6a5e6069069aacf904c0d",
+    "packages/agent/src/evidence-delivery.ts": "9033fae3ba79353923fa5126fa91c19cf40ff0e670cbb79eb0bbc12cf4910291"
+  },
+  "services": {
+    "21114": {
+      "cwd": "/home/ecs-user/projects/t1-agent/code/apps/pi-web",
+      "stdout": "pipe:[137074]",
+      "stderr": "pipe:[137075]",
+      "selected_environment": {
+        "T1_NEXT_DIST_DIR": "build/ui-next-20261111"
+      }
+    },
+    "49533": {
+      "cwd": "/home/ecs-user/projects/t1-agent/code",
+      "stdout": "pipe:[342177]",
+      "stderr": "pipe:[342178]",
+      "selected_environment": {
+        "T1_IMPORT_RETAINED": "false",
+        "T1_WORKBENCH_MODEL_ENABLED": "true"
+      }
+    }
+  },
+  "ordinary_tables": {
+    "events": {
+      "rows": 5,
+      "logical_sha256": "0cce36023a57a5d15170afecc3948a61f8f6e060ca0370d92295d93c088976a4"
+    },
+    "records": {
+      "rows": 1,
+      "logical_sha256": "f76d61870bf7a125fce7418afc751fa4603d923dc1cffe6305dd35b5d5e6e89a"
+    },
+    "runs": {
+      "rows": 1,
+      "logical_sha256": "d9b9fdf5eff6120aae042947b77a3f01d4df2c4111cf9090b344a6631a18bbc4"
+    },
+    "s4_batches": {
+      "rows": 5,
+      "logical_sha256": "366e375ebb6ee0c55a9b03b065933be9d27014e26cb597752904714ad4001dd8"
+    },
+    "s4_events": {
+      "rows": 67,
+      "logical_sha256": "4b941cfee62301a4ea60ed5fcf258b51ce07cb2697037f295fc53364fb77ef11"
+    },
+    "s4_runs": {
+      "rows": 9,
+      "logical_sha256": "fdff5bf01c4d611899b46ac0ae0301f5484d07dfe9743f7e92823aa80d528ecf"
+    },
+    "s4_versions": {
+      "rows": 262,
+      "logical_sha256": "cb1df409a6d115e139ca34608344af7179e47fe3e29729e0cdf793cc0724cb6b"
+    },
+    "workbench_annotations": {
+      "rows": 0,
+      "logical_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_deleted_sources": {
+      "rows": 0,
+      "logical_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_exports": {
+      "rows": 3,
+      "logical_sha256": "ba7eb6d2da6133f520abbd7e8101fe19f133f64743abb9fbe873d49ead338a69"
+    },
+    "workbench_papers": {
+      "rows": 6,
+      "logical_sha256": "dab83f9a279b579c48976f5c789b5ce291ff8bc9596238f594e08169d9a4c7d5"
+    },
+    "workbench_reviews": {
+      "rows": 0,
+      "logical_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "workbench_runs": {
+      "rows": 9,
+      "logical_sha256": "92b22fcf2482104319dd823a549fd19af532ad2240b46db34787b57162902428"
+    }
+  },
+  "private_env_sha256": "d78611f35652bb275f2a260881f3aba7cc16c26111db38dd7e29210d9b61d0da",
+  "ordinary_env_sha256": "a95f54721bf138949526afc33c5cff5da8bc1e1bc75bfb29dce22b8c964e01ea",
+  "paid_model_calls": 0,
+  "formal_reviews_this_task": 1,
+  "prior_task_closed_formal_reviews": 3
+}
