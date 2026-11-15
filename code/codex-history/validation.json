@@ -1,0 +1,81 @@
+{
+  "checked_at": "2026-11-15T14:15:43.831452+00:00",
+  "snapshot_captured_at": "2026-11-15T14:06:59.352967+00:00",
+  "restore_boundary_checks": [
+    "restore/remap-only/idempotence/no-auth-config",
+    "conflict-preflight-no-overwrite",
+    "sha256-tamper-rejected",
+    "archive-and-restore-path-traversal-rejected",
+    "symlink-escape-rejected",
+    "incomplete-jsonl-rejected-even-with-valid-hash",
+    "default-codex-home-rejected"
+  ],
+  "restore_boundary_checks_passed": 7,
+  "cli_version": "codex-cli 0.169.0",
+  "thread_read": [
+    {
+      "id": "01a194c3-bc92-7c51-b1eb-eac9e36e5642",
+      "turns": 47,
+      "user_messages": 61,
+      "assistant_messages": 139,
+      "id_and_remapped_cwd_match": true
+    },
+    {
+      "id": "01a19a55-460a-7741-bfbf-1c55336e8f21",
+      "turns": 12,
+      "user_messages": 15,
+      "assistant_messages": 34,
+      "id_and_remapped_cwd_match": true
+    },
+    {
+      "id": "01a19b72-100e-7760-b895-a34fc0595848",
+      "turns": 96,
+      "user_messages": 156,
+      "assistant_messages": 1441,
+      "id_and_remapped_cwd_match": true
+    },
+    {
+      "id": "01a1a21b-c6d6-7621-911a-5ce142946461",
+      "turns": 5,
+      "user_messages": 7,
+      "assistant_messages": 45,
+      "id_and_remapped_cwd_match": true
+    },
+    {
+      "id": "01a1b62e-d8bf-7562-9027-180efd759eb6",
+      "turns": 1,
+      "user_messages": 1,
+      "assistant_messages": 3,
+      "id_and_remapped_cwd_match": true
+    },
+    {
+      "id": "01a1bbee-5106-7a71-beb3-1bc8916acebd",
+      "turns": 3,
+      "user_messages": 3,
+      "assistant_messages": 21,
+      "id_and_remapped_cwd_match": true
+    }
+  ],
+  "thread_resume": {
+    "id": "01a1bbee-5106-7a71-beb3-1bc8916acebd",
+    "user_messages": 3,
+    "assistant_messages": 21
+  },
+  "app_server_stderr_bytes": 0,
+  "turn_start_sent": false,
+  "model_api_request_sent": false,
+  "compatibility_note": "Initial newer item_completed events yielded empty displayed items; legacy user_message/agent_message events synthesized from the same sanitized visible messages fixed local read. thread/items/list is unsupported by this legacy store.",
+  "limits": "Same-machine file migration recognition only; no model turn, cross-server model continuation, original runtime instructions, tools, agents or authentication restored.",
+  "privacy_scan": {
+    "files_scanned": 11,
+    "gzip_archives_scanned": 6,
+    "current_local_credential_value_matches": 0,
+    "known_token_private_key_credential_url_matches": 0,
+    "runtime_prompt_marker_matches": 0,
+    "internal_instruction_fingerprint_matches": 0,
+    "instruction_fingerprints_checked": 126,
+    "tool_calls_with_omitted_payload": 5495,
+    "tool_results_with_omitted_payload": 5495,
+    "original_codex_home_modified": false
+  }
+}
