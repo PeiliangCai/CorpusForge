@@ -79,6 +79,8 @@ def read_bundle(bundle):
     sessions, seen_ids, seen_paths = [], set(), set()
     for entry in manifest["sessions"]:
         sid = str(uuid.UUID(entry["id"]))
+        if not isinstance(entry.get("title"), str) or not entry["title"].strip():
+            raise ArchiveError("missing session display name")
         rel = safe_relative(entry["archive_path"])
         restore = safe_relative(entry["restore_path"])
         if rel.parts[0] != "sessions" or not str(rel).endswith(".jsonl.gz") or restore.parts[0] != "sessions" or not str(restore).endswith(".jsonl"):
@@ -132,6 +134,31 @@ def verify_archive(args):
                       "snapshot_captured_at": manifest["snapshot_captured_at"]}, ensure_ascii=False))
 
 
+def plan_names(home, sessions):
+    """Append only bundled names, preserving unrelated index bytes and local names."""
+    index = home / "session_index.jsonl"
+    if index.is_symlink() or not inside(index.resolve(), home.resolve()):
+        raise ArchiveError("symlink or escape in session name index")
+    content = index.read_bytes() if index.exists() else b""
+    names = {}
+    for line in content.splitlines(keepends=True):
+        if not line.endswith(b"\n"):
+            raise ArchiveError("incomplete session name index")
+        row = json.loads(line)
+        if not isinstance(row, dict) or not isinstance(row.get("id"), str) or not isinstance(row.get("thread_name"), str):
+            raise ArchiveError("invalid session name index")
+        names[row["id"]] = row["thread_name"]
+    additions = []
+    for entry, _ in sessions:
+        name = names.get(entry["id"])
+        if name is not None and name != entry["title"]:
+            raise ArchiveError("different session name already exists; choose a new separate CODEX_HOME")
+        if name is None:
+            additions.append(encode({"id": entry["id"], "thread_name": entry["title"],
+                                     "updated_at": entry["title_updated_at"]}))
+    return index, content, b"".join(additions), len(additions)
+
+
 def restore_archive(args):
     manifest, sessions = read_bundle(Path(args.bundle))
     home = Path(args.codex_home).expanduser().absolute()
@@ -162,6 +189,7 @@ def restore_archive(args):
         if target.exists() and target.read_bytes() != content:
             raise ArchiveError("different session already exists; no files overwritten")
         planned.append((target, content))
+    index, old_index, new_names, names_added = plan_names(home, sessions)
     created = unchanged = 0
     for target, content in planned:
         if target.exists():
@@ -172,7 +200,15 @@ def restore_archive(args):
             stream.write(content)
         target.chmod(0o600)
         created += 1
-    print(json.dumps({"created": created, "unchanged": unchanged, "codex_home": str(home)}, ensure_ascii=False))
+    if new_names:
+        # Refuse a changed index instead of overwriting a concurrent local rename.
+        if index.is_symlink() or (index.read_bytes() if index.exists() else b"") != old_index:
+            raise ArchiveError("session name index changed during restore; rerun after closing Codex")
+        with index.open("ab" if index.exists() else "xb") as stream:
+            stream.write(new_names)
+        index.chmod(0o600)
+    print(json.dumps({"created": created, "unchanged": unchanged, "names_added": names_added,
+                      "codex_home": str(home)}, ensure_ascii=False))
 
 
 def transcript(args):

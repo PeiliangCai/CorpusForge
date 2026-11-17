@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Seven restore boundary checks, then local app-server history recognition (no turn/start)."""
+"""Restore/name boundaries, then local app-server history recognition (no turn/start)."""
 
 import collections
 import datetime
@@ -47,7 +47,9 @@ def boundary_checks(work):
         assert restored[0]["payload"]["cwd"] == str(project)
         assert restored[1:] == rows[1:], "text outside cwd metadata was modified"
     result = json.loads(restore(home, project).stdout)
-    assert result["created"] == 0 and result["unchanged"] == 6
+    assert result["created"] == 0 and result["unchanged"] == len(sessions) and result["names_added"] == 0
+    names = {row["id"]: row["thread_name"] for row in map(json.loads, (home / "session_index.jsonl").read_text().splitlines())}
+    assert names == {entry["id"]: entry["title"] for entry, _ in sessions}
     assert not (home / "auth.json").exists() and not (home / "config.toml").exists()
     checks.append("restore/remap-only/idempotence/no-auth-config")
 
@@ -100,6 +102,51 @@ def boundary_checks(work):
 
     restore(Path.home() / ".codex", project, success=False)
     checks.append("default-codex-home-rejected")
+
+    indexed = work / "existing-index"
+    indexed.mkdir()
+    unrelated = history.encode({"id": "unrelated-session", "thread_name": "Keep my local name", "updated_at": "2026-01-01T00:00:00Z"})
+    (indexed / "session_index.jsonl").write_bytes(unrelated)
+    restore(indexed, project)
+    assert (indexed / "session_index.jsonl").read_bytes().startswith(unrelated)
+    assert len((indexed / "session_index.jsonl").read_text().splitlines()) == len(sessions) + 1
+    checks.append("unrelated-session-name-preserved")
+
+    for label, content in (("name-conflict", history.encode({"id": first["id"], "thread_name": "My new name"})),
+                           ("broken-index", b"not JSON\n"), ("incomplete-index", b'{"id":"incomplete"}')):
+        destination = work / label
+        destination.mkdir()
+        index = destination / "session_index.jsonl"
+        index.write_bytes(content)
+        restore(destination, project, success=False)
+        assert index.read_bytes() == content and not (destination / "sessions").exists()
+    checks.append("conflicting-or-damaged-name-index-preflight-rejected")
+
+    linked_index = work / "linked-index"
+    linked_index.mkdir()
+    outside_index = work / "outside-index.jsonl"
+    outside_index.write_bytes(unrelated)
+    (linked_index / "session_index.jsonl").symlink_to(outside_index)
+    restore(linked_index, project, success=False)
+    assert outside_index.read_bytes() == unrelated and not (linked_index / "sessions").exists()
+    checks.append("name-index-symlink-rejected")
+
+    previous = work / "previous-import"
+    restore(previous, project)
+    (previous / "session_index.jsonl").unlink()
+    result = json.loads(restore(previous, project).stdout)
+    assert result["created"] == 0 and result["unchanged"] == len(sessions) and result["names_added"] == len(sessions)
+    checks.append("unchanged-previous-import-name-backfill")
+
+    continued = previous / first["restore_path"]
+    continued.write_bytes(continued.read_bytes() + history.encode({"type": "event_msg", "payload": {"type": "continued-locally"}}))
+    old_contents = {str(path.relative_to(previous)): path.read_bytes() for path in previous.rglob("*") if path.is_file()}
+    restore(previous, project, success=False)
+    fresh = work / "updated-import"
+    restore(fresh, project)
+    assert {str(path.relative_to(previous)): path.read_bytes() for path in previous.rglob("*") if path.is_file()} == old_contents
+    assert len(list(fresh.rglob("rollout-*.jsonl"))) == len(sessions)
+    checks.append("continued-previous-import-kept-new-home-restores-five")
     return home, project, manifest, checks
 
 
@@ -140,17 +187,24 @@ def cli_checks(home, project, manifest, work):
                 thread = request("thread/read", {"threadId": entry["id"], "includeTurns": True})["thread"]
                 kinds = collections.Counter(item["type"] for turn in thread["turns"] for item in turn["items"])
                 assert thread["id"] == entry["id"] and thread["cwd"] == str(project)
+                assert thread["name"] == entry["title"]
                 assert kinds["userMessage"] == entry["counts"]["user_response_messages"]
                 assert kinds["agentMessage"] == entry["counts"]["assistant_response_messages"]
-                records.append({"id": entry["id"], "turns": len(thread["turns"]),
+                records.append({"id": entry["id"], "name": thread["name"], "turns": len(thread["turns"]),
                                 "user_messages": kinds["userMessage"], "assistant_messages": kinds["agentMessage"],
-                                "id_and_remapped_cwd_match": True})
+                                "id_and_remapped_cwd_match": True, "local_display_name_match": True})
+            listed = request("thread/list", {"limit": 20, "sourceKinds": ["vscode"], "cwd": str(project)})
+            listed_names = {thread["id"]: thread.get("name") for thread in listed["data"]}
+            assert listed.get("nextCursor") is None
+            assert listed_names == {entry["id"]: entry["title"] for entry in manifest["sessions"]}
+            listing = [{"id": thread["id"], "name": thread["name"]} for thread in listed["data"]]
             latest = max(manifest["sessions"], key=lambda e: e["last_record_at"])
             thread = request("thread/resume", {"threadId": latest["id"], "excludeTurns": False})["thread"]
             kinds = collections.Counter(item["type"] for turn in thread["turns"] for item in turn["items"])
             assert kinds["userMessage"] == latest["counts"]["user_response_messages"]
             assert kinds["agentMessage"] == latest["counts"]["assistant_response_messages"]
-            resumed = {"id": thread["id"], "user_messages": kinds["userMessage"], "assistant_messages": kinds["agentMessage"]}
+            assert thread["name"] == latest["title"]
+            resumed = {"id": thread["id"], "name": thread["name"], "user_messages": kinds["userMessage"], "assistant_messages": kinds["agentMessage"]}
         finally:
             proc.terminate()
             try:
@@ -159,9 +213,12 @@ def cli_checks(home, project, manifest, work):
                 proc.kill()
                 proc.wait()
             select.close()
-    return {"cli_version": version, "thread_read": records, "thread_resume": resumed,
-            "app_server_stderr_bytes": (work / "app-server.stderr").stat().st_size,
-            "turn_start_sent": False, "model_api_request_sent": False}
+    stderr = (work / "app-server.stderr").read_text()
+    return {"cli_version": version, "thread_list": listing, "thread_read": records, "thread_resume": resumed,
+            "app_server_stderr_bytes": len(stderr.encode()),
+            "responses_websocket_connection_attempt_failed": "failed to connect to Responses WebSocket" in stderr,
+            "network_test_configuration": "No auth/config restored; HTTP_PROXY, HTTPS_PROXY and ALL_PROXY point to the refused localhost endpoint 127.0.0.1:9.",
+            "turn_start_sent": False, "model_generation_request_sent": False}
 
 
 def main():
