@@ -28,7 +28,7 @@
 
 前轮[工作台体验验收](../docs/acceptance/workbench-experience-2026-11-14/report.json)记录：正式审查3/3；71项后端、346项抽取回归、14项界面单测、16组同构建隔离与5组真实只读核验通过。切换前3次确认无活动任务，原任务先已自然partial；17表/8run/8篇论文记录的逻辑行与hash、两份env及手工目录前后相同，integrity正常、外键错误0。SQLite一致备份为`runtime-data/backups/workbench-experience-20261114-before/t1.sqlite`，旧已验构建`build/two-layer-catalog-validated-20261114`保留回退。本轮没有新增付费模型请求、业务测试写入或任务中断；本地请求数/查询耗时改善不等于真实总抽取速度已验证。原13条候选、唯一明确配对Figure5、41处字形缺口与未完成汇总保持。S2准备/配置工程结论沿用，医学与S6/S7未升级。
 
-需复用当前构建启动前端时，先确认原前端监听已经关闭，从`code/`执行：
+需复用当前构建启动前端时，先确认原前端监听已经关闭，从`FeatureExtractorAgent/code/`执行：
 
 ```bash
 T1_NEXT_DIST_DIR=build/storage-management-validated-20261115 bash scripts/with-node.sh npm run start:web
@@ -42,7 +42,7 @@ T1_NEXT_DIST_DIR=build/storage-management-validated-20261115 bash scripts/with-n
 
 ## 准备
 
-在 `code/` 运行命令。需要 Linux x86_64、Docker Engine/Compose v2、至少 4 CPU 和 8 GiB 可用内存，构建需要网络和至少约 25 GiB 临时磁盘空间（30 GiB 更充足；依赖和多次构建缓存可额外占用）。镜像锁定 Node 24.22.2、Ubuntu 24.04 基础镜像摘要、npm lock 和 Python CPU lock；这提供可重复的构建步骤，系统 apt 安全更新仍可能随时间变化。
+在 `FeatureExtractorAgent/code/` 运行命令。需要 Linux x86_64、Docker Engine/Compose v2、至少 4 CPU 和 8 GiB 可用内存，构建需要网络和至少约 25 GiB 临时磁盘空间（30 GiB 更充足；依赖和多次构建缓存可额外占用）。镜像锁定 Node 24.22.2、Ubuntu 24.04 基础镜像摘要、npm lock 和 Python CPU lock；这提供可重复的构建步骤，系统 apt 安全更新仍可能随时间变化。
 
 本机原无 Docker。验收使用现有 sudo 安装了发行版 `docker.io`、`docker-compose-v2`、`docker-buildx`，未向 docker 组加用户。当前普通账号运行 Docker 命令需 `sudo`；以下省略该前缀，备份脚本也可整体用 `sudo --preserve-env=...` 执行。发行版 Docker 包与 Docker 官方 CE 仓库安装方式不要混装。相关系统影响及实际版本见 S7 `system-impact.json`。
 
@@ -90,7 +90,7 @@ Docker JSON 日志每文件 10 MB、最多 3 份。持续业务事件另存 SQLi
 
 Compose 使用独立 `T1_DEPLOY_*` 名称，避免自动读取宿主 `.env` 的旧凭证/开关。按 `deploy/compose.env.example` 在私有配置中填写模型 key，并由服务端明确设置 `T1_DEPLOY_MODEL_ENABLED=true`。可用 `docker compose --env-file /private/path up -d`，不要把该文件提交或构建进镜像。预算为每新运行的 `T1_DEPLOY_MAX_REQUESTS`、`T1_DEPLOY_MAX_INPUT_TOKENS`、`T1_DEPLOY_MAX_OUTPUT_TOKENS`，默认 80/2000000/120000。固定两 FIFO 槽；第三个任务持久排队且可取消，等待时长单列。30 分钟从拿到执行槽开始，包括 PDF 解析、模型与 summary，排队不耗该时长；120 秒/请求、最多 2 次瞬态重试。token 是本地预留/回报预算，不是供应商账单绝对硬截断。浏览器可在既有AGICTO内新增/选择模型档案，provider、密钥、端点及硬限额仍由服务器管理；只有用户点击开始才调用；上传与浏览不调用模型。每新 run 都建新账本，不继承旧实验额度。普通用户仍一次开始，无实验签字流程。
 
-宿主普通服务使用既有私有 `code/.env` 中的 key，公开配置可分放 `deploy/local/workbench.env`，避免覆盖 key 字节：
+宿主普通服务使用既有私有 `.env` 中的 key，公开配置可分放 `deploy/local/workbench.env`，避免覆盖 key 字节：
 
 ```sh
 mkdir -p deploy/local
@@ -134,7 +134,7 @@ T1_DATA_VOLUME=t1-workbench-restored-20261109 docker compose up -d --force-recre
 
 仅验收时叠加 `-f compose.yaml -f deploy/compose.verify.yaml`，并显式设置独立 `T1_COMPOSE_PROJECT`、`T1_DATA_VOLUME`、`T1_WEB_PORT`。该入口使用全新人工 PDF、真实 CPU 解析、已装 Pi/B0 与固定本地 scripted Responses；不读取凭证、不调用外部生成服务。其人工审核只在隔离卷，不能当真实医学批准。恢复普通部署时不要带该覆盖文件。自动验收可在空闲 30142 上运行 `node deploy/verify.mjs`（需 Docker 权限），再次运行须设置全新 `T1_S7_VERIFY_ID`，保留旧卷不覆盖。实际执行结果、信号/重启/备份检查与未验证事项以 S7 `report.json` 为准。
 
-运行范围只维护[`config/scope-catalog.json`](../config/scope-catalog.json)，不再使用`T1_WORKBENCH_CATALOG_FILE`。两层为癌种→图像模态；稳定ID、显示名、对应模态ID为必需项，别名/简短说明可选。直接增删改并保存，刷新工作台即可更新，无需重启服务。容器可将此文件只读挂载到`/app/config/scope-catalog.json`（目录与镜像工作目录一致时），由宿主编辑后刷新；若挂载单文件，请原位写入或重新核对挂载的inode，避免编辑器原子替换后容器仍读旧挂载。结构检查在`code/`执行`bash scripts/with-node.sh npm run check:scope-catalog`，不钉死条目数量或医学内容。
+运行范围只维护[`config/scope-catalog.json`](../config/scope-catalog.json)，不再使用`T1_WORKBENCH_CATALOG_FILE`。两层为癌种→图像模态；稳定ID、显示名、对应模态ID为必需项，别名/简短说明可选。直接增删改并保存，刷新工作台即可更新，无需重启服务。容器可将此文件只读挂载到`/app/config/scope-catalog.json`（目录与镜像工作目录一致时），由宿主编辑后刷新；若挂载单文件，请原位写入或重新核对挂载的inode，避免编辑器原子替换后容器仍读旧挂载。结构检查在`FeatureExtractorAgent/code/`执行`bash scripts/with-node.sh npm run check:scope-catalog`，不钉死条目数量或医学内容。
 
 版本按文件字节SHA自动生成。前后端使用同份目录；未提交草稿刷新保留选择ID，失效项提示且阻止开始；未刷新时新提交旧版本返回409，不自动放宽。已接纳的单篇/批次持久保存目录快照，排队、执行、批内后续成员/重试和来源修订均沿用原配置，历史名称优先用原快照。坏JSON不复用旧配置或退回不限；已有任务仍可浏览/取消。
 
@@ -156,13 +156,13 @@ T1_DATA_VOLUME=t1-workbench-restored-20261109 docker compose up -d --force-recre
 
 前轮[批量提交/幂等交付](../docs/acceptance/batch-submission-2026-11-13/report.json)和[单箭头居中刷新记录](../docs/acceptance/batch-submission-2026-11-13/refresh-center.json)保留原时点；居中箭头、默认保留、可恢复排除、三导出及20篇/50MiB、每run预算与2槽继续使用。旧Docker镜像未重建；浏览器实测目前覆盖Chromium，未做20篇真实长期负载或新增真实付费抽取验收，医学和完整S2/S6/S7结论不升级。
 
-2026-11-13该轮已验证并实际服务的宿主前端构建为`apps/pi-web/build/task-records-validated-20261113`，BUILD_ID为`zLRleMlhhhZ-kExpdh9-R`；当时前后端静稳重启并完成线上只读核对。前轮`apps/pi-web/build/sidebar-task-actions-20261113`保留回退。以下仅为复用该历史构建的命令，先确认前端监听已关闭，再从`code/`运行：
+2026-11-13该轮已验证并实际服务的宿主前端构建为`apps/pi-web/build/task-records-validated-20261113`，BUILD_ID为`zLRleMlhhhZ-kExpdh9-R`；当时前后端静稳重启并完成线上只读核对。前轮`apps/pi-web/build/sidebar-task-actions-20261113`保留回退。以下仅为复用该历史构建的命令，先确认前端监听已关闭，再从`FeatureExtractorAgent/code/`运行：
 
 ```bash
 T1_NEXT_DIST_DIR=build/task-records-validated-20261113 bash scripts/with-node.sh npm run start:web
 ```
 
-常规重新构建仍按`code/README.md`的`build:web`流程执行；这条复用命令不修改私有或公开env。
+常规重新构建仍按[应用说明](../README.md)的`build:web`流程执行；这条复用命令不修改私有或公开env。
 
 上轮交付快照镜像为 `t1-workbench:delivery-20261111`，本机ID `sha256:4d2a334b0bf50663503b33a6ddc7d9631bc9a05551a198c0053409ab3a2e9904`。它复用既有依赖与已接受UI产物，叠加冻结源码，非冷构建；[构造、1176源码和161个UI产物核验](../docs/acceptance/resume-2026-11-11/final-stack-image/delivery-image-report.json)记录完整链。该镜像未重建，不含后续宿主日常保留取舍、阅读段、批量/刷新、目录导入/任务类型及后续AGICTO模型配置、侧栏任务操作变更及本轮抽取记录与删除变更；如需查看上轮快照，可用既有本机镜像运行独立部署：
 

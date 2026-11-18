@@ -40,7 +40,7 @@
 
 远程访问使用SSH或开发环境端口转发。复用已运行的服务，同一端口或构建目录保持唯一Next实例，写同一SQLite的后端保持唯一；不把现有30141数据目录直接交给验证容器。
 
-以下命令均在`code/`执行。宿主后端使用独立公开工作台配置和私有`.env`密钥：首次建立`deploy/local/workbench.env`时参考`deploy/host.env.example`，保留已有配置与密钥。后端启动会显式载入两者：
+以下命令均在`FeatureExtractorAgent/code/`执行。宿主后端使用独立公开工作台配置和私有`.env`密钥：首次建立`deploy/local/workbench.env`时参考`deploy/host.env.example`，保留已有配置与密钥。后端启动会显式载入两者：
 
 ```bash
 sh deploy/start-host.sh
@@ -53,7 +53,7 @@ bash scripts/with-node.sh npm run build:web
 bash scripts/with-node.sh npm run start:web
 ```
 
-复用本次已验证构建并重启前端时，先确认原前端进程已停止，然后在`code/`运行（普通重新构建流程仍使用上方`build:web`）：
+复用本次已验证构建并重启前端时，先确认原前端进程已停止，然后在`FeatureExtractorAgent/code/`运行（普通重新构建流程仍使用上方`build:web`）：
 
 ```bash
 T1_NEXT_DIST_DIR=build/storage-management-validated-20261115 bash scripts/with-node.sh npm run start:web
@@ -109,7 +109,7 @@ bash scripts/with-node.sh npm run check:scope-catalog
 - `runtime-data/`：SQLite、源PDF、IR、整图、版本、独立保留状态、旧审核及每run账本；隔离测试库不替换生产库。
 - `evaluation/`、`docs/acceptance/`：来源与冻结实证，部分文件被生产工作台直接引用，不按历史目录整体删除。
 - `third_party/pi-web/`：固定上游源码、SHA及MIT来源。上游终端/任意文件/凭证和通用coding API不作为T1业务接口。
-- 开发计划只在[主计划](../方案/子任务T1/T1智能体开发计划.docx)与[执行说明](../方案/子任务T1/T1开发执行说明.docx)维护，本页仅为工程使用说明。
+- 开发计划只在[主计划](../../方案/子任务T1/T1智能体开发计划.docx)与[执行说明](../../方案/子任务T1/T1开发执行说明.docx)维护，本页仅为工程使用说明。
 
 前次单次删除任务正式审查3/3、判断继续；[原工程与上线记录](docs/acceptance/task-delete-entry-2026-11-13/report.json)保留实际限制。新增空删除记录表使16→17表，原16表内容、9个运行、1个模型配置及两份运行env字节保持，前后0活动任务；线上验证均为只读。医学及完整S2/S6/S7结论保持原范围。
 

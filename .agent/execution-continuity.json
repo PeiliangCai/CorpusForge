@@ -13,7 +13,7 @@
     "文件owner与下一步"
   ],
   "resume_rule": "续接时先读本任务日志，并与现行用户指示及工作区文件核对；最新确认优先。",
-  "storage": "应用执行日志按现行项目目录规则放code/runtime-data/agent-notes/；本规则不另行放宽目录或权限。",
+  "storage": "应用执行日志按现行项目目录规则放FeatureExtractorAgent/code/runtime-data/agent-notes/；本规则不另行放宽目录或权限。",
   "cleanup": "完成正式交接后仅清理本任务临时日志；保留本永久规则和他人文件。",
   "secrets": "日志不得包含密钥、令牌或凭证。",
   "approval": "本规则不引入新审批或用户确认门槛。",

@@ -27,11 +27,11 @@
 若默认 home 已有 Codex 后台 daemon，先运行 `CODEX_HOME="$HOME/.codex" codex app-server daemon stop`；若停止命令报错，先停下处理，不继续导入。全新机器没有后台服务时无需执行此步。此命令见官方[停止后台 daemon 说明](https://learn.chatgpt.com/docs/environments/network-file-systems.md)，本机 CLI 0.169.0 的 `--help` 已确认支持。
 
 ```bash
-git clone https://github.com/PeiliangCai/t1-agent.git
-cd t1-agent
+git clone https://github.com/PeiliangCai/CorpusForge.git
+cd CorpusForge
 project_root="$(pwd -P)"
 
-python3 code/scripts/codex-history.py restore --merge --project-root "$project_root" &&
+python3 FeatureExtractorAgent/code/scripts/codex-history.py restore --merge --project-root "$project_root" &&
 unset CODEX_HOME &&
 codex resume --all -C "$project_root" 01a1bbee-5106-7a71-beb3-1bc8916acebd
 ```
@@ -60,7 +60,7 @@ source_home="$HOME/.codex-t1-agent-20261115"
 
 CODEX_HOME="$source_home" codex app-server daemon stop &&
 CODEX_HOME="$HOME/.codex" codex app-server daemon stop &&
-python3 code/scripts/codex-history.py merge-home --source-home "$source_home" &&
+python3 FeatureExtractorAgent/code/scripts/codex-history.py merge-home --source-home "$source_home" &&
 unset CODEX_HOME &&
 codex resume --all -C "$PWD"
 ```
@@ -98,14 +98,14 @@ codex resume --all -C "$PWD"
 若新版本 CLI 无法恢复，可直接阅读压缩 JSONL，或生成可读文本，再把相关内容交给新对话作为历史背景：
 
 ```bash
-python3 code/scripts/codex-history.py transcript \
+python3 FeatureExtractorAgent/code/scripts/codex-history.py transcript \
   --session 01a1bbee-5106-7a71-beb3-1bc8916acebd
 ```
 
 需要复查恢复边界与本地读取时执行以下命令；临时恢复目录在 `code/runtime-data/`，结束后自动清理：
 
 ```bash
-python3 code/codex-history/tests/check.py
+python3 FeatureExtractorAgent/code/codex-history/tests/check.py
 ```
 
 官方依据（OpenAI Docs）：[CLI resume](https://learn.chatgpt.com/docs/cli/reference#codex-resume) 说明可按本机保存的会话 ID 继续，`--all` 可跨 cwd 查找，显式 `-C` 指定续聊目录；[环境变量](https://learn.chatgpt.com/docs/config-file/environment-variables) 说明 `CODEX_HOME` 默认 `~/.codex`，并包含认证、配置和会话等状态；[排障目录说明](https://learn.chatgpt.com/docs/reference/troubleshooting) 列出 `sessions` 与 `archived_sessions`。这些说明没有保证 Git clone 即可恢复，也没有保证脱敏后历史等价于原会话；本仓库合并逻辑由上述本地隔离实测验证。
